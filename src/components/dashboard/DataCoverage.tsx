@@ -1,0 +1,44 @@
+import type { DataCoverage } from "@/lib/analytics-engine";
+
+interface Props { coverage: DataCoverage; }
+
+function formatSpan(years: number, months: number): string {
+  if (years >= 1) {
+    const remainder = months - years * 12;
+    return remainder >= 1
+      ? `${years}y ${remainder}m`
+      : `${years} year${years !== 1 ? "s" : ""}`;
+  }
+  return `${months} month${months !== 1 ? "s" : ""}`;
+}
+
+function formatDate(date: Date): string {
+  return date.toLocaleDateString("en-IE", { month: "short", year: "numeric" });
+}
+
+export default function DataCoverage({ coverage }: Props) {
+  if (coverage.count === 0) return null;
+
+  const span = formatSpan(coverage.years, coverage.months);
+  const from = coverage.earliest ? formatDate(coverage.earliest) : null;
+  const to   = coverage.latest   ? formatDate(coverage.latest)   : null;
+
+  return (
+    <div className="flex items-start gap-3 px-4 py-3 bg-[#22C55E0d] border border-[#22C55E30] rounded-xl">
+      <div className="w-5 h-5 rounded-full bg-[#22C55E] flex items-center justify-center flex-shrink-0 mt-0.5">
+        <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+        </svg>
+      </div>
+
+      <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-0.5 sm:gap-x-4 min-w-0">
+        <span className="text-sm font-semibold text-[#22C55E]">
+          {span} of history · {coverage.count.toLocaleString()} transactions
+        </span>
+        {from && to && (
+          <span className="text-xs text-[#94A3B8]">{from} – {to}</span>
+        )}
+      </div>
+    </div>
+  );
+}

@@ -1,0 +1,69 @@
+﻿@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --bg:        #0A1020;
+    --surface:   #111827;
+    --border:    #1E293B;
+    --text:      #F8FAFC;
+    --secondary: #CBD5E1;
+    --muted:     #94A3B8;
+    --teal:      #14B8A6;
+    --green:     #22C55E;
+    --amber:     #F59E0B;
+    --blue:      #3B82F6;
+    --cyan:      #06B6D4;
+    --red:       #EF4444;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    @apply bg-[#0A1020] text-[#F8FAFC] antialiased;
+    font-family: var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+  }
+}
+
+@layer components {
+  .card {
+    @apply bg-[#111827] border border-[#1E293B] rounded-2xl p-5 md:p-6;
+  }
+
+  .card-sm {
+    @apply bg-[#111827] border border-[#1E293B] rounded-xl p-4;
+  }
+
+  .label {
+    @apply text-xs font-medium text-[#94A3B8] uppercase tracking-wider;
+  }
+
+  .btn-primary {
+    @apply bg-[#14B8A6] hover:bg-[#0D9488] text-white font-semibold px-5 py-2.5 rounded-xl transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px];
+  }
+
+  .btn-secondary {
+    @apply bg-[#1E293B] hover:bg-[#2D3D55] text-[#F8FAFC] font-medium px-5 py-2.5 rounded-xl transition-colors duration-150 min-h-[44px];
+  }
+
+  .btn-ghost {
+    @apply text-[#94A3B8] hover:text-[#F8FAFC] font-medium px-3 py-2 rounded-lg transition-colors duration-150 min-h-[44px];
+  }
+
+  .input {
+    @apply bg-[#0A1020] border border-[#1E293B] rounded-xl px-4 py-2.5 text-[#F8FAFC] placeholder-[#94A3B8] focus:outline-none focus:border-[#14B8A6] transition-colors duration-150 w-full text-base min-h-[44px];
+  }
+
+  .stat-value {
+    @apply text-2xl font-bold text-[#F8FAFC];
+  }
+
+  .positive { @apply text-[#22C55E]; }
+  .negative { @apply text-[#EF4444]; }
+  .neutral  { @apply text-[#94A3B8]; }
+}
