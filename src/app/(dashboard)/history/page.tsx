@@ -94,7 +94,7 @@ export default async function HistoryPage({ searchParams }: { searchParams: Prom
   };
 
   return (
-    <div className="space-y-5 md:space-y-6">
+    <div className="space-y-8 md:space-y-10">
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h1 className="text-2xl font-bold">History</h1>

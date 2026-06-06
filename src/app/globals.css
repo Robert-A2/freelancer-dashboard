@@ -6,9 +6,9 @@
   :root {
     --bg:       #F7F8F5;
     --surface:  #FFFFFF;
-    --border:   #E8EAE5;
-    --text:     #1F2937;
-    --secondary:#374151;
+    --border:   #ECEEE9;
+    --text:     #374151;
+    --secondary:#4B5563;
     --muted:    #6B7280;
     --faint:    #9CA3AF;
     --brand:    #4F7A65;
@@ -20,40 +20,47 @@
   * { box-sizing: border-box; }
 
   body {
-    @apply bg-[#F7F8F5] text-[#1F2937] antialiased;
+    @apply bg-[#F7F8F5] text-[#374151] antialiased;
     font-family: var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     font-size: 16px;
-    line-height: 1.6;
+    line-height: 1.75;
+  }
+
+  h1, h2, h3, h4 {
+    color: #1F2937;
+    line-height: 1.3;
   }
 }
 
 @layer components {
+  /* Card — more generous padding, barely-there border */
   .card {
-    @apply bg-white border border-[#E8EAE5] rounded-2xl p-5 md:p-6;
+    @apply bg-white border border-[#ECEEE9] rounded-2xl p-6 md:p-8;
   }
 
   .card-sm {
-    @apply bg-white border border-[#E8EAE5] rounded-xl p-4;
+    @apply bg-white border border-[#ECEEE9] rounded-xl p-5 md:p-6;
   }
 
+  /* Label — very quiet. Signals category without demanding attention */
   .label {
-    @apply text-xs font-medium text-[#9CA3AF] uppercase tracking-wider;
+    @apply text-[11px] font-medium text-[#B8BFC8] uppercase tracking-widest;
   }
 
   .btn-primary {
-    @apply bg-[#4F7A65] hover:bg-[#3D6554] text-white font-semibold px-5 py-2.5 rounded-xl transition-colors duration-150 disabled:opacity-40 disabled:cursor-not-allowed min-h-[44px];
+    @apply bg-[#4F7A65] hover:bg-[#3D6554] text-white font-semibold px-6 py-3 rounded-xl transition-colors duration-150 disabled:opacity-40 disabled:cursor-not-allowed min-h-[48px];
   }
 
   .btn-secondary {
-    @apply bg-[#F3F4F0] hover:bg-[#E8EAE5] text-[#374151] font-medium px-5 py-2.5 rounded-xl transition-colors duration-150 min-h-[44px];
+    @apply bg-[#F3F4F0] hover:bg-[#E8EAE5] text-[#4B5563] font-medium px-6 py-3 rounded-xl transition-colors duration-150 min-h-[48px];
   }
 
   .btn-ghost {
-    @apply text-[#6B7280] hover:text-[#1F2937] font-medium px-3 py-2 rounded-lg transition-colors duration-150 min-h-[44px];
+    @apply text-[#6B7280] hover:text-[#374151] font-medium px-3 py-2 rounded-lg transition-colors duration-150 min-h-[44px];
   }
 
   .input {
-    @apply bg-white border border-[#E8EAE5] rounded-xl px-4 py-2.5 text-[#1F2937] placeholder-[#9CA3AF] focus:outline-none focus:border-[#4F7A65] transition-colors duration-150 w-full text-base min-h-[44px];
+    @apply bg-white border border-[#ECEEE9] rounded-xl px-4 py-3 text-[#374151] placeholder-[#B8BFC8] focus:outline-none focus:border-[#4F7A65] transition-colors duration-150 w-full text-base min-h-[48px];
   }
 
   .stat-value {

@@ -146,7 +146,7 @@ export default async function DashboardPage({
   ].filter(Boolean);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Header */}
       <div className="flex items-start justify-between flex-wrap gap-3">
         <div>
@@ -228,7 +228,7 @@ export default async function DashboardPage({
             context={intel.snapshotContext}
           />
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
             <div className="lg:col-span-2">
               <TrendsChart
                 data={chartData}
@@ -244,7 +244,7 @@ export default async function DashboardPage({
             />
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
             <MonthlyComparisonWidget
               current={comparison.current ?? null}
               previous={comparison.previous ?? null}

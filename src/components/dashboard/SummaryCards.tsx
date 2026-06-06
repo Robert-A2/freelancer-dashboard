@@ -36,8 +36,8 @@ function changePct(curr: number, prev: number): number {
 function Chip({ value, invert }: { value: number; invert?: boolean }) {
   const isGood = invert ? value <= 0 : value >= 0;
   return (
-    <span className={`text-xs font-medium px-1.5 py-0.5 rounded ${
-      isGood ? "bg-[#5B8A7215] text-[#5B8A72]" : "bg-[#C66A5A15] text-[#C66A5A]"
+    <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+      isGood ? "bg-[#5B8A7210] text-[#5B8A72]" : "bg-[#C66A5A10] text-[#C66A5A]"
     }`}>
       {value >= 0 ? "↑" : "↓"} {Math.abs(value)}%
     </span>
@@ -62,70 +62,70 @@ export default function SummaryCards({
   const runwayChange  = changePct(runway, prevRunway);
 
   return (
-    <div className="space-y-3">
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3 md:gap-4">
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 md:gap-5">
 
         {/* Income */}
-        <div className="card-sm">
-          <p className="label mb-2">Income</p>
-          <p className="text-xl md:text-2xl font-bold text-[#5B8A72] leading-none mb-1">
+        <div className="card-sm flex flex-col gap-3">
+          <p className="label">Income</p>
+          <p className="text-2xl md:text-3xl font-bold text-[#5B8A72] leading-none tabular-nums">
             {formatCurrency(c.totalIncome)}
           </p>
-          <div className="flex items-center gap-2 mt-2 flex-wrap">
-            <p className="text-xs text-[#9CA3AF]">{spendRate}% spend ratio</p>
+          <div className="flex items-center gap-2 flex-wrap">
+            <p className="text-xs text-[#B8BFC8]">{spendRate}% spend ratio</p>
             {previous && <Chip value={changePct(c.totalIncome, p.totalIncome)} />}
           </div>
         </div>
 
         {/* Expenses */}
-        <div className="card-sm">
-          <p className="label mb-2">Expenses</p>
-          <p className="text-xl md:text-2xl font-bold text-[#C79A63] leading-none mb-1">
+        <div className="card-sm flex flex-col gap-3">
+          <p className="label">Expenses</p>
+          <p className="text-2xl md:text-3xl font-bold text-[#C79A63] leading-none tabular-nums">
             {formatCurrency(c.totalExpenses)}
           </p>
-          <div className="flex items-center gap-2 mt-2 flex-wrap">
-            <p className="text-xs text-[#9CA3AF]">{spendRate}% of income</p>
+          <div className="flex items-center gap-2 flex-wrap">
+            <p className="text-xs text-[#B8BFC8]">{spendRate}% of income</p>
             {previous && <Chip value={changePct(c.totalExpenses, p.totalExpenses)} invert />}
           </div>
         </div>
 
         {/* Cashflow */}
-        <div className="card-sm">
-          <p className="label mb-2">Cashflow</p>
-          <p className={`text-xl md:text-2xl font-bold leading-none mb-1 ${currCashflow >= 0 ? "text-[#4F7A65]" : "text-[#C66A5A]"}`}>
+        <div className="card-sm flex flex-col gap-3">
+          <p className="label">Cashflow</p>
+          <p className={`text-2xl md:text-3xl font-bold leading-none tabular-nums ${currCashflow >= 0 ? "text-[#4F7A65]" : "text-[#C66A5A]"}`}>
             {formatCurrency(currCashflow)}
           </p>
-          <div className="flex items-center gap-2 mt-2 flex-wrap">
-            <p className="text-xs text-[#9CA3AF]">
-              {currCashflow >= 0 ? "Income above expenses" : "Expenses above income"}
+          <div className="flex items-center gap-2 flex-wrap">
+            <p className="text-xs text-[#B8BFC8]">
+              {currCashflow >= 0 ? "Income above expenses" : "Expenses exceed income"}
             </p>
             {previous && <Chip value={changePct(currCashflow, prevCashflow)} />}
           </div>
         </div>
 
         {/* Runway */}
-        <div className="card-sm">
-          <p className="label mb-2">Runway</p>
-          <p className={`text-xl md:text-2xl font-bold leading-none mb-1 tabular-nums ${runway >= 0.5 ? "text-[#5B8A72]" : runway >= 0 ? "text-[#C79A63]" : "text-[#C66A5A]"}`}>
+        <div className="card-sm flex flex-col gap-3">
+          <p className="label">Runway</p>
+          <p className={`text-2xl md:text-3xl font-bold leading-none tabular-nums ${runway >= 0.5 ? "text-[#5B8A72]" : runway >= 0 ? "text-[#C79A63]" : "text-[#C66A5A]"}`}>
             {fmtRunway(runway)}
           </p>
-          <div className="flex items-center gap-2 mt-2 flex-wrap">
-            <p className="text-xs text-[#9CA3AF]">
-              {runway >= 0 ? "months buffer added" : "months buffer consumed"}
+          <div className="flex items-center gap-2 flex-wrap">
+            <p className="text-xs text-[#B8BFC8]">
+              {runway >= 0 ? "months buffer added" : "months consumed"}
             </p>
             {previous && <Chip value={runwayChange} />}
           </div>
         </div>
 
         {/* Risk */}
-        <div className="card-sm">
-          <p className="label mb-2">Risk</p>
-          <p className={`text-xl md:text-2xl font-bold leading-none mb-1 ${risk.color}`}>
+        <div className="card-sm flex flex-col gap-3">
+          <p className="label">Risk</p>
+          <p className={`text-2xl md:text-3xl font-bold leading-none ${risk.color}`}>
             {risk.label}
           </p>
-          <p className="text-xs text-[#9CA3AF] mt-2">
+          <p className="text-xs text-[#B8BFC8]">
             {riskTotalMonths > 0
-              ? `${riskPositiveMonths}/${riskTotalMonths} months positive`
+              ? `${riskPositiveMonths} of ${riskTotalMonths} months positive`
               : "No history yet"}
           </p>
         </div>
@@ -133,13 +133,13 @@ export default function SummaryCards({
       </div>
 
       {summary && (
-        <div className="bg-[#5B8A720A] border border-[#5B8A7218] rounded-xl px-4 py-3 space-y-2">
-          <p className="text-sm font-medium text-[#1F2937]">{summary}</p>
+        <div className="bg-[#5B8A720A] border border-[#5B8A7215] rounded-xl px-5 py-4 space-y-2.5">
+          <p className="text-sm font-medium text-[#1F2937] leading-relaxed">{summary}</p>
           {context && context.length > 0 && (
-            <ul className="space-y-1.5">
+            <ul className="space-y-2">
               {context.map((line, i) => (
-                <li key={i} className="text-sm text-[#374151] flex items-start gap-2">
-                  <span className="text-[#5B8A72] opacity-70 mt-0.5 flex-shrink-0">·</span>
+                <li key={i} className="text-sm text-[#4B5563] flex items-start gap-2.5 leading-relaxed">
+                  <span className="text-[#5B8A72] opacity-60 mt-1 flex-shrink-0">·</span>
                   {line}
                 </li>
               ))}

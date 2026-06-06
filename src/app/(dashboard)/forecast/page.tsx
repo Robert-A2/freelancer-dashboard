@@ -155,7 +155,7 @@ export default async function ForecastPage() {
   const fmtDate = (d: Date) => d.toLocaleDateString("en-IE", { month: "short", year: "numeric" });
 
   return (
-    <div className="space-y-5 md:space-y-6">
+    <div className="space-y-8 md:space-y-10">
 
       {/* Header */}
       <div>
@@ -288,7 +288,7 @@ export default async function ForecastPage() {
                 <span className="text-[#C66A5A] text-xl flex-shrink-0 mt-0.5">⚠</span>
                 <div>
                   <p className="label mb-2">Biggest Risk</p>
-                  <p className="text-sm text-[#374151] leading-relaxed">
+                  <p className="text-sm text-[#4B5563] leading-relaxed">
                     {intel.biggestRisk ?? "No significant risk detected based on current data."}
                   </p>
                 </div>
@@ -299,7 +299,7 @@ export default async function ForecastPage() {
                 <span className="text-[#5B8A72] text-xl flex-shrink-0 mt-0.5">★</span>
                 <div>
                   <p className="label mb-2">Biggest Opportunity</p>
-                  <p className="text-sm text-[#374151] leading-relaxed">
+                  <p className="text-sm text-[#4B5563] leading-relaxed">
                     {intel.biggestOpportunity ?? "Maintain consistent cashflow and income levels."}
                   </p>
                 </div>
@@ -320,7 +320,7 @@ export default async function ForecastPage() {
                     <span className="text-xs font-bold text-[#4F7A65] bg-[#4F7A6520] w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0">
                       {i + 1}
                     </span>
-                    <p className="text-sm text-[#374151] leading-relaxed">{action}</p>
+                    <p className="text-sm text-[#4B5563] leading-relaxed">{action}</p>
                   </div>
                 ))}
               </div>
@@ -335,7 +335,7 @@ export default async function ForecastPage() {
                 {intel.seasonalInsights.map((insight, i) => (
                   <div key={i} className="flex items-start gap-3 bg-[#F7F8F5] rounded-xl px-4 py-3">
                     <span className="text-[#4F7A65] text-sm mt-0.5 flex-shrink-0">◆</span>
-                    <p className="text-sm text-[#374151]">{insight}</p>
+                    <p className="text-sm text-[#4B5563]">{insight}</p>
                   </div>
                 ))}
               </div>
@@ -345,7 +345,7 @@ export default async function ForecastPage() {
           {/* ── 7. How This Forecast Was Built ────────────────────────────── */}
           <div className="card">
             <p className="label mb-4">How This Forecast Was Built</p>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
               {[
                 {
                   label: "Data analyzed",
@@ -370,9 +370,9 @@ export default async function ForecastPage() {
                          forecast?.confidence === "medium" ? "text-[#C79A63]" : "text-[#C66A5A]",
                 },
               ].map((item) => (
-                <div key={item.label} className="bg-[#F7F8F5] rounded-xl p-3">
-                  <p className="text-[10px] text-[#9CA3AF] uppercase tracking-wide mb-1">{item.label}</p>
-                  <p className={`text-sm font-semibold ${item.color ?? "text-[#374151]"}`}>{item.value}</p>
+                <div key={item.label} className="bg-[#F7F8F5] rounded-xl p-4">
+                  <p className="label mb-2">{item.label}</p>
+                  <p className={`text-sm font-semibold ${item.color ?? "text-[#4B5563]"}`}>{item.value}</p>
                 </div>
               ))}
             </div>
@@ -383,7 +383,7 @@ export default async function ForecastPage() {
                 {forecast?.seasonallyAdjusted && " Seasonal patterns from 24+ months applied."}
               </p>
             </div>
-            <div className="text-xs text-[#9CA3AF] space-y-1 border-t border-[#E8EAE5] pt-3">
+            <div className="text-xs text-[#B8BFC8] space-y-2 border-t border-[#ECEEE9] pt-4 leading-relaxed">
               <p>· Recent months are weighted 3× more heavily than older months when calculating averages.</p>
               {forecast?.seasonallyAdjusted && (
                 <p>· Seasonal adjustment applied: months that are historically stronger or weaker are accounted for.</p>

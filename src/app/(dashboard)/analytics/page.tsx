@@ -105,7 +105,7 @@ export default async function AnalyticsPage() {
   const totalIncSrc   = incomeBySource.reduce((s, c) => s + Number(c._sum.amount ?? 0), 0);
 
   return (
-    <div className="space-y-5 md:space-y-6">
+    <div className="space-y-8 md:space-y-10">
 
       <div>
         <h1 className="text-2xl font-bold">Analytics</h1>
@@ -151,7 +151,7 @@ export default async function AnalyticsPage() {
                   ? `${formatCurrency(item.prev)} last yr`
                   : `${item.prev >= 0 ? "+" : "−"}${Math.abs(item.prev).toFixed(1)} mo last yr`;
                 return (
-                  <div key={item.label} className="bg-[#F7F8F5] rounded-xl p-3">
+                  <div key={item.label} className="bg-[#F7F8F5] rounded-xl p-4">
                     <p className="label mb-1">{item.label}</p>
                     <p className={`text-lg font-bold tabular-nums ${item.color} mb-1`}>{displayVal}</p>
                     <div className="flex items-center gap-2">
@@ -175,14 +175,14 @@ export default async function AnalyticsPage() {
               {incomeBySource.length === 0 ? (
                 <p className="text-[#6B7280] text-sm">No income data</p>
               ) : (
-                <div className="space-y-3">
+                <div className="space-y-4">
                   {incomeBySource.map((src) => {
                     const amount = Number(src._sum.amount ?? 0);
                     const pct = totalIncSrc > 0 ? Math.round((amount / totalIncSrc) * 100) : 0;
                     return (
                       <div key={src.category}>
                         <div className="flex justify-between text-sm mb-1">
-                          <span className="capitalize text-[#374151]">{src.category}</span>
+                          <span className="capitalize text-[#4B5563]">{src.category}</span>
                           <div className="flex gap-3">
                             <span className="text-[#9CA3AF]">{pct}%</span>
                             <span className="font-medium text-[#5B8A72]">{formatCurrency(amount)}</span>
@@ -204,7 +204,7 @@ export default async function AnalyticsPage() {
               {categoryBreakdown.length === 0 ? (
                 <p className="text-[#6B7280] text-sm">No expense data</p>
               ) : (
-                <div className="space-y-3">
+                <div className="space-y-4">
                   {categoryBreakdown.map((cat) => {
                     const amount = Number(cat._sum.amount ?? 0);
                     const pct = totalExpenses > 0 ? Math.round((amount / totalExpenses) * 100) : 0;
@@ -215,7 +215,7 @@ export default async function AnalyticsPage() {
                       <div key={cat.category}>
                         <div className="flex justify-between text-sm mb-1">
                           <div className="flex items-center gap-1.5">
-                            <span className="capitalize text-[#374151]">{cat.category}</span>
+                            <span className="capitalize text-[#4B5563]">{cat.category}</span>
                             {arrow && <span className={`text-xs font-bold ${arrowColor}`}>{arrow}</span>}
                           </div>
                           <div className="flex gap-3">

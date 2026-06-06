@@ -52,8 +52,8 @@ export default function Navbar() {
   return (
     <>
       {/* Top bar */}
-      <nav className="sticky top-0 z-50 border-b border-[#E8EAE5] bg-white">
-        <div className="max-w-6xl mx-auto px-4 flex items-center justify-between h-14">
+      <nav className="sticky top-0 z-50 border-b border-[#ECEEE9] bg-white">
+        <div className="max-w-5xl mx-auto px-5 sm:px-6 flex items-center justify-between h-16">
           <div className="flex items-center gap-6">
             <span className="font-semibold text-[#1F2937] text-sm tracking-tight">
               Freelancer OS

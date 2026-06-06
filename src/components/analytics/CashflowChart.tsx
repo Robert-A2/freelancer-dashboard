@@ -155,38 +155,38 @@ export default function CashflowChart({ data }: Props) {
 
       {active.length >= 3 && (
         <>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
-            <div className="bg-[#F7F8F5] rounded-xl p-3">
-              <p className="text-[10px] text-[#9CA3AF] uppercase tracking-wide mb-1">Best month</p>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-5">
+            <div className="bg-[#F7F8F5] rounded-xl p-4">
+              <p className="label mb-2">Best month</p>
               <p className="text-sm font-bold text-[#5B8A72]">{bestMonth ? formatCurrency(bestMonth.cashflow) : "—"}</p>
-              {bestMonth && <p className="text-[10px] text-[#9CA3AF] mt-0.5">{bestMonth.month}</p>}
+              {bestMonth && <p className="text-xs text-[#B8BFC8] mt-1">{bestMonth.month}</p>}
             </div>
-            <div className="bg-[#F7F8F5] rounded-xl p-3">
-              <p className="text-[10px] text-[#9CA3AF] uppercase tracking-wide mb-1">Worst month</p>
+            <div className="bg-[#F7F8F5] rounded-xl p-4">
+              <p className="label mb-2">Worst month</p>
               <p className={`text-sm font-bold ${worstMonth && worstMonth.cashflow < 0 ? "text-[#C66A5A]" : "text-[#9CA3AF]"}`}>
                 {worstMonth ? formatCurrency(worstMonth.cashflow) : "—"}
               </p>
-              {worstMonth && <p className="text-[10px] text-[#9CA3AF] mt-0.5">{worstMonth.month}</p>}
+              {worstMonth && <p className="text-xs text-[#B8BFC8] mt-1">{worstMonth.month}</p>}
             </div>
-            <div className="bg-[#F7F8F5] rounded-xl p-3">
-              <p className="text-[10px] text-[#9CA3AF] uppercase tracking-wide mb-1">Monthly average</p>
+            <div className="bg-[#F7F8F5] rounded-xl p-4">
+              <p className="label mb-2">Monthly average</p>
               <p className={`text-sm font-bold ${avgCashflow >= 0 ? "text-[#4F7A65]" : "text-[#C66A5A]"}`}>
                 {formatCurrency(avgCashflow)}
               </p>
             </div>
-            <div className="bg-[#F7F8F5] rounded-xl p-3">
-              <p className="text-[10px] text-[#9CA3AF] uppercase tracking-wide mb-1">Positive ratio</p>
+            <div className="bg-[#F7F8F5] rounded-xl p-4">
+              <p className="label mb-2">Positive ratio</p>
               <p className={`text-sm font-bold ${posRatio >= 70 ? "text-[#5B8A72]" : posRatio >= 50 ? "text-[#C79A63]" : "text-[#C66A5A]"}`}>
                 {posRatio}%
               </p>
-              <p className="text-[10px] text-[#9CA3AF] mt-0.5">{positiveMonths} of {active.length} months</p>
+              <p className="text-xs text-[#B8BFC8] mt-1">{positiveMonths} of {active.length} months</p>
             </div>
           </div>
 
           <div className="mt-4 bg-[#4F7A650A] border border-[#4F7A6518] rounded-xl overflow-hidden">
             <div className="px-4 py-3 border-b border-[#4F7A6515]">
               <p className="text-[10px] font-semibold text-[#4F7A65] uppercase tracking-widest mb-1.5">What happened?</p>
-              <p className="text-sm text-[#374151] leading-relaxed">{whatHappenedText}</p>
+              <p className="text-sm text-[#4B5563] leading-relaxed">{whatHappenedText}</p>
               {stabilityText && (
                 <p className={`text-sm mt-1.5 ${stabilityColor}`}>{stabilityText}</p>
               )}
@@ -194,13 +194,13 @@ export default function CashflowChart({ data }: Props) {
             {whyText && (
               <div className="px-4 py-3 border-b border-[#4F7A6515]">
                 <p className="text-[10px] font-semibold text-[#4F7A65] uppercase tracking-widest mb-1.5">Why did it happen?</p>
-                <p className="text-sm text-[#374151] leading-relaxed">{whyText}</p>
+                <p className="text-sm text-[#4B5563] leading-relaxed">{whyText}</p>
               </div>
             )}
             {actionText && (
               <div className="px-4 py-3">
                 <p className="text-[10px] font-semibold text-[#4F7A65] uppercase tracking-widest mb-1.5">What should I do next?</p>
-                <p className="text-sm text-[#374151] leading-relaxed">{actionText}</p>
+                <p className="text-sm text-[#4B5563] leading-relaxed">{actionText}</p>
               </div>
             )}
           </div>
