@@ -88,7 +88,7 @@ export default function ClientInsights({ data }: Props) {
       <div className="card">
         <div className="mb-4">
           <p className="label mb-1">Top clients by revenue</p>
-          <p className="text-xs text-[#9CA3AF]">Ranked by total revenue, all time</p>
+          <p className="text-[13px] text-[#9CA3AF]">Ranked by total revenue, all time</p>
         </div>
 
         <div className="space-y-3">
@@ -101,10 +101,10 @@ export default function ClientInsights({ data }: Props) {
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <p className="text-sm font-medium text-[#1F2937] truncate">{c.name}</p>
                       {c.isPaymentProcessor && (
-                        <span className="text-[10px] text-[#9CA3AF] bg-[#F3F4F0] px-1.5 py-0.5 rounded flex-shrink-0">processor</span>
+                        <span className="text-xs text-[#9CA3AF] bg-[#F3F4F0] px-1.5 py-0.5 rounded flex-shrink-0">processor</span>
                       )}
                       {c.isNew && (
-                        <span className="text-[10px] text-[#5B8A72] bg-[#5B8A7215] px-1.5 py-0.5 rounded flex-shrink-0">new</span>
+                        <span className="text-xs text-[#5B8A72] bg-[#5B8A7215] px-1.5 py-0.5 rounded flex-shrink-0">new</span>
                       )}
                     </div>
                     <p className="text-xs text-[#9CA3AF]">
@@ -130,7 +130,7 @@ export default function ClientInsights({ data }: Props) {
         {/* Client growth — YoY */}
         <div className="card">
           <p className="label mb-1">Client growth</p>
-          <p className="text-xs text-[#9CA3AF] mb-4">Year-over-year revenue change by client</p>
+          <p className="text-[13px] text-[#9CA3AF] mb-4">Year-over-year revenue change by client</p>
           {nonProc.length === 0 ? (
             <p className="text-sm text-[#9CA3AF]">No direct client data. Income from payment processors only.</p>
           ) : (
@@ -153,7 +153,7 @@ export default function ClientInsights({ data }: Props) {
         {/* Inactive clients */}
         <div className="card">
           <p className="label mb-1">Client activity alerts</p>
-          <p className="text-xs text-[#9CA3AF] mb-4">Clients who paid regularly but have gone quiet</p>
+          <p className="text-[13px] text-[#9CA3AF] mb-4">Clients who paid regularly but have gone quiet</p>
           {inactiveClients.length === 0 ? (
             <div className="flex items-start gap-2.5 py-2">
               <span className="text-[#5B8A72] text-lg flex-shrink-0">✓</span>
@@ -173,7 +173,7 @@ export default function ClientInsights({ data }: Props) {
                     <p className="text-xs font-semibold text-[#C79A63]">
                       {daysLabel(c.daysSinceLastPayment)}
                     </p>
-                    <p className="text-[10px] text-[#B8BFC8]">last payment</p>
+                    <p className="text-xs text-[#B8BFC8]">last payment</p>
                   </div>
                 </div>
               ))}
@@ -191,7 +191,7 @@ export default function ClientInsights({ data }: Props) {
         {/* New clients this year */}
         <div className="card">
           <p className="label mb-1">New client acquisition</p>
-          <p className="text-xs text-[#9CA3AF] mb-4">First-time clients who paid this year</p>
+          <p className="text-[13px] text-[#9CA3AF] mb-4">First-time clients who paid this year</p>
           {newClientsThisYear.length === 0 ? (
             <p className="text-sm text-[#9CA3AF]">No new direct clients detected this year.</p>
           ) : (
@@ -235,7 +235,7 @@ export default function ClientInsights({ data }: Props) {
                   { label: "Revenue share",    value: `${topClient.revenueShare}%`,              color: topClient.revenueShare >= 50 ? "text-[#C79A63]" : "text-[#9CA3AF]" },
                 ].map(m => (
                   <div key={m.label} className="bg-[#F7F8F5] rounded-xl p-2.5">
-                    <p className="text-[10px] text-[#B8BFC8] uppercase tracking-wide mb-0.5">{m.label}</p>
+                    <p className="text-xs text-[#B8BFC8] uppercase tracking-wide mb-0.5">{m.label}</p>
                     <p className={`text-sm font-bold ${m.color}`}>{m.value}</p>
                   </div>
                 ))}

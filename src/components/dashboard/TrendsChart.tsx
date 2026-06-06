@@ -73,8 +73,8 @@ export default function TrendsChart({ data, trajectoryInsight, trajectoryDetails
       <ResponsiveContainer width="100%" height={260}>
         <LineChart data={sliced} margin={{ top: 5, right: 5, left: 0, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#E8EAE5" />
-          <XAxis dataKey="month" stroke="#9CA3AF" tick={{ fontSize: 11, fill: "#9CA3AF" }} />
-          <YAxis stroke="#9CA3AF" tick={{ fontSize: 11, fill: "#9CA3AF" }} tickFormatter={(v) => `€${(v/1000).toFixed(0)}k`} width={48} />
+          <XAxis dataKey="month" stroke="#9CA3AF" tick={{ fontSize: 12, fill: "#9CA3AF" }} />
+          <YAxis stroke="#9CA3AF" tick={{ fontSize: 12, fill: "#9CA3AF" }} tickFormatter={(v) => `€${(v/1000).toFixed(0)}k`} width={48} />
           <Tooltip
             contentStyle={TOOLTIP_STYLE}
             formatter={(value: number) => formatCurrency(value)}

@@ -202,7 +202,7 @@ export default async function ForecastPage() {
               <p className="label mb-3">Cashflow Risk</p>
               <p className={`text-2xl font-bold mb-2 ${risk.text}`}>{risk.label}</p>
               <p className="text-xs text-[#6B7280] leading-relaxed">{risk.desc}</p>
-              <p className="text-[10px] text-[#9CA3AF] mt-2">{positiveCount} of {activeMonths.length} months positive</p>
+              <p className="text-xs text-[#9CA3AF] mt-2">{positiveCount} of {activeMonths.length} months positive</p>
             </div>
 
             {/* Business Direction */}
@@ -231,7 +231,7 @@ export default async function ForecastPage() {
             <div className="flex items-start justify-between flex-wrap gap-2 mb-4">
               <div>
                 <p className="label mb-1">Year-End Projection</p>
-                <p className="text-xs text-[#9CA3AF]">
+                <p className="text-[13px] text-[#9CA3AF]">
                   If current monthly averages continue for 12 months
                 </p>
               </div>
@@ -252,9 +252,9 @@ export default async function ForecastPage() {
                 { label: "Projected Runway",   value: `${projRunwayMonths >= 0 ? "+" : "−"}${Math.abs(projRunwayMonths).toFixed(1)} mo`, sub: projRunwayMonths >= 0 ? "months buffer per month" : "deficit per month", color: projRunwayMonths >= 0.5 ? "text-[#5B8A72]" : projRunwayMonths >= 0 ? "text-[#C79A63]" : "text-[#C66A5A]", border: "border-[#E8EAE5]" },
               ].map((item) => (
                 <div key={item.label} className={`bg-[#F7F8F5] rounded-xl p-3 border ${item.border}`}>
-                  <p className="text-[10px] text-[#9CA3AF] uppercase tracking-wide mb-1">{item.label}</p>
+                  <p className="text-xs text-[#9CA3AF] uppercase tracking-wide mb-1">{item.label}</p>
                   <p className={`text-xl font-bold tabular-nums ${item.color}`}>{item.value}</p>
-                  {item.sub && <p className="text-[10px] text-[#9CA3AF] mt-1">{item.sub}</p>}
+                  {item.sub && <p className="text-xs text-[#9CA3AF] mt-1">{item.sub}</p>}
                 </div>
               ))}
             </div>

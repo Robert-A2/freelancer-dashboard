@@ -72,7 +72,7 @@ export default function SummaryCards({
             {formatCurrency(c.totalIncome)}
           </p>
           <div className="flex items-center gap-2 flex-wrap">
-            <p className="text-xs text-[#B8BFC8]">{spendRate}% spend ratio</p>
+            <p className="text-[13px] text-[#B8BFC8]">{spendRate}% spend ratio</p>
             {previous && <Chip value={changePct(c.totalIncome, p.totalIncome)} />}
           </div>
         </div>
@@ -84,7 +84,7 @@ export default function SummaryCards({
             {formatCurrency(c.totalExpenses)}
           </p>
           <div className="flex items-center gap-2 flex-wrap">
-            <p className="text-xs text-[#B8BFC8]">{spendRate}% of income</p>
+            <p className="text-[13px] text-[#B8BFC8]">{spendRate}% of income</p>
             {previous && <Chip value={changePct(c.totalExpenses, p.totalExpenses)} invert />}
           </div>
         </div>
@@ -96,7 +96,7 @@ export default function SummaryCards({
             {formatCurrency(currCashflow)}
           </p>
           <div className="flex items-center gap-2 flex-wrap">
-            <p className="text-xs text-[#B8BFC8]">
+            <p className="text-[13px] text-[#B8BFC8]">
               {currCashflow >= 0 ? "Income above expenses" : "Expenses exceed income"}
             </p>
             {previous && <Chip value={changePct(currCashflow, prevCashflow)} />}
@@ -110,7 +110,7 @@ export default function SummaryCards({
             {fmtRunway(runway)}
           </p>
           <div className="flex items-center gap-2 flex-wrap">
-            <p className="text-xs text-[#B8BFC8]">
+            <p className="text-[13px] text-[#B8BFC8]">
               {runway >= 0 ? "months buffer added" : "months consumed"}
             </p>
             {previous && <Chip value={runwayChange} />}
@@ -123,7 +123,7 @@ export default function SummaryCards({
           <p className={`text-2xl md:text-3xl font-bold leading-none ${risk.color}`}>
             {risk.label}
           </p>
-          <p className="text-xs text-[#B8BFC8]">
+          <p className="text-[13px] text-[#B8BFC8]">
             {riskTotalMonths > 0
               ? `${riskPositiveMonths} of ${riskTotalMonths} months positive`
               : "No history yet"}

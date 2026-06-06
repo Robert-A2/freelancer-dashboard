@@ -156,7 +156,7 @@ export default async function AnalyticsPage() {
                     <p className={`text-lg font-bold tabular-nums ${item.color} mb-1`}>{displayVal}</p>
                     <div className="flex items-center gap-2">
                       {change !== null && <ChangeChip value={change} invert={item.invert} />}
-                      {item.prev !== 0 && <span className="text-[10px] text-[#9CA3AF]">{prevDisplayVal}</span>}
+                      {item.prev !== 0 && <span className="text-xs text-[#9CA3AF]">{prevDisplayVal}</span>}
                     </div>
                   </div>
                 );

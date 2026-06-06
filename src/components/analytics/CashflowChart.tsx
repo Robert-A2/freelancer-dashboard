@@ -137,8 +137,8 @@ export default function CashflowChart({ data }: Props) {
       <ResponsiveContainer width="100%" height={220}>
         <BarChart data={sliced} margin={{ top: 5, right: 5, left: 0, bottom: 5 }} barSize={10}>
           <CartesianGrid strokeDasharray="3 3" stroke="#E8EAE5" vertical={false} />
-          <XAxis dataKey="month" stroke="#9CA3AF" tick={{ fontSize: 11, fill: "#9CA3AF" }} />
-          <YAxis stroke="#9CA3AF" tick={{ fontSize: 11, fill: "#9CA3AF" }} tickFormatter={yFmt} width={52} />
+          <XAxis dataKey="month" stroke="#9CA3AF" tick={{ fontSize: 12, fill: "#9CA3AF" }} />
+          <YAxis stroke="#9CA3AF" tick={{ fontSize: 12, fill: "#9CA3AF" }} tickFormatter={yFmt} width={52} />
           <ReferenceLine y={0} stroke="#D1D5DB" strokeWidth={1.5} />
           <Tooltip
             contentStyle={TOOLTIP_STYLE}
@@ -185,7 +185,7 @@ export default function CashflowChart({ data }: Props) {
 
           <div className="mt-4 bg-[#4F7A650A] border border-[#4F7A6518] rounded-xl overflow-hidden">
             <div className="px-4 py-3 border-b border-[#4F7A6515]">
-              <p className="text-[10px] font-semibold text-[#4F7A65] uppercase tracking-widest mb-1.5">What happened?</p>
+              <p className="text-[11px] font-semibold text-[#4F7A65] uppercase tracking-widest mb-1.5">What happened?</p>
               <p className="text-sm text-[#4B5563] leading-relaxed">{whatHappenedText}</p>
               {stabilityText && (
                 <p className={`text-sm mt-1.5 ${stabilityColor}`}>{stabilityText}</p>
@@ -193,13 +193,13 @@ export default function CashflowChart({ data }: Props) {
             </div>
             {whyText && (
               <div className="px-4 py-3 border-b border-[#4F7A6515]">
-                <p className="text-[10px] font-semibold text-[#4F7A65] uppercase tracking-widest mb-1.5">Why did it happen?</p>
+                <p className="text-[11px] font-semibold text-[#4F7A65] uppercase tracking-widest mb-1.5">Why did it happen?</p>
                 <p className="text-sm text-[#4B5563] leading-relaxed">{whyText}</p>
               </div>
             )}
             {actionText && (
               <div className="px-4 py-3">
-                <p className="text-[10px] font-semibold text-[#4F7A65] uppercase tracking-widest mb-1.5">What should I do next?</p>
+                <p className="text-[11px] font-semibold text-[#4F7A65] uppercase tracking-widest mb-1.5">What should I do next?</p>
                 <p className="text-sm text-[#4B5563] leading-relaxed">{actionText}</p>
               </div>
             )}

@@ -100,7 +100,7 @@ export default function Navbar() {
                   <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-[#4F7A65] rounded-full" />
                 )}
                 <Icon />
-                <span className="text-[10px] font-medium leading-none">{mobileLabel}</span>
+                <span className="text-[11px] font-medium leading-none">{mobileLabel}</span>
               </Link>
             );
           })}

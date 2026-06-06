@@ -44,7 +44,7 @@
 
   /* Label — very quiet. Signals category without demanding attention */
   .label {
-    @apply text-[11px] font-medium text-[#B8BFC8] uppercase tracking-widest;
+    @apply text-[12px] font-medium text-[#B8BFC8] uppercase tracking-widest;
   }
 
   .btn-primary {

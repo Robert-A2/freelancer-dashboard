@@ -282,7 +282,7 @@ export default function CsvUploader() {
               )}
             </div>
             {result.typeBreakdown.transfer > 0 && (
-              <p className="text-[10px] text-[#9CA3AF] pt-1">
+              <p className="text-xs text-[#9CA3AF] pt-1">
                 Internal transfers (between your own accounts) are excluded from income and expense totals.
               </p>
             )}

@@ -85,7 +85,7 @@ export default function RecategorizeButton({ transactionId, currentCategory, des
 
       {step === "picking" && (
         <div className="absolute left-0 top-full mt-1 z-50 bg-white border border-[#E8EAE5] rounded-xl shadow-lg shadow-black/5 w-52 overflow-hidden">
-          <p className="px-3 py-2 text-[10px] text-[#9CA3AF] border-b border-[#E8EAE5] truncate">
+          <p className="px-3 py-2 text-xs text-[#9CA3AF] border-b border-[#E8EAE5] truncate">
             Change: &quot;{description.slice(0, 28)}{description.length > 28 ? "…" : ""}&quot;
           </p>
           <div className="max-h-56 overflow-y-auto">
@@ -111,7 +111,7 @@ export default function RecategorizeButton({ transactionId, currentCategory, des
           <p className="text-xs text-[#1F2937] font-medium">
             Move to <span className="text-[#4F7A65] capitalize">{pending}</span>
           </p>
-          <p className="text-[10px] text-[#6B7280] leading-relaxed">
+          <p className="text-xs text-[#6B7280] leading-relaxed">
             Apply to just this transaction, or to every transaction with the same description?
           </p>
           <div className="flex flex-col gap-1.5 pt-1">
@@ -129,7 +129,7 @@ export default function RecategorizeButton({ transactionId, currentCategory, des
             </button>
             <button
               onClick={reset}
-              className="text-[10px] text-[#9CA3AF] hover:text-[#6B7280] text-center py-1 transition-colors"
+              className="text-xs text-[#9CA3AF] hover:text-[#6B7280] text-center py-1 transition-colors"
             >
               Cancel
             </button>
