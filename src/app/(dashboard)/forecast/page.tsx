@@ -5,7 +5,7 @@ import {
   getDashboardSummary, getCategoryInsights, getIncomeConcentration,
   getDataCoverage,
 } from "@/lib/analytics-engine";
-import { getLatestForecast } from "@/lib/forecast-engine";
+import { generateForecast } from "@/lib/forecast-engine";
 import { generateDashboardIntelligence } from "@/lib/intelligence-engine";
 import { prisma } from "@/lib/prisma";
 import TrendsChart from "@/components/dashboard/TrendsChart";
@@ -47,7 +47,7 @@ export default async function ForecastPage() {
 
   const [forecast, chartData, monthCount, summary, comparison, categoryInsights, concentration, coverage] =
     await Promise.all([
-      getLatestForecast(user.id),
+      generateForecast(user.id),
       getHistoricalData(user.id, 999),
       prisma.monthlyAnalytics.count({ where: { userId: user.id } }),
       getDashboardSummary(user.id),
@@ -345,7 +345,7 @@ export default async function ForecastPage() {
           {/* ── 7. How This Forecast Was Built ────────────────────────────── */}
           <div className="card">
             <p className="label mb-4">How This Forecast Was Built</p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
               {[
                 {
                   label: "Data analyzed",
@@ -375,6 +375,13 @@ export default async function ForecastPage() {
                   <p className={`text-sm font-semibold ${item.color ?? "text-[#CBD5E1]"}`}>{item.value}</p>
                 </div>
               ))}
+            </div>
+            <div className="flex items-center gap-2 mb-3 px-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#22C55E] flex-shrink-0" />
+              <p className="text-xs text-[#475569]">
+                Forecast recalculated now using all available data.
+                {forecast?.seasonallyAdjusted && " Seasonal patterns from 24+ months applied."}
+              </p>
             </div>
             <div className="text-xs text-[#475569] space-y-1 border-t border-[#1E293B] pt-3">
               <p>· Recent months are weighted 3× more heavily than older months when calculating averages.</p>

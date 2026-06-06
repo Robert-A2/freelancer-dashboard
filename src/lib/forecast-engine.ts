@@ -10,6 +10,7 @@ export interface ForecastResult {
   basedOnMonths: number;
   confidence: "low" | "medium" | "high";
   seasonallyAdjusted: boolean;
+  generatedAt: Date;
 }
 
 // Weighted average — most recent 3 months: weight 3, next 6: weight 2, older: weight 1.
@@ -121,7 +122,7 @@ export async function generateForecast(userId: string): Promise<ForecastResult |
     await prisma.forecast.deleteMany({ where: { id: { in: stale.map((f) => f.id) } } });
   }
 
-  return { projectedIncome, projectedExpenses, projectedSavings, projectedCashflow, forecastPeriod, basedOnMonths: n, confidence, seasonallyAdjusted };
+  return { projectedIncome, projectedExpenses, projectedSavings, projectedCashflow, forecastPeriod, basedOnMonths: n, confidence, seasonallyAdjusted, generatedAt: new Date() };
 }
 
 export async function getLatestForecast(userId: string): Promise<ForecastResult | null> {
@@ -145,5 +146,6 @@ export async function getLatestForecast(userId: string): Promise<ForecastResult 
     basedOnMonths:     monthsCount,
     confidence,
     seasonallyAdjusted: monthsCount >= 24,
+    generatedAt: forecast.generatedAt,
   };
 }

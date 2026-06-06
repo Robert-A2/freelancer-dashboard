@@ -286,10 +286,8 @@ export function generateDashboardIntelligence(
   const active = history.filter((h) => h.income > 0 || h.expenses > 0);
   const allIncomes = active.map((h) => h.income);
   const allExpenses = active.map((h) => h.expenses);
-  const allSavings = active.map((h) => h.savings);
   const avgIncome = avg(allIncomes);
   const avgExpenses = avg(allExpenses);
-  const avgSavings = avg(allSavings);
 
   // Detect income type — shapes language throughout the intelligence layer
   const incomeType = detectIncomeType(recentTxs, active);
@@ -310,7 +308,7 @@ export function generateDashboardIntelligence(
   const expDown = changes && changes.expenses < -2;
   const incDown = changes && changes.income < -5;
   const expUp = changes && changes.expenses > 5;
-  const cashflowOk = current.netCashflow >= 0;
+  const cashflowOk = (current.totalIncome - current.totalExpenses) >= 0;
 
   let snapshotSummary: string;
 
@@ -685,7 +683,7 @@ export function generateDashboardIntelligence(
 
     // ── Why cashflow is negative ───────────────────────────────────────────
 
-    if (forecast.projectedCashflow < 0) {
+    if (forecast.projectedIncome - forecast.projectedExpenses < 0) {
       const recentExpAvg = avg(recent3.map((h) => h.expenses));
 
       // Top categories by actual spending this month, then by recent average
@@ -728,16 +726,10 @@ export function generateDashboardIntelligence(
       );
     }
 
-    if (forecast.projectedCashflow < 0) {
-      const deficit = Math.abs(forecast.projectedCashflow);
+    if (forecast.projectedIncome - forecast.projectedExpenses < 0) {
+      const deficit = Math.abs(forecast.projectedIncome - forecast.projectedExpenses);
       forecastImprovements.push(
         `To restore positive cashflow, either reduce expenses by ${eur(deficit)}/month or increase income by the same amount.`
-      );
-    }
-
-    if (avgSavings > 0) {
-      forecastImprovements.push(
-        `Maintaining current savings levels (avg ${eur(avgSavings)}/month) would result in approximately ${eur(avgSavings * 12)} saved over the next 12 months.`
       );
     }
 
@@ -752,14 +744,17 @@ export function generateDashboardIntelligence(
       }
     }
 
-    if (forecast.projectedCashflow >= 0 && forecastImprovements.length < 2) {
-      const savRate = forecast.projectedIncome > 0
-        ? Math.round((forecast.projectedSavings / forecast.projectedIncome) * 100)
+    if (forecast.projectedIncome - forecast.projectedExpenses >= 0 && forecastImprovements.length < 2) {
+      const cashflowMargin = forecast.projectedIncome > 0
+        ? Math.round(((forecast.projectedIncome - forecast.projectedExpenses) / forecast.projectedIncome) * 100)
         : 0;
-      if (savRate < 15) {
-        const gap = eur((forecast.projectedIncome * 0.15 - forecast.projectedSavings) * 12);
+      if (cashflowMargin < 20) {
         forecastImprovements.push(
-          `Current savings rate is ${savRate}% of projected income. Increasing to 15% would add ${gap} to annual savings.`
+          `Cashflow margin is ${cashflowMargin}% of projected income. Reducing variable expenses will strengthen your buffer during slower months.`
+        );
+      } else {
+        forecastImprovements.push(
+          `Cashflow margin is ${cashflowMargin}% of projected income — a healthy buffer. Keep fixed costs from growing faster than income.`
         );
       }
     }
@@ -769,23 +764,21 @@ export function generateDashboardIntelligence(
       (c) => c.category === "subscriptions" || c.category === "software" || c.category === "ai tools"
     );
 
-    if (forecast.projectedCashflow < 0) {
-      const deficit = Math.abs(forecast.projectedCashflow);
+    if (forecast.projectedIncome - forecast.projectedExpenses < 0) {
+      const deficit = Math.abs(forecast.projectedIncome - forecast.projectedExpenses);
       biggestOpportunity = `Reducing monthly expenses by ${eur(deficit)} would restore positive cashflow, an improvement of ${eur(deficit * 12)} per year.`;
     } else if (oppSubCat && oppSubCat.currentMonthTotal > 100) {
       biggestOpportunity = `Reviewing ${inlineCat(oppSubCat.category)} spending (${eur(oppSubCat.currentMonthTotal)}/month) could free up ${eur(oppSubCat.currentMonthTotal * 12)} annually.`;
     } else {
-      const savRate2 = forecast.projectedIncome > 0
-        ? forecast.projectedSavings / forecast.projectedIncome
+      const cashflowMarginOpp = forecast.projectedIncome > 0
+        ? Math.round(((forecast.projectedIncome - forecast.projectedExpenses) / forecast.projectedIncome) * 100)
         : 0;
-      if (savRate2 < 0.15 && forecast.projectedIncome > 0) {
-        const gap = forecast.projectedIncome * 0.15 - forecast.projectedSavings;
-        if (gap > 0) {
-          biggestOpportunity = `Increasing monthly savings by ${eur(gap)} would bring your savings rate to 15%, building ${eur(gap * 12)} more per year.`;
-        }
+      if (cashflowMarginOpp < 15 && forecast.projectedIncome > 0) {
+        const surplus = Math.round(forecast.projectedIncome * 0.15 - (forecast.projectedIncome - forecast.projectedExpenses));
+        biggestOpportunity = `Reducing monthly expenses by ${eur(surplus)} would lift your cashflow margin to 15%, adding ${eur(surplus * 12)} in annual surplus.`;
       }
       if (!biggestOpportunity) {
-        biggestOpportunity = `Maintaining current income while reducing variable expenses would meaningfully improve cashflow over the next 12 months.`;
+        biggestOpportunity = `Maintaining consistent positive cashflow and keeping fixed costs controlled builds long-term financial resilience.`;
       }
     }
   }
@@ -797,15 +790,10 @@ export function generateDashboardIntelligence(
   if (yearlySnapshots.length >= 2) {
     const bestIncYear = yearlySnapshots.reduce((b, y) => (y.income > b.income ? y : b));
     const highExpYear = yearlySnapshots.reduce((b, y) => (y.expenses > b.expenses ? y : b));
-    const bestSavYear = yearlySnapshots.reduce((b, y) => (y.savings > b.savings ? y : b));
     const firstYear = yearlySnapshots[0];
     const lastYear = yearlySnapshots[yearlySnapshots.length - 1];
 
     historicalHighlights.push(`Best income year: ${bestIncYear.year}, ${eur(bestIncYear.income)} in total income.`);
-
-    if (bestSavYear.savings > 0) {
-      historicalHighlights.push(`Best savings year: ${bestSavYear.year}, ${eur(bestSavYear.savings)} saved.`);
-    }
 
     if (yearlySnapshots.length >= 3 && firstYear.year !== lastYear.year) {
       // Only use firstYear as a comparison base if it has at least 6 months of data.
@@ -831,13 +819,13 @@ export function generateDashboardIntelligence(
       }
     }
 
-    // Overall savings rate
+    // Overall cashflow margin
     const totalInc = yearlySnapshots.reduce((s, y) => s + y.income, 0);
-    const totalSav = yearlySnapshots.reduce((s, y) => s + y.savings, 0);
-    if (totalInc > 0 && totalSav > 0) {
-      const rate = Math.round((totalSav / totalInc) * 100);
+    const totalExp = yearlySnapshots.reduce((s, y) => s + y.expenses, 0);
+    if (totalInc > 0) {
+      const margin = Math.round(((totalInc - totalExp) / totalInc) * 100);
       historicalHighlights.push(
-        `Overall savings rate from ${firstYear.year} to ${lastYear.year}: ${rate}% of income${rate >= 20 ? ", excellent." : rate >= 10 ? ", healthy." : ". Consider increasing."}`
+        `Overall cashflow margin from ${firstYear.year} to ${lastYear.year}: ${margin}% of income${margin >= 20 ? " — strong." : margin >= 10 ? " — healthy." : margin >= 0 ? " — tight. Watch expense growth." : " — negative overall. Expenses exceeded income across this period."}`
       );
     }
 
@@ -853,8 +841,11 @@ export function generateDashboardIntelligence(
       `Average monthly income from ${monthLabel(firstMonth.year, firstMonth.monthNum, "short")} to ${monthLabel(lastMonth.year, lastMonth.monthNum, "short")}: ${eur(avgIncome)}.`
     );
     historicalHighlights.push(`Average monthly expenses across this period: ${eur(avgExpenses)}.`);
-    if (avgIncome > 0 && avgSavings > 0) {
-      historicalHighlights.push(`Average savings rate: ${Math.round((avgSavings / avgIncome) * 100)}% of income.`);
+    if (avgIncome > 0 && avgExpenses > 0) {
+      const avgCfMargin = Math.round(((avgIncome - avgExpenses) / avgIncome) * 100);
+      historicalHighlights.push(
+        `Average cashflow margin: ${avgCfMargin}% of income — ${avgCfMargin >= 20 ? "strong." : avgCfMargin >= 10 ? "healthy." : avgCfMargin >= 0 ? "tight." : "negative (expenses exceeded income on average)."}`
+      );
     }
   }
 
@@ -868,33 +859,25 @@ export function generateDashboardIntelligence(
     }
   }
 
-  // ── SAVINGS GAP DETECTION ─────────────────────────────────────────────────
-  // Months where income was positive but no savings were made.
-  // A run of 3+ such months indicates the user is earning but not building a buffer.
+  // ── CASHFLOW CONSISTENCY CHECK ────────────────────────────────────────────
   {
-    const savingsGap = active.filter((h) => h.income > 0 && h.savings === 0);
-    const recentSavingsGap = savingsGap.filter((h) => {
-      const d = new Date(h.year, h.monthNum - 1);
-      const sixMonthsAgo = new Date();
-      sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
-      return d >= sixMonthsAgo;
-    });
-
-    if (recentSavingsGap.length >= 3) {
+    const recentActive6 = active.slice(-6);
+    const recentNegCount = recentActive6.filter(h => h.income - h.expenses < 0).length;
+    if (recentNegCount >= 3 && active.length >= 6) {
       historicalHighlights.push(
-        `No savings recorded in ${recentSavingsGap.length} of the last 6 months. Setting up automatic monthly transfers. Even small ones build a buffer against slow periods.`
+        `Cashflow was negative in ${recentNegCount} of the last 6 months. Building a 2–3 month expense reserve would protect against future income gaps.`
       );
     }
 
-    // Also flag if the savings rate dropped significantly year-over-year
+    // Flag if cashflow margin deteriorated year-over-year
     if (yearlySnapshots.length >= 2) {
       const lastY = yearlySnapshots[yearlySnapshots.length - 1];
       const prevY = yearlySnapshots[yearlySnapshots.length - 2];
-      const lastRate = lastY.income > 0 ? lastY.savings / lastY.income : 0;
-      const prevRate = prevY.income > 0 ? prevY.savings / prevY.income : 0;
-      if (prevRate > 0.05 && lastRate < prevRate * 0.5) {
+      const lastMargin = lastY.income > 0 ? (lastY.income - lastY.expenses) / lastY.income : 0;
+      const prevMargin = prevY.income > 0 ? (prevY.income - prevY.expenses) / prevY.income : 0;
+      if (prevMargin > 0.1 && lastMargin < prevMargin * 0.5) {
         historicalHighlights.push(
-          `Savings rate dropped from ${Math.round(prevRate * 100)}% in ${prevY.year} to ${Math.round(lastRate * 100)}% in ${lastY.year}. Reviewing fixed monthly savings could help rebuild the habit.`
+          `Cashflow margin fell from ${Math.round(prevMargin * 100)}% in ${prevY.year} to ${Math.round(lastMargin * 100)}% in ${lastY.year}. Expenses are growing faster than income.`
         );
       }
     }
