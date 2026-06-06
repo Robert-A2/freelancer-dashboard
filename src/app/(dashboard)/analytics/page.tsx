@@ -1,8 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import {
-  getHistoricalData, getCategoryInsights, getClientInsights,
+  getHistoricalData, getCategoryInsights, getClientInsights, getDataCoverage,
 } from "@/lib/analytics-engine";
+import DataCoverageBar from "@/components/dashboard/DataCoverage";
 import { prisma } from "@/lib/prisma";
 import { formatCurrency } from "@/utils/finance";
 import CashflowChart from "@/components/analytics/CashflowChart";
@@ -32,18 +33,11 @@ export default async function AnalyticsPage() {
 
   // Anchor YTD to the user's most recent data year, not the current calendar year.
   // A user with data ending Dec 2024 visiting in 2026 would otherwise see €0 for both years.
-  const [latestDataRecord, earliestDataRecord] = await Promise.all([
-    prisma.monthlyAnalytics.findFirst({
-      where: { userId: user.id },
-      orderBy: [{ year: "desc" }, { month: "desc" }],
-      select: { year: true, month: true },
-    }),
-    prisma.monthlyAnalytics.findFirst({
-      where: { userId: user.id },
-      orderBy: [{ year: "asc" }, { month: "asc" }],
-      select: { year: true, month: true },
-    }),
-  ]);
+  const latestDataRecord = await prisma.monthlyAnalytics.findFirst({
+    where: { userId: user.id },
+    orderBy: [{ year: "desc" }, { month: "desc" }],
+    select: { year: true, month: true },
+  });
 
   const now          = new Date();
   const dataYear     = latestDataRecord?.year  ?? now.getFullYear();
@@ -56,7 +50,7 @@ export default async function AnalyticsPage() {
   // Last 12 months of the user's actual data (for income sources)
   const incSince = new Date(dataYear - 1, latestDataRecord ? latestDataRecord.month - 1 : 0, 1);
 
-  const [chartData, categoryInsights, categoryBreakdown, incomeBySource, ytdThis, ytdPrev, clientInsights] =
+  const [chartData, categoryInsights, categoryBreakdown, incomeBySource, ytdThis, ytdPrev, clientInsights, coverage] =
     await Promise.all([
       getHistoricalData(user.id, 999),
       getCategoryInsights(user.id),
@@ -83,6 +77,7 @@ export default async function AnalyticsPage() {
         _sum: { totalIncome: true, totalExpenses: true, totalSavings: true, netCashflow: true },
       }),
       getClientInsights(user.id),
+      getDataCoverage(user.id),
     ]);
 
   const hasData = chartData.some(d => d.income > 0 || d.expenses > 0);
@@ -104,15 +99,10 @@ export default async function AnalyticsPage() {
 
       <div>
         <h1 className="text-2xl font-bold">Analytics</h1>
-        <p className="text-[#94A3B8] text-sm mt-0.5">
-          Deep dive into your financial patterns
-          {earliestDataRecord && latestDataRecord && (
-            <span className="ml-2 text-[#475569]">
-              · Data: {earliestDataRecord.year} – {latestDataRecord.year} · Use the chart&apos;s <strong className="text-[#64748B]">ALL</strong> button to see all years
-            </span>
-          )}
-        </p>
+        <p className="text-[#94A3B8] text-sm mt-0.5">Deep dive into your financial patterns</p>
       </div>
+
+      {coverage.count > 0 && <DataCoverageBar coverage={coverage} />}
 
       {!hasData && (
         <div className="card text-center py-16">

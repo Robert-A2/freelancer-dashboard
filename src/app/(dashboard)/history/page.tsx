@@ -1,10 +1,12 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { getDataCoverage } from "@/lib/analytics-engine";
 import { formatCurrency } from "@/utils/finance";
 import { Suspense } from "react";
 import HistoryFilters from "@/components/history/HistoryFilters";
 import RecategorizeButton from "@/components/history/RecategorizeButton";
+import DataCoverageBar from "@/components/dashboard/DataCoverage";
 
 export const dynamic = "force-dynamic";
 
@@ -47,7 +49,7 @@ export default async function HistoryPage({ searchParams }: { searchParams: Prom
 
   const useMonthFilter = month && !year;
 
-  const [allTxForMonthFilter, pagedTransactions, total, distinctCategories, distinctYears] =
+  const [allTxForMonthFilter, pagedTransactions, total, distinctCategories, distinctYears, coverage] =
     await Promise.all([
       useMonthFilter
         ? prisma.transaction.findMany({
@@ -61,6 +63,7 @@ export default async function HistoryPage({ searchParams }: { searchParams: Prom
       useMonthFilter ? Promise.resolve(0) : prisma.transaction.count({ where }),
       prisma.transaction.findMany({ where: { userId: user.id }, select: { category: true }, distinct: ["category"], orderBy: { category: "asc" } }),
       prisma.monthlyAnalytics.findMany({ where: { userId: user.id }, select: { year: true }, distinct: ["year"], orderBy: { year: "desc" } }),
+      getDataCoverage(user.id),
     ]);
 
   let displayTotal = total;
@@ -100,6 +103,8 @@ export default async function HistoryPage({ searchParams }: { searchParams: Prom
           </p>
         </div>
       </div>
+
+      {coverage.count > 0 && <DataCoverageBar coverage={coverage} />}
 
       <Suspense>
         <HistoryFilters
