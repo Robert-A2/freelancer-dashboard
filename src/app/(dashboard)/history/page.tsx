@@ -2,21 +2,13 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getDataCoverage } from "@/lib/analytics-engine";
-import { formatCurrency } from "@/utils/finance";
 import { Suspense } from "react";
 import HistoryFilters from "@/components/history/HistoryFilters";
-import RecategorizeButton from "@/components/history/RecategorizeButton";
+import TransactionList from "@/components/history/TransactionList";
 import DataCoverageBar from "@/components/dashboard/DataCoverage";
 
 export const dynamic = "force-dynamic";
 
-const TYPE_COLORS: Record<string, string> = {
-  income: "text-[#5B8A72]", expense: "text-[#C79A63]",
-  savings: "text-[#6B7280]", transfer: "text-[#9CA3AF]",
-};
-const TYPE_PREFIX: Record<string, string> = {
-  income: "+", expense: "−", savings: "→", transfer: "⇄",
-};
 
 interface SearchParams { page?: string; type?: string; category?: string; year?: string; month?: string; q?: string; }
 
@@ -120,30 +112,16 @@ export default async function HistoryPage({ searchParams }: { searchParams: Prom
           <p className="text-[#94A3B8]">No transactions match these filters.</p>
         </div>
       ) : (
-        <div className="card">
-          <div className="divide-y divide-[#E8EAE5]">
-            {displayTransactions.map((tx) => (
-              <div key={tx.id} className="flex items-center justify-between py-3 gap-3">
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-[#1F2937] truncate">{tx.description}</p>
-                  <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                    <p className="text-xs text-[#9CA3AF]">
-                      {new Date(tx.transactionDate).toLocaleDateString("en-IE", { day: "numeric", month: "short", year: "numeric" })}
-                    </p>
-                    <RecategorizeButton
-                      transactionId={tx.id}
-                      currentCategory={tx.category}
-                      description={tx.description}
-                    />
-                  </div>
-                </div>
-                <span className={`text-sm font-semibold whitespace-nowrap flex-shrink-0 ${TYPE_COLORS[tx.transactionType] ?? "text-[#F8FAFC]"}`}>
-                  {TYPE_PREFIX[tx.transactionType]}{formatCurrency(Number(tx.amount))}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
+        <TransactionList
+          transactions={displayTransactions.map((tx) => ({
+            id: tx.id,
+            description: tx.description,
+            transactionDate: tx.transactionDate.toISOString(),
+            category: tx.category,
+            transactionType: tx.transactionType,
+            amount: Number(tx.amount),
+          }))}
+        />
       )}
 
       {pages > 1 && (
