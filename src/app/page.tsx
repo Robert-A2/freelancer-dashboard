@@ -10,7 +10,7 @@ export default async function LandingPage() {
   return (
     <div className="min-h-screen bg-[#0A1020] text-[#F8FAFC]">
 
-      {/* ── Navbar ─────────────────────────────────────────────────────── */}
+      {/* ── Navbar ──────────────────────────────────────────────────────── */}
       <nav className="sticky top-0 z-50 border-b border-[#1E293B] bg-[#0A1020]/95 backdrop-blur-sm">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 flex items-center justify-between h-14">
           <span className="font-bold text-[#F8FAFC] tracking-tight">Freelancer OS</span>
@@ -18,21 +18,21 @@ export default async function LandingPage() {
             <Link href="/login" className="text-sm text-[#94A3B8] hover:text-[#F8FAFC] transition-colors px-3 py-2">
               Sign in
             </Link>
-            <Link href="/signup" className="bg-[#14B8A6] hover:bg-[#0D9488] text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors">
+            <Link href="/signup" className="bg-[#4F7A65] hover:bg-[#3D6554] text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors">
               Get started free
             </Link>
           </div>
         </div>
       </nav>
 
-      {/* ── Hero ───────────────────────────────────────────────────────── */}
+      {/* ── Hero ────────────────────────────────────────────────────────── */}
       <section className="max-w-6xl mx-auto px-4 sm:px-6 pt-16 pb-20 md:pt-24 md:pb-28">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
 
           <div>
-            <div className="inline-flex items-center gap-2 bg-[#14B8A620] border border-[#14B8A630] rounded-full px-3 py-1 mb-6">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#14B8A6]" />
-              <span className="text-xs text-[#14B8A6] font-medium">Built for freelancers</span>
+            <div className="inline-flex items-center gap-2 bg-[#4F7A6520] border border-[#4F7A6530] rounded-full px-3 py-1 mb-6">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#4F7A65]" />
+              <span className="text-xs text-[#4F7A65] font-medium">Built for freelancers</span>
             </div>
 
             <h1 className="text-4xl sm:text-5xl font-bold leading-tight text-[#F8FAFC] mb-5">
@@ -46,7 +46,7 @@ export default async function LandingPage() {
             </p>
 
             <div className="flex flex-col sm:flex-row gap-3">
-              <Link href="/signup" className="bg-[#14B8A6] hover:bg-[#0D9488] text-white font-bold px-6 py-3 rounded-xl transition-colors text-base text-center">
+              <Link href="/signup" className="bg-[#4F7A65] hover:bg-[#3D6554] text-white font-bold px-6 py-3 rounded-xl transition-colors text-base text-center">
                 Upload your first CSV →
               </Link>
               <Link href="/login" className="text-sm text-[#94A3B8] hover:text-[#F8FAFC] transition-colors flex items-center justify-center px-4 py-3">
@@ -65,11 +65,11 @@ export default async function LandingPage() {
         </div>
       </section>
 
-      {/* ── What you'll understand ─────────────────────────────────────── */}
+      {/* ── What you'll understand ──────────────────────────────────────── */}
       <section className="bg-[#111827] border-y border-[#1E293B]">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-16 md:py-20">
           <div className="text-center mb-12">
-            <p className="text-xs font-medium text-[#14B8A6] uppercase tracking-widest mb-3">After one upload</p>
+            <p className="text-xs font-medium text-[#4F7A65] uppercase tracking-widest mb-3">After one upload</p>
             <h2 className="text-2xl sm:text-3xl font-bold text-[#F8FAFC]">
               Real answers. Not just numbers.
             </h2>
@@ -112,10 +112,10 @@ export default async function LandingPage() {
         </div>
       </section>
 
-      {/* ── How it works ───────────────────────────────────────────────── */}
+      {/* ── How it works ────────────────────────────────────────────────── */}
       <section className="max-w-6xl mx-auto px-4 sm:px-6 py-16 md:py-20">
         <div className="text-center mb-12">
-          <p className="text-xs font-medium text-[#14B8A6] uppercase tracking-widest mb-3">Simple process</p>
+          <p className="text-xs font-medium text-[#4F7A65] uppercase tracking-widest mb-3">Simple process</p>
           <h2 className="text-2xl sm:text-3xl font-bold text-[#F8FAFC]">How it works</h2>
           <p className="text-[#94A3B8] mt-3 max-w-md mx-auto">
             From bank statement to financial clarity in under a minute.
@@ -142,8 +142,8 @@ export default async function LandingPage() {
             },
           ].map((s) => (
             <div key={s.step} className="relative text-center">
-              <div className="w-16 h-16 bg-[#14B8A620] border border-[#14B8A630] rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <span className="text-lg font-bold text-[#14B8A6]">{s.step}</span>
+              <div className="w-16 h-16 bg-[#4F7A6520] border border-[#4F7A6530] rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <span className="text-lg font-bold text-[#4F7A65]">{s.step}</span>
               </div>
               <h3 className="font-semibold text-[#F8FAFC] mb-2">{s.title}</h3>
               <p className="text-sm text-[#94A3B8] leading-relaxed max-w-xs mx-auto">{s.body}</p>
@@ -152,14 +152,13 @@ export default async function LandingPage() {
         </div>
       </section>
 
-      {/* ── Historical intelligence ────────────────────────────────────── */}
+      {/* ── Historical intelligence ──────────────────────────────────────── */}
       <section className="bg-[#111827] border-y border-[#1E293B]">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-16 md:py-20">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
 
-            {/* Left: copy */}
             <div>
-              <p className="text-xs font-medium text-[#14B8A6] uppercase tracking-widest mb-3">Deep history</p>
+              <p className="text-xs font-medium text-[#4F7A65] uppercase tracking-widest mb-3">Deep history</p>
               <h2 className="text-2xl sm:text-3xl font-bold text-[#F8FAFC] mb-4">
                 The more history you upload,<br className="hidden sm:block" /> the smarter it gets.
               </h2>
@@ -179,14 +178,13 @@ export default async function LandingPage() {
                   "Recurring expense cycles you may not have noticed",
                 ].map((point) => (
                   <li key={point} className="flex items-start gap-3">
-                    <span className="text-[#14B8A6] flex-shrink-0 mt-0.5">✓</span>
+                    <span className="text-[#4F7A65] flex-shrink-0 mt-0.5">✓</span>
                     <span className="text-sm text-[#CBD5E1]">{point}</span>
                   </li>
                 ))}
               </ul>
             </div>
 
-            {/* Right: tier cards */}
             <div className="space-y-3">
               {[
                 {
@@ -212,8 +210,8 @@ export default async function LandingPage() {
                   key={tier.label}
                   className="flex items-start gap-4 bg-[#0A1020] rounded-2xl p-5 border border-[#1E293B]"
                 >
-                  <div className="flex-shrink-0 w-14 h-14 bg-[#14B8A610] border border-[#14B8A625] rounded-xl flex items-center justify-center">
-                    <span className={`text-xs font-bold text-[#14B8A6] text-center leading-tight ${tier.intensity}`}>
+                  <div className="flex-shrink-0 w-14 h-14 bg-[#4F7A6510] border border-[#4F7A6525] rounded-xl flex items-center justify-center">
+                    <span className={`text-xs font-bold text-[#4F7A65] text-center leading-tight ${tier.intensity}`}>
                       {tier.label}
                     </span>
                   </div>
@@ -228,10 +226,10 @@ export default async function LandingPage() {
         </div>
       </section>
 
-      {/* ── Why freelancers ────────────────────────────────────────────── */}
+      {/* ── Why freelancers ─────────────────────────────────────────────── */}
       <section className="max-w-6xl mx-auto px-4 sm:px-6 py-16 md:py-20">
         <div className="text-center mb-12">
-          <p className="text-xs font-medium text-[#14B8A6] uppercase tracking-widest mb-3">Built for how you work</p>
+          <p className="text-xs font-medium text-[#4F7A65] uppercase tracking-widest mb-3">Built for how you work</p>
           <h2 className="text-2xl sm:text-3xl font-bold text-[#F8FAFC]">
             Why freelancers use Freelancer OS
           </h2>
@@ -270,7 +268,7 @@ export default async function LandingPage() {
             },
           ].map((item) => (
             <div key={item.title} className="bg-[#111827] rounded-2xl p-6 border border-[#1E293B]">
-              <div className="w-6 h-0.5 bg-[#14B8A6] rounded-full mb-4" />
+              <div className="w-6 h-0.5 bg-[#4F7A65] rounded-full mb-4" />
               <h3 className="font-semibold text-[#F8FAFC] mb-3">{item.title}</h3>
               <ul className="space-y-2">
                 {item.points.map((p) => (
@@ -282,11 +280,11 @@ export default async function LandingPage() {
         </div>
       </section>
 
-      {/* ── Privacy & trust ────────────────────────────────────────────── */}
+      {/* ── Privacy & trust ─────────────────────────────────────────────── */}
       <section className="bg-[#111827] border-y border-[#1E293B]">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-16 md:py-20">
           <div className="text-center mb-10">
-            <p className="text-xs font-medium text-[#14B8A6] uppercase tracking-widest mb-3">Your data</p>
+            <p className="text-xs font-medium text-[#4F7A65] uppercase tracking-widest mb-3">Your data</p>
             <h2 className="text-2xl sm:text-3xl font-bold text-[#F8FAFC]">Private. Secure. Yours.</h2>
             <p className="text-[#94A3B8] mt-3 max-w-md mx-auto">
               Your financial data is personal. We treat it that way.
@@ -310,27 +308,27 @@ export default async function LandingPage() {
         </div>
       </section>
 
-      {/* ── Final CTA ──────────────────────────────────────────────────── */}
-      <section className="bg-[#14B8A6]">
+      {/* ── Final CTA ───────────────────────────────────────────────────── */}
+      <section className="bg-[#4F7A65]">
         <div className="max-w-2xl mx-auto px-4 sm:px-6 py-16 text-center">
           <h2 className="text-2xl sm:text-3xl font-bold text-white mb-4">
             Start understanding your finances today.
           </h2>
-          <p className="text-[#ccfbf1] mb-8 text-lg">
+          <p className="text-white/80 mb-8 text-lg">
             Upload your first bank statement in under a minute.<br className="hidden sm:block" />
             No setup. No spreadsheets. Just clarity.
           </p>
           <Link
             href="/signup"
-            className="inline-block bg-white text-[#0D9488] font-bold px-8 py-3.5 rounded-xl hover:bg-[#f0fdfa] transition-colors text-base"
+            className="inline-block bg-white text-[#3D6554] font-bold px-8 py-3.5 rounded-xl hover:bg-[#F0F4F2] transition-colors text-base"
           >
             Get started free →
           </Link>
-          <p className="text-xs text-[#99f6e4] mt-4">Free · Any bank · Takes 60 seconds</p>
+          <p className="text-white/60 text-xs mt-4">Free · Any bank · Takes 60 seconds</p>
         </div>
       </section>
 
-      {/* ── Footer ─────────────────────────────────────────────────────── */}
+      {/* ── Footer ──────────────────────────────────────────────────────── */}
       <footer className="border-t border-[#1E293B] bg-[#0A1020]">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div>
@@ -348,7 +346,7 @@ export default async function LandingPage() {
   );
 }
 
-// ── Dashboard preview mockup ────────────────────────────────────────────────
+// ── Dashboard preview mockup ──────────────────────────────────────────────────
 function DashboardMockup() {
   return (
     <div className="rounded-2xl border border-[#1E293B] bg-[#111827] overflow-hidden shadow-2xl shadow-black/50">
@@ -368,10 +366,10 @@ function DashboardMockup() {
         {/* 4 metric cards */}
         <div className="grid grid-cols-2 gap-2">
           {[
-            { label: "Income",   value: "€4,850", color: "#22C55E" },
-            { label: "Expenses", value: "€2,680", color: "#F59E0B" },
-            { label: "Savings",  value: "€800",   color: "#3B82F6" },
-            { label: "Cashflow", value: "€1,370", color: "#06B6D4" },
+            { label: "Income",   value: "€4,850", color: "#5B8A72" },
+            { label: "Expenses", value: "€2,680", color: "#C79A63" },
+            { label: "Savings",  value: "€800",   color: "#4F7A65" },
+            { label: "Cashflow", value: "€1,370", color: "#5B8A72" },
           ].map((c) => (
             <div key={c.label} className="bg-[#0A1020] rounded-xl p-2.5">
               <div className="text-[8px] text-[#94A3B8] uppercase tracking-wide mb-1">{c.label}</div>
@@ -389,40 +387,40 @@ function DashboardMockup() {
             <line x1="0" y1="39" x2="240" y2="39" stroke="#1E293B" strokeWidth="0.5"/>
             <polyline
               points="0,42 20,38 40,40 60,32 80,34 100,26 120,28 140,20 160,22 180,14 200,16 240,10"
-              fill="none" stroke="#22C55E" strokeWidth="1.5" strokeLinejoin="round"
+              fill="none" stroke="#5B8A72" strokeWidth="1.5" strokeLinejoin="round"
             />
             <polyline
               points="0,46 20,44 40,45 60,44 80,46 100,42 120,43 140,40 160,44 180,40 200,42 240,41"
-              fill="none" stroke="#F59E0B" strokeWidth="1.5" strokeLinejoin="round"
+              fill="none" stroke="#C79A63" strokeWidth="1.5" strokeLinejoin="round"
             />
           </svg>
         </div>
 
-        {/* Intelligence insight — shows the product explains numbers, not just displays them */}
-        <div className="bg-[#F59E0B0d] border border-[#F59E0B25] rounded-xl p-3 space-y-2">
+        {/* Intelligence insight */}
+        <div className="bg-[#C79A630A] border border-[#C79A6325] rounded-xl p-3 space-y-2">
           <div className="flex items-center gap-1.5">
-            <span className="text-[#F59E0B] text-[10px]">⚠</span>
-            <span className="text-[9px] font-semibold text-[#F59E0B]">Expenses increased 14% this month.</span>
+            <span className="text-[#C79A63] text-[10px]">⚠</span>
+            <span className="text-[9px] font-semibold text-[#C79A63]">Expenses increased 14% this month.</span>
           </div>
           <div className="space-y-1 pl-3 border-l border-[#1E293B]">
             <div className="text-[8px] text-[#94A3B8]">
               <span className="text-[#CBD5E1]">Main cause:</span> Software subscriptions increased by €82.
             </div>
             <div className="text-[8px] text-[#94A3B8]">
-              <span className="text-[#14B8A6]">Recommended:</span> Reducing unused subscriptions could improve annual cashflow by €984.
+              <span className="text-[#4F7A65]">Recommended:</span> Reducing unused subscriptions could improve annual cashflow by €984.
             </div>
           </div>
         </div>
 
         {/* Forecast row */}
         <div className="grid grid-cols-2 gap-2">
-          <div className="bg-[#14B8A60a] border border-[#14B8A618] rounded-xl p-2.5">
+          <div className="bg-[#4F7A650A] border border-[#4F7A6518] rounded-xl p-2.5">
             <div className="text-[8px] text-[#94A3B8] mb-1">Next month forecast</div>
-            <div className="text-xs font-bold text-[#06B6D4]">€1,890 cashflow</div>
+            <div className="text-xs font-bold text-[#4F7A65]">€1,890 cashflow</div>
           </div>
           <div className="bg-[#0A1020] rounded-xl p-2.5">
             <div className="text-[8px] text-[#94A3B8] mb-1">Annual projection</div>
-            <div className="text-xs font-bold text-[#22C55E]">€22,680</div>
+            <div className="text-xs font-bold text-[#5B8A72]">€22,680</div>
           </div>
         </div>
 

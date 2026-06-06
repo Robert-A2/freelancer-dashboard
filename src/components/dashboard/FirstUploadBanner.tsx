@@ -53,7 +53,7 @@ export default function FirstUploadBanner({ months, transactions, summary, first
       </div>
 
       {summary && (
-        <p className="text-sm text-[#374151] mb-5 leading-relaxed border-l-2 border-[#4F7A65] pl-3">
+        <p className="text-sm text-[#4B5563] mb-5 leading-relaxed border-l-2 border-[#4F7A65] pl-3">
           {summary}
         </p>
       )}

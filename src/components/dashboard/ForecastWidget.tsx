@@ -110,13 +110,13 @@ export default function ForecastWidget({ forecast, reasons, improvements, defici
           )}
 
           {trendLine && (
-            <p className="text-xs text-[#374151] leading-relaxed">{trendLine}</p>
+            <p className="text-xs text-[#4B5563] leading-relaxed">{trendLine}</p>
           )}
 
           {deficitReason && (
             <div className={cashflowHealthText || trendLine ? "border-t border-[#5B8A7215] pt-3" : ""}>
               <p className="label mb-1.5">Why cashflow is negative</p>
-              <p className="text-sm text-[#374151] leading-relaxed">{deficitReason}</p>
+              <p className="text-sm text-[#4B5563] leading-relaxed">{deficitReason}</p>
             </div>
           )}
 
@@ -125,7 +125,7 @@ export default function ForecastWidget({ forecast, reasons, improvements, defici
               <p className="label mb-2">What to do next</p>
               <ul className="space-y-2">
                 {improvements.slice(0, 3).map((imp, i) => (
-                  <li key={i} className="text-sm text-[#374151] flex items-start gap-2">
+                  <li key={i} className="text-sm text-[#4B5563] flex items-start gap-2">
                     <span className="text-[#4F7A65] flex-shrink-0 mt-0.5 font-bold">→</span>
                     {imp}
                   </li>

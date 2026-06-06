@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
@@ -38,7 +38,6 @@ export default function CsvUploader() {
 
       setStage({ status: "uploading", progress: 0, fileName: file.name });
 
-      // ── Step 1: get a signed upload URL from our server ──────────────────
       const presignRes = await fetch(
         `/api/uploads/presign?filename=${encodeURIComponent(file.name)}`
       );
@@ -55,9 +54,6 @@ export default function CsvUploader() {
 
       const { signedUrl, storagePath } = presignData;
 
-      // ── Step 2: upload the file DIRECTLY to Supabase Storage ─────────────
-      // This bypasses Vercel entirely — no 4.5 MB body limit.
-      // Uses XHR so we can track real upload progress.
       try {
         await uploadWithProgress(signedUrl, file, (pct) => {
           setStage({ status: "uploading", progress: pct, fileName: file.name });
@@ -67,7 +63,6 @@ export default function CsvUploader() {
         return;
       }
 
-      // ── Step 3: tell the server to process the stored file ───────────────
       setStage({ status: "processing", fileName: file.name });
 
       const processRes = await fetch("/api/uploads/process", {
@@ -123,15 +118,15 @@ export default function CsvUploader() {
 
   const reset = () => setStage({ status: "idle" });
 
-  // ── Idle drop zone ────────────────────────────────────────────────────────
+  // ── Idle drop zone ─────────────────────────────────────────────────────────
   if (stage.status === "idle") {
     return (
       <>
         <div
           className={`border-2 border-dashed rounded-2xl p-8 md:p-12 flex flex-col items-center justify-center text-center cursor-pointer transition-colors ${
             dragging
-              ? "border-[#14B8A6] bg-[#14B8A610]"
-              : "border-[#1E293B] hover:border-[#14B8A6] hover:bg-[#14B8A608]"
+              ? "border-[#4F7A65] bg-[#4F7A6508]"
+              : "border-[#ECEEE9] hover:border-[#4F7A65] hover:bg-[#4F7A6506]"
           }`}
           onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
           onDragLeave={() => setDragging(false)}
@@ -139,9 +134,9 @@ export default function CsvUploader() {
           onClick={() => inputRef.current?.click()}
         >
           <div className="text-4xl mb-3">📂</div>
-          <p className="text-[#F8FAFC] font-semibold mb-1">Drop your CSV here</p>
-          <p className="text-sm text-[#94a3b8]">or click to browse</p>
-          <p className="text-xs text-[#94a3b8] mt-3">
+          <p className="text-[#1F2937] font-semibold mb-1">Drop your CSV here</p>
+          <p className="text-sm text-[#6B7280]">or click to browse</p>
+          <p className="text-xs text-[#9CA3AF] mt-3">
             Any size · Any date range · Duplicates skipped automatically
           </p>
           <input
@@ -156,25 +151,25 @@ export default function CsvUploader() {
     );
   }
 
-  // ── Uploading ─────────────────────────────────────────────────────────────
+  // ── Uploading ──────────────────────────────────────────────────────────────
   if (stage.status === "uploading") {
     return (
       <div className="card py-10 flex flex-col items-center gap-6">
         <div className="text-center">
-          <p className="font-semibold text-[#F8FAFC]">Uploading {stage.fileName}</p>
-          <p className="text-sm text-[#94a3b8] mt-1">
+          <p className="font-semibold text-[#1F2937]">Uploading {stage.fileName}</p>
+          <p className="text-sm text-[#6B7280] mt-1">
             Going directly to Supabase Storage. No file size limit
           </p>
         </div>
 
         <div className="w-full max-w-sm">
-          <div className="flex justify-between text-xs text-[#94a3b8] mb-1.5">
+          <div className="flex justify-between text-xs text-[#9CA3AF] mb-1.5">
             <span>Uploading…</span>
             <span>{stage.progress}%</span>
           </div>
-          <div className="h-2 bg-[#1E293B] rounded-full overflow-hidden">
+          <div className="h-2 bg-[#ECEEE9] rounded-full overflow-hidden">
             <div
-              className="h-full bg-[#14B8A6] rounded-full transition-all duration-200"
+              className="h-full bg-[#4F7A65] rounded-full transition-all duration-200"
               style={{ width: `${stage.progress}%` }}
             />
           </div>
@@ -183,14 +178,14 @@ export default function CsvUploader() {
     );
   }
 
-  // ── Processing ────────────────────────────────────────────────────────────
+  // ── Processing ─────────────────────────────────────────────────────────────
   if (stage.status === "processing") {
     return (
       <div className="card py-10 flex flex-col items-center gap-4">
-        <div className="w-10 h-10 border-4 border-[#14B8A6] border-t-transparent rounded-full animate-spin" />
+        <div className="w-10 h-10 border-4 border-[#4F7A65] border-t-transparent rounded-full animate-spin" />
         <div className="text-center">
-          <p className="font-semibold text-[#F8FAFC]">Processing {stage.fileName}</p>
-          <p className="text-sm text-[#94a3b8] mt-1">
+          <p className="font-semibold text-[#1F2937]">Processing {stage.fileName}</p>
+          <p className="text-sm text-[#6B7280] mt-1">
             Parsing · Deduplicating · Categorising · Updating analytics…
           </p>
         </div>
@@ -198,7 +193,7 @@ export default function CsvUploader() {
     );
   }
 
-  // ── Done ──────────────────────────────────────────────────────────────────
+  // ── Done ───────────────────────────────────────────────────────────────────
   if (stage.status === "done") {
     const { result, fileName } = stage;
 
@@ -217,95 +212,92 @@ export default function CsvUploader() {
     return (
       <div className="card space-y-5">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-[#14B8A620] rounded-full flex items-center justify-center text-[#14B8A6] font-bold text-lg">
+          <div className="w-10 h-10 bg-[#5B8A7220] rounded-full flex items-center justify-center text-[#5B8A72] font-bold text-lg">
             ✓
           </div>
           <div>
-            <p className="font-semibold text-[#14B8A6]">Import complete</p>
-            <p className="text-sm text-[#94a3b8]">{fileName}</p>
+            <p className="font-semibold text-[#5B8A72]">Import complete</p>
+            <p className="text-sm text-[#6B7280]">{fileName}</p>
           </div>
         </div>
 
         <div className="grid grid-cols-2 gap-3">
           {[
-            { label: "Transactions imported", value: result.importedRows.toLocaleString(), color: "text-[#22C55E]" },
-            { label: "Duplicates skipped", value: result.duplicateRows.toLocaleString(), color: "text-[#94a3b8]" },
-            { label: "Total rows", value: result.totalRows.toLocaleString(), color: "text-[#F8FAFC]" },
-            { label: "Invalid rows", value: result.skippedRows.toLocaleString(), color: "text-[#f59e0b]" },
+            { label: "Transactions imported", value: result.importedRows.toLocaleString(), color: "text-[#5B8A72]" },
+            { label: "Duplicates skipped", value: result.duplicateRows.toLocaleString(), color: "text-[#9CA3AF]" },
+            { label: "Total rows", value: result.totalRows.toLocaleString(), color: "text-[#1F2937]" },
+            { label: "Invalid rows", value: result.skippedRows.toLocaleString(), color: "text-[#C79A63]" },
           ].map((s) => (
-            <div key={s.label} className="bg-[#0f172a] rounded-xl p-3 text-center">
+            <div key={s.label} className="bg-[#F7F8F5] rounded-xl p-3 text-center">
               <p className={`text-2xl font-bold ${s.color}`}>{s.value}</p>
-              <p className="text-xs text-[#94a3b8] mt-1">{s.label}</p>
+              <p className="text-xs text-[#9CA3AF] mt-1">{s.label}</p>
             </div>
           ))}
         </div>
 
-        {/* Date range and categories */}
         {(dateRangeLabel || result.categoriesDetected > 0) && (
-          <div className="bg-[#0f172a] rounded-xl px-4 py-3 space-y-1.5">
+          <div className="bg-[#F7F8F5] rounded-xl px-4 py-3 space-y-1.5">
             {dateRangeLabel && (
               <div className="flex items-center justify-between text-sm">
-                <span className="text-[#94a3b8]">Date range</span>
-                <span className="font-medium text-[#F8FAFC]">{dateRangeLabel}</span>
+                <span className="text-[#6B7280]">Date range</span>
+                <span className="font-medium text-[#1F2937]">{dateRangeLabel}</span>
               </div>
             )}
             {result.categoriesDetected > 0 && (
               <div className="flex items-center justify-between text-sm">
-                <span className="text-[#94a3b8]">Categories detected</span>
-                <span className="font-medium text-[#14B8A6]">{result.categoriesDetected}</span>
+                <span className="text-[#6B7280]">Categories detected</span>
+                <span className="font-medium text-[#4F7A65]">{result.categoriesDetected}</span>
               </div>
             )}
           </div>
         )}
 
-        {/* Categorisation breakdown — lets users verify the engine found the right things */}
         {result.typeBreakdown && (
-          <div className="bg-[#0f172a] rounded-xl px-4 py-3 space-y-2">
-            <p className="text-xs font-semibold text-[#94a3b8] uppercase tracking-wide">What we found</p>
+          <div className="bg-[#F7F8F5] rounded-xl px-4 py-3 space-y-2">
+            <p className="text-xs font-semibold text-[#9CA3AF] uppercase tracking-wide">What we found</p>
             <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
               {result.typeBreakdown.income > 0 && (
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-[#94a3b8]">Income payments</span>
-                  <span className="font-medium text-[#22C55E]">{result.typeBreakdown.income.toLocaleString()}</span>
+                  <span className="text-[#6B7280]">Income payments</span>
+                  <span className="font-medium text-[#5B8A72]">{result.typeBreakdown.income.toLocaleString()}</span>
                 </div>
               )}
               {result.typeBreakdown.expense > 0 && (
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-[#94a3b8]">Expenses</span>
-                  <span className="font-medium text-[#F59E0B]">{result.typeBreakdown.expense.toLocaleString()}</span>
+                  <span className="text-[#6B7280]">Expenses</span>
+                  <span className="font-medium text-[#C79A63]">{result.typeBreakdown.expense.toLocaleString()}</span>
                 </div>
               )}
               {result.typeBreakdown.savings > 0 && (
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-[#94a3b8]">Savings transfers</span>
-                  <span className="font-medium text-[#3B82F6]">{result.typeBreakdown.savings.toLocaleString()}</span>
+                  <span className="text-[#6B7280]">Savings transfers</span>
+                  <span className="font-medium text-[#4F7A65]">{result.typeBreakdown.savings.toLocaleString()}</span>
                 </div>
               )}
               {result.typeBreakdown.transfer > 0 && (
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-[#94a3b8]">Internal transfers</span>
-                  <span className="font-medium text-[#94a3b8]">{result.typeBreakdown.transfer.toLocaleString()}</span>
+                  <span className="text-[#6B7280]">Internal transfers</span>
+                  <span className="font-medium text-[#9CA3AF]">{result.typeBreakdown.transfer.toLocaleString()}</span>
                 </div>
               )}
             </div>
             {result.typeBreakdown.transfer > 0 && (
-              <p className="text-[10px] text-[#94a3b8] pt-1">
+              <p className="text-[10px] text-[#9CA3AF] pt-1">
                 Internal transfers (between your own accounts) are excluded from income and expense totals.
               </p>
             )}
-            <div className="pt-1 border-t border-[#1E293B]">
-              <a href="/history" className="text-xs text-[#14B8A6] hover:underline">
+            <div className="pt-1 border-t border-[#ECEEE9]">
+              <a href="/history" className="text-xs text-[#4F7A65] hover:underline">
                 Review categorisation in History →
               </a>
             </div>
           </div>
         )}
 
-        {/* Mixed-currency warning */}
         {result.hasMixedCurrencies && (
-          <div className="flex items-start gap-2.5 px-3 py-3 bg-[#F59E0B0d] border border-[#F59E0B25] rounded-xl">
-            <span className="text-[#F59E0B] text-base flex-shrink-0">⚠</span>
-            <p className="text-xs text-[#F59E0B] leading-relaxed">
+          <div className="flex items-start gap-2.5 px-3 py-3 bg-[#C79A630A] border border-[#C79A6325] rounded-xl">
+            <span className="text-[#C79A63] text-base flex-shrink-0">⚠</span>
+            <p className="text-xs text-[#C79A63] leading-relaxed">
               Multiple currencies detected ({result.currencies.join(", ")}). Totals and insights
               are calculated across all amounts. Results may be inaccurate if currencies were
               not converted before export. Consider exporting a single-currency statement for
@@ -329,44 +321,41 @@ export default function CsvUploader() {
     );
   }
 
-  // ── Error ─────────────────────────────────────────────────────────────────
+  // ── Error ──────────────────────────────────────────────────────────────────
   const err = parseUploadError(stage.message);
   return (
     <div className="card space-y-4">
-      {/* Heading */}
       <div className="flex items-start gap-3">
-        <div className="w-10 h-10 bg-[#EF444415] rounded-full flex items-center justify-center text-[#EF4444] flex-shrink-0 mt-0.5">
+        <div className="w-10 h-10 bg-[#C66A5A10] rounded-full flex items-center justify-center text-[#C66A5A] flex-shrink-0 mt-0.5">
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
           </svg>
         </div>
         <div>
-          <p className="font-semibold text-[#EF4444]">{err.heading}</p>
-          <p className="text-sm text-[#94A3B8] mt-0.5 leading-relaxed">{err.reason}</p>
+          <p className="font-semibold text-[#C66A5A]">{err.heading}</p>
+          <p className="text-sm text-[#6B7280] mt-0.5 leading-relaxed">{err.reason}</p>
         </div>
       </div>
 
-      {/* What to do */}
-      <div className="bg-[#0A1020] rounded-xl px-4 py-3">
-        <p className="text-xs font-semibold text-[#94A3B8] uppercase tracking-wide mb-2">What to try</p>
+      <div className="bg-[#F7F8F5] rounded-xl px-4 py-3">
+        <p className="text-xs font-semibold text-[#9CA3AF] uppercase tracking-wide mb-2">What to try</p>
         <ul className="space-y-1.5">
           {err.steps.map((step, i) => (
-            <li key={i} className="text-sm text-[#CBD5E1] flex items-start gap-2">
-              <span className="text-[#14B8A6] flex-shrink-0 mt-0.5">→</span>
+            <li key={i} className="text-sm text-[#374151] flex items-start gap-2">
+              <span className="text-[#4F7A65] flex-shrink-0 mt-0.5">→</span>
               {step}
             </li>
           ))}
         </ul>
       </div>
 
-      {/* Actions */}
       <div className="flex flex-col gap-2">
         <button onClick={reset} className="btn-primary w-full">
           Try a different file
         </button>
         <a
           href="mailto:support@freelanceros.app?subject=CSV Upload Issue"
-          className="text-xs text-center text-[#94A3B8] hover:text-[#F8FAFC] transition-colors py-1"
+          className="text-xs text-center text-[#9CA3AF] hover:text-[#374151] transition-colors py-1"
         >
           Still stuck? Email us and we&apos;ll help →
         </a>
@@ -375,7 +364,7 @@ export default function CsvUploader() {
   );
 }
 
-// ── Error parser — maps raw error messages to user-friendly guidance ──────────
+// ── Error parser ───────────────────────────────────────────────────────────────
 function parseUploadError(message: string): {
   heading: string;
   reason: string;
@@ -440,7 +429,7 @@ function parseUploadError(message: string): {
   };
 }
 
-// ── XHR upload so we get real progress events ─────────────────────────────
+// ── XHR upload with progress ───────────────────────────────────────────────────
 function uploadWithProgress(
   signedUrl: string,
   file: File,
@@ -472,7 +461,6 @@ function uploadWithProgress(
       reject(new Error("Upload aborted"))
     );
 
-    // Supabase signed upload URL endpoint
     xhr.open("PUT", signedUrl);
     xhr.setRequestHeader("Content-Type", file.type || "text/csv");
     xhr.setRequestHeader("x-upsert", "true");

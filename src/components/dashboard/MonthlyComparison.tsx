@@ -159,7 +159,7 @@ export default function MonthlyComparison({
 
       {interpretation && (
         <div className="mt-4 px-3 py-2.5 bg-[#F7F8F5] rounded-xl">
-          <p className="text-sm text-[#374151] leading-relaxed">
+          <p className="text-sm text-[#4B5563] leading-relaxed">
             <span className="text-[#4F7A65] font-semibold">What this means: </span>
             {interpretation}
           </p>

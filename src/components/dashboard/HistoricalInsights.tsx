@@ -34,7 +34,7 @@ export default function HistoricalInsights({ highlights, totalMonths }: Props) {
         {visible.map((highlight, i) => (
           <div key={i} className="flex items-start gap-3 bg-[#F7F8F5] rounded-xl px-4 py-3">
             <span className="text-[#4F7A65] text-sm mt-0.5 flex-shrink-0">◆</span>
-            <p className="text-sm text-[#374151]">{highlight}</p>
+            <p className="text-sm text-[#4B5563]">{highlight}</p>
           </div>
         ))}
       </div>

@@ -40,7 +40,7 @@ export default function RecentTransactions({ transactions, notable }: Props) {
           {notable.map((note, i) => (
             <div key={i} className="flex items-start gap-2 px-3 py-2.5 bg-[#F7F8F5] rounded-lg">
               <span className="text-[#4F7A65] text-xs mt-0.5 flex-shrink-0">★</span>
-              <p className="text-sm text-[#374151]">{note}</p>
+              <p className="text-sm text-[#4B5563]">{note}</p>
             </div>
           ))}
         </div>
