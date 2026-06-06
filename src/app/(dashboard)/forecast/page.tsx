@@ -137,11 +137,16 @@ export default async function ForecastPage() {
     keyDrivers.push({ label: "Seasonal adjustment applied", detail: `With 24+ months of data, the forecast adjusts for months that are historically stronger or weaker based on your own patterns.`, positive: true });
   }
 
-  // Annual projections
-  const annualIncome   = forecast ? forecast.projectedIncome   * 12 : 0;
-  const annualExpenses = forecast ? forecast.projectedExpenses * 12 : 0;
-  const annualSavings  = forecast ? forecast.projectedSavings  * 12 : 0;
-  const annualCashflow = forecast ? forecast.projectedCashflow * 12 : 0;
+  // Annual projections (cashflow = income − expenses; savings removed from display)
+  const annualIncome    = forecast ? forecast.projectedIncome   * 12 : 0;
+  const annualExpenses  = forecast ? forecast.projectedExpenses * 12 : 0;
+  const annualCashflow  = forecast ? (forecast.projectedIncome - forecast.projectedExpenses) * 12 : 0;
+
+  // Projected Runway: how many months of expenses the annual surplus covers
+  const avgExpPerMonth  = last6.length > 0 ? last6.reduce((s, d) => s + d.expenses, 0) / last6.length : 0;
+  const projRunwayMonths = forecast && avgExpPerMonth > 0
+    ? (forecast.projectedIncome - forecast.projectedExpenses) / avgExpPerMonth
+    : 0;
 
   const health = HEALTH[intel.healthStatus];
   const trend  = TREND[intel.businessTrendDirection];
@@ -241,17 +246,15 @@ export default async function ForecastPage() {
             </div>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
               {[
-                { label: "Projected Income",   value: annualIncome,   monthly: forecast?.projectedIncome,   color: "text-[#22C55E]",  border: "border-[#22C55E15]" },
-                { label: "Projected Expenses", value: annualExpenses,  monthly: forecast?.projectedExpenses, color: "text-[#F59E0B]",  border: "border-[#F59E0B15]" },
-                { label: "Projected Savings",  value: annualSavings,   monthly: forecast?.projectedSavings,  color: "text-[#3B82F6]",  border: "border-[#3B82F615]" },
-                { label: "Projected Cashflow", value: annualCashflow,  monthly: forecast?.projectedCashflow, color: annualCashflow >= 0 ? "text-[#06B6D4]" : "text-[#EF4444]", border: "border-[#1E293B]" },
+                { label: "Projected Income",   value: formatCurrency(annualIncome),   sub: forecast ? `${formatCurrency(forecast.projectedIncome)}/mo avg` : null,   color: "text-[#22C55E]",  border: "border-[#22C55E15]" },
+                { label: "Projected Expenses", value: formatCurrency(annualExpenses),  sub: forecast ? `${formatCurrency(forecast.projectedExpenses)}/mo avg` : null,  color: "text-[#F59E0B]",  border: "border-[#F59E0B15]" },
+                { label: "Projected Cashflow", value: formatCurrency(annualCashflow),  sub: forecast ? `${formatCurrency(forecast.projectedIncome - forecast.projectedExpenses)}/mo avg` : null, color: annualCashflow >= 0 ? "text-[#06B6D4]" : "text-[#EF4444]", border: "border-[#1E293B]" },
+                { label: "Projected Runway",   value: `${projRunwayMonths >= 0 ? "+" : "−"}${Math.abs(projRunwayMonths).toFixed(1)} mo`, sub: projRunwayMonths >= 0 ? "months buffer per month" : "deficit per month", color: projRunwayMonths >= 0.5 ? "text-[#22C55E]" : projRunwayMonths >= 0 ? "text-[#F59E0B]" : "text-[#EF4444]", border: "border-[#1E293B]" },
               ].map((item) => (
                 <div key={item.label} className={`bg-[#0A1020] rounded-xl p-3 border ${item.border}`}>
                   <p className="text-[10px] text-[#94A3B8] uppercase tracking-wide mb-1">{item.label}</p>
-                  <p className={`text-xl font-bold tabular-nums ${item.color}`}>{formatCurrency(item.value)}</p>
-                  {item.monthly != null && (
-                    <p className="text-[10px] text-[#475569] mt-1">{formatCurrency(item.monthly)}/mo avg</p>
-                  )}
+                  <p className={`text-xl font-bold tabular-nums ${item.color}`}>{item.value}</p>
+                  {item.sub && <p className="text-[10px] text-[#475569] mt-1">{item.sub}</p>}
                 </div>
               ))}
             </div>

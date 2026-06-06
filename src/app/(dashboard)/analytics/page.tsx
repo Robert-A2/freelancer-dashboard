@@ -84,12 +84,22 @@ export default async function AnalyticsPage() {
 
   const ytdInc  = Number(ytdThis._sum.totalIncome   ?? 0);
   const ytdExp  = Number(ytdThis._sum.totalExpenses  ?? 0);
-  const ytdSav  = Number(ytdThis._sum.totalSavings   ?? 0);
-  const ytdCash = Number(ytdThis._sum.netCashflow    ?? 0);
   const prevInc  = Number(ytdPrev._sum.totalIncome   ?? 0);
   const prevExp  = Number(ytdPrev._sum.totalExpenses ?? 0);
-  const prevSav  = Number(ytdPrev._sum.totalSavings  ?? 0);
-  const prevCash = Number(ytdPrev._sum.netCashflow   ?? 0);
+
+  // Cashflow = income − expenses (savings excluded from display)
+  const ytdCash  = ytdInc  - ytdExp;
+  const prevCash = prevInc - prevExp;
+
+  // Runway: monthly surplus / avg monthly expenses over the YTD period
+  const activeMonthsYtd = chartData.filter(d => d.income > 0 || d.expenses > 0);
+  const last6Ytd        = activeMonthsYtd.slice(-6);
+  const avgExpYtd       = last6Ytd.length > 0 ? last6Ytd.reduce((s, d) => s + d.expenses, 0) / last6Ytd.length : 0;
+  const ytdMonthCount   = dataMonthMax;
+  const avgMonthlyCashYtd  = ytdMonthCount > 0 ? ytdCash  / ytdMonthCount : 0;
+  const avgMonthlyCashPrev = ytdMonthCount > 0 ? prevCash / ytdMonthCount : 0;
+  const ytdRunway  = avgExpYtd > 0 ? avgMonthlyCashYtd  / avgExpYtd : 0;
+  const prevRunway = avgExpYtd > 0 ? avgMonthlyCashPrev / avgExpYtd : 0;
 
   const totalExpenses = categoryBreakdown.reduce((s, c) => s + Number(c._sum.amount ?? 0), 0);
   const totalIncSrc   = incomeBySource.reduce((s, c) => s + Number(c._sum.amount ?? 0), 0);
@@ -126,19 +136,27 @@ export default async function AnalyticsPage() {
             </div>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
               {[
-                { label: "Income",   curr: ytdInc,  prev: prevInc,  color: "text-[#22C55E]", invert: false },
-                { label: "Expenses", curr: ytdExp,  prev: prevExp,  color: "text-[#F59E0B]", invert: true  },
-                { label: "Savings",  curr: ytdSav,  prev: prevSav,  color: "text-[#3B82F6]", invert: false },
-                { label: "Cashflow", curr: ytdCash, prev: prevCash, color: ytdCash >= 0 ? "text-[#06B6D4]" : "text-[#EF4444]", invert: false },
+                { label: "Income",   curr: ytdInc,  prev: prevInc,  color: "text-[#22C55E]", invert: false, isCurrency: true  },
+                { label: "Expenses", curr: ytdExp,  prev: prevExp,  color: "text-[#F59E0B]", invert: true,  isCurrency: true  },
+                { label: "Cashflow", curr: ytdCash, prev: prevCash, color: ytdCash >= 0 ? "text-[#06B6D4]" : "text-[#EF4444]", invert: false, isCurrency: true },
+                { label: "Runway",   curr: ytdRunway, prev: prevRunway,
+                  color: ytdRunway >= 0.5 ? "text-[#22C55E]" : ytdRunway >= 0 ? "text-[#F59E0B]" : "text-[#EF4444]",
+                  invert: false, isCurrency: false },
               ].map((item) => {
                 const change = prevInc > 0 ? pctChange(item.curr, item.prev) : null;
+                const displayVal = item.isCurrency
+                  ? formatCurrency(item.curr)
+                  : `${item.curr >= 0 ? "+" : "−"}${Math.abs(item.curr).toFixed(1)} mo`;
+                const prevDisplayVal = item.isCurrency
+                  ? `${formatCurrency(item.prev)} last yr`
+                  : `${item.prev >= 0 ? "+" : "−"}${Math.abs(item.prev).toFixed(1)} mo last yr`;
                 return (
                   <div key={item.label} className="bg-[#0A1020] rounded-xl p-3">
                     <p className="label mb-1">{item.label}</p>
-                    <p className={`text-lg font-bold ${item.color} mb-1`}>{formatCurrency(item.curr)}</p>
+                    <p className={`text-lg font-bold tabular-nums ${item.color} mb-1`}>{displayVal}</p>
                     <div className="flex items-center gap-2">
                       {change !== null && <ChangeChip value={change} invert={item.invert} />}
-                      {item.prev > 0 && <span className="text-[10px] text-[#94A3B8]">{formatCurrency(item.prev)} last yr</span>}
+                      {item.prev !== 0 && <span className="text-[10px] text-[#94A3B8]">{prevDisplayVal}</span>}
                     </div>
                   </div>
                 );

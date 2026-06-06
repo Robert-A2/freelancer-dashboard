@@ -105,6 +105,26 @@ export default async function DashboardPage({
   const hasData = totalTx > 0;
   const nonZeroMonths = chartData.filter((d) => d.income > 0 || d.expenses > 0).length;
 
+  // Runway and risk computed from historical data
+  const activeMonths      = chartData.filter(d => d.income > 0 || d.expenses > 0);
+  const last6Active       = activeMonths.slice(-6);
+  const avgMonthlyExpenses = last6Active.length > 0
+    ? last6Active.reduce((s, d) => s + d.expenses, 0) / last6Active.length
+    : 0;
+  const currCashflow  = current  ? current.totalIncome  - current.totalExpenses  : 0;
+  const prevCashflow  = previous ? previous.totalIncome - previous.totalExpenses : 0;
+  const runway        = avgMonthlyExpenses > 0 ? currCashflow / avgMonthlyExpenses : 0;
+  const prevRunway    = avgMonthlyExpenses > 0 ? prevCashflow / avgMonthlyExpenses : 0;
+
+  const last12Active       = activeMonths.slice(-12);
+  const riskPositiveMonths = last12Active.filter(d => d.income - d.expenses >= 0).length;
+  const riskTotalMonths    = last12Active.length;
+  const posRatio           = riskTotalMonths > 0 ? riskPositiveMonths / riskTotalMonths : 0;
+  const riskLevel: "low" | "medium" | "high" | "critical" =
+    posRatio >= 0.85 ? "low" :
+    posRatio >= 0.65 ? "medium" :
+    posRatio >= 0.40 ? "high" : "critical";
+
   // Personalisation
   const firstName = dbUser?.fullName?.split(" ")[0] ?? user.email?.split("@")[0] ?? "";
 
@@ -199,6 +219,11 @@ export default async function DashboardPage({
           <SummaryCards
             current={current}
             previous={previous}
+            runway={runway}
+            prevRunway={prevRunway}
+            riskLevel={riskLevel}
+            riskPositiveMonths={riskPositiveMonths}
+            riskTotalMonths={riskTotalMonths}
             summary={intel.snapshotSummary}
             context={intel.snapshotContext}
           />

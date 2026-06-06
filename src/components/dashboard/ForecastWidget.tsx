@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { formatCurrency } from "@/utils/finance";
 
@@ -25,6 +25,11 @@ const CONFIDENCE_COLORS = {
   high:   "text-[#22C55E]",
 };
 
+function fmtRunway(m: number): string {
+  if (Math.abs(m) < 0.05) return "0.0 mo";
+  return `${m >= 0 ? "+" : "−"}${Math.abs(m).toFixed(1)} mo`;
+}
+
 export default function ForecastWidget({ forecast, reasons, improvements, deficitReason }: Props) {
   if (!forecast) {
     return (
@@ -35,12 +40,18 @@ export default function ForecastWidget({ forecast, reasons, improvements, defici
     );
   }
 
-  const { projectedIncome, projectedExpenses, projectedSavings, projectedCashflow, forecastPeriod, confidence } = forecast;
-  const cashflowNegative      = projectedCashflow < 0;
-  const cashflowHealthText    = reasons?.[1] ?? null;
-  const cashflowHealthIsNeg   = cashflowHealthText?.toLowerCase().includes("negative") ?? false;
-  const trendSegments         = reasons ? reasons.slice(2).filter(Boolean) : [];
-  const trendLine             = trendSegments.length
+  const { projectedIncome, projectedExpenses, projectedCashflow, forecastPeriod, confidence } = forecast;
+
+  // Operating cashflow = income − expenses (savings excluded from display)
+  const operatingCashflow = projectedIncome - projectedExpenses;
+  const cashflowNegative  = operatingCashflow < 0;
+  // Runway = months of expenses covered by this month's surplus
+  const runwayMonths      = projectedExpenses > 0 ? operatingCashflow / projectedExpenses : 0;
+
+  const cashflowHealthText  = reasons?.[1] ?? null;
+  const cashflowHealthIsNeg = cashflowHealthText?.toLowerCase().includes("negative") ?? false;
+  const trendSegments       = reasons ? reasons.slice(2).filter(Boolean) : [];
+  const trendLine           = trendSegments.length
     ? trendSegments.map((s) => s.replace(/\.$/, "")).join(" · ") + "."
     : null;
   const hasGreenSection = cashflowHealthText || deficitReason || (improvements && improvements.length > 0);
@@ -62,17 +73,17 @@ export default function ForecastWidget({ forecast, reasons, improvements, defici
         </span>
       </div>
 
-      {/* Projected numbers — short labels fit any card width */}
+      {/* Projected numbers: Income, Expenses, Cashflow, Runway */}
       <div className="grid grid-cols-2 gap-3">
         {[
-          { label: "Income",   value: projectedIncome,   color: "text-[#22C55E]" },
-          { label: "Expenses", value: projectedExpenses, color: "text-[#F59E0B]" },
-          { label: "Savings",  value: projectedSavings,  color: "text-[#3B82F6]" },
-          { label: "Cashflow", value: projectedCashflow, color: cashflowNegative ? "text-[#EF4444]" : "text-[#06B6D4]" },
+          { label: "Income",   value: formatCurrency(projectedIncome),   color: "text-[#22C55E]" },
+          { label: "Expenses", value: formatCurrency(projectedExpenses),  color: "text-[#F59E0B]" },
+          { label: "Cashflow", value: formatCurrency(operatingCashflow),  color: cashflowNegative ? "text-[#EF4444]" : "text-[#06B6D4]" },
+          { label: "Runway",   value: fmtRunway(runwayMonths),            color: runwayMonths >= 0.5 ? "text-[#22C55E]" : runwayMonths >= 0 ? "text-[#F59E0B]" : "text-[#EF4444]" },
         ].map((item) => (
           <div key={item.label} className="bg-[#0A1020] rounded-xl p-3">
             <p className="label mb-1">{item.label}</p>
-            <p className={`text-base font-bold ${item.color}`}>{formatCurrency(item.value)}</p>
+            <p className={`text-base font-bold tabular-nums ${item.color}`}>{item.value}</p>
           </div>
         ))}
       </div>
@@ -87,7 +98,7 @@ export default function ForecastWidget({ forecast, reasons, improvements, defici
         </div>
       )}
 
-      {/* Green intelligence zone */}
+      {/* Intelligence zone */}
       {hasGreenSection && (
         <div className="bg-[#22C55E0a] border border-[#22C55E18] rounded-xl p-4 space-y-3">
 

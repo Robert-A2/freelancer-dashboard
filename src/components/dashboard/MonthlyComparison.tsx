@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { Fragment } from "react";
 import { formatCurrency } from "@/utils/finance";
@@ -15,13 +15,18 @@ interface Props {
   previous: MonthData | null;
   changes: { income: number; expenses: number; savings: number; cashflow: number } | null;
   interpretation?: string;
-  currLabel?: string;   // actual month being shown (from analytics engine)
-  prevLabel?: string;   // actual previous month being shown
+  currLabel?: string;
+  prevLabel?: string;
 }
 
-export default function MonthlyComparison({ current, previous, changes, interpretation, currLabel: currLabelProp, prevLabel: prevLabelProp }: Props) {
-  // Use labels from the API if provided — they reflect the actual data month,
-  // not the wall-clock current month (which may have no data).
+function changePct(curr: number, prev: number): number {
+  if (prev === 0) return curr > 0 ? 100 : 0;
+  return Math.round(((curr - prev) / Math.abs(prev)) * 100);
+}
+
+export default function MonthlyComparison({
+  current, previous, changes, interpretation, currLabel: currLabelProp, prevLabel: prevLabelProp,
+}: Props) {
   const now      = new Date();
   const prevDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
   const currLabel = currLabelProp ?? now.toLocaleDateString("en-IE", { month: "short", year: "numeric" });
@@ -36,23 +41,19 @@ export default function MonthlyComparison({ current, previous, changes, interpre
     );
   }
 
-  // Detect whether the previous month actually has real data.
-  // When a user uploads only one month, `previous` comes back as all-zeros.
-  // Showing "+100%" changes against zero is misleading and destroys trust.
-  const previousHasData =
-    previous.totalIncome > 0 ||
-    previous.totalExpenses > 0 ||
-    previous.totalSavings > 0 ||
-    previous.netCashflow !== 0;
+  const previousHasData = previous.totalIncome > 0 || previous.totalExpenses > 0;
+
+  // Cashflow = income − expenses (savings excluded from display)
+  const currCashflow     = current.totalIncome  - current.totalExpenses;
+  const prevCashflow     = previous.totalIncome - previous.totalExpenses;
+  const cashflowChangePct = changePct(currCashflow, prevCashflow);
 
   const rows = [
-    { label: "Income",       prev: previous.totalIncome,   curr: current.totalIncome,   pct: changes.income,   invertBad: false },
-    { label: "Expenses",     prev: previous.totalExpenses, curr: current.totalExpenses, pct: changes.expenses, invertBad: true  },
-    { label: "Savings",      prev: previous.totalSavings,  curr: current.totalSavings,  pct: changes.savings,  invertBad: false },
-    { label: "Cashflow", prev: previous.netCashflow,   curr: current.netCashflow,   pct: changes.cashflow, invertBad: false },
+    { label: "Income",   prev: previous.totalIncome,   curr: current.totalIncome,   pct: changes.income,   invertBad: false },
+    { label: "Expenses", prev: previous.totalExpenses, curr: current.totalExpenses, pct: changes.expenses, invertBad: true  },
+    { label: "Cashflow", prev: prevCashflow,            curr: currCashflow,           pct: cashflowChangePct, invertBad: false },
   ];
 
-  // Single-month view — show current values without misleading comparisons
   if (!previousHasData) {
     return (
       <div className="card">
@@ -86,7 +87,7 @@ export default function MonthlyComparison({ current, previous, changes, interpre
         <h3 className="text-lg font-semibold">What changed?</h3>
       </div>
 
-      {/* ── Desktop table (md+) ───────────────────────────────────────── */}
+      {/* Desktop table */}
       <div className="hidden md:grid grid-cols-[1fr_auto_auto_auto] gap-x-5 gap-y-0">
         <div className="pb-2 border-b border-[#1E293B]" />
         <div className="text-xs text-[#94A3B8] text-right pb-2 border-b border-[#1E293B] whitespace-nowrap">{prevLabel}</div>
@@ -120,7 +121,7 @@ export default function MonthlyComparison({ current, previous, changes, interpre
         })}
       </div>
 
-      {/* ── Mobile cards (< md) ───────────────────────────────────────── */}
+      {/* Mobile cards */}
       <div className="md:hidden space-y-2">
         {rows.map((row) => {
           const changeAmt = row.curr - row.prev;
