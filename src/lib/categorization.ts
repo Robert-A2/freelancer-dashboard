@@ -19,6 +19,12 @@ const SAVINGS_TRANSFER_OVERRIDES = [
   "to investment account",
   "transfer to investment",
   "to emergency fund",
+  // Neo-banks commonly used as savings accounts
+  "hello bank",
+  "n26",
+  "bunq",
+  "trade republic",
+  "lightyear",
 ];
 
 // ── General transfer detection ─────────────────────────────────────────────────

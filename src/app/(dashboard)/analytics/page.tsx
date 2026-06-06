@@ -32,11 +32,18 @@ export default async function AnalyticsPage() {
 
   // Anchor YTD to the user's most recent data year, not the current calendar year.
   // A user with data ending Dec 2024 visiting in 2026 would otherwise see €0 for both years.
-  const latestDataRecord = await prisma.monthlyAnalytics.findFirst({
-    where: { userId: user.id },
-    orderBy: [{ year: "desc" }, { month: "desc" }],
-    select: { year: true, month: true },
-  });
+  const [latestDataRecord, earliestDataRecord] = await Promise.all([
+    prisma.monthlyAnalytics.findFirst({
+      where: { userId: user.id },
+      orderBy: [{ year: "desc" }, { month: "desc" }],
+      select: { year: true, month: true },
+    }),
+    prisma.monthlyAnalytics.findFirst({
+      where: { userId: user.id },
+      orderBy: [{ year: "asc" }, { month: "asc" }],
+      select: { year: true, month: true },
+    }),
+  ]);
 
   const now          = new Date();
   const dataYear     = latestDataRecord?.year  ?? now.getFullYear();
@@ -97,7 +104,14 @@ export default async function AnalyticsPage() {
 
       <div>
         <h1 className="text-2xl font-bold">Analytics</h1>
-        <p className="text-[#94A3B8] text-sm mt-0.5">Deep dive into your financial patterns</p>
+        <p className="text-[#94A3B8] text-sm mt-0.5">
+          Deep dive into your financial patterns
+          {earliestDataRecord && latestDataRecord && (
+            <span className="ml-2 text-[#475569]">
+              · Data: {earliestDataRecord.year} – {latestDataRecord.year} · Use the chart&apos;s <strong className="text-[#64748B]">ALL</strong> button to see all years
+            </span>
+          )}
+        </p>
       </div>
 
       {!hasData && (

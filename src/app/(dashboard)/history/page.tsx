@@ -60,7 +60,7 @@ export default async function HistoryPage({ searchParams }: { searchParams: Prom
         : prisma.transaction.findMany({ where, orderBy: { transactionDate: "desc" }, skip, take: limit }),
       useMonthFilter ? Promise.resolve(0) : prisma.transaction.count({ where }),
       prisma.transaction.findMany({ where: { userId: user.id }, select: { category: true }, distinct: ["category"], orderBy: { category: "asc" } }),
-      prisma.transaction.findMany({ where: { userId: user.id }, select: { transactionDate: true }, distinct: ["transactionDate"], orderBy: { transactionDate: "asc" }, take: 999 }),
+      prisma.monthlyAnalytics.findMany({ where: { userId: user.id }, select: { year: true }, distinct: ["year"], orderBy: { year: "desc" } }),
     ]);
 
   let displayTotal = total;
@@ -76,9 +76,7 @@ export default async function HistoryPage({ searchParams }: { searchParams: Prom
 
   const pages = Math.ceil(displayTotal / limit);
   const categories = distinctCategories.map((c) => c.category).filter(Boolean).sort() as string[];
-  const yearSet = new Set<number>();
-  for (const tx of distinctYears) yearSet.add(new Date(tx.transactionDate).getFullYear());
-  const years = Array.from(yearSet).sort((a, b) => b - a);
+  const years = distinctYears.map((r) => r.year);
 
   const buildPageUrl = (p: number) => {
     const sp = new URLSearchParams();
