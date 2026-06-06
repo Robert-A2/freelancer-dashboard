@@ -1,29 +1,26 @@
-﻿@tailwind base;
+@tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    --bg:        #0A1020;
-    --surface:   #111827;
-    --border:    #1E293B;
-    --text:      #F8FAFC;
-    --secondary: #CBD5E1;
-    --muted:     #94A3B8;
-    --teal:      #14B8A6;
-    --green:     #22C55E;
-    --amber:     #F59E0B;
-    --blue:      #3B82F6;
-    --cyan:      #06B6D4;
-    --red:       #EF4444;
+    --bg:       #F7F8F5;
+    --surface:  #FFFFFF;
+    --border:   #E8EAE5;
+    --text:     #1F2937;
+    --secondary:#374151;
+    --muted:    #6B7280;
+    --faint:    #9CA3AF;
+    --brand:    #4F7A65;
+    --positive: #5B8A72;
+    --warning:  #C79A63;
+    --risk:     #C66A5A;
   }
 
-  * {
-    box-sizing: border-box;
-  }
+  * { box-sizing: border-box; }
 
   body {
-    @apply bg-[#0A1020] text-[#F8FAFC] antialiased;
+    @apply bg-[#F7F8F5] text-[#1F2937] antialiased;
     font-family: var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     font-size: 16px;
     line-height: 1.6;
@@ -32,38 +29,38 @@
 
 @layer components {
   .card {
-    @apply bg-[#111827] border border-[#1E293B] rounded-2xl p-5 md:p-6;
+    @apply bg-white border border-[#E8EAE5] rounded-2xl p-5 md:p-6;
   }
 
   .card-sm {
-    @apply bg-[#111827] border border-[#1E293B] rounded-xl p-4;
+    @apply bg-white border border-[#E8EAE5] rounded-xl p-4;
   }
 
   .label {
-    @apply text-xs font-medium text-[#94A3B8] uppercase tracking-wider;
+    @apply text-xs font-medium text-[#9CA3AF] uppercase tracking-wider;
   }
 
   .btn-primary {
-    @apply bg-[#14B8A6] hover:bg-[#0D9488] text-white font-semibold px-5 py-2.5 rounded-xl transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px];
+    @apply bg-[#4F7A65] hover:bg-[#3D6554] text-white font-semibold px-5 py-2.5 rounded-xl transition-colors duration-150 disabled:opacity-40 disabled:cursor-not-allowed min-h-[44px];
   }
 
   .btn-secondary {
-    @apply bg-[#1E293B] hover:bg-[#2D3D55] text-[#F8FAFC] font-medium px-5 py-2.5 rounded-xl transition-colors duration-150 min-h-[44px];
+    @apply bg-[#F3F4F0] hover:bg-[#E8EAE5] text-[#374151] font-medium px-5 py-2.5 rounded-xl transition-colors duration-150 min-h-[44px];
   }
 
   .btn-ghost {
-    @apply text-[#94A3B8] hover:text-[#F8FAFC] font-medium px-3 py-2 rounded-lg transition-colors duration-150 min-h-[44px];
+    @apply text-[#6B7280] hover:text-[#1F2937] font-medium px-3 py-2 rounded-lg transition-colors duration-150 min-h-[44px];
   }
 
   .input {
-    @apply bg-[#0A1020] border border-[#1E293B] rounded-xl px-4 py-2.5 text-[#F8FAFC] placeholder-[#94A3B8] focus:outline-none focus:border-[#14B8A6] transition-colors duration-150 w-full text-base min-h-[44px];
+    @apply bg-white border border-[#E8EAE5] rounded-xl px-4 py-2.5 text-[#1F2937] placeholder-[#9CA3AF] focus:outline-none focus:border-[#4F7A65] transition-colors duration-150 w-full text-base min-h-[44px];
   }
 
   .stat-value {
-    @apply text-2xl font-bold text-[#F8FAFC];
+    @apply text-2xl font-bold text-[#1F2937];
   }
 
-  .positive { @apply text-[#22C55E]; }
-  .negative { @apply text-[#EF4444]; }
-  .neutral  { @apply text-[#94A3B8]; }
+  .positive { @apply text-[#5B8A72]; }
+  .negative { @apply text-[#C66A5A]; }
+  .neutral  { @apply text-[#6B7280]; }
 }

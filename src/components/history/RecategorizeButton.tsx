@@ -4,16 +4,12 @@ import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 const ALL_CATEGORIES = [
-  // Income
   "income", "stripe", "paypal", "client payment", "invoice payment",
   "freelance platform", "bank transfer", "salary", "refund",
-  // Expense
   "ai tools", "software", "marketing", "advertising", "education",
   "equipment", "office", "banking fees", "transport", "travel",
   "food", "health", "housing", "utilities", "subscriptions", "taxes",
-  "uncategorized",
-  // Special
-  "savings", "transfer",
+  "uncategorized", "savings", "transfer",
 ].sort();
 
 interface Props {
@@ -33,7 +29,6 @@ export default function RecategorizeButton({ transactionId, currentCategory, des
   const [saving, setSaving]   = useState(false);
   const [saved, setSaved]     = useState(false);
 
-  // Close on outside click
   useEffect(() => {
     function onOutside(e: MouseEvent) {
       if (ref.current && !ref.current.contains(e.target as Node)) reset();
@@ -54,13 +49,11 @@ export default function RecategorizeButton({ transactionId, currentCategory, des
     if (!pending) return;
     setSaving(true);
     reset();
-
     await fetch("/api/transactions/recategorize", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ transactionId, newCategory: pending, applyToSimilar }),
     });
-
     setSaving(false);
     setSaved(true);
     router.refresh();
@@ -71,15 +64,14 @@ export default function RecategorizeButton({ transactionId, currentCategory, des
 
   return (
     <div className="relative" ref={ref}>
-      {/* Category chip */}
       <button
         onClick={() => step === "idle" ? setStep("picking") : reset()}
         disabled={saving}
         className={`${chipBase} ${
-          saved    ? "bg-[#22C55E20] text-[#22C55E]" :
-          saving   ? "bg-[#1E293B] text-[#94A3B8] opacity-60 cursor-wait" :
-          step !== "idle" ? "bg-[#14B8A620] text-[#14B8A6]" :
-          "bg-[#1E293B] text-[#94A3B8] hover:bg-[#334155] hover:text-[#F8FAFC]"
+          saved    ? "bg-[#5B8A7215] text-[#5B8A72]" :
+          saving   ? "bg-[#F3F4F0] text-[#9CA3AF] opacity-60 cursor-wait" :
+          step !== "idle" ? "bg-[#4F7A6515] text-[#4F7A65]" :
+          "bg-[#F3F4F0] text-[#6B7280] hover:bg-[#E8EAE5] hover:text-[#1F2937]"
         }`}
         title="Click to fix category"
       >
@@ -91,11 +83,10 @@ export default function RecategorizeButton({ transactionId, currentCategory, des
         )}
       </button>
 
-      {/* Step 1 — pick a category */}
       {step === "picking" && (
-        <div className="absolute left-0 top-full mt-1 z-50 bg-[#1E293B] border border-[#334155] rounded-xl shadow-xl shadow-black/60 w-52 overflow-hidden">
-          <p className="px-3 py-2 text-[10px] text-[#94A3B8] border-b border-[#334155] truncate">
-            Change: "{description.slice(0, 28)}{description.length > 28 ? "…" : ""}"
+        <div className="absolute left-0 top-full mt-1 z-50 bg-white border border-[#E8EAE5] rounded-xl shadow-lg shadow-black/5 w-52 overflow-hidden">
+          <p className="px-3 py-2 text-[10px] text-[#9CA3AF] border-b border-[#E8EAE5] truncate">
+            Change: &quot;{description.slice(0, 28)}{description.length > 28 ? "…" : ""}&quot;
           </p>
           <div className="max-h-56 overflow-y-auto">
             {ALL_CATEGORIES.map((cat) => (
@@ -104,8 +95,8 @@ export default function RecategorizeButton({ transactionId, currentCategory, des
                 onClick={() => pickCategory(cat)}
                 className={`w-full text-left px-3 py-2 text-xs capitalize transition-colors ${
                   cat === currentCategory
-                    ? "bg-[#14B8A620] text-[#14B8A6]"
-                    : "text-[#CBD5E1] hover:bg-[#334155] hover:text-[#F8FAFC]"
+                    ? "bg-[#4F7A6515] text-[#4F7A65]"
+                    : "text-[#374151] hover:bg-[#F7F8F5] hover:text-[#1F2937]"
                 }`}
               >
                 {cat === currentCategory ? `${cat} ✓` : cat}
@@ -115,31 +106,30 @@ export default function RecategorizeButton({ transactionId, currentCategory, des
         </div>
       )}
 
-      {/* Step 2 — confirm scope */}
       {step === "confirming" && pending && (
-        <div className="absolute left-0 top-full mt-1 z-50 bg-[#1E293B] border border-[#334155] rounded-xl shadow-xl shadow-black/60 w-64 p-3 space-y-2">
-          <p className="text-xs text-[#F8FAFC] font-medium">
-            Move to <span className="text-[#14B8A6] capitalize">{pending}</span>
+        <div className="absolute left-0 top-full mt-1 z-50 bg-white border border-[#E8EAE5] rounded-xl shadow-lg shadow-black/5 w-64 p-3 space-y-2">
+          <p className="text-xs text-[#1F2937] font-medium">
+            Move to <span className="text-[#4F7A65] capitalize">{pending}</span>
           </p>
-          <p className="text-[10px] text-[#94A3B8] leading-relaxed">
+          <p className="text-[10px] text-[#6B7280] leading-relaxed">
             Apply to just this transaction, or to every transaction with the same description?
           </p>
           <div className="flex flex-col gap-1.5 pt-1">
             <button
               onClick={() => save(false)}
-              className="text-xs text-left px-3 py-2 bg-[#334155] hover:bg-[#475569] text-[#CBD5E1] rounded-lg transition-colors"
+              className="text-xs text-left px-3 py-2 bg-[#F3F4F0] hover:bg-[#E8EAE5] text-[#374151] rounded-lg transition-colors"
             >
               This transaction only
             </button>
             <button
               onClick={() => save(true)}
-              className="text-xs text-left px-3 py-2 bg-[#14B8A620] hover:bg-[#14B8A630] text-[#14B8A6] rounded-lg transition-colors"
+              className="text-xs text-left px-3 py-2 bg-[#4F7A6515] hover:bg-[#4F7A6525] text-[#4F7A65] rounded-lg transition-colors"
             >
-              All "{description.slice(0, 22)}{description.length > 22 ? "…" : ""}" transactions
+              All &quot;{description.slice(0, 22)}{description.length > 22 ? "…" : ""}&quot; transactions
             </button>
             <button
               onClick={reset}
-              className="text-[10px] text-[#94A3B8] hover:text-[#F8FAFC] text-center py-1 transition-colors"
+              className="text-[10px] text-[#9CA3AF] hover:text-[#6B7280] text-center py-1 transition-colors"
             >
               Cancel
             </button>

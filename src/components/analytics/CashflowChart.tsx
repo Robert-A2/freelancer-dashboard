@@ -13,7 +13,6 @@ interface DataPoint {
   income: number;
   expenses: number;
 }
-
 interface Props { data: DataPoint[]; }
 
 const TIME_RANGES = [
@@ -23,15 +22,14 @@ const TIME_RANGES = [
 ];
 
 const TOOLTIP_STYLE = {
-  backgroundColor: "#1E293B",
-  border: "1px solid #334155",
+  backgroundColor: "#FFFFFF",
+  border: "1px solid #E8EAE5",
   borderRadius: "0.75rem",
-  color: "#F8FAFC",
+  color: "#1F2937",
   fontSize: "12px",
+  boxShadow: "0 4px 12px rgba(0,0,0,0.06)",
 };
 
-// ── Y-axis formatter ──────────────────────────────────────────────────────────
-// Handles €0 cleanly, no repeated "€0k" values, proper currency abbreviation.
 function yFmt(v: number): string {
   if (v === 0) return "€0";
   const abs = Math.abs(v);
@@ -51,7 +49,6 @@ export default function CashflowChart({ data }: Props) {
 
   if (data.length === 0) return null;
 
-  // ── Core metrics ───────────────────────────────────────────────────────────
   const positiveMonths = active.filter(d => d.cashflow >= 0).length;
   const negativeMonths = active.filter(d => d.cashflow <  0).length;
   const avgCashflow    = localAvg(active.map(d => d.cashflow));
@@ -60,11 +57,9 @@ export default function CashflowChart({ data }: Props) {
   const negMonths      = active.filter(d => d.cashflow < 0);
   const posRatio       = active.length > 0 ? Math.round((positiveMonths / active.length) * 100) : 0;
 
-  // Best and worst months
   const bestMonth  = active.length ? active.reduce((b, d) => d.cashflow > b.cashflow ? d : b, active[0]) : null;
   const worstMonth = active.length ? active.reduce((w, d) => d.cashflow < w.cashflow ? d : w, active[0]) : null;
 
-  // ── Why did it happen? ─────────────────────────────────────────────────────
   const lowIncNeg  = negMonths.filter(m => m.income   < avgIncome   * 0.85).length;
   const highExpNeg = negMonths.filter(m => m.expenses > avgExpenses * 1.15).length;
   const bothNeg    = negMonths.filter(m => m.income < avgIncome * 0.85 && m.expenses > avgExpenses * 1.15).length;
@@ -75,7 +70,7 @@ export default function CashflowChart({ data }: Props) {
   if (negativeMonths > 0) {
     if (bothNeg >= Math.ceil(negativeMonths * 0.4)) {
       whyText    = `Income dips and above-average expenses occurred together in ${bothNeg} month${bothNeg !== 1 ? "s" : ""}. When both move at once, cashflow turns negative fast.`;
-      actionText = "Build a 2-month income reserve. A buffer absorbs the impact when income and expenses move against you simultaneously. Without it, every bad month creates stress.";
+      actionText = "Build a 2-month income reserve. A buffer absorbs the impact when income and expenses move against you simultaneously.";
     } else if (lowIncNeg >= highExpNeg) {
       whyText    = `Income fell below your monthly average in ${lowIncNeg} of the ${negativeMonths} negative month${negativeMonths !== 1 ? "s" : ""}. Expenses were roughly normal. The problem was on the income side.`;
       actionText = "Stabilise your client pipeline. Retainer agreements, earlier invoicing, or building a 60-day payment buffer all reduce the impact of slow-income months.";
@@ -84,12 +79,11 @@ export default function CashflowChart({ data }: Props) {
       actionText = "Set a monthly expense ceiling before the month starts. Review your recurring costs quarterly.";
     }
   } else if (active.length >= 3) {
-    actionText = "All months are positive. Consider automating a fixed monthly savings transfer to lock in surplus before it gets spent.";
+    actionText = "All months are positive. Consider automating a fixed monthly transfer to lock in surplus before it gets spent.";
   }
 
-  // ── Stability trend ────────────────────────────────────────────────────────
   let stabilityText  = "";
-  let stabilityColor = "text-[#94A3B8]";
+  let stabilityColor = "text-[#6B7280]";
 
   if (active.length >= 8) {
     const mid       = Math.floor(active.length / 2);
@@ -97,17 +91,16 @@ export default function CashflowChart({ data }: Props) {
     const secondNeg = active.slice(mid).filter(m => m.cashflow  < 0).length;
     if (secondNeg < firstNeg - 1) {
       stabilityText  = `Fewer negative months in the second half of this period than the first. Cashflow is becoming more stable.`;
-      stabilityColor = "text-[#22C55E]";
+      stabilityColor = "text-[#5B8A72]";
     } else if (secondNeg > firstNeg + 1) {
       stabilityText  = `More negative months in the second half than the first. Cashflow stability is weakening.`;
-      stabilityColor = "text-[#EF4444]";
+      stabilityColor = "text-[#C66A5A]";
     } else {
       stabilityText  = `The number of negative months has stayed consistent. Cashflow stability has not meaningfully changed.`;
-      stabilityColor = "text-[#94A3B8]";
+      stabilityColor = "text-[#6B7280]";
     }
   }
 
-  // "What happened" summary sentence
   const whatHappenedText = active.length >= 3
     ? `${positiveMonths} of ${active.length} months were cashflow positive (${posRatio}%). ${
         negativeMonths === 0
@@ -119,11 +112,10 @@ export default function CashflowChart({ data }: Props) {
   return (
     <div className="card">
 
-      {/* ── Header ──────────────────────────────────────────────────────────── */}
       <div className="flex items-start justify-between gap-3 flex-wrap mb-4">
         <div>
           <p className="label mb-1">Monthly Cashflow</p>
-          <h3 className="text-lg font-semibold">Income minus Expenses</h3>
+          <h3 className="text-lg font-semibold text-[#1F2937]">Income minus Expenses</h3>
         </div>
         <div className="flex gap-1.5">
           {TIME_RANGES.map((r) => (
@@ -132,8 +124,8 @@ export default function CashflowChart({ data }: Props) {
               onClick={() => setRange(r.months)}
               className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors min-h-[40px] ${
                 range === r.months
-                  ? "bg-[#14B8A6] text-white"
-                  : "bg-[#1E293B] text-[#94A3B8] hover:text-[#F8FAFC]"
+                  ? "bg-[#4F7A65] text-white"
+                  : "bg-[#F3F4F0] text-[#6B7280] hover:text-[#1F2937]"
               }`}
             >
               {r.label}
@@ -142,21 +134,20 @@ export default function CashflowChart({ data }: Props) {
         </div>
       </div>
 
-      {/* ── Bar chart ───────────────────────────────────────────────────────── */}
       <ResponsiveContainer width="100%" height={220}>
         <BarChart data={sliced} margin={{ top: 5, right: 5, left: 0, bottom: 5 }} barSize={10}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#1E293B" vertical={false} />
-          <XAxis dataKey="month" stroke="#94A3B8" tick={{ fontSize: 11 }} />
-          <YAxis stroke="#94A3B8" tick={{ fontSize: 11 }} tickFormatter={yFmt} width={52} />
-          <ReferenceLine y={0} stroke="#334155" strokeWidth={1.5} />
+          <CartesianGrid strokeDasharray="3 3" stroke="#E8EAE5" vertical={false} />
+          <XAxis dataKey="month" stroke="#9CA3AF" tick={{ fontSize: 11, fill: "#9CA3AF" }} />
+          <YAxis stroke="#9CA3AF" tick={{ fontSize: 11, fill: "#9CA3AF" }} tickFormatter={yFmt} width={52} />
+          <ReferenceLine y={0} stroke="#D1D5DB" strokeWidth={1.5} />
           <Tooltip
             contentStyle={TOOLTIP_STYLE}
             formatter={(value: number) => [formatCurrency(value), "Cashflow"]}
-            labelStyle={{ color: "#F8FAFC", fontWeight: 600 }}
+            labelStyle={{ color: "#1F2937", fontWeight: 600 }}
           />
           <Bar dataKey="cashflow" name="Cashflow" radius={[3, 3, 0, 0]}>
             {sliced.map((entry, i) => (
-              <Cell key={i} fill={entry.cashflow >= 0 ? "#14B8A6" : "#EF4444"} fillOpacity={0.85} />
+              <Cell key={i} fill={entry.cashflow >= 0 ? "#5B8A72" : "#C66A5A"} fillOpacity={0.8} />
             ))}
           </Bar>
         </BarChart>
@@ -164,63 +155,54 @@ export default function CashflowChart({ data }: Props) {
 
       {active.length >= 3 && (
         <>
-          {/* ── Summary stats ─────────────────────────────────────────────── */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
-            <div className="bg-[#0A1020] rounded-xl p-3">
-              <p className="text-[10px] text-[#94A3B8] uppercase tracking-wide mb-1">Best month</p>
-              <p className="text-sm font-bold text-[#22C55E]">{bestMonth ? formatCurrency(bestMonth.cashflow) : "—"}</p>
-              {bestMonth && <p className="text-[10px] text-[#94A3B8] mt-0.5">{bestMonth.month}</p>}
+            <div className="bg-[#F7F8F5] rounded-xl p-3">
+              <p className="text-[10px] text-[#9CA3AF] uppercase tracking-wide mb-1">Best month</p>
+              <p className="text-sm font-bold text-[#5B8A72]">{bestMonth ? formatCurrency(bestMonth.cashflow) : "—"}</p>
+              {bestMonth && <p className="text-[10px] text-[#9CA3AF] mt-0.5">{bestMonth.month}</p>}
             </div>
-            <div className="bg-[#0A1020] rounded-xl p-3">
-              <p className="text-[10px] text-[#94A3B8] uppercase tracking-wide mb-1">Worst month</p>
-              <p className={`text-sm font-bold ${worstMonth && worstMonth.cashflow < 0 ? "text-[#EF4444]" : "text-[#94A3B8]"}`}>
+            <div className="bg-[#F7F8F5] rounded-xl p-3">
+              <p className="text-[10px] text-[#9CA3AF] uppercase tracking-wide mb-1">Worst month</p>
+              <p className={`text-sm font-bold ${worstMonth && worstMonth.cashflow < 0 ? "text-[#C66A5A]" : "text-[#9CA3AF]"}`}>
                 {worstMonth ? formatCurrency(worstMonth.cashflow) : "—"}
               </p>
-              {worstMonth && <p className="text-[10px] text-[#94A3B8] mt-0.5">{worstMonth.month}</p>}
+              {worstMonth && <p className="text-[10px] text-[#9CA3AF] mt-0.5">{worstMonth.month}</p>}
             </div>
-            <div className="bg-[#0A1020] rounded-xl p-3">
-              <p className="text-[10px] text-[#94A3B8] uppercase tracking-wide mb-1">Monthly average</p>
-              <p className={`text-sm font-bold ${avgCashflow >= 0 ? "text-[#06B6D4]" : "text-[#EF4444]"}`}>
+            <div className="bg-[#F7F8F5] rounded-xl p-3">
+              <p className="text-[10px] text-[#9CA3AF] uppercase tracking-wide mb-1">Monthly average</p>
+              <p className={`text-sm font-bold ${avgCashflow >= 0 ? "text-[#4F7A65]" : "text-[#C66A5A]"}`}>
                 {formatCurrency(avgCashflow)}
               </p>
             </div>
-            <div className="bg-[#0A1020] rounded-xl p-3">
-              <p className="text-[10px] text-[#94A3B8] uppercase tracking-wide mb-1">Positive ratio</p>
-              <p className={`text-sm font-bold ${posRatio >= 70 ? "text-[#22C55E]" : posRatio >= 50 ? "text-[#F59E0B]" : "text-[#EF4444]"}`}>
+            <div className="bg-[#F7F8F5] rounded-xl p-3">
+              <p className="text-[10px] text-[#9CA3AF] uppercase tracking-wide mb-1">Positive ratio</p>
+              <p className={`text-sm font-bold ${posRatio >= 70 ? "text-[#5B8A72]" : posRatio >= 50 ? "text-[#C79A63]" : "text-[#C66A5A]"}`}>
                 {posRatio}%
               </p>
-              <p className="text-[10px] text-[#94A3B8] mt-0.5">{positiveMonths} of {active.length} months</p>
+              <p className="text-[10px] text-[#9CA3AF] mt-0.5">{positiveMonths} of {active.length} months</p>
             </div>
           </div>
 
-          {/* ── Intelligence panel ─────────────────────────────────────────── */}
-          <div className="mt-4 bg-[#14B8A60a] border border-[#14B8A618] rounded-xl overflow-hidden">
-
-            {/* What happened? */}
-            <div className="px-4 py-3 border-b border-[#14B8A615]">
-              <p className="text-[10px] font-semibold text-[#14B8A6] uppercase tracking-widest mb-1.5">What happened?</p>
-              <p className="text-sm text-[#CBD5E1] leading-relaxed">{whatHappenedText}</p>
+          <div className="mt-4 bg-[#4F7A650A] border border-[#4F7A6518] rounded-xl overflow-hidden">
+            <div className="px-4 py-3 border-b border-[#4F7A6515]">
+              <p className="text-[10px] font-semibold text-[#4F7A65] uppercase tracking-widest mb-1.5">What happened?</p>
+              <p className="text-sm text-[#374151] leading-relaxed">{whatHappenedText}</p>
               {stabilityText && (
                 <p className={`text-sm mt-1.5 ${stabilityColor}`}>{stabilityText}</p>
               )}
             </div>
-
-            {/* Why did it happen? */}
             {whyText && (
-              <div className="px-4 py-3 border-b border-[#14B8A615]">
-                <p className="text-[10px] font-semibold text-[#14B8A6] uppercase tracking-widest mb-1.5">Why did it happen?</p>
-                <p className="text-sm text-[#CBD5E1] leading-relaxed">{whyText}</p>
+              <div className="px-4 py-3 border-b border-[#4F7A6515]">
+                <p className="text-[10px] font-semibold text-[#4F7A65] uppercase tracking-widest mb-1.5">Why did it happen?</p>
+                <p className="text-sm text-[#374151] leading-relaxed">{whyText}</p>
               </div>
             )}
-
-            {/* What should I do next? */}
             {actionText && (
               <div className="px-4 py-3">
-                <p className="text-[10px] font-semibold text-[#14B8A6] uppercase tracking-widest mb-1.5">What should I do next?</p>
-                <p className="text-sm text-[#CBD5E1] leading-relaxed">{actionText}</p>
+                <p className="text-[10px] font-semibold text-[#4F7A65] uppercase tracking-widest mb-1.5">What should I do next?</p>
+                <p className="text-sm text-[#374151] leading-relaxed">{actionText}</p>
               </div>
             )}
-
           </div>
         </>
       )}

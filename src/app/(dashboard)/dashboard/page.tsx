@@ -156,21 +156,21 @@ export default async function DashboardPage({
             </h1>
             {hasData && (
               <Link href="/forecast" className={`hidden sm:inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full transition-opacity hover:opacity-80 ${
-                intel.healthStatus === "healthy"  ? "bg-[#22C55E15] text-[#22C55E]" :
-                intel.healthStatus === "at-risk"  ? "bg-[#EF444415] text-[#EF4444]" :
-                                                    "bg-[#F59E0B15] text-[#F59E0B]"
+                intel.healthStatus === "healthy"  ? "bg-[#5B8A7215] text-[#5B8A72]" :
+                intel.healthStatus === "at-risk"  ? "bg-[#C66A5A15] text-[#C66A5A]" :
+                                                    "bg-[#C79A6315] text-[#C79A63]"
               }`}>
                 <span className="w-1.5 h-1.5 rounded-full bg-current" />
                 {intel.healthStatus === "healthy" ? "Healthy" : intel.healthStatus === "watch" ? "Watch closely" : "At Risk"}
               </Link>
             )}
           </div>
-          <p className="text-[#94A3B8] text-sm">
+          <p className="text-[#6B7280] text-sm">
             {new Date().toLocaleDateString("en-IE", { month: "long", year: "numeric" })}
           </p>
         </div>
         {hasData && (
-          <p className="text-xs text-[#94A3B8] flex-shrink-0 mt-1">
+          <p className="text-xs text-[#9CA3AF] flex-shrink-0 mt-1">
             {totalTx.toLocaleString()} transactions · {nonZeroMonths} months
           </p>
         )}
@@ -178,11 +178,11 @@ export default async function DashboardPage({
 
       {/* Data freshness prompt */}
       {dataIsStale && (
-        <div className="flex items-center justify-between gap-4 px-4 py-3 bg-[#F59E0B0d] border border-[#F59E0B25] rounded-xl">
-          <p className="text-sm text-[#F59E0B]">
+        <div className="flex items-center justify-between gap-4 px-4 py-3 bg-[#C79A630A] border border-[#C79A6325] rounded-xl">
+          <p className="text-sm text-[#C79A63]">
             Your data is {daysSinceImport} days old. Upload last month&apos;s statement to keep insights accurate.
           </p>
-          <Link href="/upload" className="text-xs font-semibold text-[#F59E0B] hover:text-white transition-colors flex-shrink-0 bg-[#F59E0B20] px-3 py-1.5 rounded-lg">
+          <Link href="/upload" className="text-xs font-semibold text-[#C79A63] hover:text-[#1F2937] transition-colors flex-shrink-0 bg-[#C79A6320] px-3 py-1.5 rounded-lg">
             Upload →
           </Link>
         </div>

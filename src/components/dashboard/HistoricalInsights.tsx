@@ -14,27 +14,27 @@ export default function HistoricalInsights({ highlights, totalMonths }: Props) {
 
   if (highlights.length === 0) return null;
 
-  const visible  = expanded ? highlights : highlights.slice(0, INITIAL_COUNT);
+  const visible   = expanded ? highlights : highlights.slice(0, INITIAL_COUNT);
   const remaining = highlights.length - INITIAL_COUNT;
-  const hasMore  = highlights.length > INITIAL_COUNT;
+  const hasMore   = highlights.length > INITIAL_COUNT;
 
   return (
     <div className="card">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-2">
         <div>
           <p className="label mb-1">Your Financial Story</p>
-          <h3 className="text-lg font-semibold">Historical Insights</h3>
+          <h3 className="text-lg font-semibold text-[#1F2937]">Historical Insights</h3>
         </div>
-        <span className="text-xs text-[#94A3B8] bg-[#1E293B] px-2 py-1 rounded-lg self-start sm:flex-shrink-0">
+        <span className="text-xs text-[#6B7280] bg-[#F3F4F0] px-2 py-1 rounded-lg self-start sm:flex-shrink-0">
           {totalMonths} month{totalMonths !== 1 ? "s" : ""} of history
         </span>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {visible.map((highlight, i) => (
-          <div key={i} className="flex items-start gap-3 bg-[#0A1020] rounded-xl px-4 py-3">
-            <span className="text-[#14B8A6] text-sm mt-0.5 flex-shrink-0">◆</span>
-            <p className="text-sm text-[#CBD5E1]">{highlight}</p>
+          <div key={i} className="flex items-start gap-3 bg-[#F7F8F5] rounded-xl px-4 py-3">
+            <span className="text-[#4F7A65] text-sm mt-0.5 flex-shrink-0">◆</span>
+            <p className="text-sm text-[#374151]">{highlight}</p>
           </div>
         ))}
       </div>
@@ -42,7 +42,7 @@ export default function HistoricalInsights({ highlights, totalMonths }: Props) {
       {hasMore && (
         <button
           onClick={() => setExpanded(!expanded)}
-          className="mt-4 flex items-center gap-1.5 text-sm text-[#14B8A6] hover:text-[#0D9488] font-medium transition-colors w-full justify-center py-1"
+          className="mt-4 flex items-center gap-1.5 text-sm text-[#4F7A65] hover:text-[#3D6554] font-medium transition-colors w-full justify-center py-1"
         >
           {expanded ? (
             <>

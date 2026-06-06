@@ -11,8 +11,8 @@ import DataCoverageBar from "@/components/dashboard/DataCoverage";
 export const dynamic = "force-dynamic";
 
 const TYPE_COLORS: Record<string, string> = {
-  income: "text-[#22C55E]", expense: "text-[#F59E0B]",
-  savings: "text-[#3B82F6]", transfer: "text-[#94A3B8]",
+  income: "text-[#5B8A72]", expense: "text-[#C79A63]",
+  savings: "text-[#6B7280]", transfer: "text-[#9CA3AF]",
 };
 const TYPE_PREFIX: Record<string, string> = {
   income: "+", expense: "−", savings: "→", transfer: "⇄",
@@ -98,7 +98,7 @@ export default async function HistoryPage({ searchParams }: { searchParams: Prom
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h1 className="text-2xl font-bold">History</h1>
-          <p className="text-[#94A3B8] text-sm mt-0.5">
+          <p className="text-[#6B7280] text-sm mt-0.5">
             {displayTotal.toLocaleString()} transaction{displayTotal !== 1 ? "s" : ""}
           </p>
         </div>
@@ -121,13 +121,13 @@ export default async function HistoryPage({ searchParams }: { searchParams: Prom
         </div>
       ) : (
         <div className="card">
-          <div className="divide-y divide-[#1E293B]">
+          <div className="divide-y divide-[#E8EAE5]">
             {displayTransactions.map((tx) => (
               <div key={tx.id} className="flex items-center justify-between py-3 gap-3">
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-[#CBD5E1] truncate">{tx.description}</p>
+                  <p className="text-sm font-medium text-[#1F2937] truncate">{tx.description}</p>
                   <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                    <p className="text-xs text-[#94A3B8]">
+                    <p className="text-xs text-[#9CA3AF]">
                       {new Date(tx.transactionDate).toLocaleDateString("en-IE", { day: "numeric", month: "short", year: "numeric" })}
                     </p>
                     <RecategorizeButton

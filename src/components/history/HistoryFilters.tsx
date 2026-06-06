@@ -26,12 +26,9 @@ export default function HistoryFilters({
   const router = useRouter();
   const searchParams = useSearchParams();
   const [, startTransition] = useTransition();
-
-  // Controlled search input — syncs with URL param so clearing filters resets the field
   const [searchValue, setSearchValue] = useState(activeSearch);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Reset the input when activeSearch changes (e.g. "Clear all filters" clicked)
   useEffect(() => { setSearchValue(activeSearch); }, [activeSearch]);
 
   const update = useCallback((key: string, value: string) => {
@@ -41,7 +38,6 @@ export default function HistoryFilters({
     startTransition(() => router.push(`/history?${params.toString()}`));
   }, [router, searchParams]);
 
-  // Debounce search — waits 400ms after the user stops typing before navigating
   function handleSearchChange(value: string) {
     setSearchValue(value);
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -54,11 +50,10 @@ export default function HistoryFilters({
   };
 
   const hasFilters = activeType || activeCategory || activeYear || activeMonth || activeSearch;
-  const selectBase = "bg-[#111827] border border-[#1E293B] rounded-xl px-3 py-2.5 text-sm text-[#F8FAFC] focus:outline-none focus:border-[#14B8A6] capitalize min-h-[44px] w-full";
+  const selectBase = "bg-white border border-[#E8EAE5] rounded-xl px-3 py-2.5 text-sm text-[#1F2937] focus:outline-none focus:border-[#4F7A65] capitalize min-h-[44px] w-full";
 
   return (
     <div className="space-y-3">
-      {/* Search — controlled + debounced */}
       <div className="relative">
         <input
           type="text"
@@ -67,10 +62,9 @@ export default function HistoryFilters({
           className="input pr-10"
           onChange={(e) => handleSearchChange(e.target.value)}
         />
-        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[#94A3B8] text-sm pointer-events-none">⌕</span>
+        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9CA3AF] text-sm pointer-events-none">⌕</span>
       </div>
 
-      {/* Type filter */}
       <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide sm:flex-wrap sm:overflow-visible sm:pb-0">
         {[
           { label: "All", value: "" }, { label: "Income", value: "income" },
@@ -82,8 +76,8 @@ export default function HistoryFilters({
             onClick={() => update("type", f.value)}
             className={`flex-shrink-0 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors min-h-[44px] ${
               activeType === f.value || (!activeType && !f.value)
-                ? "bg-[#14B8A620] text-[#14B8A6]"
-                : "bg-[#1E293B] text-[#94A3B8] hover:text-[#F8FAFC]"
+                ? "bg-[#4F7A6515] text-[#4F7A65]"
+                : "bg-[#F3F4F0] text-[#6B7280] hover:text-[#1F2937]"
             }`}
           >
             {f.label}
@@ -91,7 +85,6 @@ export default function HistoryFilters({
         ))}
       </div>
 
-      {/* Dropdowns */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
         {categories.length > 0 && (
           <select value={activeCategory} onChange={(e) => update("category", e.target.value)} className={selectBase}>
@@ -112,7 +105,7 @@ export default function HistoryFilters({
       </div>
 
       {hasFilters && (
-        <button onClick={clearAll} className="text-sm text-[#94A3B8] hover:text-[#F8FAFC] transition-colors min-h-[44px] px-2">
+        <button onClick={clearAll} className="text-sm text-[#9CA3AF] hover:text-[#6B7280] transition-colors min-h-[44px] px-2">
           Clear all filters
         </button>
       )}
