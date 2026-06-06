@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { useState, useEffect } from "react";
 
 const IconHome = () => (
   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
@@ -41,6 +42,14 @@ const NAV_LINKS = [
 export default function Navbar() {
   const pathname = usePathname();
   const router   = useRouter();
+  const [pending, setPending] = useState<string | null>(null);
+
+  // Clear pending once the real pathname catches up
+  useEffect(() => { setPending(null); }, [pathname]);
+
+  function isActive(href: string) {
+    return pathname === href || pending === href;
+  }
 
   async function handleSignOut() {
     const supabase = createClient();
@@ -63,8 +72,9 @@ export default function Navbar() {
                 <Link
                   key={href}
                   href={href}
+                  onClick={() => setPending(href)}
                   className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                    pathname === href
+                    isActive(href)
                       ? "bg-[#4F7A6512] text-[#4F7A65]"
                       : "text-[#6B7280] hover:text-[#1F2937] hover:bg-[#F7F8F5]"
                   }`}
@@ -87,11 +97,12 @@ export default function Navbar() {
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-[#E8EAE5]">
         <div className="flex items-stretch">
           {NAV_LINKS.map(({ href, mobileLabel, Icon }) => {
-            const active = pathname === href;
+            const active = isActive(href);
             return (
               <Link
                 key={href}
                 href={href}
+                onClick={() => setPending(href)}
                 className={`relative flex flex-col items-center justify-center gap-1 flex-1 py-3 min-h-[56px] transition-colors ${
                   active ? "text-[#4F7A65]" : "text-[#9CA3AF] hover:text-[#6B7280]"
                 }`}
