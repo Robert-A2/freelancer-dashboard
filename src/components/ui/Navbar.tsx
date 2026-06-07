@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useState, useEffect } from "react";
+import FeedbackButton from "./FeedbackButton";
 
 const IconHome = () => (
   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
@@ -84,12 +85,15 @@ export default function Navbar() {
               ))}
             </div>
           </div>
-          <button
-            onClick={handleSignOut}
-            className="text-xs text-[#6A97B4] hover:text-[#7BA8C4] transition-colors px-3 py-2 min-h-[44px]"
-          >
-            Sign out
-          </button>
+          <div className="flex items-center gap-1">
+            <FeedbackButton />
+            <button
+              onClick={handleSignOut}
+              className="text-xs text-[#6A97B4] hover:text-[#7BA8C4] transition-colors px-3 py-2 min-h-[44px]"
+            >
+              Sign out
+            </button>
+          </div>
         </div>
       </nav>
 
