@@ -1,13 +1,15 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import {
-  getHistoricalData, getCategoryInsights, getClientInsights, getDataCoverage,
+  getHistoricalData, getCategoryInsights, getClientInsights, getDataCoverage, getIncomeConcentration,
 } from "@/lib/analytics-engine";
+import { buildHistoricalInsights } from "@/lib/intelligence-engine";
 import DataCoverageBar from "@/components/dashboard/DataCoverage";
 import { prisma } from "@/lib/prisma";
 import { formatCurrency } from "@/utils/finance";
 import CashflowChart from "@/components/analytics/CashflowChart";
 import ClientInsights from "@/components/analytics/ClientInsights";
+import FinancialStory from "@/components/analytics/FinancialStory";
 import CollapsibleSection from "@/components/ui/CollapsibleSection";
 import Link from "next/link";
 
@@ -51,7 +53,7 @@ export default async function AnalyticsPage() {
   // Last 12 months of the user's actual data (for income sources)
   const incSince = new Date(dataYear - 1, latestDataRecord ? latestDataRecord.month - 1 : 0, 1);
 
-  const [chartData, categoryInsights, categoryBreakdown, incomeBySource, ytdThis, ytdPrev, clientInsights, coverage] =
+  const [chartData, categoryInsights, categoryBreakdown, incomeBySource, ytdThis, ytdPrev, clientInsights, coverage, concentration] =
     await Promise.all([
       getHistoricalData(user.id, 999),
       getCategoryInsights(user.id),
@@ -79,9 +81,19 @@ export default async function AnalyticsPage() {
       }),
       getClientInsights(user.id),
       getDataCoverage(user.id),
+      getIncomeConcentration(user.id),
     ]);
 
   const hasData = chartData.some(d => d.income > 0 || d.expenses > 0);
+  const nonZeroMonths = chartData.filter((d) => d.income > 0 || d.expenses > 0).length;
+
+  const rankedInsights = buildHistoricalInsights(
+    chartData,
+    categoryInsights.topExpenseCategories,
+    categoryInsights.yearlySnapshots,
+    categoryInsights.seasonality,
+    concentration
+  );
 
   const ytdInc  = Number(ytdThis._sum.totalIncome   ?? 0);
   const ytdExp  = Number(ytdThis._sum.totalExpenses  ?? 0);
@@ -249,6 +261,19 @@ export default async function AnalyticsPage() {
             >
               <ClientInsights data={clientInsights} />
             </CollapsibleSection>
+          )}
+
+          {/* ── 5. Financial Story — full ranked & grouped historical insights ── */}
+          {rankedInsights.length > 0 && (
+            <div id="financial-story">
+              <CollapsibleSection
+                label="Your financial story"
+                title="Full historical analysis"
+                subtitle="Every insight from your upload history, grouped by theme."
+              >
+                <FinancialStory insights={rankedInsights} totalMonths={nonZeroMonths} />
+              </CollapsibleSection>
+            </div>
           )}
         </>
       )}

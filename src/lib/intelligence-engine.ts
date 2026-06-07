@@ -18,6 +18,16 @@ export interface RecentTx {
   category: string;
 }
 
+// Semantic grouping for historical insights — tagged at generation time
+// (where the meaning is unambiguous) so the UI can rank and group by theme
+// instead of guessing from the rendered sentence.
+export type InsightCategory = "growth" | "cashflow" | "spending" | "seasonality" | "clients";
+
+export interface RankedInsight {
+  text: string;
+  category: InsightCategory;
+}
+
 export interface DashboardIntelligence {
   snapshotSummary: string;
   snapshotContext: string[];
@@ -32,9 +42,7 @@ export interface DashboardIntelligence {
   businessTrendDirection: "improving" | "stable" | "weakening";
   biggestRisk: string | null;
   biggestOpportunity: string | null;
-  historicalHighlights: string[];
   seasonalInsights: string[];
-  categoryInsights: string[];
   notableTransactions: string[];
 }
 
@@ -234,6 +242,274 @@ function phraseIncomeYoYDrop(it: IncomeType, dropPct: number, prevYear: number, 
   return `${base} Additional client revenue may be required to restore historical cashflow levels.`;
 }
 
+// ── Historical insights — ranked and grouped by theme ─────────────────────
+// Tagged with a category at the exact point each insight is generated (where
+// its meaning is unambiguous), then sorted by decision-impact priority so
+// consumers can show "the top N that matter" instead of a wall of text.
+
+const INSIGHT_CATEGORY_PRIORITY: Record<InsightCategory, number> = {
+  growth: 1,
+  cashflow: 2,
+  spending: 3,
+  seasonality: 4,
+  clients: 5,
+};
+
+export function buildHistoricalInsights(
+  history: MonthPoint[],
+  categories: CategoryTrend[],
+  yearlySnapshots: YearlySnapshot[],
+  seasonality: MonthlySeasonality[],
+  incomeConcentration?: { topSourceDesc: string | null; topSourcePct: number; totalSources: number; isHighConcentration: boolean }
+): RankedInsight[] {
+  const active = history.filter((h) => h.income > 0 || h.expenses > 0);
+  const avgIncome = avg(active.map((h) => h.income));
+  const avgExpenses = avg(active.map((h) => h.expenses));
+  const firstMonth = active[0] ?? null;
+  const lastMonth = active[active.length - 1] ?? null;
+
+  const insights: RankedInsight[] = [];
+  const push = (category: InsightCategory, text: string) => insights.push({ text, category });
+
+  // ── Historical highlights — exact years and months ─────────────────────
+
+  if (yearlySnapshots.length >= 2) {
+    const bestIncYear = yearlySnapshots.reduce((b, y) => (y.income > b.income ? y : b));
+    const highExpYear = yearlySnapshots.reduce((b, y) => (y.expenses > b.expenses ? y : b));
+    const firstYear = yearlySnapshots[0];
+    const lastYear = yearlySnapshots[yearlySnapshots.length - 1];
+
+    push("growth", `Best income year: ${bestIncYear.year}, ${eur(bestIncYear.income)} in total income.`);
+
+    if (yearlySnapshots.length >= 3 && firstYear.year !== lastYear.year) {
+      // Only use firstYear as a comparison base if it has at least 6 months of data.
+      // A partial first year (e.g. only Dec 2023) produces absurd percentages.
+      const firstYearIsComplete = firstYear.monthCount >= 6;
+
+      const incGrowth = pct(lastYear.income, firstYear.income);
+      if (firstYearIsComplete && Math.abs(incGrowth) >= 10 && Math.abs(incGrowth) <= 1000) {
+        push(
+          "growth",
+          `Income ${incGrowth > 0 ? "grew" : "declined"} ${Math.abs(incGrowth)}% from ${firstYear.year} (${eur(firstYear.income)}) to ${lastYear.year} (${eur(lastYear.income)}).`
+        );
+      }
+
+      // Show highest expense year — only attach a growth % when the base year is reliable
+      if (highExpYear.year !== firstYear.year) {
+        const expGrowth = pct(highExpYear.expenses, firstYear.expenses);
+        const showPct = firstYearIsComplete && expGrowth >= 20 && expGrowth <= 1000;
+        push(
+          "spending",
+          showPct
+            ? `Highest expense year: ${highExpYear.year} at ${eur(highExpYear.expenses)}. Expenses grew ${expGrowth}% since ${firstYear.year}.`
+            : `Highest expense year: ${highExpYear.year}, ${eur(highExpYear.expenses)} in total expenses.`
+        );
+      }
+    }
+
+    // Overall cashflow margin
+    const totalInc = yearlySnapshots.reduce((s, y) => s + y.income, 0);
+    const totalExp = yearlySnapshots.reduce((s, y) => s + y.expenses, 0);
+    if (totalInc > 0) {
+      const margin = Math.round(((totalInc - totalExp) / totalInc) * 100);
+      push(
+        "cashflow",
+        `Overall cashflow margin from ${firstYear.year} to ${lastYear.year}: ${margin}% of income${margin >= 20 ? " — strong." : margin >= 10 ? " — healthy." : margin >= 0 ? " — tight. Watch expense growth." : " — negative overall. Expenses exceeded income across this period."}`
+      );
+    }
+
+    // Cashflow streak with exact dates
+    const streak = longestPositiveStreakWithDates(active);
+    if (streak) {
+      push(
+        "cashflow",
+        `Longest positive cashflow streak: ${streak.length} consecutive months (${monthLabel(streak.startYear, streak.startMonth, "short")} – ${monthLabel(streak.endYear, streak.endMonth, "short")}).`
+      );
+    }
+  } else if (active.length >= 3 && firstMonth && lastMonth) {
+    push(
+      "growth",
+      `Average monthly income from ${monthLabel(firstMonth.year, firstMonth.monthNum, "short")} to ${monthLabel(lastMonth.year, lastMonth.monthNum, "short")}: ${eur(avgIncome)}.`
+    );
+    push("spending", `Average monthly expenses across this period: ${eur(avgExpenses)}.`);
+    if (avgIncome > 0 && avgExpenses > 0) {
+      const avgCfMargin = Math.round(((avgIncome - avgExpenses) / avgIncome) * 100);
+      push(
+        "cashflow",
+        `Average cashflow margin: ${avgCfMargin}% of income — ${avgCfMargin >= 20 ? "strong." : avgCfMargin >= 10 ? "healthy." : avgCfMargin >= 0 ? "tight." : "negative (expenses exceeded income on average)."}`
+      );
+    }
+  }
+
+  // Best income month from all history
+  if (active.length >= 3) {
+    const best = active.reduce((b, h) => (h.income > b.income ? h : b));
+    if (best.income > 0) {
+      push(
+        "growth",
+        `Best income month on record: ${monthLabel(best.year, best.monthNum, "short")} at ${eur(best.income)}.`
+      );
+    }
+  }
+
+  // ── Cashflow consistency check ──────────────────────────────────────────
+  {
+    const recentActive6 = active.slice(-6);
+    const recentNegCount = recentActive6.filter(h => h.income - h.expenses < 0).length;
+    if (recentNegCount >= 3 && active.length >= 6) {
+      push(
+        "cashflow",
+        `Cashflow was negative in ${recentNegCount} of the last 6 months. Building a 2–3 month expense reserve would protect against future income gaps.`
+      );
+    }
+
+    // Flag if cashflow margin deteriorated year-over-year
+    if (yearlySnapshots.length >= 2) {
+      const lastY = yearlySnapshots[yearlySnapshots.length - 1];
+      const prevY = yearlySnapshots[yearlySnapshots.length - 2];
+      const lastMargin = lastY.income > 0 ? (lastY.income - lastY.expenses) / lastY.income : 0;
+      const prevMargin = prevY.income > 0 ? (prevY.income - prevY.expenses) / prevY.income : 0;
+      if (prevMargin > 0.1 && lastMargin < prevMargin * 0.5) {
+        push(
+          "cashflow",
+          `Cashflow margin fell from ${Math.round(prevMargin * 100)}% in ${prevY.year} to ${Math.round(lastMargin * 100)}% in ${lastY.year}. Expenses are growing faster than income.`
+        );
+      }
+    }
+  }
+
+  // ── Income gap detection ─────────────────────────────────────────────────
+  // Months where the user had expenses but zero income.
+  // These are genuine coverage gaps — the user was spending with no earnings.
+  {
+    const incomeGaps = history.filter((h) => h.income === 0 && h.expenses > 0);
+    if (incomeGaps.length >= 1 && active.length >= 6) {
+      const recentGaps = incomeGaps.filter((h) => {
+        const d = new Date(h.year, h.monthNum - 1);
+        const twelveMonthsAgo = new Date();
+        twelveMonthsAgo.setFullYear(twelveMonthsAgo.getFullYear() - 1);
+        return d >= twelveMonthsAgo;
+      });
+      const totalGaps = incomeGaps.length;
+      const avgExpInGap = avg(incomeGaps.map((h) => h.expenses));
+
+      if (recentGaps.length >= 1) {
+        push(
+          "cashflow",
+          `Income gap${totalGaps !== 1 ? "s" : ""} detected: ${totalGaps} month${totalGaps !== 1 ? "s" : ""} with expenses but no income recorded (avg ${eur(avgExpInGap)}/month in gaps). A 2–3 month income reserve would cover future gaps.`
+        );
+      }
+    }
+  }
+
+  // ── Seasonal insights — specific months and quarters ────────────────────
+
+  const activeSeason = seasonality.filter((s) => s.sampleCount >= 2 && s.avgIncome > 0);
+
+  if (activeSeason.length >= 4) {
+    const quarterData = QUARTERS.map((q) => ({
+      label: q.label,
+      ...quarterAvg(seasonality, q.months),
+    })).filter((q) => q.income > 0);
+
+    if (quarterData.length >= 2) {
+      const peakQ = quarterData.reduce((b, q) => (q.income > b.income ? q : b));
+      const lowestQ = quarterData.reduce((b, q) => (q.income < b.income ? q : b));
+
+      if (peakQ.label !== lowestQ.label && pct(peakQ.income, lowestQ.income) > 10) {
+        push(
+          "seasonality",
+          `Income peaks in ${peakQ.label} (averaging ${eur(peakQ.income)}/month historically) and is lowest in ${lowestQ.label} (averaging ${eur(lowestQ.income)}/month).`
+        );
+      }
+
+      const peakExpQ = quarterData.reduce((b, q) => (q.expenses > b.expenses ? q : b));
+      if (peakExpQ.expenses > 0 && pct(peakExpQ.expenses, avg(quarterData.map((q) => q.expenses))) > 15) {
+        push(
+          "seasonality",
+          `Expenses are highest in ${peakExpQ.label} (avg ${eur(peakExpQ.expenses)}/month) . Plan cashflow buffer for this period.`
+        );
+      }
+    }
+
+    // Best and worst income months across history
+    const peak = activeSeason.reduce((b, s) => (s.avgIncome > b.avgIncome ? s : b));
+    const lowest = activeSeason.reduce((b, s) => (s.avgIncome < b.avgIncome ? s : b));
+    if (peak.monthName !== lowest.monthName) {
+      push(
+        "seasonality",
+        `${peak.monthName} is historically your strongest income month (avg ${eur(peak.avgIncome)}); ${lowest.monthName} is typically your weakest (avg ${eur(lowest.avgIncome)}).`
+      );
+    }
+  }
+
+  // ── Category insights — exact years and growth amounts ──────────────────
+
+  for (const cat of categories.slice(0, 6)) {
+    const range = categoryYearRange(cat);
+    if (!range) continue;
+
+    const { from, to, fromAmt, toAmt } = range;
+    if (from === to) continue;
+
+    const totalGrowth = pct(toAmt, fromAmt);
+
+    if (cat.yearOverYearTrend === "growing" && totalGrowth >= 20) {
+      push(
+        "spending",
+        `${displayCat(cat.category)} costs grew from ${eur(fromAmt)} in ${from} to ${eur(toAmt)} in ${to} (+${totalGrowth}% over ${to - from} year${to - from !== 1 ? "s" : ""}).`
+      );
+    } else if (cat.yearOverYearTrend === "declining" && totalGrowth <= -20) {
+      push(
+        "spending",
+        `${displayCat(cat.category)} costs fell from ${eur(fromAmt)} in ${from} to ${eur(toAmt)} in ${to} (${totalGrowth}% reduction over ${to - from} year${to - from !== 1 ? "s" : ""}).`
+      );
+    } else if (toAmt > fromAmt * 2) {
+      push(
+        "spending",
+        `${displayCat(cat.category)} expenses more than doubled from ${eur(fromAmt)} in ${from} to ${eur(toAmt)} in ${to}.`
+      );
+    }
+  }
+
+  // Subscription growth check with exact years
+  const subCat = categories.find((c) => c.category === "subscriptions" || c.category === "software");
+  if (subCat) {
+    const years = Object.keys(subCat.yearlyTotals).map(Number).sort();
+    if (years.length >= 3) {
+      const growingEveryYear = years.every((y, i) => {
+        if (i === 0) return true;
+        return (subCat.yearlyTotals[y] ?? 0) >= (subCat.yearlyTotals[years[i - 1]] ?? 0);
+      });
+      if (growingEveryYear) {
+        push(
+          "spending",
+          `${displayCat(subCat.category)} costs have increased every year from ${years[0]} (${eur(subCat.yearlyTotals[years[0]] ?? 0)}) to ${years[years.length - 1]} (${eur(subCat.yearlyTotals[years[years.length - 1]] ?? 0)}).`
+        );
+      }
+    }
+  }
+
+  // ── Client concentration ─────────────────────────────────────────────────
+  if (incomeConcentration && incomeConcentration.totalSources > 0) {
+    if (incomeConcentration.isHighConcentration) {
+      push(
+        "clients",
+        `Client concentration: ${incomeConcentration.topSourcePct}% of income over the last 12 months came from a single source${incomeConcentration.topSourceDesc ? ` (${incomeConcentration.topSourceDesc})` : ""}. Diversifying reduces the impact if that source slows down.`
+      );
+    } else {
+      push(
+        "clients",
+        `Income is reasonably diversified: your largest client made up ${incomeConcentration.topSourcePct}% of the last 12 months' income across ${incomeConcentration.totalSources} sources.`
+      );
+    }
+  }
+
+  // Stable sort (guaranteed in Node/ES2019+) keeps each category's insights in
+  // their original importance-order while grouping by decision-impact priority.
+  return [...insights].sort((a, b) => INSIGHT_CATEGORY_PRIORITY[a.category] - INSIGHT_CATEGORY_PRIORITY[b.category]);
+}
+
 // ── Main export ────────────────────────────────────────────────────────────
 
 export function generateDashboardIntelligence(
@@ -274,9 +550,7 @@ export function generateDashboardIntelligence(
     businessTrendDirection: "stable",
     biggestRisk: null,
     biggestOpportunity: null,
-    historicalHighlights: [],
     seasonalInsights: [],
-    categoryInsights: [],
     notableTransactions: [],
   };
 
@@ -783,128 +1057,12 @@ export function generateDashboardIntelligence(
     }
   }
 
-  // ── HISTORICAL HIGHLIGHTS — exact years and months ───────────────────────
+  // ── HISTORICAL INSIGHTS — ranked and grouped by theme ────────────────────
+  // Generated once via the shared builder so the Dashboard and Analytics
+  // pages render identical, consistently-categorised insights.
 
-  const historicalHighlights: string[] = [];
-
-  if (yearlySnapshots.length >= 2) {
-    const bestIncYear = yearlySnapshots.reduce((b, y) => (y.income > b.income ? y : b));
-    const highExpYear = yearlySnapshots.reduce((b, y) => (y.expenses > b.expenses ? y : b));
-    const firstYear = yearlySnapshots[0];
-    const lastYear = yearlySnapshots[yearlySnapshots.length - 1];
-
-    historicalHighlights.push(`Best income year: ${bestIncYear.year}, ${eur(bestIncYear.income)} in total income.`);
-
-    if (yearlySnapshots.length >= 3 && firstYear.year !== lastYear.year) {
-      // Only use firstYear as a comparison base if it has at least 6 months of data.
-      // A partial first year (e.g. only Dec 2023) produces absurd percentages.
-      const firstYearIsComplete = firstYear.monthCount >= 6;
-
-      const incGrowth = pct(lastYear.income, firstYear.income);
-      if (firstYearIsComplete && Math.abs(incGrowth) >= 10 && Math.abs(incGrowth) <= 1000) {
-        historicalHighlights.push(
-          `Income ${incGrowth > 0 ? "grew" : "declined"} ${Math.abs(incGrowth)}% from ${firstYear.year} (${eur(firstYear.income)}) to ${lastYear.year} (${eur(lastYear.income)}).`
-        );
-      }
-
-      // Show highest expense year — only attach a growth % when the base year is reliable
-      if (highExpYear.year !== firstYear.year) {
-        const expGrowth = pct(highExpYear.expenses, firstYear.expenses);
-        const showPct = firstYearIsComplete && expGrowth >= 20 && expGrowth <= 1000;
-        historicalHighlights.push(
-          showPct
-            ? `Highest expense year: ${highExpYear.year} at ${eur(highExpYear.expenses)}. Expenses grew ${expGrowth}% since ${firstYear.year}.`
-            : `Highest expense year: ${highExpYear.year}, ${eur(highExpYear.expenses)} in total expenses.`
-        );
-      }
-    }
-
-    // Overall cashflow margin
-    const totalInc = yearlySnapshots.reduce((s, y) => s + y.income, 0);
-    const totalExp = yearlySnapshots.reduce((s, y) => s + y.expenses, 0);
-    if (totalInc > 0) {
-      const margin = Math.round(((totalInc - totalExp) / totalInc) * 100);
-      historicalHighlights.push(
-        `Overall cashflow margin from ${firstYear.year} to ${lastYear.year}: ${margin}% of income${margin >= 20 ? " — strong." : margin >= 10 ? " — healthy." : margin >= 0 ? " — tight. Watch expense growth." : " — negative overall. Expenses exceeded income across this period."}`
-      );
-    }
-
-    // Cashflow streak with exact dates
-    const streak = longestPositiveStreakWithDates(active);
-    if (streak) {
-      historicalHighlights.push(
-        `Longest positive cashflow streak: ${streak.length} consecutive months (${monthLabel(streak.startYear, streak.startMonth, "short")} – ${monthLabel(streak.endYear, streak.endMonth, "short")}).`
-      );
-    }
-  } else if (active.length >= 3 && firstMonth && lastMonth) {
-    historicalHighlights.push(
-      `Average monthly income from ${monthLabel(firstMonth.year, firstMonth.monthNum, "short")} to ${monthLabel(lastMonth.year, lastMonth.monthNum, "short")}: ${eur(avgIncome)}.`
-    );
-    historicalHighlights.push(`Average monthly expenses across this period: ${eur(avgExpenses)}.`);
-    if (avgIncome > 0 && avgExpenses > 0) {
-      const avgCfMargin = Math.round(((avgIncome - avgExpenses) / avgIncome) * 100);
-      historicalHighlights.push(
-        `Average cashflow margin: ${avgCfMargin}% of income — ${avgCfMargin >= 20 ? "strong." : avgCfMargin >= 10 ? "healthy." : avgCfMargin >= 0 ? "tight." : "negative (expenses exceeded income on average)."}`
-      );
-    }
-  }
-
-  // Best income month from all history
-  if (active.length >= 3) {
-    const best = active.reduce((b, h) => (h.income > b.income ? h : b));
-    if (best.income > 0) {
-      historicalHighlights.push(
-        `Best income month on record: ${monthLabel(best.year, best.monthNum, "short")} at ${eur(best.income)}.`
-      );
-    }
-  }
-
-  // ── CASHFLOW CONSISTENCY CHECK ────────────────────────────────────────────
-  {
-    const recentActive6 = active.slice(-6);
-    const recentNegCount = recentActive6.filter(h => h.income - h.expenses < 0).length;
-    if (recentNegCount >= 3 && active.length >= 6) {
-      historicalHighlights.push(
-        `Cashflow was negative in ${recentNegCount} of the last 6 months. Building a 2–3 month expense reserve would protect against future income gaps.`
-      );
-    }
-
-    // Flag if cashflow margin deteriorated year-over-year
-    if (yearlySnapshots.length >= 2) {
-      const lastY = yearlySnapshots[yearlySnapshots.length - 1];
-      const prevY = yearlySnapshots[yearlySnapshots.length - 2];
-      const lastMargin = lastY.income > 0 ? (lastY.income - lastY.expenses) / lastY.income : 0;
-      const prevMargin = prevY.income > 0 ? (prevY.income - prevY.expenses) / prevY.income : 0;
-      if (prevMargin > 0.1 && lastMargin < prevMargin * 0.5) {
-        historicalHighlights.push(
-          `Cashflow margin fell from ${Math.round(prevMargin * 100)}% in ${prevY.year} to ${Math.round(lastMargin * 100)}% in ${lastY.year}. Expenses are growing faster than income.`
-        );
-      }
-    }
-  }
-
-  // ── INCOME GAP DETECTION ──────────────────────────────────────────────────
-  // Months where the user had expenses but zero income.
-  // These are genuine coverage gaps — the user was spending with no earnings.
-  {
-    const incomeGaps = history.filter((h) => h.income === 0 && h.expenses > 0);
-    if (incomeGaps.length >= 1 && active.length >= 6) {
-      const recentGaps = incomeGaps.filter((h) => {
-        const d = new Date(h.year, h.monthNum - 1);
-        const twelveMonthsAgo = new Date();
-        twelveMonthsAgo.setFullYear(twelveMonthsAgo.getFullYear() - 1);
-        return d >= twelveMonthsAgo;
-      });
-      const totalGaps = incomeGaps.length;
-      const avgExpInGap = avg(incomeGaps.map((h) => h.expenses));
-
-      if (recentGaps.length >= 1) {
-        historicalHighlights.push(
-          `Income gap${totalGaps !== 1 ? "s" : ""} detected: ${totalGaps} month${totalGaps !== 1 ? "s" : ""} with expenses but no income recorded (avg ${eur(avgExpInGap)}/month in gaps). A 2–3 month income reserve would cover future gaps.`
-        );
-      }
-    }
-  }
+  const rankedInsights = buildHistoricalInsights(history, categories, yearlySnapshots, seasonality, incomeConcentration);
+  const seasonalInsights = rankedInsights.filter((r) => r.category === "seasonality").map((r) => r.text);
 
   // ── BIGGEST RISK ──────────────────────────────────────────────────────────
   // Priority order: structural (income+expense squeeze) → growing category →
@@ -952,91 +1110,6 @@ export function generateDashboardIntelligence(
     biggestRisk = `${uncatPctVal}% of expenses are uncategorised . Hidden spending patterns may be affecting cashflow without being visible.`;
   } else if (riskIncDir === "down") {
     biggestRisk = `Income has been declining recently, averaging ${eur(avg(riskWin.map((h) => h.income)))}/month over the last ${riskWin.length} months.`;
-  }
-
-  // ── SEASONAL INSIGHTS — specific months and quarters ─────────────────────
-
-  const seasonalInsights: string[] = [];
-
-  const activeSeason = seasonality.filter((s) => s.sampleCount >= 2 && s.avgIncome > 0);
-
-  if (activeSeason.length >= 4) {
-    const quarterData = QUARTERS.map((q) => ({
-      label: q.label,
-      ...quarterAvg(seasonality, q.months),
-    })).filter((q) => q.income > 0);
-
-    if (quarterData.length >= 2) {
-      const peakQ = quarterData.reduce((b, q) => (q.income > b.income ? q : b));
-      const lowestQ = quarterData.reduce((b, q) => (q.income < b.income ? q : b));
-
-      if (peakQ.label !== lowestQ.label && pct(peakQ.income, lowestQ.income) > 10) {
-        seasonalInsights.push(
-          `Income peaks in ${peakQ.label} (averaging ${eur(peakQ.income)}/month historically) and is lowest in ${lowestQ.label} (averaging ${eur(lowestQ.income)}/month).`
-        );
-      }
-
-      const peakExpQ = quarterData.reduce((b, q) => (q.expenses > b.expenses ? q : b));
-      if (peakExpQ.expenses > 0 && pct(peakExpQ.expenses, avg(quarterData.map((q) => q.expenses))) > 15) {
-        seasonalInsights.push(
-          `Expenses are highest in ${peakExpQ.label} (avg ${eur(peakExpQ.expenses)}/month) . Plan cashflow buffer for this period.`
-        );
-      }
-    }
-
-    // Best and worst income months across history
-    const peak = activeSeason.reduce((b, s) => (s.avgIncome > b.avgIncome ? s : b));
-    const lowest = activeSeason.reduce((b, s) => (s.avgIncome < b.avgIncome ? s : b));
-    if (peak.monthName !== lowest.monthName) {
-      seasonalInsights.push(
-        `${peak.monthName} is historically your strongest income month (avg ${eur(peak.avgIncome)}); ${lowest.monthName} is typically your weakest (avg ${eur(lowest.avgIncome)}).`
-      );
-    }
-  }
-
-  // ── CATEGORY INSIGHTS — exact years and growth amounts ───────────────────
-
-  const categoryInsights: string[] = [];
-
-  for (const cat of categories.slice(0, 6)) {
-    const range = categoryYearRange(cat);
-    if (!range) continue;
-
-    const { from, to, fromAmt, toAmt } = range;
-    if (from === to) continue;
-
-    const totalGrowth = pct(toAmt, fromAmt);
-
-    if (cat.yearOverYearTrend === "growing" && totalGrowth >= 20) {
-      categoryInsights.push(
-        `${displayCat(cat.category)} costs grew from ${eur(fromAmt)} in ${from} to ${eur(toAmt)} in ${to} (+${totalGrowth}% over ${to - from} year${to - from !== 1 ? "s" : ""}).`
-      );
-    } else if (cat.yearOverYearTrend === "declining" && totalGrowth <= -20) {
-      categoryInsights.push(
-        `${displayCat(cat.category)} costs fell from ${eur(fromAmt)} in ${from} to ${eur(toAmt)} in ${to} (${totalGrowth}% reduction over ${to - from} year${to - from !== 1 ? "s" : ""}).`
-      );
-    } else if (toAmt > fromAmt * 2) {
-      categoryInsights.push(
-        `${displayCat(cat.category)} expenses more than doubled from ${eur(fromAmt)} in ${from} to ${eur(toAmt)} in ${to}.`
-      );
-    }
-  }
-
-  // Subscription growth check with exact years
-  const subCat = categories.find((c) => c.category === "subscriptions" || c.category === "software");
-  if (subCat) {
-    const years = Object.keys(subCat.yearlyTotals).map(Number).sort();
-    if (years.length >= 3) {
-      const growingEveryYear = years.every((y, i) => {
-        if (i === 0) return true;
-        return (subCat.yearlyTotals[y] ?? 0) >= (subCat.yearlyTotals[years[i - 1]] ?? 0);
-      });
-      if (growingEveryYear) {
-        categoryInsights.push(
-          `${displayCat(subCat.category)} costs have increased every year from ${years[0]} (${eur(subCat.yearlyTotals[years[0]] ?? 0)}) to ${years[years.length - 1]} (${eur(subCat.yearlyTotals[years[years.length - 1]] ?? 0)}).`
-        );
-      }
-    }
   }
 
   // ── NOTABLE TRANSACTIONS ─────────────────────────────────────────────────
@@ -1093,9 +1166,7 @@ export function generateDashboardIntelligence(
     businessTrendDirection,
     biggestRisk,
     biggestOpportunity,
-    historicalHighlights,
     seasonalInsights,
-    categoryInsights,
     notableTransactions,
   };
 }

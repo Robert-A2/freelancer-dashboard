@@ -9,7 +9,7 @@ import {
   getIncomeConcentration,
 } from "@/lib/analytics-engine";
 import { getLatestForecast } from "@/lib/forecast-engine";
-import { generateDashboardIntelligence } from "@/lib/intelligence-engine";
+import { generateDashboardIntelligence, buildHistoricalInsights } from "@/lib/intelligence-engine";
 import { prisma } from "@/lib/prisma";
 import SummaryCards from "@/components/dashboard/SummaryCards";
 import TrendsChart from "@/components/dashboard/TrendsChart";
@@ -138,14 +138,13 @@ export default async function DashboardPage({
   // Fix 3: First-upload detection — show welcome banner on first arrival after upload
   const isFirstUpload = params.firstUpload === "true" && hasData;
 
-  // Combine all historical intelligence into one section, tagged by where it
-  // came from so the UI can give each kind its own accent colour and icon —
-  // otherwise every card looks identical and the section reads as a wall of text.
-  const allHistoricalInsights = [
-    ...intel.historicalHighlights.map((text) => ({ text, type: "overview" as const })),
-    ...intel.seasonalInsights.map((text) => ({ text, type: "seasonal" as const })),
-    ...intel.categoryInsights.map((text) => ({ text, type: "category" as const })),
-  ].filter((insight) => Boolean(insight.text));
+  const rankedInsights = buildHistoricalInsights(
+    chartData,
+    categoryInsights.topExpenseCategories,
+    categoryInsights.yearlySnapshots,
+    categoryInsights.seasonality,
+    concentration
+  );
 
   return (
     <div className="space-y-8">
@@ -261,9 +260,9 @@ export default async function DashboardPage({
             />
           </div>
 
-          {allHistoricalInsights.length > 0 && (
+          {rankedInsights.length > 0 && (
             <HistoricalInsights
-              highlights={allHistoricalInsights}
+              insights={rankedInsights}
               totalMonths={nonZeroMonths}
             />
           )}
