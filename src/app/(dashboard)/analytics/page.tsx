@@ -8,6 +8,7 @@ import { prisma } from "@/lib/prisma";
 import { formatCurrency } from "@/utils/finance";
 import CashflowChart from "@/components/analytics/CashflowChart";
 import ClientInsights from "@/components/analytics/ClientInsights";
+import CollapsibleSection from "@/components/ui/CollapsibleSection";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
@@ -126,126 +127,128 @@ export default async function AnalyticsPage() {
       {hasData && (
         <>
           {/* ── 1. Year-to-date vs prior year ─────────────────────────────── */}
-          <div className="card">
-            <div className="flex items-center justify-between mb-5">
-              <div>
-                <p className="label mb-1">Year to date</p>
-                <h2 className="text-lg font-semibold">{dataYear} vs {prevYear}</h2>
-              </div>
-              {prevInc === 0 && <span className="text-xs text-[#9CA3AF]">No {prevYear} data yet</span>}
-            </div>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-              {[
-                { label: "Income",   curr: ytdInc,  prev: prevInc,  color: "text-[#5B8A72]", invert: false, isCurrency: true  },
-                { label: "Expenses", curr: ytdExp,  prev: prevExp,  color: "text-[#C79A63]", invert: true,  isCurrency: true  },
-                { label: "Cashflow", curr: ytdCash, prev: prevCash, color: ytdCash >= 0 ? "text-[#4F7A65]" : "text-[#C66A5A]", invert: false, isCurrency: true },
-                { label: "Runway",   curr: ytdRunway, prev: prevRunway,
-                  color: ytdRunway >= 0.5 ? "text-[#5B8A72]" : ytdRunway >= 0 ? "text-[#C79A63]" : "text-[#C66A5A]",
-                  invert: false, isCurrency: false },
-              ].map((item) => {
-                const change = prevInc > 0 ? pctChange(item.curr, item.prev) : null;
-                const displayVal = item.isCurrency
-                  ? formatCurrency(item.curr)
-                  : `${item.curr >= 0 ? "+" : "−"}${Math.abs(item.curr).toFixed(1)} mo`;
-                const prevDisplayVal = item.isCurrency
-                  ? `${formatCurrency(item.prev)} last yr`
-                  : `${item.prev >= 0 ? "+" : "−"}${Math.abs(item.prev).toFixed(1)} mo last yr`;
-                return (
-                  <div key={item.label} className="bg-[#F7F8F5] rounded-xl p-4">
-                    <p className="label mb-1">{item.label}</p>
-                    <p className={`text-lg font-bold tabular-nums ${item.color} mb-1`}>{displayVal}</p>
-                    <div className="flex items-center gap-2">
-                      {change !== null && <ChangeChip value={change} invert={item.invert} />}
-                      {item.prev !== 0 && <span className="text-xs text-[#9CA3AF]">{prevDisplayVal}</span>}
+          <CollapsibleSection
+            label="Year to date"
+            title={`${dataYear} vs ${prevYear}`}
+          >
+            <div className="card">
+              {prevInc === 0 && (
+                <p className="text-xs text-[#9CA3AF] mb-4">No {prevYear} data yet</p>
+              )}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                {[
+                  { label: "Income",   curr: ytdInc,  prev: prevInc,  color: "text-[#5B8A72]", invert: false, isCurrency: true  },
+                  { label: "Expenses", curr: ytdExp,  prev: prevExp,  color: "text-[#C79A63]", invert: true,  isCurrency: true  },
+                  { label: "Cashflow", curr: ytdCash, prev: prevCash, color: ytdCash >= 0 ? "text-[#4F7A65]" : "text-[#C66A5A]", invert: false, isCurrency: true },
+                  { label: "Runway",   curr: ytdRunway, prev: prevRunway,
+                    color: ytdRunway >= 0.5 ? "text-[#5B8A72]" : ytdRunway >= 0 ? "text-[#C79A63]" : "text-[#C66A5A]",
+                    invert: false, isCurrency: false },
+                ].map((item) => {
+                  const change = prevInc > 0 ? pctChange(item.curr, item.prev) : null;
+                  const displayVal = item.isCurrency
+                    ? formatCurrency(item.curr)
+                    : `${item.curr >= 0 ? "+" : "−"}${Math.abs(item.curr).toFixed(1)} mo`;
+                  const prevDisplayVal = item.isCurrency
+                    ? `${formatCurrency(item.prev)} last yr`
+                    : `${item.prev >= 0 ? "+" : "−"}${Math.abs(item.prev).toFixed(1)} mo last yr`;
+                  return (
+                    <div key={item.label} className="bg-[#F7F8F5] rounded-xl p-4">
+                      <p className="label mb-1">{item.label}</p>
+                      <p className={`text-lg font-bold tabular-nums ${item.color} mb-1`}>{displayVal}</p>
+                      <div className="flex items-center gap-2">
+                        {change !== null && <ChangeChip value={change} invert={item.invert} />}
+                        {item.prev !== 0 && <span className="text-xs text-[#9CA3AF]">{prevDisplayVal}</span>}
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
-          </div>
+          </CollapsibleSection>
 
           {/* ── 2. Cashflow chart with intelligence ───────────────────────── */}
-          <CashflowChart data={chartData} />
+          <CollapsibleSection label="Monthly cashflow" title="Income minus Expenses">
+            <CashflowChart data={chartData} hideHeader />
+          </CollapsibleSection>
 
           {/* ── 3. Income sources + Expense breakdown ─────────────────────── */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 md:gap-6">
-            <div className="card">
-              <p className="label mb-1">Income sources</p>
-              <p className="text-xs text-[#9CA3AF] mb-4">Last 12 months, where money came in</p>
-              {incomeBySource.length === 0 ? (
-                <p className="text-[#6B7280] text-sm">No income data</p>
-              ) : (
-                <div className="space-y-4">
-                  {incomeBySource.map((src) => {
-                    const amount = Number(src._sum.amount ?? 0);
-                    const pct = totalIncSrc > 0 ? Math.round((amount / totalIncSrc) * 100) : 0;
-                    return (
-                      <div key={src.category}>
-                        <div className="flex justify-between text-sm mb-1">
-                          <span className="capitalize text-[#4B5563]">{src.category}</span>
-                          <div className="flex gap-3">
-                            <span className="text-[#9CA3AF]">{pct}%</span>
-                            <span className="font-medium text-[#5B8A72]">{formatCurrency(amount)}</span>
+          <CollapsibleSection label="Breakdowns" title="Income sources & Expenses">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 md:gap-6">
+              <div className="card">
+                <p className="label mb-1">Income sources</p>
+                <p className="text-xs text-[#9CA3AF] mb-4">Last 12 months, where money came in</p>
+                {incomeBySource.length === 0 ? (
+                  <p className="text-[#6B7280] text-sm">No income data</p>
+                ) : (
+                  <div className="space-y-4">
+                    {incomeBySource.map((src) => {
+                      const amount = Number(src._sum.amount ?? 0);
+                      const pct = totalIncSrc > 0 ? Math.round((amount / totalIncSrc) * 100) : 0;
+                      return (
+                        <div key={src.category}>
+                          <div className="flex justify-between text-sm mb-1">
+                            <span className="capitalize text-[#4B5563]">{src.category}</span>
+                            <div className="flex gap-3">
+                              <span className="text-[#9CA3AF]">{pct}%</span>
+                              <span className="font-medium text-[#5B8A72]">{formatCurrency(amount)}</span>
+                            </div>
+                          </div>
+                          <div className="h-1.5 bg-[#E8EAE5] rounded-full overflow-hidden">
+                            <div className="h-full bg-[#5B8A72] rounded-full opacity-70" style={{ width: `${pct}%` }} />
                           </div>
                         </div>
-                        <div className="h-1.5 bg-[#E8EAE5] rounded-full overflow-hidden">
-                          <div className="h-full bg-[#5B8A72] rounded-full opacity-70" style={{ width: `${pct}%` }} />
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
 
-            <div className="card">
-              <p className="label mb-1">Expense breakdown</p>
-              <p className="text-xs text-[#9CA3AF] mb-4">All time, share of total spending</p>
-              {categoryBreakdown.length === 0 ? (
-                <p className="text-[#6B7280] text-sm">No expense data</p>
-              ) : (
-                <div className="space-y-4">
-                  {categoryBreakdown.map((cat) => {
-                    const amount = Number(cat._sum.amount ?? 0);
-                    const pct = totalExpenses > 0 ? Math.round((amount / totalExpenses) * 100) : 0;
-                    const trend = categoryInsights.topExpenseCategories.find(c => c.category === cat.category);
-                    const arrow = trend?.yearOverYearTrend === "growing" ? "↑" : trend?.yearOverYearTrend === "declining" ? "↓" : "";
-                    const arrowColor = trend?.yearOverYearTrend === "growing" ? "text-[#C66A5A]" : "text-[#5B8A72]";
-                    return (
-                      <div key={cat.category}>
-                        <div className="flex justify-between text-sm mb-1">
-                          <div className="flex items-center gap-1.5">
-                            <span className="capitalize text-[#4B5563]">{cat.category}</span>
-                            {arrow && <span className={`text-xs font-bold ${arrowColor}`}>{arrow}</span>}
+              <div className="card">
+                <p className="label mb-1">Expense breakdown</p>
+                <p className="text-xs text-[#9CA3AF] mb-4">All time, share of total spending</p>
+                {categoryBreakdown.length === 0 ? (
+                  <p className="text-[#6B7280] text-sm">No expense data</p>
+                ) : (
+                  <div className="space-y-4">
+                    {categoryBreakdown.map((cat) => {
+                      const amount = Number(cat._sum.amount ?? 0);
+                      const pct = totalExpenses > 0 ? Math.round((amount / totalExpenses) * 100) : 0;
+                      const trend = categoryInsights.topExpenseCategories.find(c => c.category === cat.category);
+                      const arrow = trend?.yearOverYearTrend === "growing" ? "↑" : trend?.yearOverYearTrend === "declining" ? "↓" : "";
+                      const arrowColor = trend?.yearOverYearTrend === "growing" ? "text-[#C66A5A]" : "text-[#5B8A72]";
+                      return (
+                        <div key={cat.category}>
+                          <div className="flex justify-between text-sm mb-1">
+                            <div className="flex items-center gap-1.5">
+                              <span className="capitalize text-[#4B5563]">{cat.category}</span>
+                              {arrow && <span className={`text-xs font-bold ${arrowColor}`}>{arrow}</span>}
+                            </div>
+                            <div className="flex gap-3">
+                              <span className="text-[#9CA3AF]">{pct}%</span>
+                              <span className="font-medium text-[#C79A63]">{formatCurrency(amount)}</span>
+                            </div>
                           </div>
-                          <div className="flex gap-3">
-                            <span className="text-[#9CA3AF]">{pct}%</span>
-                            <span className="font-medium text-[#C79A63]">{formatCurrency(amount)}</span>
+                          <div className="h-1.5 bg-[#E8EAE5] rounded-full overflow-hidden">
+                            <div className="h-full bg-[#C79A63] rounded-full opacity-70" style={{ width: `${pct}%` }} />
                           </div>
                         </div>
-                        <div className="h-1.5 bg-[#E8EAE5] rounded-full overflow-hidden">
-                          <div className="h-full bg-[#C79A63] rounded-full opacity-70" style={{ width: `${pct}%` }} />
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
+          </CollapsibleSection>
 
           {/* ── 4. Client Insights ────────────────────────────────────────── */}
           {clientInsights && (
-            <div>
-              <div className="mb-4">
-                <p className="label mb-1">Client insights</p>
-                <h2 className="text-lg font-semibold">Where your revenue comes from</h2>
-                <p className="text-sm text-[#6B7280] mt-1">
-                  Revenue concentration, client activity, and growth. The view your accountant never shows you.
-                </p>
-              </div>
+            <CollapsibleSection
+              label="Client insights"
+              title="Where your revenue comes from"
+              subtitle="Revenue concentration, client activity, and growth."
+            >
               <ClientInsights data={clientInsights} />
-            </div>
+            </CollapsibleSection>
           )}
         </>
       )}

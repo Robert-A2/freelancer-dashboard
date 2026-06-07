@@ -13,7 +13,7 @@ interface DataPoint {
   income: number;
   expenses: number;
 }
-interface Props { data: DataPoint[]; }
+interface Props { data: DataPoint[]; hideHeader?: boolean; }
 
 const TIME_RANGES = [
   { label: "6M",  months: 6   },
@@ -42,7 +42,7 @@ function localAvg(arr: number[]): number {
   return arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0;
 }
 
-export default function CashflowChart({ data }: Props) {
+export default function CashflowChart({ data, hideHeader = false }: Props) {
   const [range, setRange] = useState(12);
   const sliced = range === 999 ? data : data.slice(-range);
   const active = sliced.filter(d => d.income > 0 || d.expenses > 0);
@@ -112,12 +112,14 @@ export default function CashflowChart({ data }: Props) {
   return (
     <div className="card">
 
-      <div className="flex items-start justify-between gap-3 flex-wrap mb-4">
-        <div>
-          <p className="label mb-1">Monthly Cashflow</p>
-          <h3 className="text-lg font-semibold text-[#1F2937]">Income minus Expenses</h3>
-        </div>
-        <div className="flex gap-1.5">
+      <div className={`flex items-start justify-between gap-3 flex-wrap ${hideHeader ? "mb-4" : "mb-4"}`}>
+        {!hideHeader && (
+          <div>
+            <p className="label mb-1">Monthly Cashflow</p>
+            <h3 className="text-lg font-semibold text-[#1F2937]">Income minus Expenses</h3>
+          </div>
+        )}
+        <div className={`flex gap-1.5 ${hideHeader ? "ml-auto" : ""}`}>
           {TIME_RANGES.map((r) => (
             <button
               key={r.label}
