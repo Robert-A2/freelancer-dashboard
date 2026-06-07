@@ -112,7 +112,7 @@ export default function RecategorizeButton({ transactionId, currentCategory, des
             Move to <span className="text-[#3AB5A0] capitalize">{pending}</span>
           </p>
           <p className="text-xs text-[#7BA8C4] leading-relaxed">
-            Apply to just this transaction, or to every transaction with the same description?
+            Apply to this transaction, or to every transaction with the same description?
           </p>
           <div className="flex flex-col gap-1.5 pt-1">
             <button

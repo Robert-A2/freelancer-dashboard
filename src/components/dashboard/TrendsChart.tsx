@@ -49,7 +49,7 @@ export default function TrendsChart({ data, trajectoryInsight, trajectoryDetails
       <div className="mb-4 space-y-3">
         <div className="flex items-start justify-between gap-3 flex-wrap">
           <div>
-            <p className="label mb-1">Financial Trajectory</p>
+            <p className="label mb-1">Financial Outlook</p>
             <h3 className="text-lg font-semibold text-[#E8F0F8]">Income vs Expenses</h3>
           </div>
         </div>

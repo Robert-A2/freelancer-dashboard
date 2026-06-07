@@ -72,10 +72,10 @@ export default function CashflowChart({ data, hideHeader = false }: Props) {
       whyText    = `Income dips and above-average expenses occurred together in ${bothNeg} month${bothNeg !== 1 ? "s" : ""}. When both move at once, cashflow turns negative fast.`;
       actionText = "Build a 2-month income reserve. A buffer absorbs the impact when income and expenses move against you simultaneously.";
     } else if (lowIncNeg >= highExpNeg) {
-      whyText    = `Income fell below your monthly average in ${lowIncNeg} of the ${negativeMonths} negative month${negativeMonths !== 1 ? "s" : ""}. Expenses were roughly normal. The problem was on the income side.`;
-      actionText = "Stabilise your client pipeline. Retainer agreements, earlier invoicing, or building a 60-day payment buffer all reduce the impact of slow-income months.";
+      whyText    = `Income fell below your monthly average in ${lowIncNeg} out of the ${negativeMonths} negative month${negativeMonths !== 1 ? "s" : ""}. Expenses were roughly normal. The problem was income.`;
+      actionText = "Stabilise your client pipeline. Retainer agreements, earlier invoicing, or building a 60-days payment buffer all reduce the impact of slow-income months.";
     } else {
-      whyText    = `Expenses exceeded your typical level in ${highExpNeg} of the ${negativeMonths} negative month${negativeMonths !== 1 ? "s" : ""}. Income held steady. The problem was on the spending side.`;
+      whyText    = `Expenses exceeded your typical level in ${highExpNeg} of the ${negativeMonths} negative month${negativeMonths !== 1 ? "s" : ""}. Income held steady. The problem was spending.`;
       actionText = "Set a monthly expense ceiling before the month starts. Review your recurring costs quarterly.";
     }
   } else if (active.length >= 3) {
@@ -90,13 +90,13 @@ export default function CashflowChart({ data, hideHeader = false }: Props) {
     const firstNeg  = active.slice(0, mid).filter(m => m.cashflow < 0).length;
     const secondNeg = active.slice(mid).filter(m => m.cashflow  < 0).length;
     if (secondNeg < firstNeg - 1) {
-      stabilityText  = `Fewer negative months in the second half of this period than the first. Cashflow is becoming more stable.`;
+      stabilityText  = `Fewer negative months detected in the second half of this period than the first one. Cashflow is becoming more stable.`;
       stabilityColor = "text-[#4CC4A4]";
     } else if (secondNeg > firstNeg + 1) {
       stabilityText  = `More negative months in the second half than the first. Cashflow stability is weakening.`;
       stabilityColor = "text-[#D97070]";
     } else {
-      stabilityText  = `The number of negative months has stayed consistent. Cashflow stability has not meaningfully changed.`;
+      stabilityText  = `The number of negative months has stayed consistent. Cashflow stability has not changed.`;
       stabilityColor = "text-[#7BA8C4]";
     }
   }

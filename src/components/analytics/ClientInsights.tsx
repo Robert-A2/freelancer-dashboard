@@ -178,7 +178,7 @@ export default function ClientInsights({ data }: Props) {
                 </div>
               ))}
               <p className="text-xs text-[#6A97B4] pt-1">
-                Consider reaching out. A brief check-in often revives dormant client relationships.
+                Consider reaching out. A brief check-in often revives a dormant client relationships.
               </p>
             </div>
           )}
