@@ -21,7 +21,7 @@ function pctChange(curr: number, prev: number): number {
 function ChangeChip({ value, invert = false }: { value: number; invert?: boolean }) {
   const good = invert ? value <= 0 : value >= 0;
   return (
-    <span className={`text-xs font-semibold px-1.5 py-0.5 rounded ${good ? "bg-[#5B8A7215] text-[#5B8A72]" : "bg-[#C66A5A15] text-[#C66A5A]"}`}>
+    <span className={`text-xs font-semibold px-1.5 py-0.5 rounded ${good ? "bg-[#4CC4A415] text-[#4CC4A4]" : "bg-[#D9707015] text-[#D97070]"}`}>
       {value >= 0 ? "↑" : "↓"} {Math.abs(value)}%
     </span>
   );
@@ -110,7 +110,7 @@ export default async function AnalyticsPage() {
 
       <div>
         <h1 className="text-2xl font-bold">Analytics</h1>
-        <p className="text-[#6B7280] text-sm mt-0.5">Deep dive into your financial patterns</p>
+        <p className="text-[#7299B4] text-sm mt-0.5">Deep dive into your financial patterns</p>
       </div>
 
       {coverage.count > 0 && <DataCoverageBar coverage={coverage} />}
@@ -119,7 +119,7 @@ export default async function AnalyticsPage() {
         <div className="card text-center py-16">
           <div className="text-5xl mb-4">📊</div>
           <h2 className="text-xl font-semibold mb-2">No data yet</h2>
-          <p className="text-[#6B7280] mb-6 max-w-sm mx-auto">Upload your bank statement to unlock full analytics.</p>
+          <p className="text-[#7299B4] mb-6 max-w-sm mx-auto">Upload your bank statement to unlock full analytics.</p>
           <Link href="/upload" className="btn-primary inline-block">Upload CSV</Link>
         </div>
       )}
@@ -133,15 +133,15 @@ export default async function AnalyticsPage() {
           >
             <div className="card">
               {prevInc === 0 && (
-                <p className="text-xs text-[#9CA3AF] mb-4">No {prevYear} data yet</p>
+                <p className="text-xs text-[#4A6882] mb-4">No {prevYear} data yet</p>
               )}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                 {[
-                  { label: "Income",   curr: ytdInc,  prev: prevInc,  color: "text-[#5B8A72]", invert: false, isCurrency: true  },
-                  { label: "Expenses", curr: ytdExp,  prev: prevExp,  color: "text-[#C79A63]", invert: true,  isCurrency: true  },
-                  { label: "Cashflow", curr: ytdCash, prev: prevCash, color: ytdCash >= 0 ? "text-[#4F7A65]" : "text-[#C66A5A]", invert: false, isCurrency: true },
+                  { label: "Income",   curr: ytdInc,  prev: prevInc,  color: "text-[#4CC4A4]", invert: false, isCurrency: true  },
+                  { label: "Expenses", curr: ytdExp,  prev: prevExp,  color: "text-[#D4A254]", invert: true,  isCurrency: true  },
+                  { label: "Cashflow", curr: ytdCash, prev: prevCash, color: ytdCash >= 0 ? "text-[#3AB5A0]" : "text-[#D97070]", invert: false, isCurrency: true },
                   { label: "Runway",   curr: ytdRunway, prev: prevRunway,
-                    color: ytdRunway >= 0.5 ? "text-[#5B8A72]" : ytdRunway >= 0 ? "text-[#C79A63]" : "text-[#C66A5A]",
+                    color: ytdRunway >= 0.5 ? "text-[#4CC4A4]" : ytdRunway >= 0 ? "text-[#D4A254]" : "text-[#D97070]",
                     invert: false, isCurrency: false },
                 ].map((item) => {
                   const change = prevInc > 0 ? pctChange(item.curr, item.prev) : null;
@@ -152,12 +152,12 @@ export default async function AnalyticsPage() {
                     ? `${formatCurrency(item.prev)} last yr`
                     : `${item.prev >= 0 ? "+" : "−"}${Math.abs(item.prev).toFixed(1)} mo last yr`;
                   return (
-                    <div key={item.label} className="bg-[#F7F8F5] rounded-xl p-4">
+                    <div key={item.label} className="bg-[#1A3048] rounded-xl p-4">
                       <p className="label mb-1">{item.label}</p>
                       <p className={`text-lg font-bold tabular-nums ${item.color} mb-1`}>{displayVal}</p>
                       <div className="flex items-center gap-2">
                         {change !== null && <ChangeChip value={change} invert={item.invert} />}
-                        {item.prev !== 0 && <span className="text-xs text-[#9CA3AF]">{prevDisplayVal}</span>}
+                        {item.prev !== 0 && <span className="text-xs text-[#4A6882]">{prevDisplayVal}</span>}
                       </div>
                     </div>
                   );
@@ -176,9 +176,9 @@ export default async function AnalyticsPage() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 md:gap-6">
               <div className="card">
                 <p className="label mb-1">Income sources</p>
-                <p className="text-xs text-[#9CA3AF] mb-4">Last 12 months, where money came in</p>
+                <p className="text-xs text-[#4A6882] mb-4">Last 12 months, where money came in</p>
                 {incomeBySource.length === 0 ? (
-                  <p className="text-[#6B7280] text-sm">No income data</p>
+                  <p className="text-[#7299B4] text-sm">No income data</p>
                 ) : (
                   <div className="space-y-4">
                     {incomeBySource.map((src) => {
@@ -187,14 +187,14 @@ export default async function AnalyticsPage() {
                       return (
                         <div key={src.category}>
                           <div className="flex justify-between text-sm mb-1">
-                            <span className="capitalize text-[#4B5563]">{src.category}</span>
+                            <span className="capitalize text-[#8AAEC8]">{src.category}</span>
                             <div className="flex gap-3">
-                              <span className="text-[#9CA3AF]">{pct}%</span>
-                              <span className="font-medium text-[#5B8A72]">{formatCurrency(amount)}</span>
+                              <span className="text-[#4A6882]">{pct}%</span>
+                              <span className="font-medium text-[#4CC4A4]">{formatCurrency(amount)}</span>
                             </div>
                           </div>
-                          <div className="h-1.5 bg-[#E8EAE5] rounded-full overflow-hidden">
-                            <div className="h-full bg-[#5B8A72] rounded-full opacity-70" style={{ width: `${pct}%` }} />
+                          <div className="h-1.5 bg-[#243F5E] rounded-full overflow-hidden">
+                            <div className="h-full bg-[#4CC4A4] rounded-full opacity-70" style={{ width: `${pct}%` }} />
                           </div>
                         </div>
                       );
@@ -205,9 +205,9 @@ export default async function AnalyticsPage() {
 
               <div className="card">
                 <p className="label mb-1">Expense breakdown</p>
-                <p className="text-xs text-[#9CA3AF] mb-4">All time, share of total spending</p>
+                <p className="text-xs text-[#4A6882] mb-4">All time, share of total spending</p>
                 {categoryBreakdown.length === 0 ? (
-                  <p className="text-[#6B7280] text-sm">No expense data</p>
+                  <p className="text-[#7299B4] text-sm">No expense data</p>
                 ) : (
                   <div className="space-y-4">
                     {categoryBreakdown.map((cat) => {
@@ -215,21 +215,21 @@ export default async function AnalyticsPage() {
                       const pct = totalExpenses > 0 ? Math.round((amount / totalExpenses) * 100) : 0;
                       const trend = categoryInsights.topExpenseCategories.find(c => c.category === cat.category);
                       const arrow = trend?.yearOverYearTrend === "growing" ? "↑" : trend?.yearOverYearTrend === "declining" ? "↓" : "";
-                      const arrowColor = trend?.yearOverYearTrend === "growing" ? "text-[#C66A5A]" : "text-[#5B8A72]";
+                      const arrowColor = trend?.yearOverYearTrend === "growing" ? "text-[#D97070]" : "text-[#4CC4A4]";
                       return (
                         <div key={cat.category}>
                           <div className="flex justify-between text-sm mb-1">
                             <div className="flex items-center gap-1.5">
-                              <span className="capitalize text-[#4B5563]">{cat.category}</span>
+                              <span className="capitalize text-[#8AAEC8]">{cat.category}</span>
                               {arrow && <span className={`text-xs font-bold ${arrowColor}`}>{arrow}</span>}
                             </div>
                             <div className="flex gap-3">
-                              <span className="text-[#9CA3AF]">{pct}%</span>
-                              <span className="font-medium text-[#C79A63]">{formatCurrency(amount)}</span>
+                              <span className="text-[#4A6882]">{pct}%</span>
+                              <span className="font-medium text-[#D4A254]">{formatCurrency(amount)}</span>
                             </div>
                           </div>
-                          <div className="h-1.5 bg-[#E8EAE5] rounded-full overflow-hidden">
-                            <div className="h-full bg-[#C79A63] rounded-full opacity-70" style={{ width: `${pct}%` }} />
+                          <div className="h-1.5 bg-[#243F5E] rounded-full overflow-hidden">
+                            <div className="h-full bg-[#D4A254] rounded-full opacity-70" style={{ width: `${pct}%` }} />
                           </div>
                         </div>
                       );

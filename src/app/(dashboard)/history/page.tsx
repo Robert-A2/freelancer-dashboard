@@ -90,7 +90,7 @@ export default async function HistoryPage({ searchParams }: { searchParams: Prom
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h1 className="text-2xl font-bold">History</h1>
-          <p className="text-[#6B7280] text-sm mt-0.5">
+          <p className="text-[#7299B4] text-sm mt-0.5">
             {displayTotal.toLocaleString()} transaction{displayTotal !== 1 ? "s" : ""}
           </p>
         </div>
@@ -109,7 +109,7 @@ export default async function HistoryPage({ searchParams }: { searchParams: Prom
 
       {displayTransactions.length === 0 ? (
         <div className="card text-center py-12">
-          <p className="text-[#94A3B8]">No transactions match these filters.</p>
+          <p className="text-[#4A6882]">No transactions match these filters.</p>
         </div>
       ) : (
         <TransactionList
@@ -127,7 +127,7 @@ export default async function HistoryPage({ searchParams }: { searchParams: Prom
       {pages > 1 && (
         <div className="flex items-center justify-center gap-3">
           {page > 1 && <a href={buildPageUrl(page - 1)} className="btn-secondary px-4 py-2 text-sm">← Previous</a>}
-          <span className="text-sm text-[#94A3B8]">Page {page} of {pages}</span>
+          <span className="text-sm text-[#4A6882]">Page {page} of {pages}</span>
           {page < pages && <a href={buildPageUrl(page + 1)} className="btn-secondary px-4 py-2 text-sm">Next →</a>}
         </div>
       )}

@@ -21,7 +21,7 @@ export default async function UploadPage() {
     <div className="max-w-2xl mx-auto space-y-6 md:space-y-8">
       <div>
         <h1 className="text-2xl font-bold">Upload CSV</h1>
-        <p className="text-[#6B7280] text-sm mt-1">
+        <p className="text-[#7299B4] text-sm mt-1">
           Upload any bank statement CSV. Historical and incremental imports both work.
         </p>
       </div>
@@ -29,10 +29,10 @@ export default async function UploadPage() {
       <CsvUploader />
 
       {imports.length > 0 && (
-        <div className="flex items-start gap-3 px-4 py-3 bg-[#4F7A650A] border border-[#4F7A6518] rounded-xl">
-          <span className="text-[#4F7A65] text-base flex-shrink-0 mt-0.5">💡</span>
-          <p className="text-sm text-[#4B5563]">
-            <span className="font-medium text-[#1F2937]">Uploading again?</span>{" "}
+        <div className="flex items-start gap-3 px-4 py-3 bg-[#3AB5A00A] border border-[#3AB5A018] rounded-xl">
+          <span className="text-[#3AB5A0] text-base flex-shrink-0 mt-0.5">💡</span>
+          <p className="text-sm text-[#8AAEC8]">
+            <span className="font-medium text-[#D8E8F4]">Uploading again?</span>{" "}
             Just export your latest months from your bank. We automatically skip any transactions
             already in your history — no need to re-upload your full statement each time.
           </p>
@@ -41,13 +41,13 @@ export default async function UploadPage() {
 
       <div className="card">
         <p className="label mb-3">Expected format</p>
-        <div className="bg-[#F7F8F5] rounded-xl p-4 font-mono text-xs text-[#6B7280] overflow-x-auto border border-[#ECEEE9]">
-          <div className="text-[#5B8A72] mb-1">Date, Description, Amount</div>
+        <div className="bg-[#1A3048] rounded-xl p-4 font-mono text-xs text-[#7299B4] overflow-x-auto border border-[#1E3550]">
+          <div className="text-[#4CC4A4] mb-1">Date, Description, Amount</div>
           <div>2025-01-15, Client Payment - Acme Co, 2500.00</div>
           <div>2025-01-16, Adobe Creative Cloud, -54.99</div>
           <div>2025-01-17, Savings transfer, -400.00</div>
         </div>
-        <p className="text-xs text-[#9CA3AF] mt-3">
+        <p className="text-xs text-[#4A6882] mt-3">
           Most bank exports work automatically. Column names are detected flexibly.
           Positive = income, negative = expense. Duplicates are skipped automatically.
         </p>
@@ -58,16 +58,16 @@ export default async function UploadPage() {
           <p className="label mb-4">Recent Imports</p>
           <div className="space-y-2">
             {imports.map((imp) => (
-              <div key={imp.id} className="flex items-center justify-between py-2 border-b border-[#ECEEE9] last:border-0">
+              <div key={imp.id} className="flex items-center justify-between py-2 border-b border-[#1E3550] last:border-0">
                 <div>
-                  <p className="text-sm font-medium text-[#1F2937]">{imp.fileName}</p>
-                  <p className="text-xs text-[#9CA3AF]">
+                  <p className="text-sm font-medium text-[#D8E8F4]">{imp.fileName}</p>
+                  <p className="text-xs text-[#4A6882]">
                     {new Date(imp.importedAt).toLocaleDateString("en-IE", { day: "numeric", month: "short", year: "numeric" })}
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm text-[#5B8A72]">{imp.importedRows.toLocaleString()} imported</p>
-                  {imp.duplicateRows > 0 && <p className="text-xs text-[#9CA3AF]">{imp.duplicateRows} duplicates</p>}
+                  <p className="text-sm text-[#4CC4A4]">{imp.importedRows.toLocaleString()} imported</p>
+                  {imp.duplicateRows > 0 && <p className="text-xs text-[#4A6882]">{imp.duplicateRows} duplicates</p>}
                 </div>
               </div>
             ))}

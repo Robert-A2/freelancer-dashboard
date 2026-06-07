@@ -10,7 +10,7 @@ export function Sk({
   rounded?: string;
 }) {
   return (
-    <div className={`bg-[#ECEEE9] animate-pulse ${h} ${w} ${rounded} ${className}`} />
+    <div className={`bg-[#1A3048] animate-pulse ${h} ${w} ${rounded} ${className}`} />
   );
 }
 

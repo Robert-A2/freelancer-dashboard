@@ -22,12 +22,12 @@ const TIME_RANGES = [
 ];
 
 const TOOLTIP_STYLE = {
-  backgroundColor: "#FFFFFF",
-  border: "1px solid #E8EAE5",
+  backgroundColor: "#132537",
+  border: "1px solid #243F5E",
   borderRadius: "0.75rem",
-  color: "#1F2937",
+  color: "#D8E8F4",
   fontSize: "12px",
-  boxShadow: "0 4px 12px rgba(0,0,0,0.06)",
+  boxShadow: "0 8px 24px rgba(0,0,0,0.35)",
 };
 
 function yFmt(v: number): string {
@@ -83,7 +83,7 @@ export default function CashflowChart({ data, hideHeader = false }: Props) {
   }
 
   let stabilityText  = "";
-  let stabilityColor = "text-[#6B7280]";
+  let stabilityColor = "text-[#7299B4]";
 
   if (active.length >= 8) {
     const mid       = Math.floor(active.length / 2);
@@ -91,13 +91,13 @@ export default function CashflowChart({ data, hideHeader = false }: Props) {
     const secondNeg = active.slice(mid).filter(m => m.cashflow  < 0).length;
     if (secondNeg < firstNeg - 1) {
       stabilityText  = `Fewer negative months in the second half of this period than the first. Cashflow is becoming more stable.`;
-      stabilityColor = "text-[#5B8A72]";
+      stabilityColor = "text-[#4CC4A4]";
     } else if (secondNeg > firstNeg + 1) {
       stabilityText  = `More negative months in the second half than the first. Cashflow stability is weakening.`;
-      stabilityColor = "text-[#C66A5A]";
+      stabilityColor = "text-[#D97070]";
     } else {
       stabilityText  = `The number of negative months has stayed consistent. Cashflow stability has not meaningfully changed.`;
-      stabilityColor = "text-[#6B7280]";
+      stabilityColor = "text-[#7299B4]";
     }
   }
 
@@ -116,7 +116,7 @@ export default function CashflowChart({ data, hideHeader = false }: Props) {
         {!hideHeader && (
           <div>
             <p className="label mb-1">Monthly Cashflow</p>
-            <h3 className="text-lg font-semibold text-[#1F2937]">Income minus Expenses</h3>
+            <h3 className="text-lg font-semibold text-[#D8E8F4]">Income minus Expenses</h3>
           </div>
         )}
         <div className={`flex gap-1.5 ${hideHeader ? "ml-auto" : ""}`}>
@@ -126,8 +126,8 @@ export default function CashflowChart({ data, hideHeader = false }: Props) {
               onClick={() => setRange(r.months)}
               className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors min-h-[40px] ${
                 range === r.months
-                  ? "bg-[#4F7A65] text-white"
-                  : "bg-[#F3F4F0] text-[#6B7280] hover:text-[#1F2937]"
+                  ? "bg-[#3AB5A0] text-[#0D1B2B]"
+                  : "bg-[#1A3048] text-[#7299B4] hover:text-[#D8E8F4]"
               }`}
             >
               {r.label}
@@ -138,18 +138,18 @@ export default function CashflowChart({ data, hideHeader = false }: Props) {
 
       <ResponsiveContainer width="100%" height={220}>
         <BarChart data={sliced} margin={{ top: 5, right: 5, left: 0, bottom: 5 }} barSize={10}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#E8EAE5" vertical={false} />
-          <XAxis dataKey="month" stroke="#9CA3AF" tick={{ fontSize: 12, fill: "#9CA3AF" }} />
-          <YAxis stroke="#9CA3AF" tick={{ fontSize: 12, fill: "#9CA3AF" }} tickFormatter={yFmt} width={52} />
-          <ReferenceLine y={0} stroke="#D1D5DB" strokeWidth={1.5} />
+          <CartesianGrid strokeDasharray="3 3" stroke="#243F5E" vertical={false} />
+          <XAxis dataKey="month" stroke="#4A6882" tick={{ fontSize: 12, fill: "#4A6882" }} />
+          <YAxis stroke="#4A6882" tick={{ fontSize: 12, fill: "#4A6882" }} tickFormatter={yFmt} width={52} />
+          <ReferenceLine y={0} stroke="#243F5E" strokeWidth={1.5} />
           <Tooltip
             contentStyle={TOOLTIP_STYLE}
             formatter={(value: number) => [formatCurrency(value), "Cashflow"]}
-            labelStyle={{ color: "#1F2937", fontWeight: 600 }}
+            labelStyle={{ color: "#D8E8F4", fontWeight: 600 }}
           />
           <Bar dataKey="cashflow" name="Cashflow" radius={[3, 3, 0, 0]}>
             {sliced.map((entry, i) => (
-              <Cell key={i} fill={entry.cashflow >= 0 ? "#5B8A72" : "#C66A5A"} fillOpacity={0.8} />
+              <Cell key={i} fill={entry.cashflow >= 0 ? "#4CC4A4" : "#D97070"} fillOpacity={0.8} />
             ))}
           </Bar>
         </BarChart>
@@ -158,51 +158,51 @@ export default function CashflowChart({ data, hideHeader = false }: Props) {
       {active.length >= 3 && (
         <>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-5">
-            <div className="bg-[#F7F8F5] rounded-xl p-4">
+            <div className="bg-[#1A3048] rounded-xl p-4">
               <p className="label mb-2">Best month</p>
-              <p className="text-sm font-bold text-[#5B8A72]">{bestMonth ? formatCurrency(bestMonth.cashflow) : "—"}</p>
-              {bestMonth && <p className="text-xs text-[#B8BFC8] mt-1">{bestMonth.month}</p>}
+              <p className="text-sm font-bold text-[#4CC4A4]">{bestMonth ? formatCurrency(bestMonth.cashflow) : "—"}</p>
+              {bestMonth && <p className="text-xs text-[#3A5470] mt-1">{bestMonth.month}</p>}
             </div>
-            <div className="bg-[#F7F8F5] rounded-xl p-4">
+            <div className="bg-[#1A3048] rounded-xl p-4">
               <p className="label mb-2">Worst month</p>
-              <p className={`text-sm font-bold ${worstMonth && worstMonth.cashflow < 0 ? "text-[#C66A5A]" : "text-[#9CA3AF]"}`}>
+              <p className={`text-sm font-bold ${worstMonth && worstMonth.cashflow < 0 ? "text-[#D97070]" : "text-[#4A6882]"}`}>
                 {worstMonth ? formatCurrency(worstMonth.cashflow) : "—"}
               </p>
-              {worstMonth && <p className="text-xs text-[#B8BFC8] mt-1">{worstMonth.month}</p>}
+              {worstMonth && <p className="text-xs text-[#3A5470] mt-1">{worstMonth.month}</p>}
             </div>
-            <div className="bg-[#F7F8F5] rounded-xl p-4">
+            <div className="bg-[#1A3048] rounded-xl p-4">
               <p className="label mb-2">Monthly average</p>
-              <p className={`text-sm font-bold ${avgCashflow >= 0 ? "text-[#4F7A65]" : "text-[#C66A5A]"}`}>
+              <p className={`text-sm font-bold ${avgCashflow >= 0 ? "text-[#3AB5A0]" : "text-[#D97070]"}`}>
                 {formatCurrency(avgCashflow)}
               </p>
             </div>
-            <div className="bg-[#F7F8F5] rounded-xl p-4">
+            <div className="bg-[#1A3048] rounded-xl p-4">
               <p className="label mb-2">Positive ratio</p>
-              <p className={`text-sm font-bold ${posRatio >= 70 ? "text-[#5B8A72]" : posRatio >= 50 ? "text-[#C79A63]" : "text-[#C66A5A]"}`}>
+              <p className={`text-sm font-bold ${posRatio >= 70 ? "text-[#4CC4A4]" : posRatio >= 50 ? "text-[#D4A254]" : "text-[#D97070]"}`}>
                 {posRatio}%
               </p>
-              <p className="text-xs text-[#B8BFC8] mt-1">{positiveMonths} of {active.length} months</p>
+              <p className="text-xs text-[#3A5470] mt-1">{positiveMonths} of {active.length} months</p>
             </div>
           </div>
 
-          <div className="mt-4 bg-[#4F7A650A] border border-[#4F7A6518] rounded-xl overflow-hidden">
-            <div className="px-4 py-3 border-b border-[#4F7A6515]">
-              <p className="text-[11px] font-semibold text-[#4F7A65] uppercase tracking-widest mb-1.5">What happened?</p>
-              <p className="text-sm text-[#4B5563] leading-relaxed">{whatHappenedText}</p>
+          <div className="mt-4 bg-[#3AB5A00A] border border-[#3AB5A018] rounded-xl overflow-hidden">
+            <div className="px-4 py-3 border-b border-[#3AB5A015]">
+              <p className="text-[11px] font-semibold text-[#3AB5A0] uppercase tracking-widest mb-1.5">What happened?</p>
+              <p className="text-sm text-[#8AAEC8] leading-relaxed">{whatHappenedText}</p>
               {stabilityText && (
                 <p className={`text-sm mt-1.5 ${stabilityColor}`}>{stabilityText}</p>
               )}
             </div>
             {whyText && (
-              <div className="px-4 py-3 border-b border-[#4F7A6515]">
-                <p className="text-[11px] font-semibold text-[#4F7A65] uppercase tracking-widest mb-1.5">Why did it happen?</p>
-                <p className="text-sm text-[#4B5563] leading-relaxed">{whyText}</p>
+              <div className="px-4 py-3 border-b border-[#3AB5A015]">
+                <p className="text-[11px] font-semibold text-[#3AB5A0] uppercase tracking-widest mb-1.5">Why did it happen?</p>
+                <p className="text-sm text-[#8AAEC8] leading-relaxed">{whyText}</p>
               </div>
             )}
             {actionText && (
               <div className="px-4 py-3">
-                <p className="text-[11px] font-semibold text-[#4F7A65] uppercase tracking-widest mb-1.5">What should I do next?</p>
-                <p className="text-sm text-[#4B5563] leading-relaxed">{actionText}</p>
+                <p className="text-[11px] font-semibold text-[#3AB5A0] uppercase tracking-widest mb-1.5">What should I do next?</p>
+                <p className="text-sm text-[#8AAEC8] leading-relaxed">{actionText}</p>
               </div>
             )}
           </div>

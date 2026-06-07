@@ -68,10 +68,10 @@ export default function RecategorizeButton({ transactionId, currentCategory, des
         onClick={() => step === "idle" ? setStep("picking") : reset()}
         disabled={saving}
         className={`${chipBase} ${
-          saved    ? "bg-[#5B8A7215] text-[#5B8A72]" :
-          saving   ? "bg-[#F3F4F0] text-[#9CA3AF] opacity-60 cursor-wait" :
-          step !== "idle" ? "bg-[#4F7A6515] text-[#4F7A65]" :
-          "bg-[#F3F4F0] text-[#6B7280] hover:bg-[#E8EAE5] hover:text-[#1F2937]"
+          saved    ? "bg-[#4CC4A415] text-[#4CC4A4]" :
+          saving   ? "bg-[#1A3048] text-[#4A6882] opacity-60 cursor-wait" :
+          step !== "idle" ? "bg-[#3AB5A015] text-[#3AB5A0]" :
+          "bg-[#1A3048] text-[#7299B4] hover:bg-[#243F5E] hover:text-[#D8E8F4]"
         }`}
         title="Click to fix category"
       >
@@ -84,8 +84,8 @@ export default function RecategorizeButton({ transactionId, currentCategory, des
       </button>
 
       {step === "picking" && (
-        <div className="absolute left-0 top-full mt-1 z-50 bg-white border border-[#E8EAE5] rounded-xl shadow-lg shadow-black/5 w-52 overflow-hidden">
-          <p className="px-3 py-2 text-xs text-[#9CA3AF] border-b border-[#E8EAE5] truncate">
+        <div className="absolute left-0 top-full mt-1 z-50 bg-[#132537] border border-[#243F5E] rounded-xl shadow-lg shadow-black/5 w-52 overflow-hidden">
+          <p className="px-3 py-2 text-xs text-[#4A6882] border-b border-[#243F5E] truncate">
             Change: &quot;{description.slice(0, 28)}{description.length > 28 ? "…" : ""}&quot;
           </p>
           <div className="max-h-56 overflow-y-auto">
@@ -95,8 +95,8 @@ export default function RecategorizeButton({ transactionId, currentCategory, des
                 onClick={() => pickCategory(cat)}
                 className={`w-full text-left px-3 py-2 text-xs capitalize transition-colors ${
                   cat === currentCategory
-                    ? "bg-[#4F7A6515] text-[#4F7A65]"
-                    : "text-[#374151] hover:bg-[#F7F8F5] hover:text-[#1F2937]"
+                    ? "bg-[#3AB5A015] text-[#3AB5A0]"
+                    : "text-[#D8E8F4] hover:bg-[#1A3048] hover:text-[#D8E8F4]"
                 }`}
               >
                 {cat === currentCategory ? `${cat} ✓` : cat}
@@ -107,29 +107,29 @@ export default function RecategorizeButton({ transactionId, currentCategory, des
       )}
 
       {step === "confirming" && pending && (
-        <div className="absolute left-0 top-full mt-1 z-50 bg-white border border-[#E8EAE5] rounded-xl shadow-lg shadow-black/5 w-64 p-3 space-y-2">
-          <p className="text-xs text-[#1F2937] font-medium">
-            Move to <span className="text-[#4F7A65] capitalize">{pending}</span>
+        <div className="absolute left-0 top-full mt-1 z-50 bg-[#132537] border border-[#243F5E] rounded-xl shadow-lg shadow-black/5 w-64 p-3 space-y-2">
+          <p className="text-xs text-[#D8E8F4] font-medium">
+            Move to <span className="text-[#3AB5A0] capitalize">{pending}</span>
           </p>
-          <p className="text-xs text-[#6B7280] leading-relaxed">
+          <p className="text-xs text-[#7299B4] leading-relaxed">
             Apply to just this transaction, or to every transaction with the same description?
           </p>
           <div className="flex flex-col gap-1.5 pt-1">
             <button
               onClick={() => save(false)}
-              className="text-xs text-left px-3 py-2 bg-[#F3F4F0] hover:bg-[#E8EAE5] text-[#374151] rounded-lg transition-colors"
+              className="text-xs text-left px-3 py-2 bg-[#1A3048] hover:bg-[#243F5E] text-[#D8E8F4] rounded-lg transition-colors"
             >
               This transaction only
             </button>
             <button
               onClick={() => save(true)}
-              className="text-xs text-left px-3 py-2 bg-[#4F7A6515] hover:bg-[#4F7A6525] text-[#4F7A65] rounded-lg transition-colors"
+              className="text-xs text-left px-3 py-2 bg-[#3AB5A015] hover:bg-[#3AB5A025] text-[#3AB5A0] rounded-lg transition-colors"
             >
               All &quot;{description.slice(0, 22)}{description.length > 22 ? "…" : ""}&quot; transactions
             </button>
             <button
               onClick={reset}
-              className="text-xs text-[#9CA3AF] hover:text-[#6B7280] text-center py-1 transition-colors"
+              className="text-xs text-[#4A6882] hover:text-[#7299B4] text-center py-1 transition-colors"
             >
               Cancel
             </button>

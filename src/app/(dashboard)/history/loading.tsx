@@ -20,7 +20,7 @@ export default function HistoryLoading() {
 
       {/* Transaction list */}
       <SkCard>
-        <div className="divide-y divide-[#ECEEE9]">
+        <div className="divide-y divide-[#1E3550]">
           {Array.from({ length: 12 }).map((_, i) => (
             <div key={i} className="flex items-center justify-between py-3.5">
               <div className="flex items-center gap-3 min-w-0">
@@ -38,7 +38,7 @@ export default function HistoryLoading() {
           ))}
         </div>
         {/* Pagination */}
-        <div className="flex justify-between items-center mt-4 pt-4 border-t border-[#ECEEE9]">
+        <div className="flex justify-between items-center mt-4 pt-4 border-t border-[#1E3550]">
           <Sk h="h-4" w="w-32" />
           <div className="flex gap-2">
             <Sk h="h-8" w="w-16" rounded="rounded-lg" />

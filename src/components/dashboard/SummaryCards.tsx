@@ -22,10 +22,10 @@ interface Props {
 }
 
 const RISK_STYLE = {
-  low:      { label: "Low",      color: "text-[#5B8A72]" },
-  medium:   { label: "Medium",   color: "text-[#C79A63]" },
-  high:     { label: "High",     color: "text-[#C66A5A]" },
-  critical: { label: "Critical", color: "text-[#C66A5A]" },
+  low:      { label: "Low",      color: "text-[#4CC4A4]" },
+  medium:   { label: "Medium",   color: "text-[#D4A254]" },
+  high:     { label: "High",     color: "text-[#D97070]" },
+  critical: { label: "Critical", color: "text-[#D97070]" },
 };
 
 function changePct(curr: number, prev: number): number {
@@ -37,7 +37,7 @@ function Chip({ value, invert }: { value: number; invert?: boolean }) {
   const isGood = invert ? value <= 0 : value >= 0;
   return (
     <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-      isGood ? "bg-[#5B8A7210] text-[#5B8A72]" : "bg-[#C66A5A10] text-[#C66A5A]"
+      isGood ? "bg-[#4CC4A410] text-[#4CC4A4]" : "bg-[#D9707010] text-[#D97070]"
     }`}>
       {value >= 0 ? "↑" : "↓"} {Math.abs(value)}%
     </span>
@@ -68,11 +68,11 @@ export default function SummaryCards({
         {/* Income */}
         <div className="card-sm flex flex-col gap-3">
           <p className="label">Income</p>
-          <p className="text-2xl md:text-3xl font-bold text-[#5B8A72] leading-none tabular-nums">
+          <p className="text-2xl md:text-3xl font-bold text-[#4CC4A4] leading-none tabular-nums">
             {formatCurrency(c.totalIncome)}
           </p>
           <div className="flex items-center gap-2 flex-wrap">
-            <p className="text-[13px] text-[#B8BFC8]">{spendRate}% spend ratio</p>
+            <p className="text-[13px] text-[#3A5470]">{spendRate}% spend ratio</p>
             {previous && <Chip value={changePct(c.totalIncome, p.totalIncome)} />}
           </div>
         </div>
@@ -80,11 +80,11 @@ export default function SummaryCards({
         {/* Expenses */}
         <div className="card-sm flex flex-col gap-3">
           <p className="label">Expenses</p>
-          <p className="text-2xl md:text-3xl font-bold text-[#C79A63] leading-none tabular-nums">
+          <p className="text-2xl md:text-3xl font-bold text-[#D4A254] leading-none tabular-nums">
             {formatCurrency(c.totalExpenses)}
           </p>
           <div className="flex items-center gap-2 flex-wrap">
-            <p className="text-[13px] text-[#B8BFC8]">{spendRate}% of income</p>
+            <p className="text-[13px] text-[#3A5470]">{spendRate}% of income</p>
             {previous && <Chip value={changePct(c.totalExpenses, p.totalExpenses)} invert />}
           </div>
         </div>
@@ -92,11 +92,11 @@ export default function SummaryCards({
         {/* Cashflow */}
         <div className="card-sm flex flex-col gap-3">
           <p className="label">Cashflow</p>
-          <p className={`text-2xl md:text-3xl font-bold leading-none tabular-nums ${currCashflow >= 0 ? "text-[#4F7A65]" : "text-[#C66A5A]"}`}>
+          <p className={`text-2xl md:text-3xl font-bold leading-none tabular-nums ${currCashflow >= 0 ? "text-[#3AB5A0]" : "text-[#D97070]"}`}>
             {formatCurrency(currCashflow)}
           </p>
           <div className="flex items-center gap-2 flex-wrap">
-            <p className="text-[13px] text-[#B8BFC8]">
+            <p className="text-[13px] text-[#3A5470]">
               {currCashflow >= 0 ? "Income above expenses" : "Expenses exceed income"}
             </p>
             {previous && <Chip value={changePct(currCashflow, prevCashflow)} />}
@@ -106,11 +106,11 @@ export default function SummaryCards({
         {/* Runway */}
         <div className="card-sm flex flex-col gap-3">
           <p className="label">Runway</p>
-          <p className={`text-2xl md:text-3xl font-bold leading-none tabular-nums ${runway >= 0.5 ? "text-[#5B8A72]" : runway >= 0 ? "text-[#C79A63]" : "text-[#C66A5A]"}`}>
+          <p className={`text-2xl md:text-3xl font-bold leading-none tabular-nums ${runway >= 0.5 ? "text-[#4CC4A4]" : runway >= 0 ? "text-[#D4A254]" : "text-[#D97070]"}`}>
             {fmtRunway(runway)}
           </p>
           <div className="flex items-center gap-2 flex-wrap">
-            <p className="text-[13px] text-[#B8BFC8]">
+            <p className="text-[13px] text-[#3A5470]">
               {runway >= 0 ? "months buffer added" : "months consumed"}
             </p>
             {previous && <Chip value={runwayChange} />}
@@ -123,7 +123,7 @@ export default function SummaryCards({
           <p className={`text-2xl md:text-3xl font-bold leading-none ${risk.color}`}>
             {risk.label}
           </p>
-          <p className="text-[13px] text-[#B8BFC8]">
+          <p className="text-[13px] text-[#3A5470]">
             {riskTotalMonths > 0
               ? `${riskPositiveMonths} of ${riskTotalMonths} months positive`
               : "No history yet"}
@@ -133,13 +133,13 @@ export default function SummaryCards({
       </div>
 
       {summary && (
-        <div className="bg-[#5B8A720A] border border-[#5B8A7215] rounded-xl px-5 py-4 space-y-2.5">
-          <p className="text-sm font-medium text-[#1F2937] leading-relaxed">{summary}</p>
+        <div className="bg-[#4CC4A40A] border border-[#4CC4A415] rounded-xl px-5 py-4 space-y-2.5">
+          <p className="text-sm font-medium text-[#D8E8F4] leading-relaxed">{summary}</p>
           {context && context.length > 0 && (
             <ul className="space-y-2">
               {context.map((line, i) => (
-                <li key={i} className="text-sm text-[#4B5563] flex items-start gap-2.5 leading-relaxed">
-                  <span className="text-[#5B8A72] opacity-60 mt-1 flex-shrink-0">·</span>
+                <li key={i} className="text-sm text-[#8AAEC8] flex items-start gap-2.5 leading-relaxed">
+                  <span className="text-[#4CC4A4] opacity-60 mt-1 flex-shrink-0">·</span>
                   {line}
                 </li>
               ))}

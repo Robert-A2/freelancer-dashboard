@@ -12,10 +12,10 @@ interface Props {
 }
 
 const TYPE_STYLES: Record<string, string> = {
-  income:   "text-[#5B8A72]",
-  expense:  "text-[#C79A63]",
-  savings:  "text-[#6B7280]",
-  transfer: "text-[#9CA3AF]",
+  income:   "text-[#4CC4A4]",
+  expense:  "text-[#D4A254]",
+  savings:  "text-[#7299B4]",
+  transfer: "text-[#4A6882]",
 };
 const TYPE_PREFIX: Record<string, string> = {
   income: "+", expense: "−", savings: "→", transfer: "⇄",
@@ -26,7 +26,7 @@ export default function RecentTransactions({ transactions, notable }: Props) {
     return (
       <div className="card">
         <p className="label mb-2">Recent Activity</p>
-        <p className="text-[#6B7280] text-sm">No transactions yet. Upload a CSV to get started.</p>
+        <p className="text-[#7299B4] text-sm">No transactions yet. Upload a CSV to get started.</p>
       </div>
     );
   }
@@ -38,9 +38,9 @@ export default function RecentTransactions({ transactions, notable }: Props) {
       {notable && notable.length > 0 && (
         <div className="mb-3 space-y-1">
           {notable.map((note, i) => (
-            <div key={i} className="flex items-start gap-2 px-3 py-2.5 bg-[#F7F8F5] rounded-lg">
-              <span className="text-[#4F7A65] text-xs mt-0.5 flex-shrink-0">★</span>
-              <p className="text-sm text-[#4B5563]">{note}</p>
+            <div key={i} className="flex items-start gap-2 px-3 py-2.5 bg-[#1A3048] rounded-lg">
+              <span className="text-[#3AB5A0] text-xs mt-0.5 flex-shrink-0">★</span>
+              <p className="text-sm text-[#8AAEC8]">{note}</p>
             </div>
           ))}
         </div>
@@ -50,30 +50,30 @@ export default function RecentTransactions({ transactions, notable }: Props) {
         {transactions.map((tx) => (
           <div
             key={tx.id}
-            className="flex items-center justify-between py-3 border-b border-[#E8EAE5] last:border-0 gap-3"
+            className="flex items-center justify-between py-3 border-b border-[#243F5E] last:border-0 gap-3"
           >
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-[#1F2937] truncate">{tx.description}</p>
+              <p className="text-sm font-medium text-[#D8E8F4] truncate">{tx.description}</p>
               <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                <p className="text-xs text-[#9CA3AF]">
+                <p className="text-xs text-[#4A6882]">
                   {new Date(tx.date).toLocaleDateString("en-IE", { day: "numeric", month: "short" })}
                 </p>
-                <span className="text-xs px-1.5 py-0.5 bg-[#F3F4F0] rounded text-[#6B7280] capitalize">
+                <span className="text-xs px-1.5 py-0.5 bg-[#1A3048] rounded text-[#7299B4] capitalize">
                   {tx.category}
                 </span>
               </div>
             </div>
-            <span className={`text-sm font-semibold whitespace-nowrap flex-shrink-0 ${TYPE_STYLES[tx.type] ?? "text-[#1F2937]"}`}>
+            <span className={`text-sm font-semibold whitespace-nowrap flex-shrink-0 ${TYPE_STYLES[tx.type] ?? "text-[#D8E8F4]"}`}>
               {TYPE_PREFIX[tx.type]}{formatCurrency(tx.amount)}
             </span>
           </div>
         ))}
       </div>
 
-      <div className="pt-3 mt-1 border-t border-[#E8EAE5]">
+      <div className="pt-3 mt-1 border-t border-[#243F5E]">
         <Link
           href="/history"
-          className="flex items-center justify-center gap-1.5 text-sm text-[#4F7A65] hover:text-[#3D6554] font-medium transition-colors py-1"
+          className="flex items-center justify-center gap-1.5 text-sm text-[#3AB5A0] hover:text-[#2E9D8A] font-medium transition-colors py-1"
         >
           View all transactions
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

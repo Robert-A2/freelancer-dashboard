@@ -61,10 +61,10 @@ export default function Navbar() {
   return (
     <>
       {/* Top bar */}
-      <nav className="sticky top-0 z-50 border-b border-[#ECEEE9] bg-white">
+      <nav className="sticky top-0 z-50 border-b border-[#1E3550] bg-[#132537]">
         <div className="max-w-5xl mx-auto px-5 sm:px-6 flex items-center justify-between h-16">
           <div className="flex items-center gap-6">
-            <span className="font-semibold text-[#1F2937] text-sm tracking-tight">
+            <span className="font-semibold text-[#D8E8F4] text-sm tracking-tight">
               Freelancer OS
             </span>
             <div className="hidden md:flex items-center gap-0.5">
@@ -75,8 +75,8 @@ export default function Navbar() {
                   onClick={() => setPending(href)}
                   className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
                     isActive(href)
-                      ? "bg-[#4F7A6512] text-[#4F7A65]"
-                      : "text-[#6B7280] hover:text-[#1F2937] hover:bg-[#F7F8F5]"
+                      ? "bg-[#3AB5A012] text-[#3AB5A0]"
+                      : "text-[#7299B4] hover:text-[#D8E8F4] hover:bg-[#1A3048]"
                   }`}
                 >
                   {label}
@@ -86,7 +86,7 @@ export default function Navbar() {
           </div>
           <button
             onClick={handleSignOut}
-            className="text-xs text-[#9CA3AF] hover:text-[#6B7280] transition-colors px-3 py-2 min-h-[44px]"
+            className="text-xs text-[#4A6882] hover:text-[#7299B4] transition-colors px-3 py-2 min-h-[44px]"
           >
             Sign out
           </button>
@@ -94,7 +94,7 @@ export default function Navbar() {
       </nav>
 
       {/* Mobile bottom navigation */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-[#E8EAE5]">
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-[#132537] border-t border-[#243F5E]">
         <div className="flex items-stretch">
           {NAV_LINKS.map(({ href, mobileLabel, Icon }) => {
             const active = isActive(href);
@@ -104,11 +104,11 @@ export default function Navbar() {
                 href={href}
                 onClick={() => setPending(href)}
                 className={`relative flex flex-col items-center justify-center gap-1 flex-1 py-3 min-h-[56px] transition-colors ${
-                  active ? "text-[#4F7A65]" : "text-[#9CA3AF] hover:text-[#6B7280]"
+                  active ? "text-[#3AB5A0]" : "text-[#4A6882] hover:text-[#7299B4]"
                 }`}
               >
                 {active && (
-                  <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-[#4F7A65] rounded-full" />
+                  <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-[#3AB5A0] rounded-full" />
                 )}
                 <Icon />
                 <span className="text-[11px] font-medium leading-none">{mobileLabel}</span>

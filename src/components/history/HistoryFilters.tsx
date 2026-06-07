@@ -50,7 +50,7 @@ export default function HistoryFilters({
   };
 
   const hasFilters = activeType || activeCategory || activeYear || activeMonth || activeSearch;
-  const selectBase = "bg-white border border-[#E8EAE5] rounded-xl px-3 py-2.5 text-sm text-[#1F2937] focus:outline-none focus:border-[#4F7A65] capitalize min-h-[44px] w-full";
+  const selectBase = "bg-[#132537] border border-[#243F5E] rounded-xl px-3 py-2.5 text-sm text-[#D8E8F4] focus:outline-none focus:border-[#3AB5A0] capitalize min-h-[44px] w-full";
 
   return (
     <div className="space-y-3">
@@ -62,7 +62,7 @@ export default function HistoryFilters({
           className="input pr-10"
           onChange={(e) => handleSearchChange(e.target.value)}
         />
-        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9CA3AF] text-sm pointer-events-none">⌕</span>
+        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[#4A6882] text-sm pointer-events-none">⌕</span>
       </div>
 
       <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide sm:flex-wrap sm:overflow-visible sm:pb-0">
@@ -76,8 +76,8 @@ export default function HistoryFilters({
             onClick={() => update("type", f.value)}
             className={`flex-shrink-0 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors min-h-[44px] ${
               activeType === f.value || (!activeType && !f.value)
-                ? "bg-[#4F7A6515] text-[#4F7A65]"
-                : "bg-[#F3F4F0] text-[#6B7280] hover:text-[#1F2937]"
+                ? "bg-[#3AB5A015] text-[#3AB5A0]"
+                : "bg-[#1A3048] text-[#7299B4] hover:text-[#D8E8F4]"
             }`}
           >
             {f.label}
@@ -105,7 +105,7 @@ export default function HistoryFilters({
       </div>
 
       {hasFilters && (
-        <button onClick={clearAll} className="text-sm text-[#9CA3AF] hover:text-[#6B7280] transition-colors min-h-[44px] px-2">
+        <button onClick={clearAll} className="text-sm text-[#4A6882] hover:text-[#7299B4] transition-colors min-h-[44px] px-2">
           Clear all filters
         </button>
       )}

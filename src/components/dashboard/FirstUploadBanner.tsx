@@ -23,17 +23,17 @@ export default function FirstUploadBanner({ months, transactions, summary, first
   if (dismissed) return null;
 
   return (
-    <div className="bg-[#4F7A650A] border border-[#4F7A6520] rounded-2xl p-5 md:p-6">
+    <div className="bg-[#3AB5A00A] border border-[#3AB5A020] rounded-2xl p-5 md:p-6">
       <div className="flex items-start justify-between gap-3 mb-3">
         <div>
           <p className="label mb-1">Your financial picture is ready</p>
-          <h2 className="text-xl font-semibold text-[#1F2937]">
+          <h2 className="text-xl font-semibold text-[#D8E8F4]">
             {firstName ? `Welcome, ${firstName}.` : "Welcome."}
           </h2>
         </div>
         <button
           onClick={dismiss}
-          className="text-[#9CA3AF] hover:text-[#6B7280] transition-colors p-1 flex-shrink-0 min-w-[32px] min-h-[32px] flex items-center justify-center"
+          className="text-[#4A6882] hover:text-[#7299B4] transition-colors p-1 flex-shrink-0 min-w-[32px] min-h-[32px] flex items-center justify-center"
           aria-label="Dismiss"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -42,18 +42,18 @@ export default function FirstUploadBanner({ months, transactions, summary, first
         </button>
       </div>
 
-      <div className="flex items-center gap-4 text-sm text-[#6B7280] mb-3">
+      <div className="flex items-center gap-4 text-sm text-[#7299B4] mb-3">
         <span>
-          <span className="text-[#1F2937] font-semibold">{months}</span> month{months !== 1 ? "s" : ""} of history
+          <span className="text-[#D8E8F4] font-semibold">{months}</span> month{months !== 1 ? "s" : ""} of history
         </span>
-        <span className="text-[#E8EAE5]">·</span>
+        <span className="text-[#243F5E]">·</span>
         <span>
-          <span className="text-[#1F2937] font-semibold">{transactions.toLocaleString()}</span> transactions analysed
+          <span className="text-[#D8E8F4] font-semibold">{transactions.toLocaleString()}</span> transactions analysed
         </span>
       </div>
 
       {summary && (
-        <p className="text-sm text-[#4B5563] mb-5 leading-relaxed border-l-2 border-[#4F7A65] pl-3">
+        <p className="text-sm text-[#8AAEC8] mb-5 leading-relaxed border-l-2 border-[#3AB5A0] pl-3">
           {summary}
         </p>
       )}
@@ -67,7 +67,7 @@ export default function FirstUploadBanner({ months, transactions, summary, first
         </Link>
         <button
           onClick={dismiss}
-          className="text-sm text-[#9CA3AF] hover:text-[#6B7280] transition-colors px-3 py-2 text-center"
+          className="text-sm text-[#4A6882] hover:text-[#7299B4] transition-colors px-3 py-2 text-center"
         >
           Dismiss
         </button>

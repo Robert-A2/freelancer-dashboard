@@ -21,7 +21,7 @@ export default function AnalyticsLoading() {
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="bg-[#F7F8F5] rounded-xl p-4 space-y-2">
+            <div key={i} className="bg-[#1A3048] rounded-xl p-4 space-y-2">
               <Sk h="h-3" w="w-20" />
               <Sk h="h-6" w="w-24" rounded="rounded-lg" />
               <Sk h="h-3" w="w-16" />
@@ -44,7 +44,7 @@ export default function AnalyticsLoading() {
         <Sk h="h-[220px]" rounded="rounded-xl" />
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-5">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="bg-[#F7F8F5] rounded-xl p-4 space-y-2">
+            <div key={i} className="bg-[#1A3048] rounded-xl p-4 space-y-2">
               <Sk h="h-3" w="w-16" />
               <Sk h="h-5" w="w-20" rounded="rounded-lg" />
             </div>

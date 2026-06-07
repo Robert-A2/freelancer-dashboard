@@ -32,8 +32,8 @@ function Spinner() {
 function BrandHeader() {
   return (
     <div className="mb-8 text-center">
-      <h1 className="text-2xl font-bold text-[#1F2937]">Freelancer OS</h1>
-      <p className="text-[#6B7280] text-sm mt-1">Financial clarity built for freelancers</p>
+      <h1 className="text-2xl font-bold text-[#D8E8F4]">Freelancer OS</h1>
+      <p className="text-[#7299B4] text-sm mt-1">Financial clarity built for freelancers</p>
     </div>
   );
 }
@@ -77,36 +77,36 @@ export default function LoginPage() {
 
   if (mode === "sent") {
     return (
-      <div className="min-h-screen flex items-center justify-center px-4 bg-[#F7F8F5]">
+      <div className="min-h-screen flex items-center justify-center px-4 bg-[#0D1B2B]">
         <div className="w-full max-w-sm">
           <BrandHeader />
           <div className="card text-center space-y-5">
-            <div className="w-14 h-14 bg-[#4F7A6520] rounded-full flex items-center justify-center mx-auto">
-              <svg className="w-7 h-7 text-[#4F7A65]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+            <div className="w-14 h-14 bg-[#3AB5A020] rounded-full flex items-center justify-center mx-auto">
+              <svg className="w-7 h-7 text-[#3AB5A0]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
               </svg>
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-[#1F2937]">Check your email</h2>
-              <p className="text-sm text-[#6B7280] mt-1">
+              <h2 className="text-lg font-semibold text-[#D8E8F4]">Check your email</h2>
+              <p className="text-sm text-[#7299B4] mt-1">
                 We sent a password reset link to{" "}
-                <span className="text-[#374151] font-medium">{resetEmail}</span>
+                <span className="text-[#D8E8F4] font-medium">{resetEmail}</span>
               </p>
             </div>
-            <p className="text-xs text-[#9CA3AF]">
+            <p className="text-xs text-[#4A6882]">
               Didn&apos;t receive it? Check your spam folder or{" "}
               <button
                 onClick={() => { setMode("forgot"); setError(""); }}
-                className="text-[#4F7A65] hover:underline"
+                className="text-[#3AB5A0] hover:underline"
               >
                 try again
               </button>
               .
             </p>
-            <div className="pt-2 border-t border-[#ECEEE9]">
+            <div className="pt-2 border-t border-[#1E3550]">
               <button
                 onClick={() => { setMode("signin"); setError(""); }}
-                className="text-sm text-[#9CA3AF] hover:text-[#374151] transition-colors"
+                className="text-sm text-[#4A6882] hover:text-[#D8E8F4] transition-colors"
               >
                 ← Back to sign in
               </button>
@@ -119,12 +119,12 @@ export default function LoginPage() {
 
   if (mode === "forgot") {
     return (
-      <div className="min-h-screen flex items-center justify-center px-4 bg-[#F7F8F5]">
+      <div className="min-h-screen flex items-center justify-center px-4 bg-[#0D1B2B]">
         <div className="w-full max-w-sm">
           <BrandHeader />
           <div className="card">
             <h2 className="text-lg font-semibold mb-1">Reset your password</h2>
-            <p className="text-sm text-[#6B7280] mb-6">
+            <p className="text-sm text-[#7299B4] mb-6">
               Enter your email and we&apos;ll send you a link to create a new password.
             </p>
 
@@ -144,7 +144,7 @@ export default function LoginPage() {
               </div>
 
               {error && (
-                <p className="text-sm text-[#C66A5A] bg-[#C66A5A10] px-4 py-3 rounded-xl">{error}</p>
+                <p className="text-sm text-[#D97070] bg-[#D9707010] px-4 py-3 rounded-xl">{error}</p>
               )}
 
               <button type="submit" className="btn-primary w-full" disabled={loading}>
@@ -159,7 +159,7 @@ export default function LoginPage() {
             <div className="mt-5 text-center">
               <button
                 onClick={() => { setMode("signin"); setError(""); }}
-                className="text-sm text-[#9CA3AF] hover:text-[#374151] transition-colors"
+                className="text-sm text-[#4A6882] hover:text-[#D8E8F4] transition-colors"
               >
                 ← Back to sign in
               </button>
@@ -171,7 +171,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 bg-[#F7F8F5]">
+    <div className="min-h-screen flex items-center justify-center px-4 bg-[#0D1B2B]">
       <div className="w-full max-w-sm">
         <BrandHeader />
 
@@ -198,7 +198,7 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={() => { setMode("forgot"); setResetEmail(email); setError(""); }}
-                  className="text-xs text-[#9CA3AF] hover:text-[#4F7A65] transition-colors"
+                  className="text-xs text-[#4A6882] hover:text-[#3AB5A0] transition-colors"
                 >
                   Forgot password?
                 </button>
@@ -216,7 +216,7 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#B8BFC8] hover:text-[#374151] transition-colors p-1 rounded"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#3A5470] hover:text-[#D8E8F4] transition-colors p-1 rounded"
                   tabIndex={-1}
                   aria-label={showPassword ? "Hide password" : "Show password"}
                 >
@@ -235,7 +235,7 @@ export default function LoginPage() {
             </div>
 
             {error && (
-              <p className="text-sm text-[#C66A5A] bg-[#C66A5A10] px-4 py-3 rounded-xl">{error}</p>
+              <p className="text-sm text-[#D97070] bg-[#D9707010] px-4 py-3 rounded-xl">{error}</p>
             )}
 
             <button type="submit" className="btn-primary w-full" disabled={loading}>
@@ -247,9 +247,9 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <p className="text-center text-sm text-[#9CA3AF] mt-5">
+          <p className="text-center text-sm text-[#4A6882] mt-5">
             No account?{" "}
-            <Link href="/signup" className="text-[#4F7A65] hover:underline font-medium">
+            <Link href="/signup" className="text-[#3AB5A0] hover:underline font-medium">
               Create one
             </Link>
           </p>

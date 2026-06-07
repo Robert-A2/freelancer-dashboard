@@ -125,8 +125,8 @@ export default function CsvUploader() {
         <div
           className={`border-2 border-dashed rounded-2xl p-8 md:p-12 flex flex-col items-center justify-center text-center cursor-pointer transition-colors ${
             dragging
-              ? "border-[#4F7A65] bg-[#4F7A6508]"
-              : "border-[#ECEEE9] hover:border-[#4F7A65] hover:bg-[#4F7A6506]"
+              ? "border-[#3AB5A0] bg-[#3AB5A008]"
+              : "border-[#1E3550] hover:border-[#3AB5A0] hover:bg-[#3AB5A006]"
           }`}
           onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
           onDragLeave={() => setDragging(false)}
@@ -134,9 +134,9 @@ export default function CsvUploader() {
           onClick={() => inputRef.current?.click()}
         >
           <div className="text-4xl mb-3">📂</div>
-          <p className="text-[#1F2937] font-semibold mb-1">Drop your CSV here</p>
-          <p className="text-sm text-[#6B7280]">or click to browse</p>
-          <p className="text-xs text-[#9CA3AF] mt-3">
+          <p className="text-[#D8E8F4] font-semibold mb-1">Drop your CSV here</p>
+          <p className="text-sm text-[#7299B4]">or click to browse</p>
+          <p className="text-xs text-[#4A6882] mt-3">
             Any size · Any date range · Duplicates skipped automatically
           </p>
           <input
@@ -156,20 +156,20 @@ export default function CsvUploader() {
     return (
       <div className="card py-10 flex flex-col items-center gap-6">
         <div className="text-center">
-          <p className="font-semibold text-[#1F2937]">Uploading {stage.fileName}</p>
-          <p className="text-sm text-[#6B7280] mt-1">
+          <p className="font-semibold text-[#D8E8F4]">Uploading {stage.fileName}</p>
+          <p className="text-sm text-[#7299B4] mt-1">
             Going directly to Supabase Storage. No file size limit
           </p>
         </div>
 
         <div className="w-full max-w-sm">
-          <div className="flex justify-between text-xs text-[#9CA3AF] mb-1.5">
+          <div className="flex justify-between text-xs text-[#4A6882] mb-1.5">
             <span>Uploading…</span>
             <span>{stage.progress}%</span>
           </div>
-          <div className="h-2 bg-[#ECEEE9] rounded-full overflow-hidden">
+          <div className="h-2 bg-[#1E3550] rounded-full overflow-hidden">
             <div
-              className="h-full bg-[#4F7A65] rounded-full transition-all duration-200"
+              className="h-full bg-[#3AB5A0] rounded-full transition-all duration-200"
               style={{ width: `${stage.progress}%` }}
             />
           </div>
@@ -182,10 +182,10 @@ export default function CsvUploader() {
   if (stage.status === "processing") {
     return (
       <div className="card py-10 flex flex-col items-center gap-4">
-        <div className="w-10 h-10 border-4 border-[#4F7A65] border-t-transparent rounded-full animate-spin" />
+        <div className="w-10 h-10 border-4 border-[#3AB5A0] border-t-transparent rounded-full animate-spin" />
         <div className="text-center">
-          <p className="font-semibold text-[#1F2937]">Processing {stage.fileName}</p>
-          <p className="text-sm text-[#6B7280] mt-1">
+          <p className="font-semibold text-[#D8E8F4]">Processing {stage.fileName}</p>
+          <p className="text-sm text-[#7299B4] mt-1">
             Parsing · Deduplicating · Categorising · Updating analytics…
           </p>
         </div>
@@ -212,82 +212,82 @@ export default function CsvUploader() {
     return (
       <div className="card space-y-5">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-[#5B8A7220] rounded-full flex items-center justify-center text-[#5B8A72] font-bold text-lg">
+          <div className="w-10 h-10 bg-[#4CC4A420] rounded-full flex items-center justify-center text-[#4CC4A4] font-bold text-lg">
             ✓
           </div>
           <div>
-            <p className="font-semibold text-[#5B8A72]">Import complete</p>
-            <p className="text-sm text-[#6B7280]">{fileName}</p>
+            <p className="font-semibold text-[#4CC4A4]">Import complete</p>
+            <p className="text-sm text-[#7299B4]">{fileName}</p>
           </div>
         </div>
 
         <div className="grid grid-cols-2 gap-3">
           {[
-            { label: "Transactions imported", value: result.importedRows.toLocaleString(), color: "text-[#5B8A72]" },
-            { label: "Duplicates skipped", value: result.duplicateRows.toLocaleString(), color: "text-[#9CA3AF]" },
-            { label: "Total rows", value: result.totalRows.toLocaleString(), color: "text-[#1F2937]" },
-            { label: "Invalid rows", value: result.skippedRows.toLocaleString(), color: "text-[#C79A63]" },
+            { label: "Transactions imported", value: result.importedRows.toLocaleString(), color: "text-[#4CC4A4]" },
+            { label: "Duplicates skipped", value: result.duplicateRows.toLocaleString(), color: "text-[#4A6882]" },
+            { label: "Total rows", value: result.totalRows.toLocaleString(), color: "text-[#D8E8F4]" },
+            { label: "Invalid rows", value: result.skippedRows.toLocaleString(), color: "text-[#D4A254]" },
           ].map((s) => (
-            <div key={s.label} className="bg-[#F7F8F5] rounded-xl p-3 text-center">
+            <div key={s.label} className="bg-[#1A3048] rounded-xl p-3 text-center">
               <p className={`text-2xl font-bold ${s.color}`}>{s.value}</p>
-              <p className="text-xs text-[#9CA3AF] mt-1">{s.label}</p>
+              <p className="text-xs text-[#4A6882] mt-1">{s.label}</p>
             </div>
           ))}
         </div>
 
         {(dateRangeLabel || result.categoriesDetected > 0) && (
-          <div className="bg-[#F7F8F5] rounded-xl px-4 py-3 space-y-1.5">
+          <div className="bg-[#1A3048] rounded-xl px-4 py-3 space-y-1.5">
             {dateRangeLabel && (
               <div className="flex items-center justify-between text-sm">
-                <span className="text-[#6B7280]">Date range</span>
-                <span className="font-medium text-[#1F2937]">{dateRangeLabel}</span>
+                <span className="text-[#7299B4]">Date range</span>
+                <span className="font-medium text-[#D8E8F4]">{dateRangeLabel}</span>
               </div>
             )}
             {result.categoriesDetected > 0 && (
               <div className="flex items-center justify-between text-sm">
-                <span className="text-[#6B7280]">Categories detected</span>
-                <span className="font-medium text-[#4F7A65]">{result.categoriesDetected}</span>
+                <span className="text-[#7299B4]">Categories detected</span>
+                <span className="font-medium text-[#3AB5A0]">{result.categoriesDetected}</span>
               </div>
             )}
           </div>
         )}
 
         {result.typeBreakdown && (
-          <div className="bg-[#F7F8F5] rounded-xl px-4 py-3 space-y-2">
-            <p className="text-xs font-semibold text-[#9CA3AF] uppercase tracking-wide">What we found</p>
+          <div className="bg-[#1A3048] rounded-xl px-4 py-3 space-y-2">
+            <p className="text-xs font-semibold text-[#4A6882] uppercase tracking-wide">What we found</p>
             <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
               {result.typeBreakdown.income > 0 && (
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-[#6B7280]">Income payments</span>
-                  <span className="font-medium text-[#5B8A72]">{result.typeBreakdown.income.toLocaleString()}</span>
+                  <span className="text-[#7299B4]">Income payments</span>
+                  <span className="font-medium text-[#4CC4A4]">{result.typeBreakdown.income.toLocaleString()}</span>
                 </div>
               )}
               {result.typeBreakdown.expense > 0 && (
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-[#6B7280]">Expenses</span>
-                  <span className="font-medium text-[#C79A63]">{result.typeBreakdown.expense.toLocaleString()}</span>
+                  <span className="text-[#7299B4]">Expenses</span>
+                  <span className="font-medium text-[#D4A254]">{result.typeBreakdown.expense.toLocaleString()}</span>
                 </div>
               )}
               {result.typeBreakdown.savings > 0 && (
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-[#6B7280]">Savings transfers</span>
-                  <span className="font-medium text-[#4F7A65]">{result.typeBreakdown.savings.toLocaleString()}</span>
+                  <span className="text-[#7299B4]">Savings transfers</span>
+                  <span className="font-medium text-[#3AB5A0]">{result.typeBreakdown.savings.toLocaleString()}</span>
                 </div>
               )}
               {result.typeBreakdown.transfer > 0 && (
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-[#6B7280]">Internal transfers</span>
-                  <span className="font-medium text-[#9CA3AF]">{result.typeBreakdown.transfer.toLocaleString()}</span>
+                  <span className="text-[#7299B4]">Internal transfers</span>
+                  <span className="font-medium text-[#4A6882]">{result.typeBreakdown.transfer.toLocaleString()}</span>
                 </div>
               )}
             </div>
             {result.typeBreakdown.transfer > 0 && (
-              <p className="text-xs text-[#9CA3AF] pt-1">
+              <p className="text-xs text-[#4A6882] pt-1">
                 Internal transfers (between your own accounts) are excluded from income and expense totals.
               </p>
             )}
-            <div className="pt-1 border-t border-[#ECEEE9]">
-              <a href="/history" className="text-xs text-[#4F7A65] hover:underline">
+            <div className="pt-1 border-t border-[#1E3550]">
+              <a href="/history" className="text-xs text-[#3AB5A0] hover:underline">
                 Review categorisation in History →
               </a>
             </div>
@@ -295,9 +295,9 @@ export default function CsvUploader() {
         )}
 
         {result.hasMixedCurrencies && (
-          <div className="flex items-start gap-2.5 px-3 py-3 bg-[#C79A630A] border border-[#C79A6325] rounded-xl">
-            <span className="text-[#C79A63] text-base flex-shrink-0">⚠</span>
-            <p className="text-xs text-[#C79A63] leading-relaxed">
+          <div className="flex items-start gap-2.5 px-3 py-3 bg-[#D4A2540A] border border-[#D4A25425] rounded-xl">
+            <span className="text-[#D4A254] text-base flex-shrink-0">⚠</span>
+            <p className="text-xs text-[#D4A254] leading-relaxed">
               Multiple currencies detected ({result.currencies.join(", ")}). Totals and insights
               are calculated across all amounts. Results may be inaccurate if currencies were
               not converted before export. Consider exporting a single-currency statement for
@@ -326,23 +326,23 @@ export default function CsvUploader() {
   return (
     <div className="card space-y-4">
       <div className="flex items-start gap-3">
-        <div className="w-10 h-10 bg-[#C66A5A10] rounded-full flex items-center justify-center text-[#C66A5A] flex-shrink-0 mt-0.5">
+        <div className="w-10 h-10 bg-[#D9707010] rounded-full flex items-center justify-center text-[#D97070] flex-shrink-0 mt-0.5">
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
           </svg>
         </div>
         <div>
-          <p className="font-semibold text-[#C66A5A]">{err.heading}</p>
-          <p className="text-sm text-[#6B7280] mt-0.5 leading-relaxed">{err.reason}</p>
+          <p className="font-semibold text-[#D97070]">{err.heading}</p>
+          <p className="text-sm text-[#7299B4] mt-0.5 leading-relaxed">{err.reason}</p>
         </div>
       </div>
 
-      <div className="bg-[#F7F8F5] rounded-xl px-4 py-3">
-        <p className="text-xs font-semibold text-[#9CA3AF] uppercase tracking-wide mb-2">What to try</p>
+      <div className="bg-[#1A3048] rounded-xl px-4 py-3">
+        <p className="text-xs font-semibold text-[#4A6882] uppercase tracking-wide mb-2">What to try</p>
         <ul className="space-y-1.5">
           {err.steps.map((step, i) => (
-            <li key={i} className="text-sm text-[#374151] flex items-start gap-2">
-              <span className="text-[#4F7A65] flex-shrink-0 mt-0.5">→</span>
+            <li key={i} className="text-sm text-[#D8E8F4] flex items-start gap-2">
+              <span className="text-[#3AB5A0] flex-shrink-0 mt-0.5">→</span>
               {step}
             </li>
           ))}
@@ -355,7 +355,7 @@ export default function CsvUploader() {
         </button>
         <a
           href="mailto:support@freelanceros.app?subject=CSV Upload Issue"
-          className="text-xs text-center text-[#9CA3AF] hover:text-[#374151] transition-colors py-1"
+          className="text-xs text-center text-[#4A6882] hover:text-[#D8E8F4] transition-colors py-1"
         >
           Still stuck? Email us and we&apos;ll help →
         </a>

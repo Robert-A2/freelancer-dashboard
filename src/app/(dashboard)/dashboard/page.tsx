@@ -156,21 +156,21 @@ export default async function DashboardPage({
             </h1>
             {hasData && (
               <Link href="/forecast" className={`hidden sm:inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full transition-opacity hover:opacity-80 ${
-                intel.healthStatus === "healthy"  ? "bg-[#5B8A7215] text-[#5B8A72]" :
-                intel.healthStatus === "at-risk"  ? "bg-[#C66A5A15] text-[#C66A5A]" :
-                                                    "bg-[#C79A6315] text-[#C79A63]"
+                intel.healthStatus === "healthy"  ? "bg-[#4CC4A415] text-[#4CC4A4]" :
+                intel.healthStatus === "at-risk"  ? "bg-[#D9707015] text-[#D97070]" :
+                                                    "bg-[#D4A25415] text-[#D4A254]"
               }`}>
                 <span className="w-1.5 h-1.5 rounded-full bg-current" />
                 {intel.healthStatus === "healthy" ? "Healthy" : intel.healthStatus === "watch" ? "Watch closely" : "At Risk"}
               </Link>
             )}
           </div>
-          <p className="text-[#6B7280] text-sm">
+          <p className="text-[#7299B4] text-sm">
             {new Date().toLocaleDateString("en-IE", { month: "long", year: "numeric" })}
           </p>
         </div>
         {hasData && (
-          <p className="text-xs text-[#9CA3AF] flex-shrink-0 mt-1">
+          <p className="text-xs text-[#4A6882] flex-shrink-0 mt-1">
             {totalTx.toLocaleString()} transactions · {nonZeroMonths} months
           </p>
         )}
@@ -178,11 +178,11 @@ export default async function DashboardPage({
 
       {/* Data freshness prompt */}
       {dataIsStale && (
-        <div className="flex items-center justify-between gap-4 px-4 py-3 bg-[#C79A630A] border border-[#C79A6325] rounded-xl">
-          <p className="text-sm text-[#C79A63]">
+        <div className="flex items-center justify-between gap-4 px-4 py-3 bg-[#D4A2540A] border border-[#D4A25425] rounded-xl">
+          <p className="text-sm text-[#D4A254]">
             Your data is {daysSinceImport} days old. Upload last month&apos;s statement to keep insights accurate.
           </p>
-          <Link href="/upload" className="text-xs font-semibold text-[#C79A63] hover:text-[#1F2937] transition-colors flex-shrink-0 bg-[#C79A6320] px-3 py-1.5 rounded-lg">
+          <Link href="/upload" className="text-xs font-semibold text-[#D4A254] hover:text-[#D8E8F4] transition-colors flex-shrink-0 bg-[#D4A25420] px-3 py-1.5 rounded-lg">
             Upload →
           </Link>
         </div>
@@ -206,7 +206,7 @@ export default async function DashboardPage({
         <div className="card text-center py-16">
           <div className="text-5xl mb-4">📊</div>
           <h2 className="text-xl font-semibold mb-2">Built for freelancers</h2>
-          <p className="text-[#94A3B8] mb-6 max-w-sm mx-auto">
+          <p className="text-[#4A6882] mb-6 max-w-sm mx-auto">
             Upload your bank statement CSV to get cashflow clarity, intelligent insights,
             and forecasts designed specifically for freelance income patterns.
           </p>

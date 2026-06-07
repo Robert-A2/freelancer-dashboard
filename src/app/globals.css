@@ -4,70 +4,71 @@
 
 @layer base {
   :root {
-    --bg:       #F7F8F5;
-    --surface:  #FFFFFF;
-    --border:   #ECEEE9;
-    --text:     #374151;
-    --secondary:#4B5563;
-    --muted:    #6B7280;
-    --faint:    #9CA3AF;
-    --brand:    #4F7A65;
-    --positive: #5B8A72;
-    --warning:  #C79A63;
-    --risk:     #C66A5A;
+    --bg:        #0D1B2B;
+    --surface:   #132537;
+    --surface2:  #1A3048;
+    --border:    #1E3550;
+    --border2:   #243F5E;
+    --text:      #D8E8F4;
+    --secondary: #8AAEC8;
+    --muted:     #7299B4;
+    --faint:     #4A6882;
+    --brand:     #3AB5A0;
+    --positive:  #4CC4A4;
+    --warning:   #D4A254;
+    --risk:      #D97070;
   }
 
   * { box-sizing: border-box; }
 
   body {
-    @apply bg-[#F7F8F5] text-[#374151] antialiased;
+    @apply bg-[#0D1B2B] text-[#D8E8F4] antialiased;
     font-family: var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     font-size: 16px;
     line-height: 1.75;
   }
 
   h1, h2, h3, h4 {
-    color: #1F2937;
+    color: #D8E8F4;
     line-height: 1.3;
   }
 }
 
 @layer components {
-  /* Card — more generous padding, barely-there border */
   .card {
-    @apply bg-white border border-[#ECEEE9] rounded-2xl p-6 md:p-8;
+    @apply bg-[#132537] border border-[#1E3550] rounded-2xl p-6 md:p-8;
   }
 
   .card-sm {
-    @apply bg-white border border-[#ECEEE9] rounded-xl p-5 md:p-6;
+    @apply bg-[#132537] border border-[#1E3550] rounded-xl p-5 md:p-6;
   }
 
-  /* Label — very quiet. Signals category without demanding attention */
+  /* Quiet section header — uppercase label above a block */
   .label {
-    @apply text-[12px] font-medium text-[#B8BFC8] uppercase tracking-widest;
+    @apply text-[12px] font-medium text-[#5E7D96] uppercase tracking-widest;
   }
 
   .btn-primary {
-    @apply bg-[#4F7A65] hover:bg-[#3D6554] text-white font-semibold px-6 py-3 rounded-xl transition-colors duration-150 disabled:opacity-40 disabled:cursor-not-allowed min-h-[48px];
+    @apply bg-[#3AB5A0] hover:bg-[#2E9D8A] text-[#0D1B2B] font-semibold px-6 py-3 rounded-xl transition-colors duration-150 disabled:opacity-40 disabled:cursor-not-allowed min-h-[48px];
   }
 
   .btn-secondary {
-    @apply bg-[#F3F4F0] hover:bg-[#E8EAE5] text-[#4B5563] font-medium px-6 py-3 rounded-xl transition-colors duration-150 min-h-[48px];
+    @apply bg-[#1A3048] hover:bg-[#1F3858] text-[#8AAEC8] font-medium px-6 py-3 rounded-xl transition-colors duration-150 min-h-[48px];
   }
 
   .btn-ghost {
-    @apply text-[#6B7280] hover:text-[#374151] font-medium px-3 py-2 rounded-lg transition-colors duration-150 min-h-[44px];
+    @apply text-[#7299B4] hover:text-[#D8E8F4] font-medium px-3 py-2 rounded-lg transition-colors duration-150 min-h-[44px];
   }
 
   .input {
-    @apply bg-white border border-[#ECEEE9] rounded-xl px-4 py-3 text-[#374151] placeholder-[#B8BFC8] focus:outline-none focus:border-[#4F7A65] transition-colors duration-150 w-full text-base min-h-[48px];
+    @apply bg-[#0D1B2B] border border-[#1E3550] rounded-xl px-4 py-3 text-[#D8E8F4] placeholder-[#3A5470] focus:outline-none focus:border-[#3AB5A0] transition-colors duration-150 w-full text-base min-h-[48px];
   }
 
   .stat-value {
-    @apply text-2xl font-bold text-[#1F2937];
+    @apply text-2xl font-bold text-[#D8E8F4];
   }
 
-  .positive { @apply text-[#5B8A72]; }
-  .negative { @apply text-[#C66A5A]; }
-  .neutral  { @apply text-[#6B7280]; }
+  .positive { @apply text-[#4CC4A4]; }
+  .negative { @apply text-[#D97070]; }
+  .neutral  { @apply text-[#7299B4]; }
 }

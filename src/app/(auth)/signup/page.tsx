@@ -88,40 +88,40 @@ export default function SignupPage() {
 
   if (mode === "confirm") {
     return (
-      <div className="min-h-screen flex items-center justify-center px-4 bg-[#F7F8F5]">
+      <div className="min-h-screen flex items-center justify-center px-4 bg-[#0D1B2B]">
         <div className="w-full max-w-sm">
           <div className="mb-8 text-center">
-            <h1 className="text-2xl font-bold text-[#1F2937]">Freelancer OS</h1>
-            <p className="text-[#6B7280] text-sm mt-1">Financial clarity built for freelancers</p>
+            <h1 className="text-2xl font-bold text-[#D8E8F4]">Freelancer OS</h1>
+            <p className="text-[#7299B4] text-sm mt-1">Financial clarity built for freelancers</p>
           </div>
 
           <div className="card text-center space-y-5">
-            <div className="w-14 h-14 bg-[#4F7A6520] rounded-full flex items-center justify-center mx-auto">
-              <svg className="w-7 h-7 text-[#4F7A65]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+            <div className="w-14 h-14 bg-[#3AB5A020] rounded-full flex items-center justify-center mx-auto">
+              <svg className="w-7 h-7 text-[#3AB5A0]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
               </svg>
             </div>
 
             <div>
-              <h2 className="text-lg font-semibold text-[#1F2937]">Check your inbox</h2>
-              <p className="text-sm text-[#6B7280] mt-1">
+              <h2 className="text-lg font-semibold text-[#D8E8F4]">Check your inbox</h2>
+              <p className="text-sm text-[#7299B4] mt-1">
                 We sent a confirmation link to{" "}
-                <span className="text-[#374151] font-medium">{email}</span>
+                <span className="text-[#D8E8F4] font-medium">{email}</span>
               </p>
             </div>
 
-            <p className="text-sm text-[#6B7280]">
+            <p className="text-sm text-[#7299B4]">
               Click the link in the email to activate your account, then sign in below.
             </p>
 
             <div className="pt-1">
               {resentDone ? (
-                <p className="text-sm text-[#5B8A72]">Email sent again. Check your inbox and spam folder.</p>
+                <p className="text-sm text-[#4CC4A4]">Email sent again. Check your inbox and spam folder.</p>
               ) : (
                 <button
                   onClick={handleResend}
                   disabled={resending}
-                  className="text-sm text-[#4F7A65] hover:underline disabled:opacity-50 flex items-center gap-2 mx-auto"
+                  className="text-sm text-[#3AB5A0] hover:underline disabled:opacity-50 flex items-center gap-2 mx-auto"
                 >
                   {resending && <Spinner />}
                   {resending ? "Sending…" : "Resend confirmation email"}
@@ -129,11 +129,11 @@ export default function SignupPage() {
               )}
             </div>
 
-            <div className="pt-2 border-t border-[#ECEEE9] space-y-2">
-              <Link href="/login" className="block text-sm text-[#4F7A65] hover:underline font-medium">
+            <div className="pt-2 border-t border-[#1E3550] space-y-2">
+              <Link href="/login" className="block text-sm text-[#3AB5A0] hover:underline font-medium">
                 Go to sign in →
               </Link>
-              <p className="text-xs text-[#B8BFC8]">
+              <p className="text-xs text-[#3A5470]">
                 Check your spam folder if you don&apos;t see the email.
               </p>
             </div>
@@ -144,17 +144,17 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 bg-[#F7F8F5]">
+    <div className="min-h-screen flex items-center justify-center px-4 bg-[#0D1B2B]">
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
-          <h1 className="text-2xl font-bold text-[#1F2937]">Freelancer OS</h1>
-          <p className="text-[#6B7280] text-sm mt-1">Financial clarity built for freelancers</p>
+          <h1 className="text-2xl font-bold text-[#D8E8F4]">Freelancer OS</h1>
+          <p className="text-[#7299B4] text-sm mt-1">Financial clarity built for freelancers</p>
         </div>
 
         <div className="card">
           <div className="mb-6">
             <h2 className="text-lg font-semibold">Create your account</h2>
-            <p className="text-sm text-[#6B7280] mt-1">
+            <p className="text-sm text-[#7299B4] mt-1">
               Upload your bank CSV and understand your money in minutes.
             </p>
           </div>
@@ -204,7 +204,7 @@ export default function SignupPage() {
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   tabIndex={-1}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#B8BFC8] hover:text-[#374151] transition-colors p-1 rounded"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#3A5470] hover:text-[#D8E8F4] transition-colors p-1 rounded"
                   aria-label={showPassword ? "Hide password" : "Show password"}
                 >
                   {showPassword ? (
@@ -220,12 +220,12 @@ export default function SignupPage() {
                 </button>
               </div>
               {password.length > 0 && password.length < 8 && (
-                <p className="text-xs text-[#C79A63] mt-1.5">At least 8 characters needed.</p>
+                <p className="text-xs text-[#D4A254] mt-1.5">At least 8 characters needed.</p>
               )}
             </div>
 
             {error && (
-              <p className="text-sm text-[#C66A5A] bg-[#C66A5A10] px-4 py-3 rounded-xl">{error}</p>
+              <p className="text-sm text-[#D97070] bg-[#D9707010] px-4 py-3 rounded-xl">{error}</p>
             )}
 
             <button type="submit" className="btn-primary w-full" disabled={loading}>
@@ -237,9 +237,9 @@ export default function SignupPage() {
             </button>
           </form>
 
-          <p className="text-center text-sm text-[#9CA3AF] mt-5">
+          <p className="text-center text-sm text-[#4A6882] mt-5">
             Already have an account?{" "}
-            <Link href="/login" className="text-[#4F7A65] hover:underline font-medium">Sign in</Link>
+            <Link href="/login" className="text-[#3AB5A0] hover:underline font-medium">Sign in</Link>
           </p>
         </div>
       </div>

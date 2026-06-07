@@ -33,7 +33,7 @@ export default function ForecastLoading() {
         </div>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="bg-[#F7F8F5] rounded-xl p-3 space-y-2">
+            <div key={i} className="bg-[#1A3048] rounded-xl p-3 space-y-2">
               <Sk h="h-3" w="w-24" />
               <Sk h="h-7" w="w-28" rounded="rounded-lg" />
               <Sk h="h-3" w="w-20" />
@@ -47,7 +47,7 @@ export default function ForecastLoading() {
         <Sk h="h-3" w="w-24" className="mb-4" />
         <div className="space-y-3">
           {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="bg-[#F7F8F5] rounded-xl p-4 space-y-2">
+            <div key={i} className="bg-[#1A3048] rounded-xl p-4 space-y-2">
               <div className="flex justify-between">
                 <Sk h="h-4" w="w-36" />
                 <Sk h="h-5" w="w-16" rounded="rounded-full" />
@@ -65,7 +65,7 @@ export default function ForecastLoading() {
           <Sk h="h-3" w="w-28" className="mb-4" />
           <div className="space-y-3">
             {[1,2,3].map(i => (
-              <div key={i} className="bg-[#F7F8F5] rounded-xl p-3 space-y-1.5">
+              <div key={i} className="bg-[#1A3048] rounded-xl p-3 space-y-1.5">
                 <Sk h="h-4" w="w-24" />
                 <Sk h="h-5" w="w-32" rounded="rounded-lg" />
               </div>

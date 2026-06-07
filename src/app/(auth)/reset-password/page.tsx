@@ -63,31 +63,31 @@ function ResetPasswordForm() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 bg-[#F7F8F5]">
+    <div className="min-h-screen flex items-center justify-center px-4 bg-[#0D1B2B]">
       <div className="w-full max-w-sm">
 
         <div className="mb-8 text-center">
-          <h1 className="text-2xl font-bold text-[#1F2937]">Freelancer OS</h1>
-          <p className="text-[#6B7280] text-sm mt-1">Financial clarity built for freelancers</p>
+          <h1 className="text-2xl font-bold text-[#D8E8F4]">Freelancer OS</h1>
+          <p className="text-[#7299B4] text-sm mt-1">Financial clarity built for freelancers</p>
         </div>
 
         {exchanging && (
           <div className="card flex items-center justify-center gap-3 py-10">
             <Spinner />
-            <p className="text-sm text-[#6B7280]">Verifying your reset link…</p>
+            <p className="text-sm text-[#7299B4]">Verifying your reset link…</p>
           </div>
         )}
 
         {!exchanging && !ready && (
           <div className="card text-center space-y-5">
-            <div className="w-14 h-14 bg-[#C66A5A10] rounded-full flex items-center justify-center mx-auto">
-              <svg className="w-7 h-7 text-[#C66A5A]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+            <div className="w-14 h-14 bg-[#D9707010] rounded-full flex items-center justify-center mx-auto">
+              <svg className="w-7 h-7 text-[#D97070]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
               </svg>
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-[#1F2937]">Link expired</h2>
-              <p className="text-sm text-[#6B7280] mt-1">{error}</p>
+              <h2 className="text-lg font-semibold text-[#D8E8F4]">Link expired</h2>
+              <p className="text-sm text-[#7299B4] mt-1">{error}</p>
             </div>
             <button onClick={() => router.push("/login")} className="btn-primary text-sm">
               Request a new link
@@ -97,14 +97,14 @@ function ResetPasswordForm() {
 
         {success && (
           <div className="card text-center space-y-5">
-            <div className="w-14 h-14 bg-[#5B8A7220] rounded-full flex items-center justify-center mx-auto">
-              <svg className="w-7 h-7 text-[#5B8A72]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+            <div className="w-14 h-14 bg-[#4CC4A420] rounded-full flex items-center justify-center mx-auto">
+              <svg className="w-7 h-7 text-[#4CC4A4]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-[#1F2937]">Password updated</h2>
-              <p className="text-sm text-[#6B7280] mt-1">Taking you to your dashboard…</p>
+              <h2 className="text-lg font-semibold text-[#D8E8F4]">Password updated</h2>
+              <p className="text-sm text-[#7299B4] mt-1">Taking you to your dashboard…</p>
             </div>
           </div>
         )}
@@ -113,7 +113,7 @@ function ResetPasswordForm() {
           <div className="card">
             <div className="mb-6">
               <h2 className="text-lg font-semibold">Set a new password</h2>
-              <p className="text-sm text-[#6B7280] mt-1">
+              <p className="text-sm text-[#7299B4] mt-1">
                 Choose something strong, at least 8 characters.
               </p>
             </div>
@@ -137,7 +137,7 @@ function ResetPasswordForm() {
                     type="button"
                     onClick={() => setShowPwd(!showPwd)}
                     tabIndex={-1}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#B8BFC8] hover:text-[#374151] transition-colors p-1"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#3A5470] hover:text-[#D8E8F4] transition-colors p-1"
                     aria-label={showPwd ? "Hide password" : "Show password"}
                   >
                     {showPwd ? (
@@ -168,17 +168,17 @@ function ResetPasswordForm() {
               </div>
 
               {password.length > 0 && password.length < 8 && (
-                <p className="text-xs text-[#C79A63]">Password needs at least 8 characters.</p>
+                <p className="text-xs text-[#D4A254]">Password needs at least 8 characters.</p>
               )}
               {password.length >= 8 && confirm.length > 0 && password !== confirm && (
-                <p className="text-xs text-[#C66A5A]">Passwords don&apos;t match.</p>
+                <p className="text-xs text-[#D97070]">Passwords don&apos;t match.</p>
               )}
               {password.length >= 8 && confirm.length > 0 && password === confirm && (
-                <p className="text-xs text-[#5B8A72]">Passwords match ✓</p>
+                <p className="text-xs text-[#4CC4A4]">Passwords match ✓</p>
               )}
 
               {error && (
-                <p className="text-sm text-[#C66A5A] bg-[#C66A5A10] px-4 py-3 rounded-xl">{error}</p>
+                <p className="text-sm text-[#D97070] bg-[#D9707010] px-4 py-3 rounded-xl">{error}</p>
               )}
 
               <button
@@ -204,8 +204,8 @@ function ResetPasswordForm() {
 export default function ResetPasswordPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-[#F7F8F5]">
-        <div className="flex items-center gap-3 text-[#9CA3AF]">
+      <div className="min-h-screen flex items-center justify-center bg-[#0D1B2B]">
+        <div className="flex items-center gap-3 text-[#4A6882]">
           <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />

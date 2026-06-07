@@ -11,7 +11,7 @@ export default function UploadLoading() {
       </div>
 
       {/* Drop zone */}
-      <div className="border-2 border-dashed border-[#ECEEE9] rounded-2xl p-8 md:p-12 flex flex-col items-center gap-3">
+      <div className="border-2 border-dashed border-[#1E3550] rounded-2xl p-8 md:p-12 flex flex-col items-center gap-3">
         <Sk h="h-10" w="w-10" rounded="rounded-xl" />
         <Sk h="h-4" w="w-36" />
         <Sk h="h-3" w="w-24" />
