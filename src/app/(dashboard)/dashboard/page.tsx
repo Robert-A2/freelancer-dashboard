@@ -138,12 +138,14 @@ export default async function DashboardPage({
   // Fix 3: First-upload detection — show welcome banner on first arrival after upload
   const isFirstUpload = params.firstUpload === "true" && hasData;
 
-  // Combine all historical intelligence into one section
+  // Combine all historical intelligence into one section, tagged by where it
+  // came from so the UI can give each kind its own accent colour and icon —
+  // otherwise every card looks identical and the section reads as a wall of text.
   const allHistoricalInsights = [
-    ...intel.historicalHighlights,
-    ...intel.seasonalInsights,
-    ...intel.categoryInsights,
-  ].filter(Boolean);
+    ...intel.historicalHighlights.map((text) => ({ text, type: "overview" as const })),
+    ...intel.seasonalInsights.map((text) => ({ text, type: "seasonal" as const })),
+    ...intel.categoryInsights.map((text) => ({ text, type: "category" as const })),
+  ].filter((insight) => Boolean(insight.text));
 
   return (
     <div className="space-y-8">
