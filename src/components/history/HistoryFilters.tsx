@@ -50,7 +50,7 @@ export default function HistoryFilters({
   };
 
   const hasFilters = activeType || activeCategory || activeYear || activeMonth || activeSearch;
-  const selectBase = "bg-[#132537] border border-[#243F5E] rounded-xl px-3 py-2.5 text-sm text-[#D8E8F4] focus:outline-none focus:border-[#3AB5A0] capitalize min-h-[44px] w-full";
+  const selectBase = "bg-[#132537] border border-[#243F5E] rounded-xl px-3 py-2.5 text-sm text-[#E8F0F8] focus:outline-none focus:border-[#3AB5A0] capitalize min-h-[44px] w-full";
 
   return (
     <div className="space-y-3">
@@ -62,7 +62,7 @@ export default function HistoryFilters({
           className="input pr-10"
           onChange={(e) => handleSearchChange(e.target.value)}
         />
-        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[#4A6882] text-sm pointer-events-none">⌕</span>
+        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[#6A97B4] text-sm pointer-events-none">⌕</span>
       </div>
 
       <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide sm:flex-wrap sm:overflow-visible sm:pb-0">
@@ -77,7 +77,7 @@ export default function HistoryFilters({
             className={`flex-shrink-0 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors min-h-[44px] ${
               activeType === f.value || (!activeType && !f.value)
                 ? "bg-[#3AB5A015] text-[#3AB5A0]"
-                : "bg-[#1A3048] text-[#7299B4] hover:text-[#D8E8F4]"
+                : "bg-[#1A3048] text-[#7BA8C4] hover:text-[#E8F0F8]"
             }`}
           >
             {f.label}
@@ -105,7 +105,7 @@ export default function HistoryFilters({
       </div>
 
       {hasFilters && (
-        <button onClick={clearAll} className="text-sm text-[#4A6882] hover:text-[#7299B4] transition-colors min-h-[44px] px-2">
+        <button onClick={clearAll} className="text-sm text-[#6A97B4] hover:text-[#7BA8C4] transition-colors min-h-[44px] px-2">
           Clear all filters
         </button>
       )}

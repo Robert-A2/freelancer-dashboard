@@ -33,7 +33,7 @@ export default function DataCoverage({ coverage }: Props) {
           {span} of history · {coverage.count.toLocaleString()} transactions
         </span>
         {from && to && (
-          <span className="text-xs text-[#4A6882]">{from} – {to}</span>
+          <span className="text-xs text-[#6A97B4]">{from} – {to}</span>
         )}
       </div>
     </div>

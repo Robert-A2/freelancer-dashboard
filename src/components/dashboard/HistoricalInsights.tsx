@@ -23,9 +23,9 @@ export default function HistoricalInsights({ highlights, totalMonths }: Props) {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-2">
         <div>
           <p className="label mb-1">Your Financial Story</p>
-          <h3 className="text-lg font-semibold text-[#D8E8F4]">Historical Insights</h3>
+          <h3 className="text-lg font-semibold text-[#E8F0F8]">Historical Insights</h3>
         </div>
-        <span className="text-xs text-[#7299B4] bg-[#1A3048] px-2 py-1 rounded-lg self-start sm:flex-shrink-0">
+        <span className="text-xs text-[#7BA8C4] bg-[#1A3048] px-2 py-1 rounded-lg self-start sm:flex-shrink-0">
           {totalMonths} month{totalMonths !== 1 ? "s" : ""} of history
         </span>
       </div>
@@ -34,7 +34,7 @@ export default function HistoricalInsights({ highlights, totalMonths }: Props) {
         {visible.map((highlight, i) => (
           <div key={i} className="flex items-start gap-3 bg-[#1A3048] rounded-xl px-4 py-3">
             <span className="text-[#3AB5A0] text-sm mt-0.5 flex-shrink-0">◆</span>
-            <p className="text-sm text-[#8AAEC8]">{highlight}</p>
+            <p className="text-sm text-[#A8C6E0]">{highlight}</p>
           </div>
         ))}
       </div>

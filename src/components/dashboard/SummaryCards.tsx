@@ -72,7 +72,7 @@ export default function SummaryCards({
             {formatCurrency(c.totalIncome)}
           </p>
           <div className="flex items-center gap-2 flex-wrap">
-            <p className="text-[13px] text-[#3A5470]">{spendRate}% spend ratio</p>
+            <p className="text-[13px] text-[#6A97B4]">{spendRate}% spend ratio</p>
             {previous && <Chip value={changePct(c.totalIncome, p.totalIncome)} />}
           </div>
         </div>
@@ -84,7 +84,7 @@ export default function SummaryCards({
             {formatCurrency(c.totalExpenses)}
           </p>
           <div className="flex items-center gap-2 flex-wrap">
-            <p className="text-[13px] text-[#3A5470]">{spendRate}% of income</p>
+            <p className="text-[13px] text-[#6A97B4]">{spendRate}% of income</p>
             {previous && <Chip value={changePct(c.totalExpenses, p.totalExpenses)} invert />}
           </div>
         </div>
@@ -96,7 +96,7 @@ export default function SummaryCards({
             {formatCurrency(currCashflow)}
           </p>
           <div className="flex items-center gap-2 flex-wrap">
-            <p className="text-[13px] text-[#3A5470]">
+            <p className="text-[13px] text-[#6A97B4]">
               {currCashflow >= 0 ? "Income above expenses" : "Expenses exceed income"}
             </p>
             {previous && <Chip value={changePct(currCashflow, prevCashflow)} />}
@@ -110,7 +110,7 @@ export default function SummaryCards({
             {fmtRunway(runway)}
           </p>
           <div className="flex items-center gap-2 flex-wrap">
-            <p className="text-[13px] text-[#3A5470]">
+            <p className="text-[13px] text-[#6A97B4]">
               {runway >= 0 ? "months buffer added" : "months consumed"}
             </p>
             {previous && <Chip value={runwayChange} />}
@@ -123,7 +123,7 @@ export default function SummaryCards({
           <p className={`text-2xl md:text-3xl font-bold leading-none ${risk.color}`}>
             {risk.label}
           </p>
-          <p className="text-[13px] text-[#3A5470]">
+          <p className="text-[13px] text-[#6A97B4]">
             {riskTotalMonths > 0
               ? `${riskPositiveMonths} of ${riskTotalMonths} months positive`
               : "No history yet"}
@@ -134,11 +134,11 @@ export default function SummaryCards({
 
       {summary && (
         <div className="bg-[#4CC4A40A] border border-[#4CC4A415] rounded-xl px-5 py-4 space-y-2.5">
-          <p className="text-sm font-medium text-[#D8E8F4] leading-relaxed">{summary}</p>
+          <p className="text-sm font-medium text-[#E8F0F8] leading-relaxed">{summary}</p>
           {context && context.length > 0 && (
             <ul className="space-y-2">
               {context.map((line, i) => (
-                <li key={i} className="text-sm text-[#8AAEC8] flex items-start gap-2.5 leading-relaxed">
+                <li key={i} className="text-sm text-[#A8C6E0] flex items-start gap-2.5 leading-relaxed">
                   <span className="text-[#4CC4A4] opacity-60 mt-1 flex-shrink-0">·</span>
                   {line}
                 </li>

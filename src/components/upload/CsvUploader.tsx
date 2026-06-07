@@ -134,9 +134,9 @@ export default function CsvUploader() {
           onClick={() => inputRef.current?.click()}
         >
           <div className="text-4xl mb-3">📂</div>
-          <p className="text-[#D8E8F4] font-semibold mb-1">Drop your CSV here</p>
-          <p className="text-sm text-[#7299B4]">or click to browse</p>
-          <p className="text-xs text-[#4A6882] mt-3">
+          <p className="text-[#E8F0F8] font-semibold mb-1">Drop your CSV here</p>
+          <p className="text-sm text-[#7BA8C4]">or click to browse</p>
+          <p className="text-xs text-[#6A97B4] mt-3">
             Any size · Any date range · Duplicates skipped automatically
           </p>
           <input
@@ -156,14 +156,14 @@ export default function CsvUploader() {
     return (
       <div className="card py-10 flex flex-col items-center gap-6">
         <div className="text-center">
-          <p className="font-semibold text-[#D8E8F4]">Uploading {stage.fileName}</p>
-          <p className="text-sm text-[#7299B4] mt-1">
+          <p className="font-semibold text-[#E8F0F8]">Uploading {stage.fileName}</p>
+          <p className="text-sm text-[#7BA8C4] mt-1">
             Going directly to Supabase Storage. No file size limit
           </p>
         </div>
 
         <div className="w-full max-w-sm">
-          <div className="flex justify-between text-xs text-[#4A6882] mb-1.5">
+          <div className="flex justify-between text-xs text-[#6A97B4] mb-1.5">
             <span>Uploading…</span>
             <span>{stage.progress}%</span>
           </div>
@@ -184,8 +184,8 @@ export default function CsvUploader() {
       <div className="card py-10 flex flex-col items-center gap-4">
         <div className="w-10 h-10 border-4 border-[#3AB5A0] border-t-transparent rounded-full animate-spin" />
         <div className="text-center">
-          <p className="font-semibold text-[#D8E8F4]">Processing {stage.fileName}</p>
-          <p className="text-sm text-[#7299B4] mt-1">
+          <p className="font-semibold text-[#E8F0F8]">Processing {stage.fileName}</p>
+          <p className="text-sm text-[#7BA8C4] mt-1">
             Parsing · Deduplicating · Categorising · Updating analytics…
           </p>
         </div>
@@ -217,20 +217,20 @@ export default function CsvUploader() {
           </div>
           <div>
             <p className="font-semibold text-[#4CC4A4]">Import complete</p>
-            <p className="text-sm text-[#7299B4]">{fileName}</p>
+            <p className="text-sm text-[#7BA8C4]">{fileName}</p>
           </div>
         </div>
 
         <div className="grid grid-cols-2 gap-3">
           {[
             { label: "Transactions imported", value: result.importedRows.toLocaleString(), color: "text-[#4CC4A4]" },
-            { label: "Duplicates skipped", value: result.duplicateRows.toLocaleString(), color: "text-[#4A6882]" },
-            { label: "Total rows", value: result.totalRows.toLocaleString(), color: "text-[#D8E8F4]" },
+            { label: "Duplicates skipped", value: result.duplicateRows.toLocaleString(), color: "text-[#6A97B4]" },
+            { label: "Total rows", value: result.totalRows.toLocaleString(), color: "text-[#E8F0F8]" },
             { label: "Invalid rows", value: result.skippedRows.toLocaleString(), color: "text-[#D4A254]" },
           ].map((s) => (
             <div key={s.label} className="bg-[#1A3048] rounded-xl p-3 text-center">
               <p className={`text-2xl font-bold ${s.color}`}>{s.value}</p>
-              <p className="text-xs text-[#4A6882] mt-1">{s.label}</p>
+              <p className="text-xs text-[#6A97B4] mt-1">{s.label}</p>
             </div>
           ))}
         </div>
@@ -239,13 +239,13 @@ export default function CsvUploader() {
           <div className="bg-[#1A3048] rounded-xl px-4 py-3 space-y-1.5">
             {dateRangeLabel && (
               <div className="flex items-center justify-between text-sm">
-                <span className="text-[#7299B4]">Date range</span>
-                <span className="font-medium text-[#D8E8F4]">{dateRangeLabel}</span>
+                <span className="text-[#7BA8C4]">Date range</span>
+                <span className="font-medium text-[#E8F0F8]">{dateRangeLabel}</span>
               </div>
             )}
             {result.categoriesDetected > 0 && (
               <div className="flex items-center justify-between text-sm">
-                <span className="text-[#7299B4]">Categories detected</span>
+                <span className="text-[#7BA8C4]">Categories detected</span>
                 <span className="font-medium text-[#3AB5A0]">{result.categoriesDetected}</span>
               </div>
             )}
@@ -254,35 +254,35 @@ export default function CsvUploader() {
 
         {result.typeBreakdown && (
           <div className="bg-[#1A3048] rounded-xl px-4 py-3 space-y-2">
-            <p className="text-xs font-semibold text-[#4A6882] uppercase tracking-wide">What we found</p>
+            <p className="text-xs font-semibold text-[#6A97B4] uppercase tracking-wide">What we found</p>
             <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
               {result.typeBreakdown.income > 0 && (
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-[#7299B4]">Income payments</span>
+                  <span className="text-[#7BA8C4]">Income payments</span>
                   <span className="font-medium text-[#4CC4A4]">{result.typeBreakdown.income.toLocaleString()}</span>
                 </div>
               )}
               {result.typeBreakdown.expense > 0 && (
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-[#7299B4]">Expenses</span>
+                  <span className="text-[#7BA8C4]">Expenses</span>
                   <span className="font-medium text-[#D4A254]">{result.typeBreakdown.expense.toLocaleString()}</span>
                 </div>
               )}
               {result.typeBreakdown.savings > 0 && (
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-[#7299B4]">Savings transfers</span>
+                  <span className="text-[#7BA8C4]">Savings transfers</span>
                   <span className="font-medium text-[#3AB5A0]">{result.typeBreakdown.savings.toLocaleString()}</span>
                 </div>
               )}
               {result.typeBreakdown.transfer > 0 && (
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-[#7299B4]">Internal transfers</span>
-                  <span className="font-medium text-[#4A6882]">{result.typeBreakdown.transfer.toLocaleString()}</span>
+                  <span className="text-[#7BA8C4]">Internal transfers</span>
+                  <span className="font-medium text-[#6A97B4]">{result.typeBreakdown.transfer.toLocaleString()}</span>
                 </div>
               )}
             </div>
             {result.typeBreakdown.transfer > 0 && (
-              <p className="text-xs text-[#4A6882] pt-1">
+              <p className="text-xs text-[#6A97B4] pt-1">
                 Internal transfers (between your own accounts) are excluded from income and expense totals.
               </p>
             )}
@@ -333,15 +333,15 @@ export default function CsvUploader() {
         </div>
         <div>
           <p className="font-semibold text-[#D97070]">{err.heading}</p>
-          <p className="text-sm text-[#7299B4] mt-0.5 leading-relaxed">{err.reason}</p>
+          <p className="text-sm text-[#7BA8C4] mt-0.5 leading-relaxed">{err.reason}</p>
         </div>
       </div>
 
       <div className="bg-[#1A3048] rounded-xl px-4 py-3">
-        <p className="text-xs font-semibold text-[#4A6882] uppercase tracking-wide mb-2">What to try</p>
+        <p className="text-xs font-semibold text-[#6A97B4] uppercase tracking-wide mb-2">What to try</p>
         <ul className="space-y-1.5">
           {err.steps.map((step, i) => (
-            <li key={i} className="text-sm text-[#D8E8F4] flex items-start gap-2">
+            <li key={i} className="text-sm text-[#E8F0F8] flex items-start gap-2">
               <span className="text-[#3AB5A0] flex-shrink-0 mt-0.5">→</span>
               {step}
             </li>
@@ -355,7 +355,7 @@ export default function CsvUploader() {
         </button>
         <a
           href="mailto:support@freelanceros.app?subject=CSV Upload Issue"
-          className="text-xs text-center text-[#4A6882] hover:text-[#D8E8F4] transition-colors py-1"
+          className="text-xs text-center text-[#6A97B4] hover:text-[#E8F0F8] transition-colors py-1"
         >
           Still stuck? Email us and we&apos;ll help →
         </a>

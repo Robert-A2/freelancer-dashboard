@@ -23,7 +23,7 @@ const HEALTH = {
 
 const TREND = {
   improving: { label: "↑ Improving", bg: "bg-[#4CC4A415]", text: "text-[#4CC4A4]" },
-  stable:    { label: "→ Stable",    bg: "bg-[#1A3048]",   text: "text-[#7299B4]" },
+  stable:    { label: "→ Stable",    bg: "bg-[#1A3048]",   text: "text-[#7BA8C4]" },
   weakening: { label: "↓ Weakening", bg: "bg-[#D9707015]", text: "text-[#D97070]" },
 };
 
@@ -160,7 +160,7 @@ export default async function ForecastPage() {
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold">Forecast</h1>
-        <p className="text-[#7299B4] text-sm mt-0.5">
+        <p className="text-[#7BA8C4] text-sm mt-0.5">
           {hasData ? "Financial outlook based on your actual data" : "Upload a CSV to generate your forecast"}
         </p>
       </div>
@@ -172,7 +172,7 @@ export default async function ForecastPage() {
         <div className="card text-center py-16">
           <div className="text-5xl mb-4">📈</div>
           <h2 className="text-xl font-semibold mb-2">No data to forecast yet</h2>
-          <p className="text-[#7299B4] mb-6 max-w-sm mx-auto">
+          <p className="text-[#7BA8C4] mb-6 max-w-sm mx-auto">
             Upload your bank statement CSV to generate personalised forecasts and financial insights.
           </p>
           <Link href="/upload" className="btn-primary inline-block">Upload CSV</Link>
@@ -201,8 +201,8 @@ export default async function ForecastPage() {
             <div className={`card ${risk.bg} ${risk.border}`}>
               <p className="label mb-3">Cashflow Risk</p>
               <p className={`text-2xl font-bold mb-2 ${risk.text}`}>{risk.label}</p>
-              <p className="text-xs text-[#7299B4] leading-relaxed">{risk.desc}</p>
-              <p className="text-xs text-[#4A6882] mt-2">{positiveCount} of {activeMonths.length} months positive</p>
+              <p className="text-xs text-[#7BA8C4] leading-relaxed">{risk.desc}</p>
+              <p className="text-xs text-[#6A97B4] mt-2">{positiveCount} of {activeMonths.length} months positive</p>
             </div>
 
             {/* Business Direction */}
@@ -214,7 +214,7 @@ export default async function ForecastPage() {
                 </span>
               </div>
               {intel.trajectoryInsight && (
-                <p className="text-xs text-[#7299B4] leading-relaxed">{intel.trajectoryInsight}</p>
+                <p className="text-xs text-[#7BA8C4] leading-relaxed">{intel.trajectoryInsight}</p>
               )}
             </div>
           </div>
@@ -231,7 +231,7 @@ export default async function ForecastPage() {
             <div className="flex items-start justify-between flex-wrap gap-2 mb-4">
               <div>
                 <p className="label mb-1">Year-End Projection</p>
-                <p className="text-[13px] text-[#4A6882]">
+                <p className="text-[13px] text-[#6A97B4]">
                   If current monthly averages continue for 12 months
                 </p>
               </div>
@@ -252,9 +252,9 @@ export default async function ForecastPage() {
                 { label: "Projected Runway",   value: `${projRunwayMonths >= 0 ? "+" : "−"}${Math.abs(projRunwayMonths).toFixed(1)} mo`, sub: projRunwayMonths >= 0 ? "months buffer per month" : "deficit per month", color: projRunwayMonths >= 0.5 ? "text-[#4CC4A4]" : projRunwayMonths >= 0 ? "text-[#D4A254]" : "text-[#D97070]", border: "border-[#243F5E]" },
               ].map((item) => (
                 <div key={item.label} className={`bg-[#1A3048] rounded-xl p-3 border ${item.border}`}>
-                  <p className="text-xs text-[#4A6882] uppercase tracking-wide mb-1">{item.label}</p>
+                  <p className="text-xs text-[#6A97B4] uppercase tracking-wide mb-1">{item.label}</p>
                   <p className={`text-xl font-bold tabular-nums ${item.color}`}>{item.value}</p>
-                  {item.sub && <p className="text-xs text-[#4A6882] mt-1">{item.sub}</p>}
+                  {item.sub && <p className="text-xs text-[#6A97B4] mt-1">{item.sub}</p>}
                 </div>
               ))}
             </div>
@@ -264,7 +264,7 @@ export default async function ForecastPage() {
           {keyDrivers.length > 0 && (
             <div className="card">
               <p className="label mb-1">Key Drivers</p>
-              <p className="text-xs text-[#4A6882] mb-4">What is shaping this forecast</p>
+              <p className="text-xs text-[#6A97B4] mb-4">What is shaping this forecast</p>
               <div className="space-y-2">
                 {keyDrivers.map((d, i) => (
                   <div key={i} className="flex items-start gap-3 bg-[#1A3048] rounded-xl px-4 py-3">
@@ -272,8 +272,8 @@ export default async function ForecastPage() {
                       {d.positive ? "↑" : "↓"}
                     </span>
                     <div>
-                      <p className="text-sm font-medium text-[#D8E8F4]">{d.label}</p>
-                      <p className="text-xs text-[#7299B4] mt-0.5 leading-relaxed">{d.detail}</p>
+                      <p className="text-sm font-medium text-[#E8F0F8]">{d.label}</p>
+                      <p className="text-xs text-[#7BA8C4] mt-0.5 leading-relaxed">{d.detail}</p>
                     </div>
                   </div>
                 ))}
@@ -288,7 +288,7 @@ export default async function ForecastPage() {
                 <span className="text-[#D97070] text-xl flex-shrink-0 mt-0.5">⚠</span>
                 <div>
                   <p className="label mb-2">Biggest Risk</p>
-                  <p className="text-sm text-[#8AAEC8] leading-relaxed">
+                  <p className="text-sm text-[#A8C6E0] leading-relaxed">
                     {intel.biggestRisk ?? "No significant risk detected based on current data."}
                   </p>
                 </div>
@@ -299,7 +299,7 @@ export default async function ForecastPage() {
                 <span className="text-[#4CC4A4] text-xl flex-shrink-0 mt-0.5">★</span>
                 <div>
                   <p className="label mb-2">Biggest Opportunity</p>
-                  <p className="text-sm text-[#8AAEC8] leading-relaxed">
+                  <p className="text-sm text-[#A8C6E0] leading-relaxed">
                     {intel.biggestOpportunity ?? "Maintain consistent cashflow and income levels."}
                   </p>
                 </div>
@@ -311,7 +311,7 @@ export default async function ForecastPage() {
           {intel.forecastImprovements.length > 0 && (
             <div className="card bg-[#3AB5A00A] border border-[#3AB5A018]">
               <p className="label mb-1">Recommended Actions</p>
-              <p className="text-xs text-[#4A6882] mb-4">
+              <p className="text-xs text-[#6A97B4] mb-4">
                 Specific steps derived from your actual financial patterns:
               </p>
               <div className="space-y-3">
@@ -320,7 +320,7 @@ export default async function ForecastPage() {
                     <span className="text-xs font-bold text-[#3AB5A0] bg-[#3AB5A020] w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0">
                       {i + 1}
                     </span>
-                    <p className="text-sm text-[#8AAEC8] leading-relaxed">{action}</p>
+                    <p className="text-sm text-[#A8C6E0] leading-relaxed">{action}</p>
                   </div>
                 ))}
               </div>
@@ -335,7 +335,7 @@ export default async function ForecastPage() {
                 {intel.seasonalInsights.map((insight, i) => (
                   <div key={i} className="flex items-start gap-3 bg-[#1A3048] rounded-xl px-4 py-3">
                     <span className="text-[#3AB5A0] text-sm mt-0.5 flex-shrink-0">◆</span>
-                    <p className="text-sm text-[#8AAEC8]">{insight}</p>
+                    <p className="text-sm text-[#A8C6E0]">{insight}</p>
                   </div>
                 ))}
               </div>
@@ -372,18 +372,18 @@ export default async function ForecastPage() {
               ].map((item) => (
                 <div key={item.label} className="bg-[#1A3048] rounded-xl p-4">
                   <p className="label mb-2">{item.label}</p>
-                  <p className={`text-sm font-semibold ${item.color ?? "text-[#8AAEC8]"}`}>{item.value}</p>
+                  <p className={`text-sm font-semibold ${item.color ?? "text-[#A8C6E0]"}`}>{item.value}</p>
                 </div>
               ))}
             </div>
             <div className="flex items-center gap-2 mb-3 px-1">
               <span className="w-1.5 h-1.5 rounded-full bg-[#4CC4A4] flex-shrink-0" />
-              <p className="text-xs text-[#4A6882]">
+              <p className="text-xs text-[#6A97B4]">
                 Forecast recalculated now using all available data.
                 {forecast?.seasonallyAdjusted && " Seasonal patterns from 24+ months applied."}
               </p>
             </div>
-            <div className="text-xs text-[#3A5470] space-y-2 border-t border-[#1E3550] pt-4 leading-relaxed">
+            <div className="text-xs text-[#6A97B4] space-y-2 border-t border-[#1E3550] pt-4 leading-relaxed">
               <p>· Recent months are weighted 3× more heavily than older months when calculating averages.</p>
               {forecast?.seasonallyAdjusted && (
                 <p>· Seasonal adjustment applied: months that are historically stronger or weaker are accounted for.</p>

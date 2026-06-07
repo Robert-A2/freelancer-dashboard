@@ -110,7 +110,7 @@ export default async function AnalyticsPage() {
 
       <div>
         <h1 className="text-2xl font-bold">Analytics</h1>
-        <p className="text-[#7299B4] text-sm mt-0.5">Deep dive into your financial patterns</p>
+        <p className="text-[#7BA8C4] text-sm mt-0.5">Deep dive into your financial patterns</p>
       </div>
 
       {coverage.count > 0 && <DataCoverageBar coverage={coverage} />}
@@ -119,7 +119,7 @@ export default async function AnalyticsPage() {
         <div className="card text-center py-16">
           <div className="text-5xl mb-4">📊</div>
           <h2 className="text-xl font-semibold mb-2">No data yet</h2>
-          <p className="text-[#7299B4] mb-6 max-w-sm mx-auto">Upload your bank statement to unlock full analytics.</p>
+          <p className="text-[#7BA8C4] mb-6 max-w-sm mx-auto">Upload your bank statement to unlock full analytics.</p>
           <Link href="/upload" className="btn-primary inline-block">Upload CSV</Link>
         </div>
       )}
@@ -133,7 +133,7 @@ export default async function AnalyticsPage() {
           >
             <div className="card">
               {prevInc === 0 && (
-                <p className="text-xs text-[#4A6882] mb-4">No {prevYear} data yet</p>
+                <p className="text-xs text-[#6A97B4] mb-4">No {prevYear} data yet</p>
               )}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                 {[
@@ -157,7 +157,7 @@ export default async function AnalyticsPage() {
                       <p className={`text-lg font-bold tabular-nums ${item.color} mb-1`}>{displayVal}</p>
                       <div className="flex items-center gap-2">
                         {change !== null && <ChangeChip value={change} invert={item.invert} />}
-                        {item.prev !== 0 && <span className="text-xs text-[#4A6882]">{prevDisplayVal}</span>}
+                        {item.prev !== 0 && <span className="text-xs text-[#6A97B4]">{prevDisplayVal}</span>}
                       </div>
                     </div>
                   );
@@ -176,9 +176,9 @@ export default async function AnalyticsPage() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 md:gap-6">
               <div className="card">
                 <p className="label mb-1">Income sources</p>
-                <p className="text-xs text-[#4A6882] mb-4">Last 12 months, where money came in</p>
+                <p className="text-xs text-[#6A97B4] mb-4">Last 12 months, where money came in</p>
                 {incomeBySource.length === 0 ? (
-                  <p className="text-[#7299B4] text-sm">No income data</p>
+                  <p className="text-[#7BA8C4] text-sm">No income data</p>
                 ) : (
                   <div className="space-y-4">
                     {incomeBySource.map((src) => {
@@ -187,9 +187,9 @@ export default async function AnalyticsPage() {
                       return (
                         <div key={src.category}>
                           <div className="flex justify-between text-sm mb-1">
-                            <span className="capitalize text-[#8AAEC8]">{src.category}</span>
+                            <span className="capitalize text-[#A8C6E0]">{src.category}</span>
                             <div className="flex gap-3">
-                              <span className="text-[#4A6882]">{pct}%</span>
+                              <span className="text-[#6A97B4]">{pct}%</span>
                               <span className="font-medium text-[#4CC4A4]">{formatCurrency(amount)}</span>
                             </div>
                           </div>
@@ -205,9 +205,9 @@ export default async function AnalyticsPage() {
 
               <div className="card">
                 <p className="label mb-1">Expense breakdown</p>
-                <p className="text-xs text-[#4A6882] mb-4">All time, share of total spending</p>
+                <p className="text-xs text-[#6A97B4] mb-4">All time, share of total spending</p>
                 {categoryBreakdown.length === 0 ? (
-                  <p className="text-[#7299B4] text-sm">No expense data</p>
+                  <p className="text-[#7BA8C4] text-sm">No expense data</p>
                 ) : (
                   <div className="space-y-4">
                     {categoryBreakdown.map((cat) => {
@@ -220,11 +220,11 @@ export default async function AnalyticsPage() {
                         <div key={cat.category}>
                           <div className="flex justify-between text-sm mb-1">
                             <div className="flex items-center gap-1.5">
-                              <span className="capitalize text-[#8AAEC8]">{cat.category}</span>
+                              <span className="capitalize text-[#A8C6E0]">{cat.category}</span>
                               {arrow && <span className={`text-xs font-bold ${arrowColor}`}>{arrow}</span>}
                             </div>
                             <div className="flex gap-3">
-                              <span className="text-[#4A6882]">{pct}%</span>
+                              <span className="text-[#6A97B4]">{pct}%</span>
                               <span className="font-medium text-[#D4A254]">{formatCurrency(amount)}</span>
                             </div>
                           </div>

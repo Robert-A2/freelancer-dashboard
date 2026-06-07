@@ -67,14 +67,14 @@ function ResetPasswordForm() {
       <div className="w-full max-w-sm">
 
         <div className="mb-8 text-center">
-          <h1 className="text-2xl font-bold text-[#D8E8F4]">Freelancer OS</h1>
-          <p className="text-[#7299B4] text-sm mt-1">Financial clarity built for freelancers</p>
+          <h1 className="text-2xl font-bold text-[#E8F0F8]">Freelancer OS</h1>
+          <p className="text-[#7BA8C4] text-sm mt-1">Financial clarity built for freelancers</p>
         </div>
 
         {exchanging && (
           <div className="card flex items-center justify-center gap-3 py-10">
             <Spinner />
-            <p className="text-sm text-[#7299B4]">Verifying your reset link…</p>
+            <p className="text-sm text-[#7BA8C4]">Verifying your reset link…</p>
           </div>
         )}
 
@@ -86,8 +86,8 @@ function ResetPasswordForm() {
               </svg>
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-[#D8E8F4]">Link expired</h2>
-              <p className="text-sm text-[#7299B4] mt-1">{error}</p>
+              <h2 className="text-lg font-semibold text-[#E8F0F8]">Link expired</h2>
+              <p className="text-sm text-[#7BA8C4] mt-1">{error}</p>
             </div>
             <button onClick={() => router.push("/login")} className="btn-primary text-sm">
               Request a new link
@@ -103,8 +103,8 @@ function ResetPasswordForm() {
               </svg>
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-[#D8E8F4]">Password updated</h2>
-              <p className="text-sm text-[#7299B4] mt-1">Taking you to your dashboard…</p>
+              <h2 className="text-lg font-semibold text-[#E8F0F8]">Password updated</h2>
+              <p className="text-sm text-[#7BA8C4] mt-1">Taking you to your dashboard…</p>
             </div>
           </div>
         )}
@@ -113,7 +113,7 @@ function ResetPasswordForm() {
           <div className="card">
             <div className="mb-6">
               <h2 className="text-lg font-semibold">Set a new password</h2>
-              <p className="text-sm text-[#7299B4] mt-1">
+              <p className="text-sm text-[#7BA8C4] mt-1">
                 Choose something strong, at least 8 characters.
               </p>
             </div>
@@ -137,7 +137,7 @@ function ResetPasswordForm() {
                     type="button"
                     onClick={() => setShowPwd(!showPwd)}
                     tabIndex={-1}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#3A5470] hover:text-[#D8E8F4] transition-colors p-1"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#6A97B4] hover:text-[#E8F0F8] transition-colors p-1"
                     aria-label={showPwd ? "Hide password" : "Show password"}
                   >
                     {showPwd ? (
@@ -205,7 +205,7 @@ export default function ResetPasswordPage() {
   return (
     <Suspense fallback={
       <div className="min-h-screen flex items-center justify-center bg-[#0D1B2B]">
-        <div className="flex items-center gap-3 text-[#4A6882]">
+        <div className="flex items-center gap-3 text-[#6A97B4]">
           <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />

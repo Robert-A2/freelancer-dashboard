@@ -165,12 +165,12 @@ export default async function DashboardPage({
               </Link>
             )}
           </div>
-          <p className="text-[#7299B4] text-sm">
+          <p className="text-[#7BA8C4] text-sm">
             {new Date().toLocaleDateString("en-IE", { month: "long", year: "numeric" })}
           </p>
         </div>
         {hasData && (
-          <p className="text-xs text-[#4A6882] flex-shrink-0 mt-1">
+          <p className="text-xs text-[#6A97B4] flex-shrink-0 mt-1">
             {totalTx.toLocaleString()} transactions · {nonZeroMonths} months
           </p>
         )}
@@ -182,7 +182,7 @@ export default async function DashboardPage({
           <p className="text-sm text-[#D4A254]">
             Your data is {daysSinceImport} days old. Upload last month&apos;s statement to keep insights accurate.
           </p>
-          <Link href="/upload" className="text-xs font-semibold text-[#D4A254] hover:text-[#D8E8F4] transition-colors flex-shrink-0 bg-[#D4A25420] px-3 py-1.5 rounded-lg">
+          <Link href="/upload" className="text-xs font-semibold text-[#D4A254] hover:text-[#E8F0F8] transition-colors flex-shrink-0 bg-[#D4A25420] px-3 py-1.5 rounded-lg">
             Upload →
           </Link>
         </div>
@@ -206,7 +206,7 @@ export default async function DashboardPage({
         <div className="card text-center py-16">
           <div className="text-5xl mb-4">📊</div>
           <h2 className="text-xl font-semibold mb-2">Built for freelancers</h2>
-          <p className="text-[#4A6882] mb-6 max-w-sm mx-auto">
+          <p className="text-[#6A97B4] mb-6 max-w-sm mx-auto">
             Upload your bank statement CSV to get cashflow clarity, intelligent insights,
             and forecasts designed specifically for freelance income patterns.
           </p>

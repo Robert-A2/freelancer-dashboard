@@ -64,7 +64,7 @@ export default function Navbar() {
       <nav className="sticky top-0 z-50 border-b border-[#1E3550] bg-[#132537]">
         <div className="max-w-5xl mx-auto px-5 sm:px-6 flex items-center justify-between h-16">
           <div className="flex items-center gap-6">
-            <span className="font-semibold text-[#D8E8F4] text-sm tracking-tight">
+            <span className="font-semibold text-[#E8F0F8] text-sm tracking-tight">
               Freelancer OS
             </span>
             <div className="hidden md:flex items-center gap-0.5">
@@ -76,7 +76,7 @@ export default function Navbar() {
                   className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
                     isActive(href)
                       ? "bg-[#3AB5A012] text-[#3AB5A0]"
-                      : "text-[#7299B4] hover:text-[#D8E8F4] hover:bg-[#1A3048]"
+                      : "text-[#7BA8C4] hover:text-[#E8F0F8] hover:bg-[#1A3048]"
                   }`}
                 >
                   {label}
@@ -86,7 +86,7 @@ export default function Navbar() {
           </div>
           <button
             onClick={handleSignOut}
-            className="text-xs text-[#4A6882] hover:text-[#7299B4] transition-colors px-3 py-2 min-h-[44px]"
+            className="text-xs text-[#6A97B4] hover:text-[#7BA8C4] transition-colors px-3 py-2 min-h-[44px]"
           >
             Sign out
           </button>
@@ -104,7 +104,7 @@ export default function Navbar() {
                 href={href}
                 onClick={() => setPending(href)}
                 className={`relative flex flex-col items-center justify-center gap-1 flex-1 py-3 min-h-[56px] transition-colors ${
-                  active ? "text-[#3AB5A0]" : "text-[#4A6882] hover:text-[#7299B4]"
+                  active ? "text-[#3AB5A0]" : "text-[#6A97B4] hover:text-[#7BA8C4]"
                 }`}
               >
                 {active && (

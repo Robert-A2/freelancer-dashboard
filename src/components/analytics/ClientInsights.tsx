@@ -19,7 +19,7 @@ function monthsLabel(months: number): string {
 }
 
 function YoyChip({ value }: { value: number | null }) {
-  if (value === null) return <span className="text-xs text-[#4A6882]">First year</span>;
+  if (value === null) return <span className="text-xs text-[#6A97B4]">First year</span>;
   const good = value >= 0;
   return (
     <span className={`text-xs font-semibold px-1.5 py-0.5 rounded ${good ? "bg-[#4CC4A415] text-[#4CC4A4]" : "bg-[#D9707015] text-[#D97070]"}`}>
@@ -60,7 +60,7 @@ export default function ClientInsights({ data }: Props) {
         {[
           { label: "Top client share", value: `${topClientShare}%`,           color: hasConcentrationRisk ? "text-[#D97070]" : "text-[#4CC4A4]" },
           { label: "Active clients",   value: String(activeClients),           color: "text-[#3AB5A0]" },
-          { label: "Avg per month",    value: String(avgClientsPerMonth),       color: "text-[#8AAEC8]" },
+          { label: "Avg per month",    value: String(avgClientsPerMonth),       color: "text-[#A8C6E0]" },
           { label: "Diversification",  value: diversificationConfig.label,     color: diversificationConfig.color },
         ].map(m => (
           <div key={m.label} className="bg-[#1A3048] rounded-xl p-3">
@@ -74,10 +74,10 @@ export default function ClientInsights({ data }: Props) {
       {hasConcentrationRisk && topClient && (
         <div className="flex items-start gap-3 px-4 py-3 bg-[#D970700A] border border-[#D9707025] rounded-xl">
           <span className="text-[#D97070] text-base flex-shrink-0">⚠</span>
-          <p className="text-sm text-[#8AAEC8]">
+          <p className="text-sm text-[#A8C6E0]">
             <span className="text-[#D97070] font-semibold">Revenue concentration risk: </span>
             {topClientShare}% of income came from{" "}
-            <span className="text-[#D8E8F4] font-medium">{topClient.name}</span>
+            <span className="text-[#E8F0F8] font-medium">{topClient.name}</span>
             {topClient.isPaymentProcessor ? " (payment processor, may represent multiple clients)" : ""}.
             Losing this source would significantly impact your business.
           </p>
@@ -88,7 +88,7 @@ export default function ClientInsights({ data }: Props) {
       <div className="card">
         <div className="mb-4">
           <p className="label mb-1">Top clients by revenue</p>
-          <p className="text-[13px] text-[#4A6882]">Ranked by total revenue, all time</p>
+          <p className="text-[13px] text-[#6A97B4]">Ranked by total revenue, all time</p>
         </div>
 
         <div className="space-y-3">
@@ -96,18 +96,18 @@ export default function ClientInsights({ data }: Props) {
             <div key={c.name} className="space-y-1">
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <span className="text-xs font-bold text-[#3A5470] w-5 flex-shrink-0">{i + 1}</span>
+                  <span className="text-xs font-bold text-[#6A97B4] w-5 flex-shrink-0">{i + 1}</span>
                   <div className="min-w-0">
                     <div className="flex items-center gap-1.5 flex-wrap">
-                      <p className="text-sm font-medium text-[#D8E8F4] truncate">{c.name}</p>
+                      <p className="text-sm font-medium text-[#E8F0F8] truncate">{c.name}</p>
                       {c.isPaymentProcessor && (
-                        <span className="text-xs text-[#4A6882] bg-[#1A3048] px-1.5 py-0.5 rounded flex-shrink-0">processor</span>
+                        <span className="text-xs text-[#6A97B4] bg-[#1A3048] px-1.5 py-0.5 rounded flex-shrink-0">processor</span>
                       )}
                       {c.isNew && (
                         <span className="text-xs text-[#4CC4A4] bg-[#4CC4A415] px-1.5 py-0.5 rounded flex-shrink-0">new</span>
                       )}
                     </div>
-                    <p className="text-xs text-[#4A6882]">
+                    <p className="text-xs text-[#6A97B4]">
                       {c.paymentCount} payment{c.paymentCount !== 1 ? "s" : ""}
                       {" · "}active {monthsLabel(c.monthsActive)}
                     </p>
@@ -115,7 +115,7 @@ export default function ClientInsights({ data }: Props) {
                 </div>
                 <div className="text-right flex-shrink-0">
                   <p className="text-sm font-bold text-[#4CC4A4]">{formatCurrency(c.totalRevenue)}</p>
-                  <p className="text-xs text-[#4A6882]">{c.revenueShare}% of income</p>
+                  <p className="text-xs text-[#6A97B4]">{c.revenueShare}% of income</p>
                 </div>
               </div>
               <RevenueBar share={c.revenueShare} />
@@ -130,17 +130,17 @@ export default function ClientInsights({ data }: Props) {
         {/* Client growth — YoY */}
         <div className="card">
           <p className="label mb-1">Client growth</p>
-          <p className="text-[13px] text-[#4A6882] mb-4">Year-over-year revenue change by client</p>
+          <p className="text-[13px] text-[#6A97B4] mb-4">Year-over-year revenue change by client</p>
           {nonProc.length === 0 ? (
-            <p className="text-sm text-[#4A6882]">No direct client data. Income from payment processors only.</p>
+            <p className="text-sm text-[#6A97B4]">No direct client data. Income from payment processors only.</p>
           ) : (
             <div className="space-y-3">
               {nonProc.slice(0, 6).map(c => (
                 <div key={c.name} className="flex items-center justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="text-sm text-[#D8E8F4] truncate">{c.name}</p>
+                    <p className="text-sm text-[#E8F0F8] truncate">{c.name}</p>
                     {c.currentYearRevenue > 0 && (
-                      <p className="text-xs text-[#4A6882]">{formatCurrency(c.currentYearRevenue)} this year</p>
+                      <p className="text-xs text-[#6A97B4]">{formatCurrency(c.currentYearRevenue)} this year</p>
                     )}
                   </div>
                   <YoyChip value={c.yoyGrowth} />
@@ -153,19 +153,19 @@ export default function ClientInsights({ data }: Props) {
         {/* Inactive clients */}
         <div className="card">
           <p className="label mb-1">Client activity alerts</p>
-          <p className="text-[13px] text-[#4A6882] mb-4">Clients who paid regularly but have gone quiet</p>
+          <p className="text-[13px] text-[#6A97B4] mb-4">Clients who paid regularly but have gone quiet</p>
           {inactiveClients.length === 0 ? (
             <div className="flex items-start gap-2.5 py-2">
               <span className="text-[#4CC4A4] text-lg flex-shrink-0">✓</span>
-              <p className="text-sm text-[#8AAEC8]">No inactive clients detected. All established clients are still active.</p>
+              <p className="text-sm text-[#A8C6E0]">No inactive clients detected. All established clients are still active.</p>
             </div>
           ) : (
             <div className="space-y-3">
               {inactiveClients.map(c => (
                 <div key={c.name} className="flex items-start justify-between gap-3 py-2 border-b border-[#1E3550] last:border-0">
                   <div className="min-w-0">
-                    <p className="text-sm font-medium text-[#D8E8F4] truncate">{c.name}</p>
-                    <p className="text-xs text-[#4A6882]">
+                    <p className="text-sm font-medium text-[#E8F0F8] truncate">{c.name}</p>
+                    <p className="text-xs text-[#6A97B4]">
                       {c.paymentCount} payments · {formatCurrency(c.totalRevenue)} lifetime
                     </p>
                   </div>
@@ -173,11 +173,11 @@ export default function ClientInsights({ data }: Props) {
                     <p className="text-xs font-semibold text-[#D4A254]">
                       {daysLabel(c.daysSinceLastPayment)}
                     </p>
-                    <p className="text-xs text-[#3A5470]">last payment</p>
+                    <p className="text-xs text-[#6A97B4]">last payment</p>
                   </div>
                 </div>
               ))}
-              <p className="text-xs text-[#4A6882] pt-1">
+              <p className="text-xs text-[#6A97B4] pt-1">
                 Consider reaching out. A brief check-in often revives dormant client relationships.
               </p>
             </div>
@@ -191,23 +191,23 @@ export default function ClientInsights({ data }: Props) {
         {/* New clients this year */}
         <div className="card">
           <p className="label mb-1">New client acquisition</p>
-          <p className="text-[13px] text-[#4A6882] mb-4">First-time clients who paid this year</p>
+          <p className="text-[13px] text-[#6A97B4] mb-4">First-time clients who paid this year</p>
           {newClientsThisYear.length === 0 ? (
-            <p className="text-sm text-[#4A6882]">No new direct clients detected this year.</p>
+            <p className="text-sm text-[#6A97B4]">No new direct clients detected this year.</p>
           ) : (
             <div className="space-y-3">
               {newClientsThisYear.slice(0, 5).map(c => (
                 <div key={c.name} className="flex items-center justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="text-sm text-[#D8E8F4] truncate">{c.name}</p>
-                    <p className="text-xs text-[#4A6882]">{c.paymentCount} payment{c.paymentCount !== 1 ? "s" : ""}</p>
+                    <p className="text-sm text-[#E8F0F8] truncate">{c.name}</p>
+                    <p className="text-xs text-[#6A97B4]">{c.paymentCount} payment{c.paymentCount !== 1 ? "s" : ""}</p>
                   </div>
                   <p className="text-sm font-semibold text-[#4CC4A4] flex-shrink-0">{formatCurrency(c.totalRevenue)}</p>
                 </div>
               ))}
               <div className="pt-2 border-t border-[#1E3550]">
-                <p className="text-xs text-[#4A6882]">
-                  <span className="text-[#D8E8F4] font-medium">{newClientsThisYear.length} new client{newClientsThisYear.length !== 1 ? "s" : ""} · </span>
+                <p className="text-xs text-[#6A97B4]">
+                  <span className="text-[#E8F0F8] font-medium">{newClientsThisYear.length} new client{newClientsThisYear.length !== 1 ? "s" : ""} · </span>
                   {formatCurrency(newClientsThisYear.reduce((s, c) => s + c.totalRevenue, 0))} in new revenue this year
                 </p>
               </div>
@@ -221,8 +221,8 @@ export default function ClientInsights({ data }: Props) {
             <p className="label mb-3">Strongest client relationship</p>
             <div className="space-y-3">
               <div>
-                <p className="text-lg font-bold text-[#D8E8F4]">{topClient.name}</p>
-                <p className="text-xs text-[#4A6882] mt-0.5">
+                <p className="text-lg font-bold text-[#E8F0F8]">{topClient.name}</p>
+                <p className="text-xs text-[#6A97B4] mt-0.5">
                   Client since {new Date(topClient.firstPayment).toLocaleDateString("en-IE", { month: "short", year: "numeric" })}
                   {" · "}{monthsLabel(topClient.monthsActive)} relationship
                 </p>
@@ -231,17 +231,17 @@ export default function ClientInsights({ data }: Props) {
                 {[
                   { label: "Lifetime revenue", value: formatCurrency(topClient.totalRevenue),   color: "text-[#4CC4A4]" },
                   { label: "Total payments",   value: String(topClient.paymentCount),            color: "text-[#3AB5A0]" },
-                  { label: "Avg per payment",  value: formatCurrency(topClient.avgPaymentSize),  color: "text-[#8AAEC8]" },
-                  { label: "Revenue share",    value: `${topClient.revenueShare}%`,              color: topClient.revenueShare >= 50 ? "text-[#D4A254]" : "text-[#4A6882]" },
+                  { label: "Avg per payment",  value: formatCurrency(topClient.avgPaymentSize),  color: "text-[#A8C6E0]" },
+                  { label: "Revenue share",    value: `${topClient.revenueShare}%`,              color: topClient.revenueShare >= 50 ? "text-[#D4A254]" : "text-[#6A97B4]" },
                 ].map(m => (
                   <div key={m.label} className="bg-[#1A3048] rounded-xl p-2.5">
-                    <p className="text-xs text-[#3A5470] uppercase tracking-wide mb-0.5">{m.label}</p>
+                    <p className="text-xs text-[#6A97B4] uppercase tracking-wide mb-0.5">{m.label}</p>
                     <p className={`text-sm font-bold ${m.color}`}>{m.value}</p>
                   </div>
                 ))}
               </div>
               {topClient.yoyGrowth !== null && (
-                <p className="text-xs text-[#4A6882]">
+                <p className="text-xs text-[#6A97B4]">
                   Revenue{" "}
                   <span className={topClient.yoyGrowth >= 0 ? "text-[#4CC4A4]" : "text-[#D97070]"}>
                     {topClient.yoyGrowth >= 0 ? "↑" : "↓"} {Math.abs(topClient.yoyGrowth)}%

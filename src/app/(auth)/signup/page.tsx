@@ -91,8 +91,8 @@ export default function SignupPage() {
       <div className="min-h-screen flex items-center justify-center px-4 bg-[#0D1B2B]">
         <div className="w-full max-w-sm">
           <div className="mb-8 text-center">
-            <h1 className="text-2xl font-bold text-[#D8E8F4]">Freelancer OS</h1>
-            <p className="text-[#7299B4] text-sm mt-1">Financial clarity built for freelancers</p>
+            <h1 className="text-2xl font-bold text-[#E8F0F8]">Freelancer OS</h1>
+            <p className="text-[#7BA8C4] text-sm mt-1">Financial clarity built for freelancers</p>
           </div>
 
           <div className="card text-center space-y-5">
@@ -103,14 +103,14 @@ export default function SignupPage() {
             </div>
 
             <div>
-              <h2 className="text-lg font-semibold text-[#D8E8F4]">Check your inbox</h2>
-              <p className="text-sm text-[#7299B4] mt-1">
+              <h2 className="text-lg font-semibold text-[#E8F0F8]">Check your inbox</h2>
+              <p className="text-sm text-[#7BA8C4] mt-1">
                 We sent a confirmation link to{" "}
-                <span className="text-[#D8E8F4] font-medium">{email}</span>
+                <span className="text-[#E8F0F8] font-medium">{email}</span>
               </p>
             </div>
 
-            <p className="text-sm text-[#7299B4]">
+            <p className="text-sm text-[#7BA8C4]">
               Click the link in the email to activate your account, then sign in below.
             </p>
 
@@ -133,7 +133,7 @@ export default function SignupPage() {
               <Link href="/login" className="block text-sm text-[#3AB5A0] hover:underline font-medium">
                 Go to sign in →
               </Link>
-              <p className="text-xs text-[#3A5470]">
+              <p className="text-xs text-[#6A97B4]">
                 Check your spam folder if you don&apos;t see the email.
               </p>
             </div>
@@ -147,14 +147,14 @@ export default function SignupPage() {
     <div className="min-h-screen flex items-center justify-center px-4 bg-[#0D1B2B]">
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
-          <h1 className="text-2xl font-bold text-[#D8E8F4]">Freelancer OS</h1>
-          <p className="text-[#7299B4] text-sm mt-1">Financial clarity built for freelancers</p>
+          <h1 className="text-2xl font-bold text-[#E8F0F8]">Freelancer OS</h1>
+          <p className="text-[#7BA8C4] text-sm mt-1">Financial clarity built for freelancers</p>
         </div>
 
         <div className="card">
           <div className="mb-6">
             <h2 className="text-lg font-semibold">Create your account</h2>
-            <p className="text-sm text-[#7299B4] mt-1">
+            <p className="text-sm text-[#7BA8C4] mt-1">
               Upload your bank CSV and understand your money in minutes.
             </p>
           </div>
@@ -204,7 +204,7 @@ export default function SignupPage() {
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   tabIndex={-1}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#3A5470] hover:text-[#D8E8F4] transition-colors p-1 rounded"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#6A97B4] hover:text-[#E8F0F8] transition-colors p-1 rounded"
                   aria-label={showPassword ? "Hide password" : "Show password"}
                 >
                   {showPassword ? (
@@ -237,7 +237,7 @@ export default function SignupPage() {
             </button>
           </form>
 
-          <p className="text-center text-sm text-[#4A6882] mt-5">
+          <p className="text-center text-sm text-[#6A97B4] mt-5">
             Already have an account?{" "}
             <Link href="/login" className="text-[#3AB5A0] hover:underline font-medium">Sign in</Link>
           </p>

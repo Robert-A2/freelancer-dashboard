@@ -32,8 +32,8 @@ function Spinner() {
 function BrandHeader() {
   return (
     <div className="mb-8 text-center">
-      <h1 className="text-2xl font-bold text-[#D8E8F4]">Freelancer OS</h1>
-      <p className="text-[#7299B4] text-sm mt-1">Financial clarity built for freelancers</p>
+      <h1 className="text-2xl font-bold text-[#E8F0F8]">Freelancer OS</h1>
+      <p className="text-[#7BA8C4] text-sm mt-1">Financial clarity built for freelancers</p>
     </div>
   );
 }
@@ -87,13 +87,13 @@ export default function LoginPage() {
               </svg>
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-[#D8E8F4]">Check your email</h2>
-              <p className="text-sm text-[#7299B4] mt-1">
+              <h2 className="text-lg font-semibold text-[#E8F0F8]">Check your email</h2>
+              <p className="text-sm text-[#7BA8C4] mt-1">
                 We sent a password reset link to{" "}
-                <span className="text-[#D8E8F4] font-medium">{resetEmail}</span>
+                <span className="text-[#E8F0F8] font-medium">{resetEmail}</span>
               </p>
             </div>
-            <p className="text-xs text-[#4A6882]">
+            <p className="text-xs text-[#6A97B4]">
               Didn&apos;t receive it? Check your spam folder or{" "}
               <button
                 onClick={() => { setMode("forgot"); setError(""); }}
@@ -106,7 +106,7 @@ export default function LoginPage() {
             <div className="pt-2 border-t border-[#1E3550]">
               <button
                 onClick={() => { setMode("signin"); setError(""); }}
-                className="text-sm text-[#4A6882] hover:text-[#D8E8F4] transition-colors"
+                className="text-sm text-[#6A97B4] hover:text-[#E8F0F8] transition-colors"
               >
                 ← Back to sign in
               </button>
@@ -124,7 +124,7 @@ export default function LoginPage() {
           <BrandHeader />
           <div className="card">
             <h2 className="text-lg font-semibold mb-1">Reset your password</h2>
-            <p className="text-sm text-[#7299B4] mb-6">
+            <p className="text-sm text-[#7BA8C4] mb-6">
               Enter your email and we&apos;ll send you a link to create a new password.
             </p>
 
@@ -159,7 +159,7 @@ export default function LoginPage() {
             <div className="mt-5 text-center">
               <button
                 onClick={() => { setMode("signin"); setError(""); }}
-                className="text-sm text-[#4A6882] hover:text-[#D8E8F4] transition-colors"
+                className="text-sm text-[#6A97B4] hover:text-[#E8F0F8] transition-colors"
               >
                 ← Back to sign in
               </button>
@@ -198,7 +198,7 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={() => { setMode("forgot"); setResetEmail(email); setError(""); }}
-                  className="text-xs text-[#4A6882] hover:text-[#3AB5A0] transition-colors"
+                  className="text-xs text-[#6A97B4] hover:text-[#3AB5A0] transition-colors"
                 >
                   Forgot password?
                 </button>
@@ -216,7 +216,7 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#3A5470] hover:text-[#D8E8F4] transition-colors p-1 rounded"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#6A97B4] hover:text-[#E8F0F8] transition-colors p-1 rounded"
                   tabIndex={-1}
                   aria-label={showPassword ? "Hide password" : "Show password"}
                 >
@@ -247,7 +247,7 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <p className="text-center text-sm text-[#4A6882] mt-5">
+          <p className="text-center text-sm text-[#6A97B4] mt-5">
             No account?{" "}
             <Link href="/signup" className="text-[#3AB5A0] hover:underline font-medium">
               Create one

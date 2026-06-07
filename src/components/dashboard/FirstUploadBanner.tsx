@@ -27,13 +27,13 @@ export default function FirstUploadBanner({ months, transactions, summary, first
       <div className="flex items-start justify-between gap-3 mb-3">
         <div>
           <p className="label mb-1">Your financial picture is ready</p>
-          <h2 className="text-xl font-semibold text-[#D8E8F4]">
+          <h2 className="text-xl font-semibold text-[#E8F0F8]">
             {firstName ? `Welcome, ${firstName}.` : "Welcome."}
           </h2>
         </div>
         <button
           onClick={dismiss}
-          className="text-[#4A6882] hover:text-[#7299B4] transition-colors p-1 flex-shrink-0 min-w-[32px] min-h-[32px] flex items-center justify-center"
+          className="text-[#6A97B4] hover:text-[#7BA8C4] transition-colors p-1 flex-shrink-0 min-w-[32px] min-h-[32px] flex items-center justify-center"
           aria-label="Dismiss"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -42,18 +42,18 @@ export default function FirstUploadBanner({ months, transactions, summary, first
         </button>
       </div>
 
-      <div className="flex items-center gap-4 text-sm text-[#7299B4] mb-3">
+      <div className="flex items-center gap-4 text-sm text-[#7BA8C4] mb-3">
         <span>
-          <span className="text-[#D8E8F4] font-semibold">{months}</span> month{months !== 1 ? "s" : ""} of history
+          <span className="text-[#E8F0F8] font-semibold">{months}</span> month{months !== 1 ? "s" : ""} of history
         </span>
         <span className="text-[#243F5E]">·</span>
         <span>
-          <span className="text-[#D8E8F4] font-semibold">{transactions.toLocaleString()}</span> transactions analysed
+          <span className="text-[#E8F0F8] font-semibold">{transactions.toLocaleString()}</span> transactions analysed
         </span>
       </div>
 
       {summary && (
-        <p className="text-sm text-[#8AAEC8] mb-5 leading-relaxed border-l-2 border-[#3AB5A0] pl-3">
+        <p className="text-sm text-[#A8C6E0] mb-5 leading-relaxed border-l-2 border-[#3AB5A0] pl-3">
           {summary}
         </p>
       )}
@@ -67,7 +67,7 @@ export default function FirstUploadBanner({ months, transactions, summary, first
         </Link>
         <button
           onClick={dismiss}
-          className="text-sm text-[#4A6882] hover:text-[#7299B4] transition-colors px-3 py-2 text-center"
+          className="text-sm text-[#6A97B4] hover:text-[#7BA8C4] transition-colors px-3 py-2 text-center"
         >
           Dismiss
         </button>

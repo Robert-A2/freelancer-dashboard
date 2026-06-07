@@ -69,9 +69,9 @@ export default function RecategorizeButton({ transactionId, currentCategory, des
         disabled={saving}
         className={`${chipBase} ${
           saved    ? "bg-[#4CC4A415] text-[#4CC4A4]" :
-          saving   ? "bg-[#1A3048] text-[#4A6882] opacity-60 cursor-wait" :
+          saving   ? "bg-[#1A3048] text-[#6A97B4] opacity-60 cursor-wait" :
           step !== "idle" ? "bg-[#3AB5A015] text-[#3AB5A0]" :
-          "bg-[#1A3048] text-[#7299B4] hover:bg-[#243F5E] hover:text-[#D8E8F4]"
+          "bg-[#1A3048] text-[#7BA8C4] hover:bg-[#243F5E] hover:text-[#E8F0F8]"
         }`}
         title="Click to fix category"
       >
@@ -85,7 +85,7 @@ export default function RecategorizeButton({ transactionId, currentCategory, des
 
       {step === "picking" && (
         <div className="absolute left-0 top-full mt-1 z-50 bg-[#132537] border border-[#243F5E] rounded-xl shadow-lg shadow-black/5 w-52 overflow-hidden">
-          <p className="px-3 py-2 text-xs text-[#4A6882] border-b border-[#243F5E] truncate">
+          <p className="px-3 py-2 text-xs text-[#6A97B4] border-b border-[#243F5E] truncate">
             Change: &quot;{description.slice(0, 28)}{description.length > 28 ? "…" : ""}&quot;
           </p>
           <div className="max-h-56 overflow-y-auto">
@@ -96,7 +96,7 @@ export default function RecategorizeButton({ transactionId, currentCategory, des
                 className={`w-full text-left px-3 py-2 text-xs capitalize transition-colors ${
                   cat === currentCategory
                     ? "bg-[#3AB5A015] text-[#3AB5A0]"
-                    : "text-[#D8E8F4] hover:bg-[#1A3048] hover:text-[#D8E8F4]"
+                    : "text-[#E8F0F8] hover:bg-[#1A3048] hover:text-[#E8F0F8]"
                 }`}
               >
                 {cat === currentCategory ? `${cat} ✓` : cat}
@@ -108,16 +108,16 @@ export default function RecategorizeButton({ transactionId, currentCategory, des
 
       {step === "confirming" && pending && (
         <div className="absolute left-0 top-full mt-1 z-50 bg-[#132537] border border-[#243F5E] rounded-xl shadow-lg shadow-black/5 w-64 p-3 space-y-2">
-          <p className="text-xs text-[#D8E8F4] font-medium">
+          <p className="text-xs text-[#E8F0F8] font-medium">
             Move to <span className="text-[#3AB5A0] capitalize">{pending}</span>
           </p>
-          <p className="text-xs text-[#7299B4] leading-relaxed">
+          <p className="text-xs text-[#7BA8C4] leading-relaxed">
             Apply to just this transaction, or to every transaction with the same description?
           </p>
           <div className="flex flex-col gap-1.5 pt-1">
             <button
               onClick={() => save(false)}
-              className="text-xs text-left px-3 py-2 bg-[#1A3048] hover:bg-[#243F5E] text-[#D8E8F4] rounded-lg transition-colors"
+              className="text-xs text-left px-3 py-2 bg-[#1A3048] hover:bg-[#243F5E] text-[#E8F0F8] rounded-lg transition-colors"
             >
               This transaction only
             </button>
@@ -129,7 +129,7 @@ export default function RecategorizeButton({ transactionId, currentCategory, des
             </button>
             <button
               onClick={reset}
-              className="text-xs text-[#4A6882] hover:text-[#7299B4] text-center py-1 transition-colors"
+              className="text-xs text-[#6A97B4] hover:text-[#7BA8C4] text-center py-1 transition-colors"
             >
               Cancel
             </button>

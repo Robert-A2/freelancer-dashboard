@@ -21,7 +21,7 @@ interface Props {
 
 const CONFIDENCE_COLORS = {
   low:    "text-[#D4A254]",
-  medium: "text-[#7299B4]",
+  medium: "text-[#7BA8C4]",
   high:   "text-[#4CC4A4]",
 };
 
@@ -35,7 +35,7 @@ export default function ForecastWidget({ forecast, reasons, improvements, defici
     return (
       <div className="card">
         <p className="label mb-2">Forecast</p>
-        <p className="text-[#7299B4] text-sm">Upload at least one month of data to generate a forecast.</p>
+        <p className="text-[#7BA8C4] text-sm">Upload at least one month of data to generate a forecast.</p>
       </div>
     );
   }
@@ -61,8 +61,8 @@ export default function ForecastWidget({ forecast, reasons, improvements, defici
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="label mb-1">Forecast</p>
-          <h3 className="text-lg font-semibold text-[#D8E8F4] truncate">{forecastPeriod}</h3>
-          <p className="text-xs text-[#4A6882] mt-0.5 leading-relaxed">
+          <h3 className="text-lg font-semibold text-[#E8F0F8] truncate">{forecastPeriod}</h3>
+          <p className="text-xs text-[#6A97B4] mt-0.5 leading-relaxed">
             {reasons?.[0] ?? `Based on ${forecast.basedOnMonths} month${forecast.basedOnMonths !== 1 ? "s" : ""} of history.`}
           </p>
         </div>
@@ -110,13 +110,13 @@ export default function ForecastWidget({ forecast, reasons, improvements, defici
           )}
 
           {trendLine && (
-            <p className="text-xs text-[#8AAEC8] leading-relaxed">{trendLine}</p>
+            <p className="text-xs text-[#A8C6E0] leading-relaxed">{trendLine}</p>
           )}
 
           {deficitReason && (
             <div className={cashflowHealthText || trendLine ? "border-t border-[#4CC4A415] pt-3" : ""}>
               <p className="label mb-1.5">Why cashflow is negative</p>
-              <p className="text-sm text-[#8AAEC8] leading-relaxed">{deficitReason}</p>
+              <p className="text-sm text-[#A8C6E0] leading-relaxed">{deficitReason}</p>
             </div>
           )}
 
@@ -125,7 +125,7 @@ export default function ForecastWidget({ forecast, reasons, improvements, defici
               <p className="label mb-2">What to do next</p>
               <ul className="space-y-2">
                 {improvements.slice(0, 3).map((imp, i) => (
-                  <li key={i} className="text-sm text-[#8AAEC8] flex items-start gap-2">
+                  <li key={i} className="text-sm text-[#A8C6E0] flex items-start gap-2">
                     <span className="text-[#3AB5A0] flex-shrink-0 mt-0.5 font-bold">→</span>
                     {imp}
                   </li>
