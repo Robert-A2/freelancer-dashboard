@@ -8,17 +8,17 @@ export default async function LandingPage() {
   if (user) redirect("/dashboard");
 
   return (
-    <div className="min-h-screen bg-[#0A1020] text-[#F8FAFC]">
+    <div className="min-h-screen bg-[#0D1B2B] text-[#E8F0F8]">
 
       {/* ── Navbar ──────────────────────────────────────────────────────── */}
-      <nav className="sticky top-0 z-50 border-b border-[#1E293B] bg-[#0A1020]/95 backdrop-blur-sm">
+      <nav className="sticky top-0 z-50 border-b border-[#1E3550] bg-[#0D1B2B]/95 backdrop-blur-sm">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 flex items-center justify-between h-14">
-          <span className="font-bold text-[#F8FAFC] tracking-tight">Freelancer OS</span>
+          <span className="font-bold text-[#E8F0F8] tracking-tight">Freelancer OS</span>
           <div className="flex items-center gap-3">
-            <Link href="/login" className="text-sm text-[#94A3B8] hover:text-[#F8FAFC] transition-colors px-3 py-2">
+            <Link href="/login" className="text-sm text-[#7BA8C4] hover:text-[#E8F0F8] transition-colors px-3 py-2">
               Sign in
             </Link>
-            <Link href="/signup" className="bg-[#4F7A65] hover:bg-[#3D6554] text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors">
+            <Link href="/signup" className="bg-[#3AB5A0] hover:bg-[#2E9D8A] text-[#0D1B2B] text-sm font-semibold px-4 py-2 rounded-xl transition-colors">
               Get started free
             </Link>
           </div>
@@ -30,31 +30,31 @@ export default async function LandingPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
 
           <div>
-            <div className="inline-flex items-center gap-2 bg-[#4F7A6520] border border-[#4F7A6530] rounded-full px-3 py-1 mb-6">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#4F7A65]" />
-              <span className="text-xs text-[#4F7A65] font-medium">Built for freelancers</span>
+            <div className="inline-flex items-center gap-2 bg-[#3AB5A020] border border-[#3AB5A030] rounded-full px-3 py-1 mb-6">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#3AB5A0]" />
+              <span className="text-xs text-[#3AB5A0] font-medium">Built for freelancers</span>
             </div>
 
-            <h1 className="text-4xl sm:text-5xl font-bold leading-tight text-[#F8FAFC] mb-5">
+            <h1 className="text-4xl sm:text-5xl font-bold leading-tight text-[#E8F0F8] mb-5">
               Finally understand<br className="hidden sm:block" /> where your money goes.
             </h1>
 
-            <p className="text-lg text-[#94A3B8] leading-relaxed mb-8 max-w-lg">
+            <p className="text-lg text-[#7BA8C4] leading-relaxed mb-8 max-w-lg">
               Upload your bank statement and get a complete financial insight.
               what happened, why it happened, and what to do next.
               In minutes, not spreadsheets.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-3">
-              <Link href="/signup" className="bg-[#4F7A65] hover:bg-[#3D6554] text-white font-bold px-6 py-3 rounded-xl transition-colors text-base text-center">
+              <Link href="/signup" className="bg-[#3AB5A0] hover:bg-[#2E9D8A] text-[#0D1B2B] font-bold px-6 py-3 rounded-xl transition-colors text-base text-center">
                 Upload your first CSV →
               </Link>
-              <Link href="/login" className="text-sm text-[#94A3B8] hover:text-[#F8FAFC] transition-colors flex items-center justify-center px-4 py-3">
+              <Link href="/login" className="text-sm text-[#7BA8C4] hover:text-[#E8F0F8] transition-colors flex items-center justify-center px-4 py-3">
                 Already have an account? Sign in
               </Link>
             </div>
 
-            <p className="text-xs text-[#94A3B8] mt-4">
+            <p className="text-xs text-[#7BA8C4] mt-4">
               Free · Any bank · Any CSV format
             </p>
           </div>
@@ -66,14 +66,14 @@ export default async function LandingPage() {
       </section>
 
       {/* ── What you'll understand ──────────────────────────────────────── */}
-      <section className="bg-[#111827] border-y border-[#1E293B]">
+      <section className="bg-[#132537] border-y border-[#1E3550]">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-16 md:py-20">
           <div className="text-center mb-12">
-            <p className="text-xs font-medium text-[#4F7A65] uppercase tracking-widest mb-3">After one upload</p>
-            <h2 className="text-2xl sm:text-3xl font-bold text-[#F8FAFC]">
+            <p className="text-xs font-medium text-[#3AB5A0] uppercase tracking-widest mb-3">After one upload</p>
+            <h2 className="text-2xl sm:text-3xl font-bold text-[#E8F0F8]">
               Real answers. Not just numbers.
             </h2>
-            <p className="text-[#94A3B8] mt-3 max-w-xl mx-auto">
+            <p className="text-[#7BA8C4] mt-3 max-w-xl mx-auto">
               Freelancer OS explains your finances in plain language. The questions
               you actually ask, answered automatically.
             </p>
@@ -102,10 +102,10 @@ export default async function LandingPage() {
                 body: "Specific recommendations based on your real numbers. Not generic advice. Actions from your own financial data.",
               },
             ].map((card) => (
-              <div key={card.title} className="bg-[#0A1020] rounded-2xl p-6 border border-[#1E293B]">
+              <div key={card.title} className="bg-[#0D1B2B] rounded-2xl p-6 border border-[#1E3550]">
                 <div className="text-3xl mb-4">{card.icon}</div>
-                <h3 className="font-semibold text-[#F8FAFC] mb-2 text-sm">{card.title}</h3>
-                <p className="text-sm text-[#94A3B8] leading-relaxed">{card.body}</p>
+                <h3 className="font-semibold text-[#E8F0F8] mb-2 text-sm">{card.title}</h3>
+                <p className="text-sm text-[#7BA8C4] leading-relaxed">{card.body}</p>
               </div>
             ))}
           </div>
@@ -115,15 +115,15 @@ export default async function LandingPage() {
       {/* ── How it works ────────────────────────────────────────────────── */}
       <section className="max-w-6xl mx-auto px-4 sm:px-6 py-16 md:py-20">
         <div className="text-center mb-12">
-          <p className="text-xs font-medium text-[#4F7A65] uppercase tracking-widest mb-3">Simple process</p>
-          <h2 className="text-2xl sm:text-3xl font-bold text-[#F8FAFC]">How it works</h2>
-          <p className="text-[#94A3B8] mt-3 max-w-md mx-auto">
+          <p className="text-xs font-medium text-[#3AB5A0] uppercase tracking-widest mb-3">Simple process</p>
+          <h2 className="text-2xl sm:text-3xl font-bold text-[#E8F0F8]">How it works</h2>
+          <p className="text-[#7BA8C4] mt-3 max-w-md mx-auto">
             From bank statement to financial clarity in under a minute.
           </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative">
-          <div className="hidden md:block absolute top-8 left-[calc(33%+1rem)] right-[calc(33%+1rem)] h-px bg-[#1E293B]" />
+          <div className="hidden md:block absolute top-8 left-[calc(33%+1rem)] right-[calc(33%+1rem)] h-px bg-[#1E3550]" />
           {[
             {
               step: "01",
@@ -142,27 +142,27 @@ export default async function LandingPage() {
             },
           ].map((s) => (
             <div key={s.step} className="relative text-center">
-              <div className="w-16 h-16 bg-[#4F7A6520] border border-[#4F7A6530] rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <span className="text-lg font-bold text-[#4F7A65]">{s.step}</span>
+              <div className="w-16 h-16 bg-[#3AB5A020] border border-[#3AB5A030] rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <span className="text-lg font-bold text-[#3AB5A0]">{s.step}</span>
               </div>
-              <h3 className="font-semibold text-[#F8FAFC] mb-2">{s.title}</h3>
-              <p className="text-sm text-[#94A3B8] leading-relaxed max-w-xs mx-auto">{s.body}</p>
+              <h3 className="font-semibold text-[#E8F0F8] mb-2">{s.title}</h3>
+              <p className="text-sm text-[#7BA8C4] leading-relaxed max-w-xs mx-auto">{s.body}</p>
             </div>
           ))}
         </div>
       </section>
 
       {/* ── Historical intelligence ──────────────────────────────────────── */}
-      <section className="bg-[#111827] border-y border-[#1E293B]">
+      <section className="bg-[#132537] border-y border-[#1E3550]">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-16 md:py-20">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
 
             <div>
-              <p className="text-xs font-medium text-[#4F7A65] uppercase tracking-widest mb-3">Deep history</p>
-              <h2 className="text-2xl sm:text-3xl font-bold text-[#F8FAFC] mb-4">
+              <p className="text-xs font-medium text-[#3AB5A0] uppercase tracking-widest mb-3">Deep history</p>
+              <h2 className="text-2xl sm:text-3xl font-bold text-[#E8F0F8] mb-4">
                 The more history you upload,<br className="hidden sm:block" /> the smarter it gets.
               </h2>
-              <p className="text-[#94A3B8] leading-relaxed mb-6">
+              <p className="text-[#7BA8C4] leading-relaxed mb-6">
                 Upload 1 year, 5 years, or 10+ years of bank statements.
                 Freelancer OS builds one continuous financial timeline and
                 automatically identifies patterns, seasonal income cycles, spending
@@ -178,8 +178,8 @@ export default async function LandingPage() {
                   "Recurring expense cycles you may not have noticed",
                 ].map((point) => (
                   <li key={point} className="flex items-start gap-3">
-                    <span className="text-[#4F7A65] flex-shrink-0 mt-0.5">✓</span>
-                    <span className="text-sm text-[#CBD5E1]">{point}</span>
+                    <span className="text-[#3AB5A0] flex-shrink-0 mt-0.5">✓</span>
+                    <span className="text-sm text-[#A8C6E0]">{point}</span>
                   </li>
                 ))}
               </ul>
@@ -208,16 +208,16 @@ export default async function LandingPage() {
               ].map((tier) => (
                 <div
                   key={tier.label}
-                  className="flex items-start gap-4 bg-[#0A1020] rounded-2xl p-5 border border-[#1E293B]"
+                  className="flex items-start gap-4 bg-[#0D1B2B] rounded-2xl p-5 border border-[#1E3550]"
                 >
-                  <div className="flex-shrink-0 w-14 h-14 bg-[#4F7A6510] border border-[#4F7A6525] rounded-xl flex items-center justify-center">
-                    <span className={`text-xs font-bold text-[#4F7A65] text-center leading-tight ${tier.intensity}`}>
+                  <div className="flex-shrink-0 w-14 h-14 bg-[#3AB5A010] border border-[#3AB5A025] rounded-xl flex items-center justify-center">
+                    <span className={`text-xs font-bold text-[#3AB5A0] text-center leading-tight ${tier.intensity}`}>
                       {tier.label}
                     </span>
                   </div>
                   <div>
-                    <p className="font-semibold text-[#F8FAFC] text-sm mb-1">{tier.title}</p>
-                    <p className="text-xs text-[#94A3B8] leading-relaxed">{tier.body}</p>
+                    <p className="font-semibold text-[#E8F0F8] text-sm mb-1">{tier.title}</p>
+                    <p className="text-xs text-[#7BA8C4] leading-relaxed">{tier.body}</p>
                   </div>
                 </div>
               ))}
@@ -229,8 +229,8 @@ export default async function LandingPage() {
       {/* ── Why freelancers ─────────────────────────────────────────────── */}
       <section className="max-w-6xl mx-auto px-4 sm:px-6 py-16 md:py-20">
         <div className="text-center mb-12">
-          <p className="text-xs font-medium text-[#4F7A65] uppercase tracking-widest mb-3">Built for how you work</p>
-          <h2 className="text-2xl sm:text-3xl font-bold text-[#F8FAFC]">
+          <p className="text-xs font-medium text-[#3AB5A0] uppercase tracking-widest mb-3">Built for how you work</p>
+          <h2 className="text-2xl sm:text-3xl font-bold text-[#E8F0F8]">
             Why freelancers use Freelancer OS
           </h2>
         </div>
@@ -267,12 +267,12 @@ export default async function LandingPage() {
               ],
             },
           ].map((item) => (
-            <div key={item.title} className="bg-[#111827] rounded-2xl p-6 border border-[#1E293B]">
-              <div className="w-6 h-0.5 bg-[#4F7A65] rounded-full mb-4" />
-              <h3 className="font-semibold text-[#F8FAFC] mb-3">{item.title}</h3>
+            <div key={item.title} className="bg-[#132537] rounded-2xl p-6 border border-[#1E3550]">
+              <div className="w-6 h-0.5 bg-[#3AB5A0] rounded-full mb-4" />
+              <h3 className="font-semibold text-[#E8F0F8] mb-3">{item.title}</h3>
               <ul className="space-y-2">
                 {item.points.map((p) => (
-                  <li key={p} className="text-sm text-[#94A3B8] leading-snug">{p}</li>
+                  <li key={p} className="text-sm text-[#7BA8C4] leading-snug">{p}</li>
                 ))}
               </ul>
             </div>
@@ -281,12 +281,12 @@ export default async function LandingPage() {
       </section>
 
       {/* ── Privacy & trust ─────────────────────────────────────────────── */}
-      <section className="bg-[#111827] border-y border-[#1E293B]">
+      <section className="bg-[#132537] border-y border-[#1E3550]">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-16 md:py-20">
           <div className="text-center mb-10">
-            <p className="text-xs font-medium text-[#4F7A65] uppercase tracking-widest mb-3">Your data</p>
-            <h2 className="text-2xl sm:text-3xl font-bold text-[#F8FAFC]">Private. Secure. Yours.</h2>
-            <p className="text-[#94A3B8] mt-3 max-w-md mx-auto">
+            <p className="text-xs font-medium text-[#3AB5A0] uppercase tracking-widest mb-3">Your data</p>
+            <h2 className="text-2xl sm:text-3xl font-bold text-[#E8F0F8]">Private. Secure. Yours.</h2>
+            <p className="text-[#7BA8C4] mt-3 max-w-md mx-auto">
               Your financial data is personal. We treat it that way.
             </p>
           </div>
@@ -298,10 +298,10 @@ export default async function LandingPage() {
               { icon: "🗑️", title: "Delete anytime", body: "Remove your account and all data permanently with one click." },
               { icon: "🛡️", title: "No third-party tracking", body: "Your financial data stays on our servers only." },
             ].map((t) => (
-              <div key={t.title} className="bg-[#0A1020] rounded-2xl p-5 border border-[#1E293B] text-center">
+              <div key={t.title} className="bg-[#0D1B2B] rounded-2xl p-5 border border-[#1E3550] text-center">
                 <div className="text-2xl mb-3">{t.icon}</div>
-                <h3 className="text-sm font-semibold text-[#F8FAFC] mb-1">{t.title}</h3>
-                <p className="text-xs text-[#94A3B8]">{t.body}</p>
+                <h3 className="text-sm font-semibold text-[#E8F0F8] mb-1">{t.title}</h3>
+                <p className="text-xs text-[#7BA8C4]">{t.body}</p>
               </div>
             ))}
           </div>
@@ -309,35 +309,35 @@ export default async function LandingPage() {
       </section>
 
       {/* ── Final CTA ───────────────────────────────────────────────────── */}
-      <section className="bg-[#4F7A65]">
+      <section className="bg-[#3AB5A0]">
         <div className="max-w-2xl mx-auto px-4 sm:px-6 py-16 text-center">
-          <h2 className="text-2xl sm:text-3xl font-bold text-white mb-4">
+          <h2 className="text-2xl sm:text-3xl font-bold text-[#0D1B2B] mb-4">
             Start understanding your finances today.
           </h2>
-          <p className="text-white/80 mb-8 text-lg">
+          <p className="text-[#0D1B2B]/70 mb-8 text-lg">
             Upload your first bank statement in under a minute.<br className="hidden sm:block" />
             No setup. No spreadsheets. Just clarity.
           </p>
           <Link
             href="/signup"
-            className="inline-block bg-white text-[#3D6554] font-bold px-8 py-3.5 rounded-xl hover:bg-[#F0F4F2] transition-colors text-base"
+            className="inline-block bg-[#0D1B2B] text-[#3AB5A0] font-bold px-8 py-3.5 rounded-xl hover:bg-[#132537] transition-colors text-base"
           >
             Get started free →
           </Link>
-          <p className="text-white/60 text-xs mt-4">Free · Any bank · Takes 60 seconds</p>
+          <p className="text-[#0D1B2B]/60 text-xs mt-4">Free · Any bank · Takes 60 seconds</p>
         </div>
       </section>
 
       {/* ── Footer ──────────────────────────────────────────────────────── */}
-      <footer className="border-t border-[#1E293B] bg-[#0A1020]">
+      <footer className="border-t border-[#1E3550] bg-[#0D1B2B]">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div>
-            <span className="font-bold text-[#F8FAFC] text-sm">Freelancer OS</span>
-            <p className="text-xs text-[#94A3B8] mt-0.5">Financial clarity built for freelancers</p>
+            <span className="font-bold text-[#E8F0F8] text-sm">Freelancer OS</span>
+            <p className="text-xs text-[#7BA8C4] mt-0.5">Financial clarity built for freelancers</p>
           </div>
-          <div className="flex items-center gap-6 text-xs text-[#94A3B8]">
-            <Link href="/login"  className="hover:text-[#F8FAFC] transition-colors">Sign in</Link>
-            <Link href="/signup" className="hover:text-[#F8FAFC] transition-colors">Create account</Link>
+          <div className="flex items-center gap-6 text-xs text-[#7BA8C4]">
+            <Link href="/login"  className="hover:text-[#E8F0F8] transition-colors">Sign in</Link>
+            <Link href="/signup" className="hover:text-[#E8F0F8] transition-colors">Create account</Link>
           </div>
         </div>
       </footer>
@@ -349,14 +349,14 @@ export default async function LandingPage() {
 // ── Dashboard preview mockup ──────────────────────────────────────────────────
 function DashboardMockup() {
   return (
-    <div className="rounded-2xl border border-[#1E293B] bg-[#111827] overflow-hidden shadow-2xl shadow-black/50">
+    <div className="rounded-2xl border border-[#1E3550] bg-[#132537] overflow-hidden shadow-2xl shadow-black/50">
 
       {/* Mini top bar */}
-      <div className="h-9 bg-[#0A1020] border-b border-[#1E293B] flex items-center px-3 gap-3">
-        <span className="text-[10px] font-bold text-[#F8FAFC]">Freelancer OS</span>
+      <div className="h-9 bg-[#0D1B2B] border-b border-[#1E3550] flex items-center px-3 gap-3">
+        <span className="text-[10px] font-bold text-[#E8F0F8]">Freelancer OS</span>
         <div className="flex gap-1.5">
           {["Dashboard", "History", "Forecast"].map((l) => (
-            <span key={l} className="text-[9px] text-[#94A3B8] px-2 py-0.5 rounded bg-[#1E293B]">{l}</span>
+            <span key={l} className="text-[9px] text-[#7BA8C4] px-2 py-0.5 rounded bg-[#1E3550]">{l}</span>
           ))}
         </div>
       </div>
@@ -366,61 +366,61 @@ function DashboardMockup() {
         {/* 4 metric cards */}
         <div className="grid grid-cols-2 gap-2">
           {[
-            { label: "Income",   value: "€4,850", color: "#5B8A72" },
-            { label: "Expenses", value: "€2,680", color: "#C79A63" },
-            { label: "Savings",  value: "€800",   color: "#4F7A65" },
-            { label: "Cashflow", value: "€1,370", color: "#5B8A72" },
+            { label: "Income",   value: "€4,850", color: "#4CC4A4" },
+            { label: "Expenses", value: "€2,680", color: "#D4A254" },
+            { label: "Savings",  value: "€800",   color: "#3AB5A0" },
+            { label: "Cashflow", value: "€1,370", color: "#4CC4A4" },
           ].map((c) => (
-            <div key={c.label} className="bg-[#0A1020] rounded-xl p-2.5">
-              <div className="text-[8px] text-[#94A3B8] uppercase tracking-wide mb-1">{c.label}</div>
+            <div key={c.label} className="bg-[#0D1B2B] rounded-xl p-2.5">
+              <div className="text-[8px] text-[#7BA8C4] uppercase tracking-wide mb-1">{c.label}</div>
               <div className="text-sm font-bold" style={{ color: c.color }}>{c.value}</div>
             </div>
           ))}
         </div>
 
         {/* Mini chart */}
-        <div className="bg-[#0A1020] rounded-xl p-3">
-          <div className="text-[8px] text-[#94A3B8] mb-2">Income vs Expenses, 12 months</div>
+        <div className="bg-[#0D1B2B] rounded-xl p-3">
+          <div className="text-[8px] text-[#7BA8C4] mb-2">Income vs Expenses, 12 months</div>
           <svg viewBox="0 0 240 52" className="w-full" preserveAspectRatio="none">
-            <line x1="0" y1="13" x2="240" y2="13" stroke="#1E293B" strokeWidth="0.5"/>
-            <line x1="0" y1="26" x2="240" y2="26" stroke="#1E293B" strokeWidth="0.5"/>
-            <line x1="0" y1="39" x2="240" y2="39" stroke="#1E293B" strokeWidth="0.5"/>
+            <line x1="0" y1="13" x2="240" y2="13" stroke="#1E3550" strokeWidth="0.5"/>
+            <line x1="0" y1="26" x2="240" y2="26" stroke="#1E3550" strokeWidth="0.5"/>
+            <line x1="0" y1="39" x2="240" y2="39" stroke="#1E3550" strokeWidth="0.5"/>
             <polyline
               points="0,42 20,38 40,40 60,32 80,34 100,26 120,28 140,20 160,22 180,14 200,16 240,10"
-              fill="none" stroke="#5B8A72" strokeWidth="1.5" strokeLinejoin="round"
+              fill="none" stroke="#4CC4A4" strokeWidth="1.5" strokeLinejoin="round"
             />
             <polyline
               points="0,46 20,44 40,45 60,44 80,46 100,42 120,43 140,40 160,44 180,40 200,42 240,41"
-              fill="none" stroke="#C79A63" strokeWidth="1.5" strokeLinejoin="round"
+              fill="none" stroke="#D4A254" strokeWidth="1.5" strokeLinejoin="round"
             />
           </svg>
         </div>
 
         {/* Intelligence insight */}
-        <div className="bg-[#C79A630A] border border-[#C79A6325] rounded-xl p-3 space-y-2">
+        <div className="bg-[#D4A2540A] border border-[#D4A25425] rounded-xl p-3 space-y-2">
           <div className="flex items-center gap-1.5">
-            <span className="text-[#C79A63] text-[10px]">⚠</span>
-            <span className="text-[9px] font-semibold text-[#C79A63]">Expenses increased 14% this month.</span>
+            <span className="text-[#D4A254] text-[10px]">⚠</span>
+            <span className="text-[9px] font-semibold text-[#D4A254]">Expenses increased 14% this month.</span>
           </div>
-          <div className="space-y-1 pl-3 border-l border-[#1E293B]">
-            <div className="text-[8px] text-[#94A3B8]">
-              <span className="text-[#CBD5E1]">Main cause:</span> Software subscriptions increased by €82.
+          <div className="space-y-1 pl-3 border-l border-[#1E3550]">
+            <div className="text-[8px] text-[#7BA8C4]">
+              <span className="text-[#A8C6E0]">Main cause:</span> Software subscriptions increased by €82.
             </div>
-            <div className="text-[8px] text-[#94A3B8]">
-              <span className="text-[#4F7A65]">Recommended:</span> Reducing unused subscriptions could improve annual cashflow by €984.
+            <div className="text-[8px] text-[#7BA8C4]">
+              <span className="text-[#3AB5A0]">Recommended:</span> Reducing unused subscriptions could improve annual cashflow by €984.
             </div>
           </div>
         </div>
 
         {/* Forecast row */}
         <div className="grid grid-cols-2 gap-2">
-          <div className="bg-[#4F7A650A] border border-[#4F7A6518] rounded-xl p-2.5">
-            <div className="text-[8px] text-[#94A3B8] mb-1">Next month forecast</div>
-            <div className="text-xs font-bold text-[#4F7A65]">€1,890 cashflow</div>
+          <div className="bg-[#3AB5A00A] border border-[#3AB5A018] rounded-xl p-2.5">
+            <div className="text-[8px] text-[#7BA8C4] mb-1">Next month forecast</div>
+            <div className="text-xs font-bold text-[#3AB5A0]">€1,890 cashflow</div>
           </div>
-          <div className="bg-[#0A1020] rounded-xl p-2.5">
-            <div className="text-[8px] text-[#94A3B8] mb-1">Annual projection</div>
-            <div className="text-xs font-bold text-[#5B8A72]">€22,680</div>
+          <div className="bg-[#0D1B2B] rounded-xl p-2.5">
+            <div className="text-[8px] text-[#7BA8C4] mb-1">Annual projection</div>
+            <div className="text-xs font-bold text-[#4CC4A4]">€22,680</div>
           </div>
         </div>
 
