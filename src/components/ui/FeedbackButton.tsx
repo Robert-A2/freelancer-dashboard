@@ -1,5 +1,5 @@
 const FEEDBACK_FORM_URL =
-  "https://docs.google.com/forms/d/e/1FAIQLSfO4k7-AAxTrf_mQ9wPcqhJQalkeTeSSW8l59eo13ivGezfzA/viewform";
+  "https://docs.google.com/forms/d/e/1FAIpQLSfO4k7-AAxTrf_mQ9wPcqhJQeIkeTeSSW8l59eo13ivGezfzA/viewform";
 
 export default function FeedbackButton() {
   return (
