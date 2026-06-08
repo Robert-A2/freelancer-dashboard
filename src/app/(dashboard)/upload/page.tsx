@@ -59,17 +59,17 @@ export default async function UploadPage() {
           <p className="label mb-4">Recent Imports</p>
           <div className="space-y-2">
             {imports.map((imp) => (
-              <div key={imp.id} className="flex items-center justify-between gap-3 py-2 border-b border-[#1E3550] last:border-0">
+              <div key={imp.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3 py-2 border-b border-[#1E3550] last:border-0">
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-[#E8F0F8] truncate">{imp.fileName}</p>
                   <p className="text-xs text-[#6A97B4]">
                     {new Date(imp.importedAt).toLocaleDateString("en-IE", { day: "numeric", month: "short", year: "numeric" })}
                   </p>
                 </div>
-                <div className="flex items-center gap-3 flex-shrink-0">
+                <div className="flex items-center justify-between sm:justify-end gap-3 flex-shrink-0">
                   <div className="text-right">
-                    <p className="text-sm text-[#4CC4A4]">{imp.importedRows.toLocaleString()} imported</p>
-                    {imp.duplicateRows > 0 && <p className="text-xs text-[#6A97B4]">{imp.duplicateRows} duplicates</p>}
+                    <p className="text-sm text-[#4CC4A4] whitespace-nowrap">{imp.importedRows.toLocaleString()} imported</p>
+                    {imp.duplicateRows > 0 && <p className="text-xs text-[#6A97B4] whitespace-nowrap">{imp.duplicateRows} duplicates</p>}
                   </div>
                   <DeleteImportButton importId={imp.id} fileName={imp.fileName} importedRows={imp.importedRows} />
                 </div>
