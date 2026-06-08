@@ -5,10 +5,11 @@ import { useRouter } from "next/navigation";
 
 const ALL_CATEGORIES = [
   "income", "stripe", "paypal", "client payment", "invoice payment",
-  "freelance platform", "bank transfer", "salary", "refund",
+  "freelance platform", "card payment", "bank transfer", "salary", "refund",
   "ai tools", "software", "marketing", "advertising", "education",
   "equipment", "office", "banking fees", "transport", "travel",
   "food", "health", "housing", "utilities", "subscriptions", "taxes",
+  "business services", "entertainment", "personal spending", "retail",
   "uncategorized", "savings", "transfer",
 ].sort();
 

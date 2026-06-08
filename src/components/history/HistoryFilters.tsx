@@ -11,6 +11,7 @@ interface Props {
   activeYear: string;
   activeMonth: string;
   activeSearch: string;
+  activeConfidence: string;
 }
 
 const MONTHS = [
@@ -21,7 +22,7 @@ const MONTHS = [
 ];
 
 export default function HistoryFilters({
-  categories, years, activeType, activeCategory, activeYear, activeMonth, activeSearch,
+  categories, years, activeType, activeCategory, activeYear, activeMonth, activeSearch, activeConfidence,
 }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -49,7 +50,7 @@ export default function HistoryFilters({
     startTransition(() => router.push("/history"));
   };
 
-  const hasFilters = activeType || activeCategory || activeYear || activeMonth || activeSearch;
+  const hasFilters = activeType || activeCategory || activeYear || activeMonth || activeSearch || activeConfidence;
   const selectBase = "bg-[#132537] border border-[#243F5E] rounded-xl px-3 py-2.5 text-sm text-[#E8F0F8] focus:outline-none focus:border-[#3AB5A0] capitalize min-h-[44px] w-full";
 
   return (
@@ -83,6 +84,16 @@ export default function HistoryFilters({
             {f.label}
           </button>
         ))}
+        <button
+          onClick={() => update("confidence", activeConfidence === "low" ? "" : "low")}
+          className={`flex-shrink-0 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors min-h-[44px] ${
+            activeConfidence === "low"
+              ? "bg-[#D4A25415] text-[#D4A254]"
+              : "bg-[#1A3048] text-[#7BA8C4] hover:text-[#E8F0F8]"
+          }`}
+        >
+          Needs review
+        </button>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">

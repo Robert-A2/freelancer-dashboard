@@ -1,5 +1,5 @@
 import Papa from "papaparse";
-import { categorizeTransaction } from "./categorization";
+import { categorizeTransaction, type LearnedRules, type Confidence } from "./categorization";
 
 export interface RawRow {
   [key: string]: string;
@@ -11,6 +11,8 @@ export interface NormalizedTransaction {
   amount: number;
   transactionType: "income" | "expense" | "savings" | "transfer";
   category: string;
+  categoryConfidence: Confidence;
+  categorySource: string;
 }
 
 export interface ProcessResult {
@@ -249,7 +251,7 @@ function parseDate(raw: string): Date | null {
 }
 
 // ── Main export ───────────────────────────────────────────────────────────────
-export function parseCsv(csvText: string): ProcessResult {
+export function parseCsv(csvText: string, learnedRules?: LearnedRules, ownerName?: string): ProcessResult {
   // 1. Strip BOM
   const clean = stripBOM(csvText);
 
@@ -333,7 +335,7 @@ export function parseCsv(csvText: string): ProcessResult {
     }
 
     // ── Categorize ──────────────────────────────────────────────────────────
-    const { transactionType, category } = categorizeTransaction(description, amount);
+    const { transactionType, category, confidence, source } = categorizeTransaction(description, amount, learnedRules, ownerName);
 
     transactions.push({
       transactionDate: date,
@@ -341,6 +343,8 @@ export function parseCsv(csvText: string): ProcessResult {
       amount: Math.abs(amount),
       transactionType,
       category,
+      categoryConfidence: confidence,
+      categorySource: source,
     });
   }
 

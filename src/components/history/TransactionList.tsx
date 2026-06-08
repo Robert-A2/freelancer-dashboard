@@ -19,6 +19,7 @@ interface TxRow {
   description: string;
   transactionDate: string;
   category: string;
+  categoryConfidence?: string;
   transactionType: string;
   amount: number;
 }
@@ -47,6 +48,14 @@ export default function TransactionList({ transactions }: { transactions: TxRow[
                   currentCategory={tx.category}
                   description={tx.description}
                 />
+                {tx.categoryConfidence === "low" && (
+                  <span
+                    className="w-4 h-4 rounded-full bg-[#D4A25415] text-[#D4A254] text-[10px] font-semibold flex items-center justify-center flex-shrink-0"
+                    title="Low-confidence category — worth a quick check"
+                  >
+                    ?
+                  </span>
+                )}
               </div>
             </div>
             <span className={`text-sm font-semibold whitespace-nowrap flex-shrink-0 ${TYPE_COLORS[tx.transactionType] ?? "text-[#7BA8C4]"}`}>

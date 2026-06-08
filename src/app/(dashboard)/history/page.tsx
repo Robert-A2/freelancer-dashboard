@@ -4,13 +4,15 @@ import { prisma } from "@/lib/prisma";
 import { getDataCoverage } from "@/lib/analytics-engine";
 import { Suspense } from "react";
 import HistoryFilters from "@/components/history/HistoryFilters";
+import NeedsReviewBanner from "@/components/history/NeedsReviewBanner";
+import RecategorizeAllButton from "@/components/history/RecategorizeAllButton";
 import TransactionList from "@/components/history/TransactionList";
 import DataCoverageBar from "@/components/dashboard/DataCoverage";
 
 export const dynamic = "force-dynamic";
 
 
-interface SearchParams { page?: string; type?: string; category?: string; year?: string; month?: string; q?: string; }
+interface SearchParams { page?: string; type?: string; category?: string; year?: string; month?: string; q?: string; confidence?: string; }
 
 export default async function HistoryPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
   const supabase = await createClient();
@@ -23,9 +25,10 @@ export default async function HistoryPage({ searchParams }: { searchParams: Prom
   const category = params.category || undefined;
   const year     = params.year ? parseInt(params.year) : undefined;
   const month    = params.month ? parseInt(params.month) : undefined;
-  const search   = params.q?.trim() || undefined;
-  const limit    = 50;
-  const skip     = (page - 1) * limit;
+  const search     = params.q?.trim() || undefined;
+  const confidence = params.confidence === "low" ? "low" : undefined;
+  const limit      = 50;
+  const skip       = (page - 1) * limit;
 
   let dateFilter: { gte?: Date; lt?: Date } | undefined;
   if (year && month)  dateFilter = { gte: new Date(year, month - 1, 1), lt: new Date(year, month, 1) };
@@ -37,15 +40,16 @@ export default async function HistoryPage({ searchParams }: { searchParams: Prom
     ...(category ? { category } : {}),
     ...(dateFilter ? { transactionDate: dateFilter } : {}),
     ...(search ? { description: { contains: search, mode: "insensitive" as const } } : {}),
+    ...(confidence ? { categoryConfidence: confidence } : {}),
   };
 
   const useMonthFilter = month && !year;
 
-  const [allTxForMonthFilter, pagedTransactions, total, distinctCategories, distinctYears, coverage] =
+  const [allTxForMonthFilter, pagedTransactions, total, distinctCategories, distinctYears, coverage, lowConfidenceCount] =
     await Promise.all([
       useMonthFilter
         ? prisma.transaction.findMany({
-            where: { userId: user.id, ...(type ? { transactionType: type } : {}), ...(category ? { category } : {}), ...(search ? { description: { contains: search, mode: "insensitive" as const } } : {}) },
+            where: { userId: user.id, ...(type ? { transactionType: type } : {}), ...(category ? { category } : {}), ...(search ? { description: { contains: search, mode: "insensitive" as const } } : {}), ...(confidence ? { categoryConfidence: confidence } : {}) },
             orderBy: { transactionDate: "desc" },
           })
         : Promise.resolve([] as Awaited<ReturnType<typeof prisma.transaction.findMany>>),
@@ -56,6 +60,7 @@ export default async function HistoryPage({ searchParams }: { searchParams: Prom
       prisma.transaction.findMany({ where: { userId: user.id }, select: { category: true }, distinct: ["category"], orderBy: { category: "asc" } }),
       prisma.monthlyAnalytics.findMany({ where: { userId: user.id }, select: { year: true }, distinct: ["year"], orderBy: { year: "desc" } }),
       getDataCoverage(user.id),
+      prisma.transaction.count({ where: { userId: user.id, categoryConfidence: "low" } }),
     ]);
 
   let displayTotal = total;
@@ -81,6 +86,7 @@ export default async function HistoryPage({ searchParams }: { searchParams: Prom
     if (params.year) sp.set("year", params.year);
     if (params.month) sp.set("month", params.month);
     if (search) sp.set("q", search);
+    if (confidence) sp.set("confidence", confidence);
     const qs = sp.toString();
     return `/history${qs ? `?${qs}` : ""}`;
   };
@@ -94,16 +100,19 @@ export default async function HistoryPage({ searchParams }: { searchParams: Prom
             {displayTotal.toLocaleString()} transaction{displayTotal !== 1 ? "s" : ""}
           </p>
         </div>
+        <RecategorizeAllButton />
       </div>
 
       {coverage.count > 0 && <DataCoverageBar coverage={coverage} />}
+
+      <NeedsReviewBanner count={lowConfidenceCount} />
 
       <Suspense>
         <HistoryFilters
           categories={categories} years={years}
           activeType={type ?? ""} activeCategory={category ?? ""}
           activeYear={params.year ?? ""} activeMonth={params.month ?? ""}
-          activeSearch={search ?? ""}
+          activeSearch={search ?? ""} activeConfidence={confidence ?? ""}
         />
       </Suspense>
 
@@ -118,6 +127,7 @@ export default async function HistoryPage({ searchParams }: { searchParams: Prom
             description: tx.description,
             transactionDate: tx.transactionDate.toISOString(),
             category: tx.category,
+            categoryConfidence: tx.categoryConfidence,
             transactionType: tx.transactionType,
             amount: Number(tx.amount),
           }))}

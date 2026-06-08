@@ -352,6 +352,49 @@ export async function getCategoryInsights(userId: string): Promise<CategoryInsig
   return { topExpenseCategories, yearlySnapshots, seasonality };
 }
 
+// ── Categorization health ──────────────────────────────────────────────────────
+
+export interface CategorizationHealth {
+  totalCount: number;
+  categorizedPct: number;
+  uncategorizedPct: number;
+  uncategorizedCount: number;
+  topUncategorizedMerchants: { description: string; count: number }[];
+  topCorrectedMerchants: { description: string; count: number }[];
+}
+
+export async function getCategorizationHealth(userId: string): Promise<CategorizationHealth> {
+  const [totalCount, uncategorizedCount, uncategorizedGroups, correctionGroups] = await Promise.all([
+    prisma.transaction.count({ where: { userId } }),
+    prisma.transaction.count({ where: { userId, category: "uncategorized" } }),
+    prisma.transaction.groupBy({
+      by: ["description"],
+      where: { userId, category: "uncategorized" },
+      _count: { description: true },
+      orderBy: { _count: { description: "desc" } },
+      take: 10,
+    }),
+    prisma.categoryCorrection.groupBy({
+      by: ["description"],
+      where: { userId },
+      _count: { description: true },
+      orderBy: { _count: { description: "desc" } },
+      take: 10,
+    }),
+  ]);
+
+  const uncategorizedPct = totalCount > 0 ? (uncategorizedCount / totalCount) * 100 : 0;
+
+  return {
+    totalCount,
+    categorizedPct: Math.round((100 - uncategorizedPct) * 10) / 10,
+    uncategorizedPct: Math.round(uncategorizedPct * 10) / 10,
+    uncategorizedCount,
+    topUncategorizedMerchants: uncategorizedGroups.map((g) => ({ description: g.description, count: g._count.description })),
+    topCorrectedMerchants: correctionGroups.map((g) => ({ description: g.description, count: g._count.description })),
+  };
+}
+
 // ── Income concentration ───────────────────────────────────────────────────────
 
 export interface IncomeConcentration {

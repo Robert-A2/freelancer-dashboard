@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { prisma } from "@/lib/prisma";
 import { parseCsv } from "@/lib/csv-processor";
+import type { LearnedRules } from "@/lib/categorization";
 import { recalculateMonthlyAnalytics } from "@/lib/analytics-engine";
 import { generateForecast } from "@/lib/forecast-engine";
 import { Decimal } from "@prisma/client/runtime/library";
@@ -23,7 +24,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Ensure User record exists in our database
-    await prisma.user.upsert({
+    const dbUser = await prisma.user.upsert({
       where: { id: user.id },
       update: {},
       create: {
@@ -32,6 +33,16 @@ export async function POST(request: NextRequest) {
         email: user.email ?? "",
       },
     });
+
+    // ── Load this user's learned categorization rules ──────────────────────
+    // Built from past manual recategorizations — checked before any hardcoded
+    // rule so corrections keep applying automatically to future imports.
+    const rules = await prisma.categoryRule.findMany({
+      where: { userId: user.id },
+      select: { merchantKey: true, category: true },
+    });
+    const learnedRules: LearnedRules = new Map(rules.map((r) => [r.merchantKey, r.category]));
+    const ownerName = dbUser.fullName || undefined;
 
     // ── Read request body ──────────────────────────────────────────────────
     const { storagePath, fileName } = await request.json();
@@ -67,7 +78,7 @@ export async function POST(request: NextRequest) {
     }
 
     // ── Parse CSV ──────────────────────────────────────────────────────────
-    const { transactions, totalRows, validRows, skippedRows, currencies, hasMixedCurrencies } = parseCsv(csvText);
+    const { transactions, totalRows, validRows, skippedRows, currencies, hasMixedCurrencies } = parseCsv(csvText, learnedRules, ownerName);
 
     if (transactions.length === 0) {
       await cleanupStorage(admin, storagePath);
@@ -108,6 +119,8 @@ export async function POST(request: NextRequest) {
           amount: new Decimal(tx.amount),
           transactionType: tx.transactionType,
           category: tx.category,
+          categoryConfidence: tx.categoryConfidence,
+          categorySource: tx.categorySource,
           sourceFile: fileName ?? null,
         })),
         skipDuplicates: true,

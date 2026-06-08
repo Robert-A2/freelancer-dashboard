@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import {
   getHistoricalData, getCategoryInsights, getClientInsights, getDataCoverage, getIncomeConcentration,
+  getCategorizationHealth,
 } from "@/lib/analytics-engine";
 import { buildHistoricalInsights } from "@/lib/intelligence-engine";
 import DataCoverageBar from "@/components/dashboard/DataCoverage";
@@ -53,7 +54,7 @@ export default async function AnalyticsPage() {
   // Last 12 months of the user's actual data (for income sources)
   const incSince = new Date(dataYear - 1, latestDataRecord ? latestDataRecord.month - 1 : 0, 1);
 
-  const [chartData, categoryInsights, categoryBreakdown, incomeBySource, ytdThis, ytdPrev, clientInsights, coverage, concentration] =
+  const [chartData, categoryInsights, categoryBreakdown, incomeBySource, ytdThis, ytdPrev, clientInsights, coverage, concentration, categorizationHealth] =
     await Promise.all([
       getHistoricalData(user.id, 999),
       getCategoryInsights(user.id),
@@ -82,6 +83,7 @@ export default async function AnalyticsPage() {
       getClientInsights(user.id),
       getDataCoverage(user.id),
       getIncomeConcentration(user.id),
+      getCategorizationHealth(user.id),
     ]);
 
   const hasData = chartData.some(d => d.income > 0 || d.expenses > 0);
@@ -247,6 +249,66 @@ export default async function AnalyticsPage() {
                       );
                     })}
                   </div>
+                )}
+              </div>
+            </div>
+          </CollapsibleSection>
+
+          {/* ── 3b. Categorization health ─────────────────────────────────── */}
+          <CollapsibleSection
+            label="Categorization health"
+            title="How well we understand your transactions"
+            subtitle="Categorization accuracy, plus the merchants that need your attention."
+          >
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 md:gap-6">
+              <div className="card lg:col-span-1">
+                <p className="label mb-1">Categorized</p>
+                <p className="text-3xl font-bold text-[#4CC4A4] mb-1">{categorizationHealth.categorizedPct}%</p>
+                <p className="text-xs text-[#6A97B4]">
+                  {categorizationHealth.uncategorizedCount.toLocaleString()} of {categorizationHealth.totalCount.toLocaleString()} transactions
+                  ({categorizationHealth.uncategorizedPct}%) still uncategorized
+                </p>
+                <div className="h-1.5 bg-[#243F5E] rounded-full overflow-hidden mt-4">
+                  <div className="h-full bg-[#4CC4A4] rounded-full opacity-70" style={{ width: `${categorizationHealth.categorizedPct}%` }} />
+                </div>
+                {categorizationHealth.uncategorizedCount > 0 && (
+                  <Link href="/history?confidence=low" className="inline-block mt-4 text-sm text-[#3AB5A0] hover:text-[#4CC4A4] font-medium transition-colors">
+                    Review uncategorized →
+                  </Link>
+                )}
+              </div>
+
+              <div className="card lg:col-span-1">
+                <p className="label mb-1">Most common uncategorized merchants</p>
+                <p className="text-xs text-[#6A97B4] mb-4">Worth a manual fix — we&apos;ll remember it next time</p>
+                {categorizationHealth.topUncategorizedMerchants.length === 0 ? (
+                  <p className="text-[#7BA8C4] text-sm">Nothing uncategorized — nicely done.</p>
+                ) : (
+                  <ul className="space-y-2">
+                    {categorizationHealth.topUncategorizedMerchants.map((m) => (
+                      <li key={m.description} className="flex items-center justify-between gap-3 text-sm">
+                        <span className="text-[#A8C6E0] truncate">{m.description}</span>
+                        <span className="text-[#6A97B4] flex-shrink-0">{m.count}×</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+
+              <div className="card lg:col-span-1">
+                <p className="label mb-1">Most corrected merchants</p>
+                <p className="text-xs text-[#6A97B4] mb-4">Manual fixes that taught the system new rules</p>
+                {categorizationHealth.topCorrectedMerchants.length === 0 ? (
+                  <p className="text-[#7BA8C4] text-sm">No corrections yet — categories are running on built-in rules.</p>
+                ) : (
+                  <ul className="space-y-2">
+                    {categorizationHealth.topCorrectedMerchants.map((m) => (
+                      <li key={m.description} className="flex items-center justify-between gap-3 text-sm">
+                        <span className="text-[#A8C6E0] truncate">{m.description}</span>
+                        <span className="text-[#6A97B4] flex-shrink-0">{m.count}×</span>
+                      </li>
+                    ))}
+                  </ul>
                 )}
               </div>
             </div>
