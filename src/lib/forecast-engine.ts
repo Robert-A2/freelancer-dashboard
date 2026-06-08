@@ -99,17 +99,21 @@ export async function generateForecast(userId: string): Promise<ForecastResult |
     year: "numeric",
   });
 
-  // Create the new forecast, then prune all but the most recent one.
-  // This keeps the table from growing indefinitely without needing a schema migration.
-  await prisma.forecast.create({
-    data: {
-      userId,
-      projectedIncome:   new Decimal(projectedIncome),
-      projectedExpenses: new Decimal(projectedExpenses),
-      projectedSavings:  new Decimal(projectedSavings),
-      projectedCashflow: new Decimal(projectedCashflow),
-      forecastPeriod,
-    },
+  // Upsert the forecast for this period (re-running within the same month
+  // would otherwise hit the (userId, forecastPeriod) unique constraint),
+  // then prune all but the most recent one. This keeps the table from
+  // growing indefinitely without needing a schema migration.
+  const forecastValues = {
+    projectedIncome:   new Decimal(projectedIncome),
+    projectedExpenses: new Decimal(projectedExpenses),
+    projectedSavings:  new Decimal(projectedSavings),
+    projectedCashflow: new Decimal(projectedCashflow),
+    generatedAt: new Date(),
+  };
+  await prisma.forecast.upsert({
+    where: { userId_forecastPeriod: { userId, forecastPeriod } },
+    create: { userId, forecastPeriod, ...forecastValues },
+    update: forecastValues,
   });
 
   const stale = await prisma.forecast.findMany({
