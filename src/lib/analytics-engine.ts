@@ -46,6 +46,17 @@ export async function recalculateMonthlyAnalytics(userId: string): Promise<void>
       },
     });
   }
+
+  // Remove analytics rows for months that no longer have any transactions
+  // (e.g. after deleting an import) so dashboards/forecasts don't show stale data.
+  const existing = await prisma.monthlyAnalytics.findMany({
+    where: { userId },
+    select: { id: true, month: true, year: true },
+  });
+  const stale = existing.filter((e) => !byMonth[`${e.year}-${e.month}`]);
+  if (stale.length > 0) {
+    await prisma.monthlyAnalytics.deleteMany({ where: { id: { in: stale.map((e) => e.id) } } });
+  }
 }
 
 // ── getDashboardSummary ────────────────────────────────────────────────────────
