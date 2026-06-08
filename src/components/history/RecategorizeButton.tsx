@@ -9,7 +9,7 @@ const ALL_CATEGORIES = [
   "ai tools", "software", "marketing", "advertising", "education",
   "equipment", "office", "banking fees", "transport", "travel",
   "food", "health", "housing", "utilities", "subscriptions", "taxes",
-  "business services", "entertainment", "personal spending", "retail",
+  "business services", "entertainment", "personal spending", "retail", "sports",
   "uncategorized", "savings", "transfer",
 ].sort();
 

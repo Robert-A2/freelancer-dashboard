@@ -59,7 +59,7 @@ const entries: MerchantEntry[] = [
   h("systeme u", "food"), h("super u", "food"), h("hyper u", "food"),
   h("g20 superette", "food"), h("biocoop", "food"), h("naturalia bio", "food"),
   h("grand frais", "food"), h("lidl france", "food"), h("aldi france", "food"),
-  h("fnac.com", "retail"), h("fnac darty", "retail"), h("decathlon france", "retail"),
+  h("fnac.com", "retail"), h("fnac darty", "retail"), h("decathlon france", "sports"),
   h("zara france", "retail"), h("h&m france", "retail"), h("uniqlo france", "retail"),
   h("vinted france", "retail"), h("sephora france", "personal spending"), h("nocibe parfumerie", "personal spending"),
   h("marionnaud parfumerie", "personal spending"), h("leroy merlin", "retail"), h("castorama", "retail"),
@@ -112,10 +112,10 @@ const entries: MerchantEntry[] = [
   // Bare-brand aliases — bank statements often show just the brand name
   m("café", "food"),
   h("carrefour", "food"), h("monoprix", "food"), h("leclerc", "food"), h("intermarche", "food"),
-  h("fdj", "entertainment"), h("fnac", "retail"), h("darty", "retail"), h("decathlon", "retail"),
+  h("fdj", "entertainment"), h("fnac", "retail"), h("darty", "retail"), h("decathlon", "sports"),
   h("sncf", "transport"), h("keolis", "transport"), h("ratp", "transport"), h("semitan", "transport"),
   h("celio", "retail"), h("galeries lafayette", "retail"), h("naturalia", "food"), h("vival", "food"),
-  h("ali baba", "food"), h("ali babà", "food"), h("on air fitness", "health"),
+  h("ali baba", "food"), h("ali babà", "food"), h("on air fitness", "sports"),
   // French banking-fee phrasing (parity with prior flat keyword lists)
   m("commission d'intervention", "banking fees"), m("frais d'intervention", "banking fees"),
   m("frais de change", "banking fees"), m("frais de conversion", "banking fees"),

@@ -34,6 +34,14 @@ export const KEYWORD_PATTERNS: MerchantEntry[] = [
   m("laverie", "personal spending"), m("manucure", "personal spending"),
   m("barbier", "personal spending"), m("esthetique", "personal spending"),
 
+  // Sports & fitness
+  m("crossfit", "sports"), m("yoga class", "sports"), m("pilates", "sports"),
+  m("gym ", "sports"), m("fitness centre", "sports"), m("fitness center", "sports"),
+  m("sports club", "sports"), m("football match", "sports"), m("rugby match", "sports"),
+  m("tennis lesson", "sports"), m("swimming pool", "sports"), m("climbing wall", "sports"),
+  m("golf club", "sports"), m("ski pass", "sports"), m("ski resort", "sports"),
+  m("marathon entry", "sports"), m("race entry fee", "sports"), m("sports kit", "sports"),
+
   // Retail
   m("droguerie", "retail"), m("quincaillerie", "retail"), m("fleuriste", "retail"),
   m("papeterie", "retail"), m("librairie", "retail"), m("animalerie", "retail"),
@@ -83,8 +91,7 @@ export const KEYWORD_PATTERNS: MerchantEntry[] = [
   m("supermarket", "food"), m("grocery", "food"),
   // Health
   m("gp visit", "health"), m("hospital", "health"), m("dental", "health"), m("orthodontist", "health"),
-  m("clinic", "health"), m("crossfit", "health"), m("yoga class", "health"), m("pilates", "health"),
-  m("physio", "health"), m("chemist", "health"), m("doctor", "health"),
+  m("clinic", "health"), m("physio", "health"), m("chemist", "health"), m("doctor", "health"),
   m("teleconsultation", "health"), m("télé-consultation", "health"),
   // Housing
   m("rent payment", "housing"), m("monthly rent", "housing"), m("mortgage ", "housing"),

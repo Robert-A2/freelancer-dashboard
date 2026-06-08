@@ -166,7 +166,7 @@ const entries: MerchantEntry[] = [
   h("ikea group", "retail"), h("zara fashion", "retail"), h("h&m group", "retail"),
   h("uniqlo store", "retail"), h("gap inc", "retail"), h("nike store", "retail"),
   h("adidas shop", "retail"), h("asos.com", "retail"), h("next retail", "retail"),
-  h("primark stores", "retail"), h("mango fashion", "retail"), h("decathlon sport", "retail"),
+  h("primark stores", "retail"), h("mango fashion", "retail"),
   h("fnac retail", "retail"), h("darty electro", "retail"), h("boulanger store", "retail"),
   h("apple store", "equipment"), h("apple.com/store", "equipment"), h("best buy co", "equipment"),
   h("currys pc world", "equipment"), h("john lewis", "retail"), h("argos retail", "retail"),
@@ -176,7 +176,7 @@ const entries: MerchantEntry[] = [
   h("superdrug store", "personal spending"), h("ulta beauty", "personal spending"),
   h("michael kors", "retail"), h("zalando se", "retail"), h("depop app", "retail"),
   h("vinted marketplace", "retail"), h("shein fashion", "retail"), h("temu shopping", "retail"),
-  h("aliexpress", "retail"), h("wish shopping", "retail"), h("sportsdirect", "retail"),
+  h("aliexpress", "retail"), h("wish shopping", "retail"),
   h("jd sports", "retail"), h("foot locker", "retail"), h("muji store", "retail"),
 
   // ── Subscriptions & entertainment ─────────────────────────────────────────
@@ -220,10 +220,23 @@ const entries: MerchantEntry[] = [
   // ── Health & wellness ─────────────────────────────────────────────────────
   h("cvs pharmacy", "health"), h("walgreens store", "health"), h("specsavers", "health"),
   h("vision express", "health"), h("bupa health", "health"), h("aviva health", "health"),
-  h("axa health insurance", "health"), h("peloton fitness", "health"), h("planet fitness", "health"),
-  h("equinox gym", "health"), h("soulcycle", "health"), h("classpass", "health"),
+  h("axa health insurance", "health"),
   h("betterhelp therapy", "health"), h("talkspace counseling", "health"),
-  h("iherb", "health"), h("aroma-zone", "health"), h("bsport", "health"),
+  h("iherb", "health"), h("aroma-zone", "health"),
+
+  // ── Sports & fitness ──────────────────────────────────────────────────────
+  h("peloton fitness", "sports"), h("planet fitness", "sports"), h("equinox gym", "sports"),
+  h("soulcycle", "sports"), h("classpass", "sports"), h("bsport", "sports"),
+  h("decathlon sport", "sports"), h("sportsdirect", "sports"), h("intersport", "sports"),
+  h("go sport", "sports"), h("sport 2000", "sports"), h("strava", "sports"),
+  h("garmin connect", "sports"), h("fitbit premium", "sports"), h("whoop membership", "sports"),
+  h("espn+", "sports"), h("dazn", "sports"), h("bein sports", "sports"), h("sky sports", "sports"),
+  h("nike run club", "sports"), h("adidas running", "sports"), h("under armour", "sports"),
+  h("puma store", "sports"), h("footlocker", "sports"), h("rugby club", "sports"),
+  h("club de foot", "sports"), h("padel club", "sports"), h("tennis club", "sports"),
+  m("salle de sport", "sports"), m("club de sport", "sports"), m("fitness club", "sports"),
+  m("gym membership", "sports"), m("licence sportive", "sports"), m("abonnement sportif", "sports"),
+  m("piscine municipale", "sports"), m("terrain de tennis", "sports"), m("stade municipal", "sports"),
 
   // ── Additional brand coverage (parity with prior flat keyword lists) ─────
   h("replicate", "ai tools"), h("snappa", "ai tools"), h("vidiq", "ai tools"), h("gemini ai", "ai tools"),
@@ -257,7 +270,7 @@ const entries: MerchantEntry[] = [
   // deliberately excluded — qualified variants only for those.
   h("amazon", "retail"), h("etsy", "retail"), h("temu", "retail"), h("shein", "retail"),
   h("zalando", "retail"), h("vinted", "retail"), h("wayfair", "retail"), h("zara", "retail"),
-  h("uniqlo", "retail"), h("primark", "retail"), h("decathlon", "retail"), h("ikea", "retail"),
+  h("uniqlo", "retail"), h("primark", "retail"), h("decathlon", "sports"), h("ikea", "retail"),
   h("sephora", "personal spending"), h("asos", "retail"), h("depop", "retail"),
   h("netflix", "subscriptions"), h("spotify", "subscriptions"), h("deezer", "subscriptions"),
   h("audible", "subscriptions"), h("youtube", "subscriptions"), h("invideo", "ai tools"),
