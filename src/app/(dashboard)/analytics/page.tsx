@@ -48,6 +48,8 @@ export default async function AnalyticsPage() {
   const prevYear     = dataYear - 1;
   // Cap at the latest data month — never inflate to 12 for a past year
   const dataMonthMax = latestDataRecord?.month ?? now.getUTCMonth() + 1;
+  // "Year to date" is only accurate when the data includes the current calendar year
+  const ytdSectionLabel = dataYear === now.getUTCFullYear() ? "Year to date" : "Annual comparison";
 
   // Exactly 12 months ending at the last data month — UTC midnight
   const incSince = new Date(Date.UTC(dataYear, dataMonthMax - 12, 1));
@@ -140,9 +142,9 @@ export default async function AnalyticsPage() {
         <>
           {/* ── 1. Year-to-date vs prior year ─────────────────────────────── */}
           <CollapsibleSection
-            label="Year to date"
+            label={ytdSectionLabel}
             title={`${dataYear} vs ${prevYear}`}
-            subtitle={`Jan – ${new Date(Date.UTC(dataYear, dataMonthMax - 1, 1)).toLocaleDateString("en-IE", { month: "short", timeZone: "UTC" })} (same window both years)`}
+            subtitle={`January – ${new Date(Date.UTC(dataYear, dataMonthMax - 1, 1)).toLocaleDateString("en-IE", { month: "long", timeZone: "UTC" })}, same window for both years`}
           >
             <div className="card">
               {prevInc === 0 && (
@@ -189,7 +191,7 @@ export default async function AnalyticsPage() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 md:gap-6">
               <div className="card">
                 <p className="label mb-1">Income sources</p>
-                <p className="text-xs text-[#6A97B4] mb-4">Last 12 months, where money came in</p>
+                <p className="text-xs text-[#6A97B4] mb-4">Last 12 months of your data, by category</p>
                 {incomeBySource.length === 0 ? (
                   <p className="text-[#7BA8C4] text-sm">No income data</p>
                 ) : (

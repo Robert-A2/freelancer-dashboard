@@ -142,11 +142,10 @@ export default async function ForecastPage() {
   const annualExpenses  = forecast ? forecast.projectedExpenses * 12 : 0;
   const annualCashflow  = forecast ? (forecast.projectedIncome - forecast.projectedExpenses) * 12 : 0;
 
-  // Projected Runway: how many months of expenses the annual surplus covers
-  const avgExpPerMonth  = last6.length > 0 ? last6.reduce((s, d) => s + d.expenses, 0) / last6.length : 0;
-  const projRunwayMonths = forecast && avgExpPerMonth > 0
-    ? (forecast.projectedIncome - forecast.projectedExpenses) / avgExpPerMonth
-    : 0;
+  // Projected cashflow margin: what % of projected income is kept after expenses
+  const projMarginPct = forecast && forecast.projectedIncome > 0
+    ? Math.round(((forecast.projectedIncome - forecast.projectedExpenses) / forecast.projectedIncome) * 100)
+    : null;
 
   const health = HEALTH[intel.healthStatus];
   const trend  = TREND[intel.businessTrendDirection];
@@ -191,10 +190,24 @@ export default async function ForecastPage() {
                 <span className={`text-4xl font-bold tabular-nums ${health.text}`}>{healthScore}</span>
                 <span className="text-[#475569] text-sm mb-1">/100</span>
               </div>
-              <div className="h-2 bg-[#243F5E] rounded-full overflow-hidden mb-2">
+              <div className="h-2 bg-[#243F5E] rounded-full overflow-hidden mb-3">
                 <div className={`h-full rounded-full ${health.bar}`} style={{ width: `${healthScore}%` }} />
               </div>
-              <p className={`text-xs font-semibold ${health.text}`}>{health.label}</p>
+              <p className={`text-xs font-semibold mb-3 ${health.text}`}>{health.label}</p>
+              <div className="space-y-1.5 border-t border-[#1E3550] pt-3">
+                <p className="text-xs text-[#6A97B4] font-semibold uppercase tracking-wide mb-2">How it&apos;s calculated</p>
+                {[
+                  { label: "Cashflow consistency", score: cashflowScore, max: 40, detail: `${positiveCount} of ${activeMonths.length} months positive` },
+                  { label: "Income trend",         score: trendScore,    max: 25, detail: incPct > 3 ? `↑ ${incPct}% recently` : incPct < -3 ? `↓ ${Math.abs(incPct)}% recently` : "Stable" },
+                  { label: "Data depth",           score: depthScore,    max: 20, detail: `${activeMonths.length} month${activeMonths.length !== 1 ? "s" : ""} of history` },
+                  { label: "Health status",        score: statusScore,   max: 15, detail: health.label },
+                ].map((row) => (
+                  <div key={row.label} className="flex items-center justify-between gap-2 text-xs">
+                    <span className="text-[#7BA8C4] truncate">{row.label}</span>
+                    <span className="text-[#A8C6E0] flex-shrink-0 tabular-nums">{row.score}/{row.max}</span>
+                  </div>
+                ))}
+              </div>
             </div>
 
             {/* Cashflow Risk */}
@@ -232,7 +245,7 @@ export default async function ForecastPage() {
               <div>
                 <p className="label mb-1">Year-End Projection</p>
                 <p className="text-[13px] text-[#6A97B4]">
-                  If current monthly averages continue for 12 months
+                  If recent monthly averages continue — projected from your last data point
                 </p>
               </div>
               {forecast?.confidence && (
@@ -249,7 +262,13 @@ export default async function ForecastPage() {
                 { label: "Projected Income",   value: formatCurrency(annualIncome),   sub: forecast ? `${formatCurrency(forecast.projectedIncome)}/mo avg` : null,   color: "text-[#4CC4A4]",  border: "border-[#4CC4A415]" },
                 { label: "Projected Expenses", value: formatCurrency(annualExpenses),  sub: forecast ? `${formatCurrency(forecast.projectedExpenses)}/mo avg` : null,  color: "text-[#D4A254]",  border: "border-[#D4A25415]" },
                 { label: "Projected Cashflow", value: formatCurrency(annualCashflow),  sub: forecast ? `${formatCurrency(forecast.projectedIncome - forecast.projectedExpenses)}/mo avg` : null, color: annualCashflow >= 0 ? "text-[#3AB5A0]" : "text-[#D97070]", border: "border-[#243F5E]" },
-                { label: "Projected Runway",   value: `${projRunwayMonths >= 0 ? "+" : "−"}${Math.abs(projRunwayMonths).toFixed(1)} mo`, sub: projRunwayMonths >= 0 ? "months buffer per month" : "deficit per month", color: projRunwayMonths >= 0.5 ? "text-[#4CC4A4]" : projRunwayMonths >= 0 ? "text-[#D4A254]" : "text-[#D97070]", border: "border-[#243F5E]" },
+                {
+                  label: "Projected Margin",
+                  value: projMarginPct !== null ? `${projMarginPct}%` : "—",
+                  sub: "of income kept after expenses",
+                  color: projMarginPct === null ? "text-[#6A97B4]" : projMarginPct >= 30 ? "text-[#4CC4A4]" : projMarginPct >= 10 ? "text-[#D4A254]" : "text-[#D97070]",
+                  border: "border-[#243F5E]",
+                },
               ].map((item) => (
                 <div key={item.label} className={`bg-[#1A3048] rounded-xl p-3 border ${item.border}`}>
                   <p className="text-xs text-[#6A97B4] uppercase tracking-wide mb-1">{item.label}</p>
@@ -379,7 +398,8 @@ export default async function ForecastPage() {
             <div className="flex items-center gap-2 mb-3 px-1">
               <span className="w-1.5 h-1.5 rounded-full bg-[#4CC4A4] flex-shrink-0" />
               <p className="text-xs text-[#6A97B4]">
-                Forecast recalculated now using all available data.
+                Forecast built from data spanning{" "}
+                {coverage.rangeLabel ?? `${coverage.count.toLocaleString()} transactions`}.
                 {forecast?.seasonallyAdjusted && " Seasonal patterns from 24+ months applied."}
               </p>
             </div>

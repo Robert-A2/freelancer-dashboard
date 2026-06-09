@@ -12,13 +12,12 @@ interface MonthData {
 interface Props {
   current: MonthData | null;
   previous: MonthData | null;
-  runway: number;
-  prevRunway: number;
   riskLevel: "low" | "medium" | "high" | "critical";
   riskPositiveMonths: number;
   riskTotalMonths: number;
   summary?: string;
   context?: string[];
+  periodLabel?: string;
 }
 
 const RISK_STYLE = {
@@ -44,13 +43,8 @@ function Chip({ value, invert }: { value: number; invert?: boolean }) {
   );
 }
 
-function fmtRunway(m: number): string {
-  if (Math.abs(m) < 0.05) return "0.0 mo";
-  return `${m >= 0 ? "+" : "−"}${Math.abs(m).toFixed(1)} mo`;
-}
-
 export default function SummaryCards({
-  current, previous, runway, prevRunway, riskLevel, riskPositiveMonths, riskTotalMonths, summary, context,
+  current, previous, riskLevel, riskPositiveMonths, riskTotalMonths, summary, context, periodLabel,
 }: Props) {
   const c = current  ?? { totalIncome: 0, totalExpenses: 0, totalSavings: 0, netCashflow: 0 };
   const p = previous ?? { totalIncome: 0, totalExpenses: 0, totalSavings: 0, netCashflow: 0 };
@@ -58,11 +52,24 @@ export default function SummaryCards({
   const currCashflow  = c.totalIncome - c.totalExpenses;
   const prevCashflow  = p.totalIncome - p.totalExpenses;
   const spendRate     = c.totalIncome > 0 ? Math.round((c.totalExpenses / c.totalIncome) * 100) : 0;
+  const margin        = c.totalIncome > 0 ? 100 - spendRate : null;
+  const prevSpendRate = p.totalIncome > 0 ? Math.round((p.totalExpenses / p.totalIncome) * 100) : 0;
+  const prevMargin    = p.totalIncome > 0 ? 100 - prevSpendRate : null;
   const risk          = RISK_STYLE[riskLevel];
-  const runwayChange  = changePct(runway, prevRunway);
+
+  const marginColor   = margin === null ? "text-[#6A97B4]"
+    : margin >= 30 ? "text-[#4CC4A4]"
+    : margin >= 10 ? "text-[#D4A254]"
+    : "text-[#D97070]";
 
   return (
     <div className="space-y-4">
+      {periodLabel && (
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-semibold text-[#6A97B4] uppercase tracking-wide">Showing</span>
+          <span className="text-xs font-semibold text-[#A8C6E0] bg-[#1A3048] px-2 py-0.5 rounded">{periodLabel}</span>
+        </div>
+      )}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4 md:gap-5">
 
         {/* Income */}
@@ -72,7 +79,7 @@ export default function SummaryCards({
             {formatCurrency(c.totalIncome)}
           </p>
           <div className="flex items-center gap-2 flex-wrap">
-            <p className="text-[13px] text-[#6A97B4]">{spendRate}% spend ratio</p>
+            <p className="text-[13px] text-[#6A97B4]">total this month</p>
             {previous && <Chip value={changePct(c.totalIncome, p.totalIncome)} />}
           </div>
         </div>
@@ -84,7 +91,7 @@ export default function SummaryCards({
             {formatCurrency(c.totalExpenses)}
           </p>
           <div className="flex items-center gap-2 flex-wrap">
-            <p className="text-[13px] text-[#6A97B4]">{spendRate}% of income</p>
+            <p className="text-[13px] text-[#6A97B4]">total this month</p>
             {previous && <Chip value={changePct(c.totalExpenses, p.totalExpenses)} invert />}
           </div>
         </div>
@@ -97,23 +104,23 @@ export default function SummaryCards({
           </p>
           <div className="flex items-center gap-2 flex-wrap">
             <p className="text-[13px] text-[#6A97B4]">
-              {currCashflow >= 0 ? "Income above expenses" : "Expenses exceed income"}
+              {currCashflow >= 0 ? "income above expenses" : "expenses exceed income"}
             </p>
             {previous && <Chip value={changePct(currCashflow, prevCashflow)} />}
           </div>
         </div>
 
-        {/* Runway */}
+        {/* Margin */}
         <div className="card-sm flex flex-col gap-3">
-          <p className="label">Runway</p>
-          <p className={`text-2xl md:text-3xl font-bold leading-none tabular-nums ${runway >= 0.5 ? "text-[#4CC4A4]" : runway >= 0 ? "text-[#D4A254]" : "text-[#D97070]"}`}>
-            {fmtRunway(runway)}
+          <p className="label">Margin</p>
+          <p className={`text-2xl md:text-3xl font-bold leading-none tabular-nums ${marginColor}`}>
+            {margin !== null ? `${margin}%` : "—"}
           </p>
           <div className="flex items-center gap-2 flex-wrap">
-            <p className="text-[13px] text-[#6A97B4]">
-              {runway >= 0 ? "months buffer added" : "months consumed"}
-            </p>
-            {previous && <Chip value={runwayChange} />}
+            <p className="text-[13px] text-[#6A97B4]">of income kept</p>
+            {previous && margin !== null && prevMargin !== null && (
+              <Chip value={margin - prevMargin} />
+            )}
           </div>
         </div>
 

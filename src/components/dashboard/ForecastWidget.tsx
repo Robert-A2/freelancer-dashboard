@@ -25,11 +25,6 @@ const CONFIDENCE_COLORS = {
   high:   "text-[#4CC4A4]",
 };
 
-function fmtRunway(m: number): string {
-  if (Math.abs(m) < 0.05) return "0.0 mo";
-  return `${m >= 0 ? "+" : "−"}${Math.abs(m).toFixed(1)} mo`;
-}
-
 export default function ForecastWidget({ forecast, reasons, improvements, deficitReason }: Props) {
   if (!forecast) {
     return (
@@ -44,7 +39,7 @@ export default function ForecastWidget({ forecast, reasons, improvements, defici
 
   const operatingCashflow = projectedIncome - projectedExpenses;
   const cashflowNegative  = operatingCashflow < 0;
-  const runwayMonths      = projectedExpenses > 0 ? operatingCashflow / projectedExpenses : 0;
+  const projectedMargin   = projectedIncome > 0 ? Math.round((operatingCashflow / projectedIncome) * 100) : null;
 
   const cashflowHealthText  = reasons?.[1] ?? null;
   const cashflowHealthIsNeg = cashflowHealthText?.toLowerCase().includes("negative") ?? false;
@@ -71,13 +66,20 @@ export default function ForecastWidget({ forecast, reasons, improvements, defici
         </span>
       </div>
 
-      {/* Projected numbers: Income, Expenses, Cashflow, Runway */}
+      {/* Projected numbers: Income, Expenses, Cashflow, Margin */}
       <div className="grid grid-cols-2 gap-3">
         {[
           { label: "Income",   value: formatCurrency(projectedIncome),  color: "text-[#4CC4A4]" },
           { label: "Expenses", value: formatCurrency(projectedExpenses), color: "text-[#D4A254]" },
           { label: "Cashflow", value: formatCurrency(operatingCashflow), color: cashflowNegative ? "text-[#D97070]" : "text-[#3AB5A0]" },
-          { label: "Runway",   value: fmtRunway(runwayMonths),           color: runwayMonths >= 0.5 ? "text-[#4CC4A4]" : runwayMonths >= 0 ? "text-[#D4A254]" : "text-[#D97070]" },
+          {
+            label: "Margin",
+            value: projectedMargin !== null ? `${projectedMargin}%` : "—",
+            color: projectedMargin === null ? "text-[#6A97B4]"
+              : projectedMargin >= 30 ? "text-[#4CC4A4]"
+              : projectedMargin >= 10 ? "text-[#D4A254]"
+              : "text-[#D97070]",
+          },
         ].map((item) => (
           <div key={item.label} className="bg-[#1A3048] rounded-xl p-3">
             <p className="label mb-1">{item.label}</p>

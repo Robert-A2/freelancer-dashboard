@@ -105,16 +105,8 @@ export default async function DashboardPage({
   const hasData = totalTx > 0;
   const nonZeroMonths = chartData.filter((d) => d.income > 0 || d.expenses > 0).length;
 
-  // Runway and risk computed from historical data
+  // Risk computed from historical data
   const activeMonths      = chartData.filter(d => d.income > 0 || d.expenses > 0);
-  const last6Active       = activeMonths.slice(-6);
-  const avgMonthlyExpenses = last6Active.length > 0
-    ? last6Active.reduce((s, d) => s + d.expenses, 0) / last6Active.length
-    : 0;
-  const currCashflow  = current  ? current.totalIncome  - current.totalExpenses  : 0;
-  const prevCashflow  = previous ? previous.totalIncome - previous.totalExpenses : 0;
-  const runway        = avgMonthlyExpenses > 0 ? currCashflow / avgMonthlyExpenses : 0;
-  const prevRunway    = avgMonthlyExpenses > 0 ? prevCashflow / avgMonthlyExpenses : 0;
 
   const last12Active       = activeMonths.slice(-12);
   const riskPositiveMonths = last12Active.filter(d => d.income - d.expenses >= 0).length;
@@ -167,7 +159,9 @@ export default async function DashboardPage({
             )}
           </div>
           <p className="text-[#7BA8C4] text-sm">
-            {new Date().toLocaleDateString("en-IE", { month: "long", year: "numeric" })}
+            {coverage.latest
+              ? `Showing data through ${coverage.latest.toLocaleDateString("en-IE", { month: "long", year: "numeric", timeZone: "UTC" })}`
+              : "No data uploaded yet"}
           </p>
         </div>
         {hasData && (
@@ -220,13 +214,12 @@ export default async function DashboardPage({
           <SummaryCards
             current={current}
             previous={previous}
-            runway={runway}
-            prevRunway={prevRunway}
             riskLevel={riskLevel}
             riskPositiveMonths={riskPositiveMonths}
             riskTotalMonths={riskTotalMonths}
             summary={intel.snapshotSummary}
             context={intel.snapshotContext}
+            periodLabel={comparison.currLabel}
           />
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
