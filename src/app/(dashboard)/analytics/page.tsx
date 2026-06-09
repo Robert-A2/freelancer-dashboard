@@ -106,15 +106,9 @@ export default async function AnalyticsPage() {
   const ytdCash  = ytdInc  - ytdExp;
   const prevCash = prevInc - prevExp;
 
-  // Runway: monthly surplus / avg monthly expenses over the YTD period
-  const activeMonthsYtd = chartData.filter(d => d.income > 0 || d.expenses > 0);
-  const last6Ytd        = activeMonthsYtd.slice(-6);
-  const avgExpYtd       = last6Ytd.length > 0 ? last6Ytd.reduce((s, d) => s + d.expenses, 0) / last6Ytd.length : 0;
-  const ytdMonthCount   = dataMonthMax;
-  const avgMonthlyCashYtd  = ytdMonthCount > 0 ? ytdCash  / ytdMonthCount : 0;
-  const avgMonthlyCashPrev = ytdMonthCount > 0 ? prevCash / ytdMonthCount : 0;
-  const ytdRunway  = avgExpYtd > 0 ? avgMonthlyCashYtd  / avgExpYtd : 0;
-  const prevRunway = avgExpYtd > 0 ? avgMonthlyCashPrev / avgExpYtd : 0;
+  // Cashflow margin: % of income kept after expenses, for both years
+  const ytdMargin  = ytdInc  > 0 ? Math.round((ytdCash  / ytdInc)  * 100) : null;
+  const prevMargin = prevInc > 0 ? Math.round((prevCash / prevInc) * 100) : null;
 
   const totalExpenses = categoryBreakdown.reduce((s, c) => s + Number(c._sum.amount ?? 0), 0);
   const totalIncSrc   = incomeBySource.reduce((s, c) => s + Number(c._sum.amount ?? 0), 0);
@@ -152,20 +146,13 @@ export default async function AnalyticsPage() {
               )}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                 {[
-                  { label: "Income",   curr: ytdInc,  prev: prevInc,  color: "text-[#4CC4A4]", invert: false, isCurrency: true  },
-                  { label: "Expenses", curr: ytdExp,  prev: prevExp,  color: "text-[#D4A254]", invert: true,  isCurrency: true  },
-                  { label: "Cashflow", curr: ytdCash, prev: prevCash, color: ytdCash >= 0 ? "text-[#3AB5A0]" : "text-[#D97070]", invert: false, isCurrency: true },
-                  { label: "Runway",   curr: ytdRunway, prev: prevRunway,
-                    color: ytdRunway >= 0.5 ? "text-[#4CC4A4]" : ytdRunway >= 0 ? "text-[#D4A254]" : "text-[#D97070]",
-                    invert: false, isCurrency: false },
+                  { label: "Income",   curr: ytdInc,  prev: prevInc,  color: "text-[#4CC4A4]", invert: false },
+                  { label: "Expenses", curr: ytdExp,  prev: prevExp,  color: "text-[#D4A254]", invert: true  },
+                  { label: "Cashflow", curr: ytdCash, prev: prevCash, color: ytdCash >= 0 ? "text-[#3AB5A0]" : "text-[#D97070]", invert: false },
                 ].map((item) => {
                   const change = prevInc > 0 ? pctChange(item.curr, item.prev) : null;
-                  const displayVal = item.isCurrency
-                    ? formatCurrency(item.curr)
-                    : `${item.curr >= 0 ? "+" : "−"}${Math.abs(item.curr).toFixed(1)} mo`;
-                  const prevDisplayVal = item.isCurrency
-                    ? `${formatCurrency(item.prev)} last yr`
-                    : `${item.prev >= 0 ? "+" : "−"}${Math.abs(item.prev).toFixed(1)} mo last yr`;
+                  const displayVal    = formatCurrency(item.curr);
+                  const prevDisplayVal = `${formatCurrency(item.prev)} last yr`;
                   return (
                     <div key={item.label} className="bg-[#1A3048] rounded-xl p-4">
                       <p className="label mb-1">{item.label}</p>
@@ -177,6 +164,29 @@ export default async function AnalyticsPage() {
                     </div>
                   );
                 })}
+                {/* Margin — shown as a fourth cell alongside the three currency metrics */}
+                <div className="bg-[#1A3048] rounded-xl p-4">
+                  <p className="label mb-1">Margin</p>
+                  <p className={`text-lg font-bold tabular-nums mb-1 ${
+                    ytdMargin === null ? "text-[#6A97B4]"
+                      : ytdMargin >= 30 ? "text-[#4CC4A4]"
+                      : ytdMargin >= 10 ? "text-[#D4A254]"
+                      : "text-[#D97070]"
+                  }`}>
+                    {ytdMargin !== null ? `${ytdMargin}%` : "—"}
+                  </p>
+                  <div className="flex items-center gap-2">
+                    {ytdMargin !== null && prevMargin !== null && prevInc > 0 && (
+                      <ChangeChip value={ytdMargin - prevMargin} />
+                    )}
+                    {prevMargin !== null && (
+                      <span className="text-xs text-[#6A97B4]">{prevMargin}% last yr</span>
+                    )}
+                    {ytdMargin !== null && prevMargin === null && (
+                      <span className="text-xs text-[#6A97B4]">of income kept</span>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
           </CollapsibleSection>
