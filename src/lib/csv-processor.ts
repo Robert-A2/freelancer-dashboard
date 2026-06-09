@@ -105,7 +105,7 @@ function detectDebitCreditColumns(headers: string[]): {
 
   const debitKeywords  = ["debit", "withdrawal", "money out", "paid out", "payments out", "out ", "amount out", "withdrawals"];
   const creditKeywords = ["credit", "deposit", "money in", "paid in", "payments in", "in ",  "amount in", "deposits"];
-  const drCrKeywords   = ["d/c", "cr/dr", "dr/cr", "type", "dc", "debit/credit indicator", "credit/debit"];
+  const drCrKeywords   = ["d/c", "cr/dr", "dr/cr", "dc", "debit/credit indicator", "credit/debit"];
 
   const findCol = (keywords: string[]) => {
     for (const kw of keywords) {
@@ -341,8 +341,12 @@ export function parseCsv(csvText: string, learnedRules?: LearnedRules, ownerName
       const indicator = (row[drCrCol] ?? "").toLowerCase().trim();
       if (indicator.startsWith("d") || indicator === "out" || indicator === "withdrawal" || indicator === "debit") {
         amount = -Math.abs(raw);
-      } else {
+      } else if (indicator.startsWith("c") || indicator === "in" || indicator === "deposit" || indicator === "credit") {
         amount = Math.abs(raw);
+      } else {
+        // Unrecognized indicator value (e.g. "CARD_PAYMENT", "TOPUP") — trust the
+        // original signed amount rather than forcing it positive.
+        amount = raw;
       }
       if (amount === 0) { skippedRows++; continue; }
 
