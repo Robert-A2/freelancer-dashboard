@@ -223,7 +223,7 @@ export default function ClientInsights({ data }: Props) {
               <div>
                 <p className="text-lg font-bold text-[#E8F0F8]">{topClient.name}</p>
                 <p className="text-xs text-[#6A97B4] mt-0.5">
-                  Client since {new Date(topClient.firstPayment).toLocaleDateString("en-IE", { month: "short", year: "numeric" })}
+                  Client since {new Date(topClient.firstPayment).toLocaleDateString("en-IE", { month: "short", year: "numeric", timeZone: "UTC" })}
                   {" · "}{monthsLabel(topClient.monthsActive)} relationship
                 </p>
               </div>

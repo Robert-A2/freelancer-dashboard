@@ -56,7 +56,7 @@ export default function RecentTransactions({ transactions, notable }: Props) {
               <p className="text-sm font-medium text-[#E8F0F8] truncate">{tx.description}</p>
               <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                 <p className="text-xs text-[#6A97B4]">
-                  {new Date(tx.date).toLocaleDateString("en-IE", { day: "numeric", month: "short" })}
+                  {new Date(tx.date).toLocaleDateString("en-IE", { day: "numeric", month: "short", timeZone: "UTC" })}
                 </p>
                 <span className="text-xs px-1.5 py-0.5 bg-[#1A3048] rounded text-[#7BA8C4] capitalize">
                   {tx.category}

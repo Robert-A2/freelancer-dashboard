@@ -44,15 +44,13 @@ export default async function AnalyticsPage() {
   });
 
   const now          = new Date();
-  const dataYear     = latestDataRecord?.year  ?? now.getFullYear();
+  const dataYear     = latestDataRecord?.year  ?? now.getUTCFullYear();
   const prevYear     = dataYear - 1;
-  // Use all 12 months when data year is complete; cap at latest month if current year
-  const dataMonthMax = latestDataRecord
-    ? (latestDataRecord.year < now.getFullYear() ? 12 : latestDataRecord.month)
-    : now.getMonth() + 1;
+  // Cap at the latest data month — never inflate to 12 for a past year
+  const dataMonthMax = latestDataRecord?.month ?? now.getUTCMonth() + 1;
 
-  // Last 12 months of the user's actual data (for income sources)
-  const incSince = new Date(dataYear - 1, latestDataRecord ? latestDataRecord.month - 1 : 0, 1);
+  // Exactly 12 months ending at the last data month — UTC midnight
+  const incSince = new Date(Date.UTC(dataYear, dataMonthMax - 12, 1));
 
   const [chartData, categoryInsights, categoryBreakdown, incomeBySource, ytdThis, ytdPrev, clientInsights, coverage, concentration, categorizationHealth] =
     await Promise.all([
@@ -144,6 +142,7 @@ export default async function AnalyticsPage() {
           <CollapsibleSection
             label="Year to date"
             title={`${dataYear} vs ${prevYear}`}
+            subtitle={`Jan – ${new Date(Date.UTC(dataYear, dataMonthMax - 1, 1)).toLocaleDateString("en-IE", { month: "short", timeZone: "UTC" })} (same window both years)`}
           >
             <div className="card">
               {prevInc === 0 && (

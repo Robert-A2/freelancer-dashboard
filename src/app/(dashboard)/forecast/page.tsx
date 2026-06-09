@@ -152,7 +152,7 @@ export default async function ForecastPage() {
   const trend  = TREND[intel.businessTrendDirection];
   const risk   = RISK_CONFIG[cashflowRisk];
 
-  const fmtDate = (d: Date) => d.toLocaleDateString("en-IE", { month: "short", year: "numeric" });
+  const fmtDate = (d: Date) => d.toLocaleDateString("en-IE", { month: "long", year: "numeric", timeZone: "UTC" });
 
   return (
     <div className="space-y-8 md:space-y-10">

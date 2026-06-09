@@ -11,8 +11,8 @@ export async function recalculateMonthlyAnalytics(userId: string): Promise<void>
 
   for (const tx of transactions) {
     const d = new Date(tx.transactionDate);
-    const month = d.getMonth() + 1;
-    const year  = d.getFullYear();
+    const month = d.getUTCMonth() + 1;
+    const year  = d.getUTCFullYear();
     const key   = `${year}-${month}`;
 
     if (!byMonth[key]) byMonth[key] = { month, year, income: 0, expenses: 0, savings: 0 };
@@ -129,24 +129,23 @@ export async function getHistoricalData(userId: string, months: number): Promise
 
   if (!firstRecord || !lastRecord) return [];
 
-  // End at the last month with data (never beyond it)
-  const end = new Date(lastRecord.year, lastRecord.month - 1, 1);
+  // End at the last month with data (never beyond it) — use UTC midnight
+  const end = new Date(Date.UTC(lastRecord.year, lastRecord.month - 1, 1));
 
   // Start: either months ago from end, or the very first data point
+  const firstStart = new Date(Date.UTC(firstRecord.year, firstRecord.month - 1, 1));
   const startFromMonthsAgo = months < 999
-    ? new Date(end.getFullYear(), end.getMonth() - months + 1, 1)
-    : new Date(firstRecord.year, firstRecord.month - 1, 1);
+    ? new Date(Date.UTC(end.getUTCFullYear(), end.getUTCMonth() - months + 1, 1))
+    : firstStart;
 
-  const since = startFromMonthsAgo > new Date(firstRecord.year, firstRecord.month - 1, 1)
-    ? startFromMonthsAgo
-    : new Date(firstRecord.year, firstRecord.month - 1, 1);
+  const since = startFromMonthsAgo > firstStart ? startFromMonthsAgo : firstStart;
 
   const records = await prisma.monthlyAnalytics.findMany({
     where: {
       userId,
       OR: [
-        { year: { gt: since.getFullYear() } },
-        { year: since.getFullYear(), month: { gte: since.getMonth() + 1 } },
+        { year: { gt: since.getUTCFullYear() } },
+        { year: since.getUTCFullYear(), month: { gte: since.getUTCMonth() + 1 } },
       ],
     },
     orderBy: [{ year: "asc" }, { month: "asc" }],
@@ -159,9 +158,9 @@ export async function getHistoricalData(userId: string, months: number): Promise
   const cursor = new Date(since);
 
   while (cursor <= end) {
-    const m     = cursor.getMonth() + 1;
-    const y     = cursor.getFullYear();
-    const label = cursor.toLocaleDateString("en-IE", { month: "short", year: "2-digit" });
+    const m     = cursor.getUTCMonth() + 1;
+    const y     = cursor.getUTCFullYear();
+    const label = cursor.toLocaleDateString("en-IE", { month: "short", year: "2-digit", timeZone: "UTC" });
     const rec   = recordMap.get(`${y}-${m}`);
 
     result.push({
@@ -174,7 +173,7 @@ export async function getHistoricalData(userId: string, months: number): Promise
       cashflow: rec ? Number(rec.netCashflow)   : 0,
     });
 
-    cursor.setMonth(cursor.getMonth() + 1);
+    cursor.setUTCMonth(cursor.getUTCMonth() + 1);
   }
 
   return result;
@@ -222,9 +221,10 @@ export async function getMonthlyComparison(userId: string) {
     return Math.round(((c - p) / Math.abs(p)) * 100);
   }
 
-  // Human-readable labels for the actual months being compared
-  const currLabel = new Date(currYear, currMonth - 1, 1).toLocaleDateString("en-IE", { month: "short", year: "numeric" });
-  const prevLabel = new Date(prevYear, prevMonth - 1, 1).toLocaleDateString("en-IE", { month: "short", year: "numeric" });
+  // Human-readable labels for the actual months being compared (UTC so the
+  // integer year/month values are never shifted by the server's local timezone)
+  const currLabel = new Date(Date.UTC(currYear, currMonth - 1, 1)).toLocaleDateString("en-IE", { month: "short", year: "numeric", timeZone: "UTC" });
+  const prevLabel = new Date(Date.UTC(prevYear, prevMonth - 1, 1)).toLocaleDateString("en-IE", { month: "short", year: "numeric", timeZone: "UTC" });
 
   return {
     current: curr,
@@ -296,8 +296,9 @@ export async function getCategoryInsights(userId: string): Promise<CategoryInsig
 
   for (const tx of expenses) {
     const amount = Number(tx.amount);
-    const year   = new Date(tx.transactionDate).getFullYear();
-    const month  = new Date(tx.transactionDate).getMonth() + 1;
+    const d      = new Date(tx.transactionDate);
+    const year   = d.getUTCFullYear();
+    const month  = d.getUTCMonth() + 1;
     const cat    = tx.category || "uncategorized";
 
     if (!catMap[cat]) catMap[cat] = { total: 0, yearly: {}, currentMonth: 0, previousMonth: 0 };
@@ -538,7 +539,7 @@ export async function getClientInsights(userId: string): Promise<ClientInsightsD
   // user's data ends months or years before the current date.
   const lastTxDate = allTxs[allTxs.length - 1].transactionDate ?? new Date();
   const refDate    = new Date(lastTxDate);
-  const thisYear   = refDate.getFullYear();
+  const thisYear   = refDate.getUTCFullYear();
   const prevYear   = thisYear - 1;
   const ninetyDaysAgo = new Date(refDate.getTime() - 90 * 86_400_000);
 
@@ -562,12 +563,12 @@ export async function getClientInsights(userId: string): Promise<ClientInsightsD
     const last   = sorted[sorted.length - 1].date;
     const daysSince = Math.floor((refDate.getTime() - last.getTime()) / 86_400_000);
 
-    const currYr = txs.filter(t => t.date.getFullYear() === thisYear).reduce((s, t) => s + t.amount, 0);
-    const prevYr = txs.filter(t => t.date.getFullYear() === prevYear).reduce((s, t) => s + t.amount, 0);
+    const currYr = txs.filter(t => t.date.getUTCFullYear() === thisYear).reduce((s, t) => s + t.amount, 0);
+    const prevYr = txs.filter(t => t.date.getUTCFullYear() === prevYear).reduce((s, t) => s + t.amount, 0);
     const yoyGrowth = prevYr > 0 ? Math.round(((currYr - prevYr) / prevYr) * 100) : null;
 
-    const isNew = first.getFullYear() === thisYear;
-    const uniqueMonths = new Set(txs.map(t => `${t.date.getFullYear()}-${t.date.getMonth()}`)).size;
+    const isNew = first.getUTCFullYear() === thisYear;
+    const uniqueMonths = new Set(txs.map(t => `${t.date.getUTCFullYear()}-${t.date.getUTCMonth()}`)).size;
     const isInactive  = txs.length >= 3 && uniqueMonths >= 2 && last < ninetyDaysAgo && !isNew;
 
     const firstMs = first.getTime();
@@ -602,7 +603,7 @@ export async function getClientInsights(userId: string): Promise<ClientInsightsD
   const monthPayerMap: Record<string, Set<string>> = {};
   for (const tx of allTxs) {
     const d = new Date(tx.transactionDate);
-    const mk = `${d.getFullYear()}-${d.getMonth()}`;
+    const mk = `${d.getUTCFullYear()}-${d.getUTCMonth()}`;
     const { name } = extractClientName(tx.description, tx.category);
     if (!monthPayerMap[mk]) monthPayerMap[mk] = new Set();
     monthPayerMap[mk].add(name.toUpperCase());
@@ -631,7 +632,9 @@ export async function getClientInsights(userId: string): Promise<ClientInsightsD
   };
 }
 
-// ── Data coverage ──────────────────────────────────────────────────────────────
+// ── Data coverage (single source of truth for analysis range) ─────────────────
+// All pages derive the displayed date range from this function, which queries
+// the Transaction table directly — never MonthlyAnalytics, never inferred dates.
 
 export interface DataCoverage {
   count: number;
@@ -639,6 +642,11 @@ export interface DataCoverage {
   latest: Date | null;
   years: number;
   months: number;
+  rangeLabel: string | null;   // "January 2023 – January 2024"
+}
+
+function fmtUTCMonth(date: Date): string {
+  return date.toLocaleDateString("en-IE", { month: "long", year: "numeric", timeZone: "UTC" });
 }
 
 export async function getDataCoverage(userId: string): Promise<DataCoverage> {
@@ -653,11 +661,24 @@ export async function getDataCoverage(userId: string): Promise<DataCoverage> {
   const earliest = agg._min.transactionDate;
   const latest   = agg._max.transactionDate;
 
-  if (!earliest || !latest || count === 0) return { count, earliest, latest, years: 0, months: 0 };
+  if (!earliest || !latest || count === 0) {
+    return { count, earliest: null, latest: null, years: 0, months: 0, rangeLabel: null };
+  }
 
   const msPerYear  = 1000 * 60 * 60 * 24 * 365.25;
   const msPerMonth = msPerYear / 12;
   const span       = latest.getTime() - earliest.getTime();
 
-  return { count, earliest, latest, years: Math.floor(span / msPerYear), months: Math.round(span / msPerMonth) };
+  const fromLabel = fmtUTCMonth(earliest);
+  const toLabel   = fmtUTCMonth(latest);
+  const rangeLabel = fromLabel === toLabel ? fromLabel : `${fromLabel} – ${toLabel}`;
+
+  return {
+    count,
+    earliest,
+    latest,
+    years: Math.floor(span / msPerYear),
+    months: Math.round(span / msPerMonth),
+    rangeLabel,
+  };
 }

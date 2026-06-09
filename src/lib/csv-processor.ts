@@ -22,6 +22,8 @@ export interface ProcessResult {
   skippedRows: number;
   currencies: string[];          // distinct currency symbols found (e.g. ["€","$"])
   hasMixedCurrencies: boolean;   // true when > 1 distinct currency detected
+  parsedEarliest: Date | null;   // earliest transaction date in this file
+  parsedLatest: Date | null;     // latest transaction date in this file
 }
 
 // ── BOM removal ───────────────────────────────────────────────────────────────
@@ -205,46 +207,67 @@ function parseRawAmount(raw: string): number {
   return sign * num;
 }
 
+// ── Month name → 0-indexed map ────────────────────────────────────────────────
+const MONTH_ABBR: Record<string, number> = {
+  jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5,
+  jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11,
+};
+
 // ── Date parsing ──────────────────────────────────────────────────────────────
-function parseDate(raw: string): Date | null {
+// ALL formats produce a UTC-midnight Date so month/year extraction is
+// timezone-independent everywhere downstream (getUTCMonth, getUTCFullYear).
+export function parseDate(raw: string): Date | null {
   if (!raw?.trim()) return null;
   const s = raw.trim();
 
-  // ISO 8601: YYYY-MM-DD or YYYY/MM/DD
-  const iso = new Date(s);
-  if (!isNaN(iso.getTime()) && s.length >= 8) return iso;
-
-  // DD/MM/YYYY  DD-MM-YYYY  DD.MM.YYYY
-  const dmy = s.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{2,4})$/);
-  if (dmy) {
-    const [, d, m, y] = dmy;
-    const year = y.length === 2 ? 2000 + parseInt(y) : parseInt(y);
-    const date = new Date(year, parseInt(m) - 1, parseInt(d));
-    if (!isNaN(date.getTime())) return date;
+  // YYYY-MM-DD (ISO 8601, with optional time component) — keep date part only
+  const isoDate = s.match(/^(\d{4})[-\/](\d{2})[-\/](\d{2})/);
+  if (isoDate) {
+    const date = new Date(Date.UTC(+isoDate[1], +isoDate[2] - 1, +isoDate[3]));
+    return isNaN(date.getTime()) ? null : date;
   }
 
-  // MM/DD/YYYY (US format — only try if day > 12 would be invalid as month)
+  // DD/MM/YYYY  DD-MM-YYYY  DD.MM.YYYY
+  // Validates that month field is 1-12 so US-format dates (e.g. "01/13/2023")
+  // fall through to the MM/DD/YYYY branch below rather than wrapping.
+  const dmy = s.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{2,4})$/);
+  if (dmy) {
+    const [, dd, mm, yy] = dmy;
+    const year = yy.length === 2 ? 2000 + +yy : +yy;
+    if (+mm >= 1 && +mm <= 12 && +dd >= 1 && +dd <= 31) {
+      const date = new Date(Date.UTC(year, +mm - 1, +dd));
+      if (!isNaN(date.getTime())) return date;
+    }
+  }
+
+  // MM/DD/YYYY (US format) — only reached when first field > 12
   const mdy = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
   if (mdy) {
-    const [, m, d, y] = mdy;
-    if (parseInt(m) <= 12) {
-      const date = new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
+    const [, mm, dd, yy] = mdy;
+    if (+mm <= 12 && +dd >= 1 && +dd <= 31) {
+      const date = new Date(Date.UTC(+yy, +mm - 1, +dd));
       if (!isNaN(date.getTime())) return date;
     }
   }
 
   // "01 Jan 2024" or "01 January 2024"
-  const dmy_text = s.match(/^(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})$/);
-  if (dmy_text) {
-    const date = new Date(`${dmy_text[2]} ${dmy_text[1]}, ${dmy_text[3]}`);
-    if (!isNaN(date.getTime())) return date;
+  const dmyText = s.match(/^(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})$/);
+  if (dmyText) {
+    const month = MONTH_ABBR[dmyText[2].toLowerCase().slice(0, 3)];
+    if (month !== undefined) {
+      const date = new Date(Date.UTC(+dmyText[3], month, +dmyText[1]));
+      return isNaN(date.getTime()) ? null : date;
+    }
   }
 
   // "Jan 01, 2024" or "January 01, 2024"
-  const mdy_text = s.match(/^([A-Za-z]+)\s+(\d{1,2}),?\s+(\d{4})$/);
-  if (mdy_text) {
-    const date = new Date(`${mdy_text[1]} ${mdy_text[2]}, ${mdy_text[3]}`);
-    if (!isNaN(date.getTime())) return date;
+  const mdyText = s.match(/^([A-Za-z]+)\s+(\d{1,2}),?\s+(\d{4})$/);
+  if (mdyText) {
+    const month = MONTH_ABBR[mdyText[1].toLowerCase().slice(0, 3)];
+    if (month !== undefined) {
+      const date = new Date(Date.UTC(+mdyText[3], month, +mdyText[2]));
+      return isNaN(date.getTime()) ? null : date;
+    }
   }
 
   return null;
@@ -269,7 +292,7 @@ export function parseCsv(csvText: string, learnedRules?: LearnedRules, ownerName
 
   const rows = (result as Papa.ParseResult<RawRow>).data;
   if (!rows.length) {
-    return { transactions: [], totalRows: 0, validRows: 0, skippedRows: 0, currencies: [], hasMixedCurrencies: false };
+    return { transactions: [], totalRows: 0, validRows: 0, skippedRows: 0, currencies: [], hasMixedCurrencies: false, parsedEarliest: null, parsedLatest: null };
   }
 
   const headers = Object.keys(rows[0]);
@@ -349,6 +372,20 @@ export function parseCsv(csvText: string, learnedRules?: LearnedRules, ownerName
   }
 
   const currencies = Array.from(currencySymbols);
+
+  // Compute actual date range from parsed transactions
+  let parsedEarliest: Date | null = null;
+  let parsedLatest: Date | null = null;
+  if (transactions.length > 0) {
+    const timestamps = transactions.map(t => t.transactionDate.getTime());
+    parsedEarliest = new Date(Math.min(...timestamps));
+    parsedLatest   = new Date(Math.max(...timestamps));
+    console.log(
+      `[CSV Parser] ${transactions.length} transactions parsed, ${skippedRows} skipped — ` +
+      `range: ${parsedEarliest.toISOString().slice(0, 10)} to ${parsedLatest.toISOString().slice(0, 10)}`
+    );
+  }
+
   return {
     transactions,
     totalRows: rows.length,
@@ -356,5 +393,7 @@ export function parseCsv(csvText: string, learnedRules?: LearnedRules, ownerName
     skippedRows,
     currencies,
     hasMixedCurrencies: currencies.length > 1,
+    parsedEarliest,
+    parsedLatest,
   };
 }

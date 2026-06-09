@@ -62,7 +62,7 @@ export async function generateForecast(userId: string): Promise<ForecastResult |
   // over-correcting on limited data.
   if (records.length >= 24) {
     const now       = new Date();
-    const nextMonthNum = ((now.getMonth() + 1) % 12) + 1; // 1–12
+    const nextMonthNum = ((now.getUTCMonth() + 1) % 12) + 1; // 1–12
 
     const incomeSeasonMap   = buildSeasonalMap(records.map(r => ({ month: r.month, value: Number(r.totalIncome) })));
     const expenseSeasonMap  = buildSeasonalMap(records.map(r => ({ month: r.month, value: Number(r.totalExpenses) })));
@@ -93,10 +93,11 @@ export async function generateForecast(userId: string): Promise<ForecastResult |
     n >= 12 ? "high" : n >= 4 ? "medium" : "low";
 
   const now = new Date();
-  const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+  const nextMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
   const forecastPeriod = nextMonth.toLocaleDateString("en-IE", {
     month: "long",
     year: "numeric",
+    timeZone: "UTC",
   });
 
   // Upsert the forecast for this period (re-running within the same month

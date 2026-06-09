@@ -197,9 +197,11 @@ export default function CsvUploader() {
   if (stage.status === "done") {
     const { result, fileName } = stage;
 
+    // Always use timeZone: "UTC" so dates stored as UTC midnight never
+    // display as the previous day/month in the user's local timezone.
     const fmt = (iso: string | null) =>
       iso
-        ? new Date(iso).toLocaleDateString("en-IE", { month: "short", year: "numeric" })
+        ? new Date(iso).toLocaleDateString("en-IE", { month: "long", year: "numeric", timeZone: "UTC" })
         : null;
 
     const dateFrom = fmt(result.dateRangeFrom);
@@ -239,10 +241,14 @@ export default function CsvUploader() {
           <div className="bg-[#1A3048] rounded-xl px-4 py-3 space-y-1.5">
             {dateRangeLabel && (
               <div className="flex items-center justify-between text-sm">
-                <span className="text-[#7BA8C4]">Date range</span>
+                <span className="text-[#7BA8C4]">Analysis range</span>
                 <span className="font-medium text-[#E8F0F8]">{dateRangeLabel}</span>
               </div>
             )}
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-[#7BA8C4]">Transactions imported</span>
+              <span className="font-medium text-[#4CC4A4]">{result.importedRows.toLocaleString()}</span>
+            </div>
             {result.categoriesDetected > 0 && (
               <div className="flex items-center justify-between text-sm">
                 <span className="text-[#7BA8C4]">Categories detected</span>

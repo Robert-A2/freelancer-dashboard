@@ -65,9 +65,10 @@ const avg = (arr: number[]): number =>
 
 // e.g. monthLabel(2024, 3) → "March 2024"
 function monthLabel(year: number, month: number, style: "long" | "short" = "long"): string {
-  return new Date(year, month - 1, 1).toLocaleDateString("en-IE", {
+  return new Date(Date.UTC(year, month - 1, 1)).toLocaleDateString("en-IE", {
     month: style,
     year: "numeric",
+    timeZone: "UTC",
   });
 }
 
@@ -384,12 +385,10 @@ export function buildHistoricalInsights(
   {
     const incomeGaps = history.filter((h) => h.income === 0 && h.expenses > 0);
     if (incomeGaps.length >= 1 && active.length >= 6) {
-      const recentGaps = incomeGaps.filter((h) => {
-        const d = new Date(h.year, h.monthNum - 1);
-        const twelveMonthsAgo = new Date();
-        twelveMonthsAgo.setFullYear(twelveMonthsAgo.getFullYear() - 1);
-        return d >= twelveMonthsAgo;
-      });
+      const lastOrd = lastMonth ? lastMonth.year * 12 + lastMonth.monthNum : 0;
+      const recentGaps = lastMonth ? incomeGaps.filter((h) => {
+        return h.year * 12 + h.monthNum >= lastOrd - 11;
+      }) : [];
       const totalGaps = incomeGaps.length;
       const avgExpInGap = avg(incomeGaps.map((h) => h.expenses));
 
@@ -1079,14 +1078,12 @@ export function generateDashboardIntelligence(
   const uncatPctVal = uncatForRisk && totalExpAllTime > 0
     ? Math.round((uncatForRisk.totalAllTime / totalExpAllTime) * 100) : 0;
 
-  // Recent income gaps (last 12 months)
-  const recentIncomeGaps = history.filter((h) => {
+  // Recent income gaps — anchored to last data point, not wall-clock today
+  const lastOrdinal = lastMonth ? lastMonth.year * 12 + lastMonth.monthNum : 0;
+  const recentIncomeGaps = lastMonth ? history.filter((h) => {
     if (h.income !== 0 || h.expenses === 0) return false;
-    const d = new Date(h.year, h.monthNum - 1);
-    const twelveMonthsAgo = new Date();
-    twelveMonthsAgo.setFullYear(twelveMonthsAgo.getFullYear() - 1);
-    return d >= twelveMonthsAgo;
-  });
+    return h.year * 12 + h.monthNum >= lastOrdinal - 11;
+  }) : [];
 
   if (riskIncDir === "down" && riskExpDir === "up") {
     biggestRisk = "Income is declining while expenses are rising. The gap between them is widening.";

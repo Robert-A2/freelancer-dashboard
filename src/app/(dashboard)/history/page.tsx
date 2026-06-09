@@ -31,8 +31,8 @@ export default async function HistoryPage({ searchParams }: { searchParams: Prom
   const skip       = (page - 1) * limit;
 
   let dateFilter: { gte?: Date; lt?: Date } | undefined;
-  if (year && month)  dateFilter = { gte: new Date(year, month - 1, 1), lt: new Date(year, month, 1) };
-  else if (year)      dateFilter = { gte: new Date(year, 0, 1), lt: new Date(year + 1, 0, 1) };
+  if (year && month)  dateFilter = { gte: new Date(Date.UTC(year, month - 1, 1)), lt: new Date(Date.UTC(year, month, 1)) };
+  else if (year)      dateFilter = { gte: new Date(Date.UTC(year, 0, 1)), lt: new Date(Date.UTC(year + 1, 0, 1)) };
 
   const where = {
     userId: user.id,
@@ -67,7 +67,7 @@ export default async function HistoryPage({ searchParams }: { searchParams: Prom
   let displayTransactions: typeof pagedTransactions;
 
   if (useMonthFilter) {
-    const filtered = allTxForMonthFilter.filter((tx) => new Date(tx.transactionDate).getMonth() + 1 === month);
+    const filtered = allTxForMonthFilter.filter((tx) => new Date(tx.transactionDate).getUTCMonth() + 1 === month);
     displayTotal = filtered.length;
     displayTransactions = filtered.slice(skip, skip + limit);
   } else {

@@ -40,7 +40,7 @@ export default function TransactionList({ transactions }: { transactions: TxRow[
               <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                 <p className="text-xs text-[#6A97B4]">
                   {new Date(tx.transactionDate).toLocaleDateString("en-IE", {
-                    day: "numeric", month: "short", year: "numeric",
+                    day: "numeric", month: "short", year: "numeric", timeZone: "UTC",
                   })}
                 </p>
                 <RecategorizeButton

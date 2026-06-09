@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
     }
 
     // ── Parse CSV ──────────────────────────────────────────────────────────
-    const { transactions, totalRows, validRows, skippedRows, currencies, hasMixedCurrencies } = parseCsv(csvText, learnedRules, ownerName);
+    const { transactions, totalRows, validRows, skippedRows, currencies, hasMixedCurrencies, parsedEarliest, parsedLatest } = parseCsv(csvText, learnedRules, ownerName);
 
     if (transactions.length === 0) {
       await cleanupStorage(admin, storagePath);
@@ -149,14 +149,17 @@ export async function POST(request: NextRequest) {
     // ── Clean up the file from storage ─────────────────────────────────────
     await cleanupStorage(admin, storagePath);
 
-    // Compute date range and category breakdown from the imported batch
-    const importedTxs = transactions.slice(0, importedRows + duplicateRows); // all valid
-    const dates = importedTxs.map((tx) => tx.transactionDate.getTime());
-    const dateRangeFrom = dates.length ? new Date(Math.min(...dates)).toISOString() : null;
-    const dateRangeTo = dates.length ? new Date(Math.max(...dates)).toISOString() : null;
+    console.log(
+      `[Upload] Import complete — ${importedRows} new rows, ${duplicateRows} duplicates. ` +
+      `File range: ${parsedEarliest?.toISOString().slice(0, 10) ?? "n/a"} to ${parsedLatest?.toISOString().slice(0, 10) ?? "n/a"}`
+    );
+
+    // Date range derived from parsedEarliest/Latest (computed by csv-processor from actual parsed dates)
+    const dateRangeFrom = parsedEarliest?.toISOString() ?? null;
+    const dateRangeTo   = parsedLatest?.toISOString()   ?? null;
 
     const categoryCounts: Record<string, number> = {};
-    for (const tx of importedTxs) {
+    for (const tx of transactions) {
       categoryCounts[tx.category] = (categoryCounts[tx.category] ?? 0) + 1;
     }
     const categoriesDetected = Object.keys(categoryCounts).filter((c) => c !== "uncategorized").length;

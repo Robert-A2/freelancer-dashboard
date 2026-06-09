@@ -26,8 +26,9 @@ export function pct(value: number, total: number): number {
 }
 
 export function monthLabel(month: number, year: number): string {
-  return new Date(year, month - 1, 1).toLocaleDateString("en-IE", {
+  return new Date(Date.UTC(year, month - 1, 1)).toLocaleDateString("en-IE", {
     month: "short",
     year: "2-digit",
+    timeZone: "UTC",
   });
 }

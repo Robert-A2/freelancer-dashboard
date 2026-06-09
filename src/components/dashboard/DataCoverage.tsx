@@ -10,16 +10,10 @@ function formatSpan(years: number, months: number): string {
   return `${months} month${months !== 1 ? "s" : ""}`;
 }
 
-function formatDate(date: Date): string {
-  return date.toLocaleDateString("en-IE", { month: "short", year: "numeric" });
-}
-
 export default function DataCoverage({ coverage }: Props) {
   if (coverage.count === 0) return null;
 
   const span = formatSpan(coverage.years, coverage.months);
-  const from = coverage.earliest ? formatDate(coverage.earliest) : null;
-  const to   = coverage.latest   ? formatDate(coverage.latest)   : null;
 
   return (
     <div className="flex items-start gap-3 px-4 py-3 bg-[#4CC4A40A] border border-[#4CC4A420] rounded-xl">
@@ -32,8 +26,8 @@ export default function DataCoverage({ coverage }: Props) {
         <span className="text-sm font-semibold text-[#4CC4A4]">
           {span} of history · {coverage.count.toLocaleString()} transactions
         </span>
-        {from && to && (
-          <span className="text-xs text-[#6A97B4]">{from} – {to}</span>
+        {coverage.rangeLabel && (
+          <span className="text-xs text-[#6A97B4]">Analysis range: {coverage.rangeLabel}</span>
         )}
       </div>
     </div>
