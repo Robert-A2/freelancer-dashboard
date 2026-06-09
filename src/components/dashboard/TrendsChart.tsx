@@ -79,7 +79,6 @@ export default function TrendsChart({ data, trajectoryInsight, trajectoryDetails
             contentStyle={TOOLTIP_STYLE}
             formatter={(value: number) => formatCurrency(value)}
             labelStyle={{ color: "#E8F0F8", fontWeight: 600 }}
-            itemStyle={{ color: "#E8F0F8" }}
           />
           <Legend wrapperStyle={{ paddingTop: "1rem", fontSize: 12, color: "#7BA8C4" }} />
           <Line type="monotone" dataKey="income"   stroke="#4CC4A4" strokeWidth={2}   dot={false} name="Income"   />

@@ -146,6 +146,7 @@ export default function CashflowChart({ data, hideHeader = false }: Props) {
             contentStyle={TOOLTIP_STYLE}
             formatter={(value: number) => [formatCurrency(value), "Cashflow"]}
             labelStyle={{ color: "#E8F0F8", fontWeight: 600 }}
+            itemStyle={{ color: "#A8C6E0" }}
           />
           <Bar dataKey="cashflow" name="Cashflow" radius={[3, 3, 0, 0]}>
             {sliced.map((entry, i) => (
