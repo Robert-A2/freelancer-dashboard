@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import type { InsightCategory, RankedInsight } from "@/lib/intelligence-engine";
 import InsightCard, { CATEGORY_META } from "@/components/dashboard/InsightCard";
 
@@ -15,6 +16,8 @@ const TOP_COUNT = 5;
 const CATEGORY_ORDER: InsightCategory[] = ["growth", "cashflow", "spending", "seasonality", "clients"];
 
 export default function FinancialStory({ insights, totalMonths }: Props) {
+  const t = useTranslations("analytics.storySection");
+  const tCategories = useTranslations("insightCategories");
   const [expanded, setExpanded] = useState(false);
 
   if (insights.length === 0) return null;
@@ -27,8 +30,7 @@ export default function FinancialStory({ insights, totalMonths }: Props) {
   return (
     <div>
       <p className="text-sm text-[#7BA8C4] mb-4">
-        Drawn from {totalMonths} month{totalMonths !== 1 ? "s" : ""} of uploaded history — the most decision-relevant
-        insights surface first, with the full breakdown available below.
+        {t("intro", { months: totalMonths })}
       </p>
 
       {!expanded ? (
@@ -45,9 +47,9 @@ export default function FinancialStory({ insights, totalMonths }: Props) {
               <div key={category}>
                 <div className="flex items-center gap-2 mb-3">
                   <span className="text-sm" style={{ color: meta.accent }}>{meta.icon}</span>
-                  <h4 className="text-sm font-semibold text-[#E8F0F8]">{meta.label}</h4>
+                  <h4 className="text-sm font-semibold text-[#E8F0F8]">{tCategories(category)}</h4>
                   <span className="text-xs text-[#6A97B4]">
-                    {items.length} insight{items.length !== 1 ? "s" : ""}
+                    {t("insightsCount", { count: items.length })}
                   </span>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -68,14 +70,14 @@ export default function FinancialStory({ insights, totalMonths }: Props) {
         >
           {expanded ? (
             <>
-              Show less
+              {t("showLess")}
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 15.75l7.5-7.5 7.5 7.5" />
               </svg>
             </>
           ) : (
             <>
-              Show full breakdown by category
+              {t("showFullBreakdown")}
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
               </svg>

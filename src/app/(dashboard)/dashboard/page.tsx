@@ -1,5 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import { getTranslations, getLocale } from "next-intl/server";
+import { INTL_LOCALES, type Locale } from "@/i18n/locales";
 import {
   getDashboardSummary,
   getHistoricalData,
@@ -31,6 +33,9 @@ export default async function DashboardPage({
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
+
+  const t = await getTranslations("dashboard");
+  const locale = (await getLocale()) as Locale;
 
   const params = await searchParams;
 
@@ -99,7 +104,8 @@ export default async function DashboardPage({
     categoryInsights.topExpenseCategories,
     categoryInsights.yearlySnapshots,
     categoryInsights.seasonality,
-    concentration
+    concentration,
+    locale
   );
 
   const hasData = totalTx > 0;
@@ -135,7 +141,8 @@ export default async function DashboardPage({
     categoryInsights.topExpenseCategories,
     categoryInsights.yearlySnapshots,
     categoryInsights.seasonality,
-    concentration
+    concentration,
+    locale
   );
 
   return (
@@ -145,7 +152,7 @@ export default async function DashboardPage({
         <div>
           <div className="flex items-center gap-2.5 mb-0.5">
             <h1 className="text-2xl font-bold">
-              {firstName ? `Welcome back, ${firstName}.` : "Dashboard"}
+              {firstName ? t("welcomeBack", { name: firstName }) : t("title")}
             </h1>
             {hasData && (
               <Link href="/forecast" className={`hidden sm:inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full transition-opacity hover:opacity-80 ${
@@ -154,19 +161,19 @@ export default async function DashboardPage({
                                                     "bg-[#D4A25415] text-[#D4A254]"
               }`}>
                 <span className="w-1.5 h-1.5 rounded-full bg-current" />
-                {intel.healthStatus === "healthy" ? "Healthy" : intel.healthStatus === "watch" ? "Watch closely" : "At Risk"}
+                {intel.healthStatus === "healthy" ? t("health.healthy") : intel.healthStatus === "watch" ? t("health.watch") : t("health.atRisk")}
               </Link>
             )}
           </div>
           <p className="text-[#7BA8C4] text-sm">
             {coverage.latest
-              ? `Showing data through ${coverage.latest.toLocaleDateString("en-IE", { month: "long", year: "numeric", timeZone: "UTC" })}`
-              : "No data uploaded yet"}
+              ? t("showingDataThrough", { date: coverage.latest.toLocaleDateString(INTL_LOCALES[locale], { month: "long", year: "numeric", timeZone: "UTC" }) })
+              : t("noDataYet")}
           </p>
         </div>
         {hasData && (
           <p className="text-xs text-[#6A97B4] flex-shrink-0 mt-1">
-            {totalTx.toLocaleString()} transactions · {nonZeroMonths} months
+            {t("transactionsMonths", { transactions: totalTx, months: nonZeroMonths })}
           </p>
         )}
       </div>
@@ -175,10 +182,10 @@ export default async function DashboardPage({
       {dataIsStale && (
         <div className="flex items-center justify-between gap-4 px-4 py-3 bg-[#D4A2540A] border border-[#D4A25425] rounded-xl">
           <p className="text-sm text-[#D4A254]">
-            Your data is {daysSinceImport} days old. Upload last month&apos;s statement to keep insights accurate.
+            {t("staleData.message", { days: daysSinceImport ?? 0 })}
           </p>
           <Link href="/upload" className="text-xs font-semibold text-[#D4A254] hover:text-[#E8F0F8] transition-colors flex-shrink-0 bg-[#D4A25420] px-3 py-1.5 rounded-lg">
-            Upload →
+            {t("staleData.cta")}
           </Link>
         </div>
       )}
@@ -200,13 +207,12 @@ export default async function DashboardPage({
       {!hasData ? (
         <div className="card text-center py-16">
           <div className="text-5xl mb-4">📊</div>
-          <h2 className="text-xl font-semibold mb-2">Built for freelancers</h2>
+          <h2 className="text-xl font-semibold mb-2">{t("emptyState.heading")}</h2>
           <p className="text-[#6A97B4] mb-6 max-w-sm mx-auto">
-            Upload your bank statement CSV to get cashflow clarity, intelligent insights,
-            and forecasts designed specifically for freelance income patterns.
+            {t("emptyState.body")}
           </p>
           <Link href="/upload" className="btn-primary inline-block">
-            Upload CSV
+            {t("emptyState.cta")}
           </Link>
         </div>
       ) : (

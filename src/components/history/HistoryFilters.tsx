@@ -2,6 +2,7 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useTransition, useState, useEffect, useRef } from "react";
+import { useTranslations } from "next-intl";
 
 interface Props {
   categories: string[];
@@ -14,18 +15,16 @@ interface Props {
   activeConfidence: string;
 }
 
-const MONTHS = [
-  { value: "1", label: "Jan" }, { value: "2", label: "Feb" }, { value: "3", label: "Mar" },
-  { value: "4", label: "Apr" }, { value: "5", label: "May" }, { value: "6", label: "Jun" },
-  { value: "7", label: "Jul" }, { value: "8", label: "Aug" }, { value: "9", label: "Sep" },
-  { value: "10", label: "Oct" }, { value: "11", label: "Nov" }, { value: "12", label: "Dec" },
-];
+const MONTH_KEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"] as const;
 
 export default function HistoryFilters({
   categories, years, activeType, activeCategory, activeYear, activeMonth, activeSearch, activeConfidence,
 }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const t = useTranslations("history.filters");
+  const tc = useTranslations("common");
+  const tCategories = useTranslations("categories");
   const [, startTransition] = useTransition();
   const [searchValue, setSearchValue] = useState(activeSearch);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -53,12 +52,20 @@ export default function HistoryFilters({
   const hasFilters = activeType || activeCategory || activeYear || activeMonth || activeSearch || activeConfidence;
   const selectBase = "bg-[#132537] border border-[#243F5E] rounded-xl px-3 py-2.5 text-sm text-[#E8F0F8] focus:outline-none focus:border-[#3AB5A0] capitalize min-h-[44px] w-full";
 
+  const TYPE_FILTERS = [
+    { label: t("all"), value: "" },
+    { label: t("income"), value: "income" },
+    { label: t("expenses"), value: "expense" },
+    { label: t("savings"), value: "savings" },
+    { label: t("internal"), value: "transfer" },
+  ];
+
   return (
     <div className="space-y-3">
       <div className="relative">
         <input
           type="text"
-          placeholder="Search transactions…"
+          placeholder={t("searchPlaceholder")}
           value={searchValue}
           className="input pr-10"
           onChange={(e) => handleSearchChange(e.target.value)}
@@ -67,11 +74,7 @@ export default function HistoryFilters({
       </div>
 
       <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide sm:flex-wrap sm:overflow-visible sm:pb-0">
-        {[
-          { label: "All", value: "" }, { label: "Income", value: "income" },
-          { label: "Expenses", value: "expense" }, { label: "Savings", value: "savings" },
-          { label: "Internal", value: "transfer" },
-        ].map((f) => (
+        {TYPE_FILTERS.map((f) => (
           <button
             key={f.value}
             onClick={() => update("type", f.value)}
@@ -92,32 +95,32 @@ export default function HistoryFilters({
               : "bg-[#1A3048] text-[#7BA8C4] hover:text-[#E8F0F8]"
           }`}
         >
-          Needs review
+          {t("needsReview")}
         </button>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
         {categories.length > 0 && (
           <select value={activeCategory} onChange={(e) => update("category", e.target.value)} className={selectBase}>
-            <option value="">All categories</option>
-            {categories.map((c) => <option key={c} value={c} className="capitalize">{c}</option>)}
+            <option value="">{t("allCategories")}</option>
+            {categories.map((c) => <option key={c} value={c} className="normal-case">{tCategories.has(c) ? tCategories(c) : c}</option>)}
           </select>
         )}
         {years.length > 1 && (
           <select value={activeYear} onChange={(e) => update("year", e.target.value)} className={selectBase}>
-            <option value="">All years</option>
+            <option value="">{t("allYears")}</option>
             {years.map((y) => <option key={y} value={String(y)}>{y}</option>)}
           </select>
         )}
         <select value={activeMonth} onChange={(e) => update("month", e.target.value)} className={selectBase}>
-          <option value="">All months</option>
-          {MONTHS.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
+          <option value="">{t("allMonths")}</option>
+          {MONTH_KEYS.map((m) => <option key={m} value={m}>{tc(`months.${m}`)}</option>)}
         </select>
       </div>
 
       {hasFilters && (
         <button onClick={clearAll} className="text-sm text-[#6A97B4] hover:text-[#7BA8C4] transition-colors min-h-[44px] px-2">
-          Clear all filters
+          {t("clearAll")}
         </button>
       )}
     </div>

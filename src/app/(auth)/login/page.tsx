@@ -3,21 +3,22 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { createClient } from "@/lib/supabase/client";
 
-function friendlyError(raw: string): string {
+function friendlyError(raw: string, t: ReturnType<typeof useTranslations<"auth.login.errors">>): string {
   const msg = raw.toLowerCase();
   if (msg.includes("invalid login credentials") || msg.includes("invalid credentials"))
-    return "Email or password is incorrect. Please try again.";
+    return t("invalidCredentials");
   if (msg.includes("email not confirmed"))
-    return "Please check your inbox and confirm your email address before signing in.";
+    return t("emailNotConfirmed");
   if (msg.includes("too many requests") || msg.includes("rate limit"))
-    return "Too many attempts. Please wait a moment and try again.";
+    return t("tooManyRequests");
   if (msg.includes("user not found"))
-    return "No account found with this email address.";
+    return t("userNotFound");
   if (msg.includes("network") || msg.includes("fetch"))
-    return "Connection problem. Check your internet and try again.";
-  return "Something went wrong. Please try again.";
+    return t("network");
+  return t("generic");
 }
 
 function Spinner() {
@@ -30,10 +31,11 @@ function Spinner() {
 }
 
 function BrandHeader() {
+  const tc = useTranslations("common");
   return (
     <div className="mb-8 text-center">
-      <h1 className="text-2xl font-bold text-[#E8F0F8]">Freelancer OS</h1>
-      <p className="text-[#7BA8C4] text-sm mt-1">Financial clarity built for freelancers</p>
+      <h1 className="text-2xl font-bold text-[#E8F0F8]">{tc("appName")}</h1>
+      <p className="text-[#7BA8C4] text-sm mt-1">{tc("tagline")}</p>
     </div>
   );
 }
@@ -42,6 +44,9 @@ type Mode = "signin" | "forgot" | "sent";
 
 export default function LoginPage() {
   const router = useRouter();
+  const t = useTranslations("auth.login");
+  const tErrors = useTranslations("auth.login.errors");
+  const tAuth = useTranslations("auth");
 
   const [mode, setMode]             = useState<Mode>("signin");
   const [email, setEmail]           = useState("");
@@ -57,7 +62,7 @@ export default function LoginPage() {
     setLoading(true);
     const supabase = createClient();
     const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) { setError(friendlyError(error.message)); setLoading(false); return; }
+    if (error) { setError(friendlyError(error.message, tErrors)); setLoading(false); return; }
     router.push("/dashboard");
     router.refresh();
   }
@@ -71,7 +76,7 @@ export default function LoginPage() {
       redirectTo: `${window.location.origin}/reset-password`,
     });
     setLoading(false);
-    if (error) { setError(friendlyError(error.message)); return; }
+    if (error) { setError(friendlyError(error.message, tErrors)); return; }
     setMode("sent");
   }
 
@@ -87,19 +92,19 @@ export default function LoginPage() {
               </svg>
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-[#E8F0F8]">Check your email</h2>
+              <h2 className="text-lg font-semibold text-[#E8F0F8]">{t("sent.heading")}</h2>
               <p className="text-sm text-[#7BA8C4] mt-1">
-                We sent a password reset link to{" "}
+                {t("sent.body")}{" "}
                 <span className="text-[#E8F0F8] font-medium">{resetEmail}</span>
               </p>
             </div>
             <p className="text-xs text-[#6A97B4]">
-              Didn&apos;t receive it? Check your spam folder or{" "}
+              {t("sent.noReceive")}{" "}
               <button
                 onClick={() => { setMode("forgot"); setError(""); }}
                 className="text-[#3AB5A0] hover:underline"
               >
-                try again
+                {t("sent.tryAgain")}
               </button>
               .
             </p>
@@ -108,7 +113,7 @@ export default function LoginPage() {
                 onClick={() => { setMode("signin"); setError(""); }}
                 className="text-sm text-[#6A97B4] hover:text-[#E8F0F8] transition-colors"
               >
-                ← Back to sign in
+                {t("sent.back")}
               </button>
             </div>
           </div>
@@ -123,14 +128,14 @@ export default function LoginPage() {
         <div className="w-full max-w-sm">
           <BrandHeader />
           <div className="card">
-            <h2 className="text-lg font-semibold mb-1">Reset your password</h2>
+            <h2 className="text-lg font-semibold mb-1">{t("forgot.heading")}</h2>
             <p className="text-sm text-[#7BA8C4] mb-6">
-              Enter your email and we&apos;ll send you a link to create a new password.
+              {t("forgot.subtitle")}
             </p>
 
             <form onSubmit={handleForgotPassword} className="space-y-5">
               <div>
-                <label className="label block mb-2">Email</label>
+                <label className="label block mb-2">{t("email")}</label>
                 <input
                   type="email"
                   className="input"
@@ -150,9 +155,9 @@ export default function LoginPage() {
               <button type="submit" className="btn-primary w-full" disabled={loading}>
                 {loading ? (
                   <span className="flex items-center justify-center gap-2">
-                    <Spinner /> Sending link…
+                    <Spinner /> {t("forgot.sendingLink")}
                   </span>
-                ) : "Send reset link"}
+                ) : t("forgot.sendLink")}
               </button>
             </form>
 
@@ -161,7 +166,7 @@ export default function LoginPage() {
                 onClick={() => { setMode("signin"); setError(""); }}
                 className="text-sm text-[#6A97B4] hover:text-[#E8F0F8] transition-colors"
               >
-                ← Back to sign in
+                {t("forgot.back")}
               </button>
             </div>
           </div>
@@ -176,11 +181,11 @@ export default function LoginPage() {
         <BrandHeader />
 
         <div className="card">
-          <h2 className="text-lg font-semibold mb-6">Sign in</h2>
+          <h2 className="text-lg font-semibold mb-6">{t("heading")}</h2>
 
           <form onSubmit={handleLogin} className="space-y-5">
             <div>
-              <label className="label block mb-2">Email</label>
+              <label className="label block mb-2">{t("email")}</label>
               <input
                 type="email"
                 className="input"
@@ -194,13 +199,13 @@ export default function LoginPage() {
 
             <div>
               <div className="flex items-center justify-between mb-2">
-                <label className="label">Password</label>
+                <label className="label">{t("password")}</label>
                 <button
                   type="button"
                   onClick={() => { setMode("forgot"); setResetEmail(email); setError(""); }}
                   className="text-xs text-[#6A97B4] hover:text-[#3AB5A0] transition-colors"
                 >
-                  Forgot password?
+                  {t("forgotPassword")}
                 </button>
               </div>
               <div className="relative">
@@ -218,7 +223,7 @@ export default function LoginPage() {
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-[#6A97B4] hover:text-[#E8F0F8] transition-colors p-1 rounded"
                   tabIndex={-1}
-                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  aria-label={showPassword ? tAuth("hidePassword") : tAuth("showPassword")}
                 >
                   {showPassword ? (
                     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
@@ -241,16 +246,16 @@ export default function LoginPage() {
             <button type="submit" className="btn-primary w-full" disabled={loading}>
               {loading ? (
                 <span className="flex items-center justify-center gap-2">
-                  <Spinner /> Signing in…
+                  <Spinner /> {t("signingIn")}
                 </span>
-              ) : "Sign in"}
+              ) : t("signIn")}
             </button>
           </form>
 
           <p className="text-center text-sm text-[#6A97B4] mt-5">
-            No account?{" "}
+            {t("noAccount")}{" "}
             <Link href="/signup" className="text-[#3AB5A0] hover:underline font-medium">
-              Create one
+              {t("createOne")}
             </Link>
           </p>
         </div>

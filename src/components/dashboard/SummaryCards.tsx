@@ -1,6 +1,10 @@
 "use client";
 
+import { useTranslations, useLocale } from "next-intl";
 import { formatCurrency } from "@/utils/finance";
+import type { Locale } from "@/i18n/locales";
+import type { Insight } from "@/lib/insight-types";
+import InsightText from "@/components/ui/InsightText";
 
 interface MonthData {
   totalIncome: number;
@@ -15,16 +19,16 @@ interface Props {
   riskLevel: "low" | "medium" | "high" | "critical";
   riskPositiveMonths: number;
   riskTotalMonths: number;
-  summary?: string;
-  context?: string[];
+  summary?: Insight | null;
+  context?: Insight[];
   periodLabel?: string;
 }
 
-const RISK_STYLE = {
-  low:      { label: "Low",      color: "text-[#4CC4A4]" },
-  medium:   { label: "Medium",   color: "text-[#D4A254]" },
-  high:     { label: "High",     color: "text-[#D97070]" },
-  critical: { label: "Critical", color: "text-[#D97070]" },
+const RISK_COLOR = {
+  low:      "text-[#4CC4A4]",
+  medium:   "text-[#D4A254]",
+  high:     "text-[#D97070]",
+  critical: "text-[#D97070]",
 };
 
 function changePct(curr: number, prev: number): number {
@@ -46,6 +50,9 @@ function Chip({ value, invert }: { value: number; invert?: boolean }) {
 export default function SummaryCards({
   current, previous, riskLevel, riskPositiveMonths, riskTotalMonths, summary, context, periodLabel,
 }: Props) {
+  const t = useTranslations("dashboard.summaryCards");
+  const tm = useTranslations("metrics");
+  const locale = useLocale() as Locale;
   const c = current  ?? { totalIncome: 0, totalExpenses: 0, totalSavings: 0, netCashflow: 0 };
   const p = previous ?? { totalIncome: 0, totalExpenses: 0, totalSavings: 0, netCashflow: 0 };
 
@@ -55,7 +62,7 @@ export default function SummaryCards({
   const margin        = c.totalIncome > 0 ? 100 - spendRate : null;
   const prevSpendRate = p.totalIncome > 0 ? Math.round((p.totalExpenses / p.totalIncome) * 100) : 0;
   const prevMargin    = p.totalIncome > 0 ? 100 - prevSpendRate : null;
-  const risk          = RISK_STYLE[riskLevel];
+  const riskColor     = RISK_COLOR[riskLevel];
 
   const marginColor   = margin === null ? "text-[#6A97B4]"
     : margin >= 30 ? "text-[#4CC4A4]"
@@ -66,7 +73,7 @@ export default function SummaryCards({
     <div className="space-y-4">
       {periodLabel && (
         <div className="flex items-center gap-2">
-          <span className="text-xs font-semibold text-[#6A97B4] uppercase tracking-wide">Showing</span>
+          <span className="text-xs font-semibold text-[#6A97B4] uppercase tracking-wide">{t("showing")}</span>
           <span className="text-xs font-semibold text-[#A8C6E0] bg-[#1A3048] px-2 py-0.5 rounded">{periodLabel}</span>
         </div>
       )}
@@ -74,37 +81,37 @@ export default function SummaryCards({
 
         {/* Income */}
         <div className="card-sm flex flex-col gap-3">
-          <p className="label">Income</p>
+          <p className="label">{tm("income")}</p>
           <p className="text-2xl md:text-3xl font-bold text-[#4CC4A4] leading-none tabular-nums">
-            {formatCurrency(c.totalIncome)}
+            {formatCurrency(c.totalIncome, locale)}
           </p>
           <div className="flex items-center gap-2 flex-wrap">
-            <p className="text-[13px] text-[#6A97B4]">total this month</p>
+            <p className="text-[13px] text-[#6A97B4]">{t("totalThisMonth")}</p>
             {previous && <Chip value={changePct(c.totalIncome, p.totalIncome)} />}
           </div>
         </div>
 
         {/* Expenses */}
         <div className="card-sm flex flex-col gap-3">
-          <p className="label">Expenses</p>
+          <p className="label">{tm("expenses")}</p>
           <p className="text-2xl md:text-3xl font-bold text-[#D4A254] leading-none tabular-nums">
-            {formatCurrency(c.totalExpenses)}
+            {formatCurrency(c.totalExpenses, locale)}
           </p>
           <div className="flex items-center gap-2 flex-wrap">
-            <p className="text-[13px] text-[#6A97B4]">total this month</p>
+            <p className="text-[13px] text-[#6A97B4]">{t("totalThisMonth")}</p>
             {previous && <Chip value={changePct(c.totalExpenses, p.totalExpenses)} invert />}
           </div>
         </div>
 
         {/* Cashflow */}
         <div className="card-sm flex flex-col gap-3">
-          <p className="label">Cashflow</p>
+          <p className="label">{tm("cashflow")}</p>
           <p className={`text-2xl md:text-3xl font-bold leading-none tabular-nums ${currCashflow >= 0 ? "text-[#3AB5A0]" : "text-[#D97070]"}`}>
-            {formatCurrency(currCashflow)}
+            {formatCurrency(currCashflow, locale)}
           </p>
           <div className="flex items-center gap-2 flex-wrap">
             <p className="text-[13px] text-[#6A97B4]">
-              {currCashflow >= 0 ? "income above expenses" : "expenses exceed income"}
+              {currCashflow >= 0 ? t("incomeAboveExpenses") : t("expensesExceedIncome")}
             </p>
             {previous && <Chip value={changePct(currCashflow, prevCashflow)} />}
           </div>
@@ -112,12 +119,12 @@ export default function SummaryCards({
 
         {/* Margin */}
         <div className="card-sm flex flex-col gap-3">
-          <p className="label">Margin</p>
+          <p className="label">{tm("margin")}</p>
           <p className={`text-2xl md:text-3xl font-bold leading-none tabular-nums ${marginColor}`}>
             {margin !== null ? `${margin}%` : "—"}
           </p>
           <div className="flex items-center gap-2 flex-wrap">
-            <p className="text-[13px] text-[#6A97B4]">of income kept</p>
+            <p className="text-[13px] text-[#6A97B4]">{t("ofIncomeKept")}</p>
             {previous && margin !== null && prevMargin !== null && (
               <Chip value={margin - prevMargin} />
             )}
@@ -126,14 +133,14 @@ export default function SummaryCards({
 
         {/* Risk */}
         <div className="card-sm flex flex-col gap-3">
-          <p className="label">Risk</p>
-          <p className={`text-2xl md:text-3xl font-bold leading-none ${risk.color}`}>
-            {risk.label}
+          <p className="label">{t("risk")}</p>
+          <p className={`text-2xl md:text-3xl font-bold leading-none ${riskColor}`}>
+            {t(`riskLevels.${riskLevel}`)}
           </p>
           <p className="text-[13px] text-[#6A97B4]">
             {riskTotalMonths > 0
-              ? `${riskPositiveMonths} of ${riskTotalMonths} months positive`
-              : "No history yet"}
+              ? t("monthsPositive", { positive: riskPositiveMonths, total: riskTotalMonths })
+              : t("noHistory")}
           </p>
         </div>
 
@@ -141,13 +148,15 @@ export default function SummaryCards({
 
       {summary && (
         <div className="bg-[#4CC4A40A] border border-[#4CC4A415] rounded-xl px-5 py-4 space-y-2.5">
-          <p className="text-sm font-medium text-[#E8F0F8] leading-relaxed">{summary}</p>
+          <p className="text-sm font-medium text-[#E8F0F8] leading-relaxed">
+            <InsightText insight={summary} />
+          </p>
           {context && context.length > 0 && (
             <ul className="space-y-2">
               {context.map((line, i) => (
                 <li key={i} className="text-sm text-[#A8C6E0] flex items-start gap-2.5 leading-relaxed">
                   <span className="text-[#4CC4A4] opacity-60 mt-1 flex-shrink-0">·</span>
-                  {line}
+                  <InsightText insight={line} />
                 </li>
               ))}
             </ul>

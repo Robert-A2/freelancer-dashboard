@@ -2,6 +2,7 @@
 
 import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { createClient } from "@/lib/supabase/client";
 
 function Spinner() {
@@ -16,6 +17,10 @@ function Spinner() {
 function ResetPasswordForm() {
   const router      = useRouter();
   const searchParams = useSearchParams();
+  const t  = useTranslations("auth.resetPassword");
+  const tErrors = useTranslations("auth.resetPassword.errors");
+  const tAuth = useTranslations("auth");
+  const tc = useTranslations("common");
 
   const [password, setPassword]   = useState("");
   const [confirm, setConfirm]     = useState("");
@@ -29,7 +34,7 @@ function ResetPasswordForm() {
   useEffect(() => {
     const code = searchParams.get("code");
     if (!code) {
-      setError("This reset link is invalid or has already been used. Please request a new one.");
+      setError(tErrors("invalidLink"));
       setExchanging(false);
       return;
     }
@@ -37,27 +42,28 @@ function ResetPasswordForm() {
     supabase.auth.exchangeCodeForSession(code).then(({ error }) => {
       setExchanging(false);
       if (error) {
-        setError("This reset link has expired. Please request a new one.");
+        setError(tErrors("expiredLink"));
       } else {
         setReady(true);
         router.replace("/reset-password");
       }
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams, router]);
 
   async function handleReset(e: React.SyntheticEvent) {
     e.preventDefault();
     setError("");
 
-    if (password.length < 8) { setError("Password must be at least 8 characters."); return; }
-    if (password !== confirm) { setError("Passwords don't match. Please check and try again."); return; }
+    if (password.length < 8) { setError(tErrors("passwordTooShort")); return; }
+    if (password !== confirm) { setError(tErrors("passwordsNoMatch")); return; }
 
     setLoading(true);
     const supabase = createClient();
     const { error } = await supabase.auth.updateUser({ password });
     setLoading(false);
 
-    if (error) { setError("Failed to update your password. Please try again."); return; }
+    if (error) { setError(tErrors("updateFailed")); return; }
     setSuccess(true);
     setTimeout(() => { router.push("/dashboard"); router.refresh(); }, 2000);
   }
@@ -67,14 +73,14 @@ function ResetPasswordForm() {
       <div className="w-full max-w-sm">
 
         <div className="mb-8 text-center">
-          <h1 className="text-2xl font-bold text-[#E8F0F8]">Freelancer OS</h1>
-          <p className="text-[#7BA8C4] text-sm mt-1">Financial clarity built for freelancers</p>
+          <h1 className="text-2xl font-bold text-[#E8F0F8]">{tc("appName")}</h1>
+          <p className="text-[#7BA8C4] text-sm mt-1">{tc("tagline")}</p>
         </div>
 
         {exchanging && (
           <div className="card flex items-center justify-center gap-3 py-10">
             <Spinner />
-            <p className="text-sm text-[#7BA8C4]">Verifying your reset link…</p>
+            <p className="text-sm text-[#7BA8C4]">{t("verifying")}</p>
           </div>
         )}
 
@@ -86,11 +92,11 @@ function ResetPasswordForm() {
               </svg>
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-[#E8F0F8]">Link expired</h2>
+              <h2 className="text-lg font-semibold text-[#E8F0F8]">{t("linkExpiredHeading")}</h2>
               <p className="text-sm text-[#7BA8C4] mt-1">{error}</p>
             </div>
             <button onClick={() => router.push("/login")} className="btn-primary text-sm">
-              Request a new link
+              {t("requestNewLink")}
             </button>
           </div>
         )}
@@ -103,8 +109,8 @@ function ResetPasswordForm() {
               </svg>
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-[#E8F0F8]">Password updated</h2>
-              <p className="text-sm text-[#7BA8C4] mt-1">Taking you to your dashboard…</p>
+              <h2 className="text-lg font-semibold text-[#E8F0F8]">{t("successHeading")}</h2>
+              <p className="text-sm text-[#7BA8C4] mt-1">{t("successBody")}</p>
             </div>
           </div>
         )}
@@ -112,20 +118,20 @@ function ResetPasswordForm() {
         {ready && !success && (
           <div className="card">
             <div className="mb-6">
-              <h2 className="text-lg font-semibold">Set a new password</h2>
+              <h2 className="text-lg font-semibold">{t("heading")}</h2>
               <p className="text-sm text-[#7BA8C4] mt-1">
-                Choose something strong, at least 8 characters.
+                {t("subtitle")}
               </p>
             </div>
 
             <form onSubmit={handleReset} className="space-y-5">
               <div>
-                <label className="label block mb-2">New password</label>
+                <label className="label block mb-2">{t("newPassword")}</label>
                 <div className="relative">
                   <input
                     type={showPwd ? "text" : "password"}
                     className="input pr-12"
-                    placeholder="Min. 8 characters"
+                    placeholder={t("newPasswordPlaceholder")}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
@@ -138,7 +144,7 @@ function ResetPasswordForm() {
                     onClick={() => setShowPwd(!showPwd)}
                     tabIndex={-1}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-[#6A97B4] hover:text-[#E8F0F8] transition-colors p-1"
-                    aria-label={showPwd ? "Hide password" : "Show password"}
+                    aria-label={showPwd ? tAuth("hidePassword") : tAuth("showPassword")}
                   >
                     {showPwd ? (
                       <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
@@ -155,11 +161,11 @@ function ResetPasswordForm() {
               </div>
 
               <div>
-                <label className="label block mb-2">Confirm password</label>
+                <label className="label block mb-2">{t("confirmPassword")}</label>
                 <input
                   type={showPwd ? "text" : "password"}
                   className="input"
-                  placeholder="Repeat your new password"
+                  placeholder={t("confirmPasswordPlaceholder")}
                   value={confirm}
                   onChange={(e) => setConfirm(e.target.value)}
                   required
@@ -168,13 +174,13 @@ function ResetPasswordForm() {
               </div>
 
               {password.length > 0 && password.length < 8 && (
-                <p className="text-xs text-[#D4A254]">Password needs at least 8 characters.</p>
+                <p className="text-xs text-[#D4A254]">{t("passwordHint")}</p>
               )}
               {password.length >= 8 && confirm.length > 0 && password !== confirm && (
-                <p className="text-xs text-[#D97070]">Passwords don&apos;t match.</p>
+                <p className="text-xs text-[#D97070]">{t("passwordsNoMatch")}</p>
               )}
               {password.length >= 8 && confirm.length > 0 && password === confirm && (
-                <p className="text-xs text-[#4CC4A4]">Passwords match ✓</p>
+                <p className="text-xs text-[#4CC4A4]">{t("passwordsMatch")}</p>
               )}
 
               {error && (
@@ -188,9 +194,9 @@ function ResetPasswordForm() {
               >
                 {loading ? (
                   <span className="flex items-center justify-center gap-2">
-                    <Spinner /> Updating password…
+                    <Spinner /> {t("updating")}
                   </span>
-                ) : "Update password"}
+                ) : t("updatePassword")}
               </button>
             </form>
           </div>
@@ -202,6 +208,7 @@ function ResetPasswordForm() {
 }
 
 export default function ResetPasswordPage() {
+  const t = useTranslations("auth.resetPassword");
   return (
     <Suspense fallback={
       <div className="min-h-screen flex items-center justify-center bg-[#0D1B2B]">
@@ -210,7 +217,7 @@ export default function ResetPasswordPage() {
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
           </svg>
-          Loading…
+          {t("loading")}
         </div>
       </div>
     }>

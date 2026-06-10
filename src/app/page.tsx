@@ -1,11 +1,30 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getTranslations } from "next-intl/server";
 import Link from "next/link";
+import LanguageSwitcher from "@/components/ui/LanguageSwitcher";
 
 export default async function LandingPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (user) redirect("/dashboard");
+
+  const t = await getTranslations("landing");
+  const tc = await getTranslations("common");
+
+  const understandCards = t.raw("understand.cards") as { title: string; body: string }[];
+  const understandIcons = ["💰", "📊", "🔮", "💡"];
+
+  const steps = t.raw("howItWorks.steps") as { title: string; body: string }[];
+
+  const historyPoints = t.raw("history.points") as string[];
+  const historyTiers = t.raw("history.tiers") as { label: string; title: string; body: string }[];
+  const tierIntensities = ["opacity-50", "opacity-75", "opacity-100"];
+
+  const whyItems = t.raw("whyFreelancers.items") as { title: string; points: string[] }[];
+
+  const privacyItems = t.raw("privacy.items") as { title: string; body: string }[];
+  const privacyIcons = ["🔒", "🚫", "🗑️", "🛡️"];
 
   return (
     <div className="min-h-screen bg-[#0D1B2B] text-[#E8F0F8]">
@@ -13,13 +32,14 @@ export default async function LandingPage() {
       {/* ── Navbar ──────────────────────────────────────────────────────── */}
       <nav className="sticky top-0 z-50 border-b border-[#1E3550] bg-[#0D1B2B]/95 backdrop-blur-sm">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 flex items-center justify-between h-14">
-          <span className="font-bold text-[#E8F0F8] tracking-tight">Freelancer OS</span>
+          <span className="font-bold text-[#E8F0F8] tracking-tight">{tc("appName")}</span>
           <div className="flex items-center gap-3">
+            <LanguageSwitcher />
             <Link href="/login" className="text-sm text-[#7BA8C4] hover:text-[#E8F0F8] transition-colors px-3 py-2">
-              Sign in
+              {tc("buttons.signIn")}
             </Link>
             <Link href="/signup" className="bg-[#3AB5A0] hover:bg-[#2E9D8A] text-[#0D1B2B] text-sm font-semibold px-4 py-2 rounded-xl transition-colors">
-              Get started free
+              {tc("buttons.getStarted")}
             </Link>
           </div>
         </div>
@@ -32,30 +52,28 @@ export default async function LandingPage() {
           <div>
             <div className="inline-flex items-center gap-2 bg-[#3AB5A020] border border-[#3AB5A030] rounded-full px-3 py-1 mb-6">
               <span className="w-1.5 h-1.5 rounded-full bg-[#3AB5A0]" />
-              <span className="text-xs text-[#3AB5A0] font-medium">Built for freelancers</span>
+              <span className="text-xs text-[#3AB5A0] font-medium">{t("hero.badge")}</span>
             </div>
 
             <h1 className="text-4xl sm:text-5xl font-bold leading-tight text-[#E8F0F8] mb-5">
-              Finally understand<br className="hidden sm:block" /> where your money goes.
+              {t("hero.title")}
             </h1>
 
             <p className="text-lg text-[#7BA8C4] leading-relaxed mb-8 max-w-lg">
-              Upload your bank statement and get a complete financial insight.
-              what happened, why it happened, and what to do next.
-              In minutes, not spreadsheets.
+              {t("hero.subtitle")}
             </p>
 
             <div className="flex flex-col sm:flex-row gap-3">
               <Link href="/signup" className="bg-[#3AB5A0] hover:bg-[#2E9D8A] text-[#0D1B2B] font-bold px-6 py-3 rounded-xl transition-colors text-base text-center">
-                Upload your first CSV →
+                {t("hero.cta")}
               </Link>
               <Link href="/login" className="text-sm text-[#7BA8C4] hover:text-[#E8F0F8] transition-colors flex items-center justify-center px-4 py-3">
-                Already have an account? Sign in
+                {t("hero.alreadyHaveAccount")}
               </Link>
             </div>
 
             <p className="text-xs text-[#7BA8C4] mt-4">
-              Free · Any bank · Any CSV format
+              {t("hero.tagline")}
             </p>
           </div>
 
@@ -69,41 +87,19 @@ export default async function LandingPage() {
       <section className="bg-[#132537] border-y border-[#1E3550]">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-16 md:py-20">
           <div className="text-center mb-12">
-            <p className="text-xs font-medium text-[#3AB5A0] uppercase tracking-widest mb-3">After one upload</p>
+            <p className="text-xs font-medium text-[#3AB5A0] uppercase tracking-widest mb-3">{t("understand.eyebrow")}</p>
             <h2 className="text-2xl sm:text-3xl font-bold text-[#E8F0F8]">
-              Real answers. Not just numbers.
+              {t("understand.title")}
             </h2>
             <p className="text-[#7BA8C4] mt-3 max-w-xl mx-auto">
-              Freelancer OS explains your finances in plain language. The questions
-              you actually ask, answered automatically.
+              {t("understand.subtitle")}
             </p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {[
-              {
-                icon: "💰",
-                title: "What happened this month",
-                body: "Income vs expenses vs your historical average. Know immediately if this was a strong month or a difficult one.",
-              },
-              {
-                icon: "📊",
-                title: "Where your money is going",
-                body: "Every transaction categorised automatically. Subscriptions, tools, travel, taxes, visible in one clear view.",
-              },
-              {
-                icon: "🔮",
-                title: "What is coming next",
-                body: "Cashflow forecasts built from your actual patterns. Know if next month looks tight before it arrives.",
-              },
-              {
-                icon: "💡",
-                title: "What to do about it",
-                body: "Specific recommendations based on your real numbers. Not generic advice. Actions from your own financial data.",
-              },
-            ].map((card) => (
+            {understandCards.map((card, i) => (
               <div key={card.title} className="bg-[#0D1B2B] rounded-2xl p-6 border border-[#1E3550]">
-                <div className="text-3xl mb-4">{card.icon}</div>
+                <div className="text-3xl mb-4">{understandIcons[i]}</div>
                 <h3 className="font-semibold text-[#E8F0F8] mb-2 text-sm">{card.title}</h3>
                 <p className="text-sm text-[#7BA8C4] leading-relaxed">{card.body}</p>
               </div>
@@ -115,35 +111,19 @@ export default async function LandingPage() {
       {/* ── How it works ────────────────────────────────────────────────── */}
       <section className="max-w-6xl mx-auto px-4 sm:px-6 py-16 md:py-20">
         <div className="text-center mb-12">
-          <p className="text-xs font-medium text-[#3AB5A0] uppercase tracking-widest mb-3">Simple process</p>
-          <h2 className="text-2xl sm:text-3xl font-bold text-[#E8F0F8]">How it works</h2>
+          <p className="text-xs font-medium text-[#3AB5A0] uppercase tracking-widest mb-3">{t("howItWorks.eyebrow")}</p>
+          <h2 className="text-2xl sm:text-3xl font-bold text-[#E8F0F8]">{t("howItWorks.title")}</h2>
           <p className="text-[#7BA8C4] mt-3 max-w-md mx-auto">
-            From bank statement to financial clarity in under a minute.
+            {t("howItWorks.subtitle")}
           </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative">
           <div className="hidden md:block absolute top-8 left-[calc(33%+1rem)] right-[calc(33%+1rem)] h-px bg-[#1E3550]" />
-          {[
-            {
-              step: "01",
-              title: "Upload your CSV",
-              body: "Export from any bank: Revolut, Monzo, AIB, HSBC, Wise, or any bank worldwide. Columns and formats detected automatically.",
-            },
-            {
-              step: "02",
-              title: "We do the analysis",
-              body: "Transactions categorised, patterns detected, forecasts generated. Your complete financial picture appears in seconds.",
-            },
-            {
-              step: "03",
-              title: "You understand your money",
-              body: "Clear answers to the questions freelancers actually ask. What is my cashflow? Am I growing? What should I cut?",
-            },
-          ].map((s) => (
-            <div key={s.step} className="relative text-center">
+          {steps.map((s, i) => (
+            <div key={s.title} className="relative text-center">
               <div className="w-16 h-16 bg-[#3AB5A020] border border-[#3AB5A030] rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <span className="text-lg font-bold text-[#3AB5A0]">{s.step}</span>
+                <span className="text-lg font-bold text-[#3AB5A0]">{String(i + 1).padStart(2, "0")}</span>
               </div>
               <h3 className="font-semibold text-[#E8F0F8] mb-2">{s.title}</h3>
               <p className="text-sm text-[#7BA8C4] leading-relaxed max-w-xs mx-auto">{s.body}</p>
@@ -158,25 +138,15 @@ export default async function LandingPage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
 
             <div>
-              <p className="text-xs font-medium text-[#3AB5A0] uppercase tracking-widest mb-3">Deep history</p>
+              <p className="text-xs font-medium text-[#3AB5A0] uppercase tracking-widest mb-3">{t("history.eyebrow")}</p>
               <h2 className="text-2xl sm:text-3xl font-bold text-[#E8F0F8] mb-4">
-                The more history you upload,<br className="hidden sm:block" /> the smarter it gets.
+                {t("history.title")}
               </h2>
               <p className="text-[#7BA8C4] leading-relaxed mb-6">
-                Upload 1 year, 5 years, or 10+ years of bank statements.
-                Freelancer OS builds one continuous financial timeline and
-                automatically identifies patterns, seasonal income cycles, spending
-                habits, and long-term changes, far more than you could ever
-                spot manually.
+                {t("history.body")}
               </p>
               <ul className="space-y-3">
-                {[
-                  "Seasonal income patterns and quiet periods",
-                  "Year-over-year business growth or decline",
-                  "Your strongest quarters and your weakest",
-                  "Long-term spending trends by category",
-                  "Recurring expense cycles you may not have noticed",
-                ].map((point) => (
+                {historyPoints.map((point) => (
                   <li key={point} className="flex items-start gap-3">
                     <span className="text-[#3AB5A0] flex-shrink-0 mt-0.5">✓</span>
                     <span className="text-sm text-[#A8C6E0]">{point}</span>
@@ -186,32 +156,13 @@ export default async function LandingPage() {
             </div>
 
             <div className="space-y-3">
-              {[
-                {
-                  label: "1 year",
-                  title: "Monthly patterns",
-                  body: "Income trends, expense categories, cashflow health, and your first forecast.",
-                  intensity: "opacity-50",
-                },
-                {
-                  label: "5 years",
-                  title: "Seasonal cycles",
-                  body: "Which months are consistently strong. Which are slow. How your business has grown year by year.",
-                  intensity: "opacity-75",
-                },
-                {
-                  label: "10+ years",
-                  title: "Your complete financial journey",
-                  body: "Long-term trends, major financial shifts, and patterns that only become visible across a decade of data.",
-                  intensity: "opacity-100",
-                },
-              ].map((tier) => (
+              {historyTiers.map((tier, i) => (
                 <div
                   key={tier.label}
                   className="flex items-start gap-4 bg-[#0D1B2B] rounded-2xl p-5 border border-[#1E3550]"
                 >
                   <div className="flex-shrink-0 w-14 h-14 bg-[#3AB5A010] border border-[#3AB5A025] rounded-xl flex items-center justify-center">
-                    <span className={`text-xs font-bold text-[#3AB5A0] text-center leading-tight ${tier.intensity}`}>
+                    <span className={`text-xs font-bold text-[#3AB5A0] text-center leading-tight ${tierIntensities[i]}`}>
                       {tier.label}
                     </span>
                   </div>
@@ -229,44 +180,14 @@ export default async function LandingPage() {
       {/* ── Why freelancers ─────────────────────────────────────────────── */}
       <section className="max-w-6xl mx-auto px-4 sm:px-6 py-16 md:py-20">
         <div className="text-center mb-12">
-          <p className="text-xs font-medium text-[#3AB5A0] uppercase tracking-widest mb-3">Built for how you work</p>
+          <p className="text-xs font-medium text-[#3AB5A0] uppercase tracking-widest mb-3">{t("whyFreelancers.eyebrow")}</p>
           <h2 className="text-2xl sm:text-3xl font-bold text-[#E8F0F8]">
-            Why freelancers use Freelancer OS
+            {t("whyFreelancers.title")}
           </h2>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-          {[
-            {
-              title: "Irregular income",
-              points: [
-                "Some months are great. Some are not.",
-                "Track your income patterns and spot slow periods before they hit.",
-                "Plan ahead instead of reacting.",
-              ],
-            },
-            {
-              title: "Variable expenses",
-              points: [
-                "Tools, subscriptions, and costs change constantly.",
-                "See what is growing, what you can cut, and what it means for cashflow.",
-              ],
-            },
-            {
-              title: "Cashflow uncertainty",
-              points: [
-                "Know if next month looks safe before it arrives.",
-                "Forecasts built from your actual history, not industry averages.",
-              ],
-            },
-            {
-              title: "Long-term visibility",
-              points: [
-                "Is your business growing or shrinking?",
-                "See the full trajectory across months and years, not just this month.",
-              ],
-            },
-          ].map((item) => (
+          {whyItems.map((item) => (
             <div key={item.title} className="bg-[#132537] rounded-2xl p-6 border border-[#1E3550]">
               <div className="w-6 h-0.5 bg-[#3AB5A0] rounded-full mb-4" />
               <h3 className="font-semibold text-[#E8F0F8] mb-3">{item.title}</h3>
@@ -284,24 +205,19 @@ export default async function LandingPage() {
       <section className="bg-[#132537] border-y border-[#1E3550]">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-16 md:py-20">
           <div className="text-center mb-10">
-            <p className="text-xs font-medium text-[#3AB5A0] uppercase tracking-widest mb-3">Your data</p>
-            <h2 className="text-2xl sm:text-3xl font-bold text-[#E8F0F8]">Private. Secure. Yours.</h2>
+            <p className="text-xs font-medium text-[#3AB5A0] uppercase tracking-widest mb-3">{t("privacy.eyebrow")}</p>
+            <h2 className="text-2xl sm:text-3xl font-bold text-[#E8F0F8]">{t("privacy.title")}</h2>
             <p className="text-[#7BA8C4] mt-3 max-w-md mx-auto">
-              Your financial data is personal. We treat it that way.
+              {t("privacy.subtitle")}
             </p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 max-w-4xl mx-auto">
-            {[
-              { icon: "🔒", title: "Bank-level encryption", body: "All data encrypted in transit and at rest." },
-              { icon: "🚫", title: "Never sold", body: "We never sell, share, or use your data for advertising." },
-              { icon: "🗑️", title: "Delete anytime", body: "Remove your account and all data permanently with one click." },
-              { icon: "🛡️", title: "No third-party tracking", body: "Your financial data stays on our servers only." },
-            ].map((t) => (
-              <div key={t.title} className="bg-[#0D1B2B] rounded-2xl p-5 border border-[#1E3550] text-center">
-                <div className="text-2xl mb-3">{t.icon}</div>
-                <h3 className="text-sm font-semibold text-[#E8F0F8] mb-1">{t.title}</h3>
-                <p className="text-xs text-[#7BA8C4]">{t.body}</p>
+            {privacyItems.map((item, i) => (
+              <div key={item.title} className="bg-[#0D1B2B] rounded-2xl p-5 border border-[#1E3550] text-center">
+                <div className="text-2xl mb-3">{privacyIcons[i]}</div>
+                <h3 className="text-sm font-semibold text-[#E8F0F8] mb-1">{item.title}</h3>
+                <p className="text-xs text-[#7BA8C4]">{item.body}</p>
               </div>
             ))}
           </div>
@@ -312,19 +228,18 @@ export default async function LandingPage() {
       <section className="bg-[#3AB5A0]">
         <div className="max-w-2xl mx-auto px-4 sm:px-6 py-16 text-center">
           <h2 className="text-2xl sm:text-3xl font-bold text-[#0D1B2B] mb-4">
-            Start understanding your finances today.
+            {t("finalCta.title")}
           </h2>
           <p className="text-[#0D1B2B]/70 mb-8 text-lg">
-            Upload your first bank statement in under a minute.<br className="hidden sm:block" />
-            No setup. No spreadsheets. Just clarity.
+            {t("finalCta.body")}
           </p>
           <Link
             href="/signup"
             className="inline-block bg-[#0D1B2B] text-[#3AB5A0] font-bold px-8 py-3.5 rounded-xl hover:bg-[#132537] transition-colors text-base"
           >
-            Get started free →
+            {t("finalCta.cta")}
           </Link>
-          <p className="text-[#0D1B2B]/60 text-xs mt-4">Free · Any bank · Takes 60 seconds</p>
+          <p className="text-[#0D1B2B]/60 text-xs mt-4">{t("finalCta.tagline")}</p>
         </div>
       </section>
 
@@ -332,12 +247,12 @@ export default async function LandingPage() {
       <footer className="border-t border-[#1E3550] bg-[#0D1B2B]">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div>
-            <span className="font-bold text-[#E8F0F8] text-sm">Freelancer OS</span>
-            <p className="text-xs text-[#7BA8C4] mt-0.5">Financial clarity built for freelancers</p>
+            <span className="font-bold text-[#E8F0F8] text-sm">{tc("appName")}</span>
+            <p className="text-xs text-[#7BA8C4] mt-0.5">{t("footer.tagline")}</p>
           </div>
           <div className="flex items-center gap-6 text-xs text-[#7BA8C4]">
-            <Link href="/login"  className="hover:text-[#E8F0F8] transition-colors">Sign in</Link>
-            <Link href="/signup" className="hover:text-[#E8F0F8] transition-colors">Create account</Link>
+            <Link href="/login"  className="hover:text-[#E8F0F8] transition-colors">{tc("buttons.signIn")}</Link>
+            <Link href="/signup" className="hover:text-[#E8F0F8] transition-colors">{tc("buttons.createAccount")}</Link>
           </div>
         </div>
       </footer>
@@ -347,15 +262,25 @@ export default async function LandingPage() {
 }
 
 // ── Dashboard preview mockup ──────────────────────────────────────────────────
-function DashboardMockup() {
+async function DashboardMockup() {
+  const t = await getTranslations("landing.mockup");
+  const tc = await getTranslations("common");
+
+  const metrics = [
+    { label: t("income"),   value: "€4,850", color: "#4CC4A4" },
+    { label: t("expenses"), value: "€2,680", color: "#D4A254" },
+    { label: t("savings"),  value: "€800",   color: "#3AB5A0" },
+    { label: t("cashflow"), value: "€1,370", color: "#4CC4A4" },
+  ];
+
   return (
     <div className="rounded-2xl border border-[#1E3550] bg-[#132537] overflow-hidden shadow-2xl shadow-black/50">
 
       {/* Mini top bar */}
       <div className="h-9 bg-[#0D1B2B] border-b border-[#1E3550] flex items-center px-3 gap-3">
-        <span className="text-[10px] font-bold text-[#E8F0F8]">Freelancer OS</span>
+        <span className="text-[10px] font-bold text-[#E8F0F8]">{tc("appName")}</span>
         <div className="flex gap-1.5">
-          {["Dashboard", "History", "Forecast"].map((l) => (
+          {[tc("nav.dashboard"), tc("nav.history"), tc("nav.forecast")].map((l) => (
             <span key={l} className="text-[9px] text-[#7BA8C4] px-2 py-0.5 rounded bg-[#1E3550]">{l}</span>
           ))}
         </div>
@@ -365,12 +290,7 @@ function DashboardMockup() {
 
         {/* 4 metric cards */}
         <div className="grid grid-cols-2 gap-2">
-          {[
-            { label: "Income",   value: "€4,850", color: "#4CC4A4" },
-            { label: "Expenses", value: "€2,680", color: "#D4A254" },
-            { label: "Savings",  value: "€800",   color: "#3AB5A0" },
-            { label: "Cashflow", value: "€1,370", color: "#4CC4A4" },
-          ].map((c) => (
+          {metrics.map((c) => (
             <div key={c.label} className="bg-[#0D1B2B] rounded-xl p-2.5">
               <div className="text-[8px] text-[#7BA8C4] uppercase tracking-wide mb-1">{c.label}</div>
               <div className="text-sm font-bold" style={{ color: c.color }}>{c.value}</div>
@@ -380,7 +300,7 @@ function DashboardMockup() {
 
         {/* Mini chart */}
         <div className="bg-[#0D1B2B] rounded-xl p-3">
-          <div className="text-[8px] text-[#7BA8C4] mb-2">Income vs Expenses, 12 months</div>
+          <div className="text-[8px] text-[#7BA8C4] mb-2">{t("incomeVsExpenses")}</div>
           <svg viewBox="0 0 240 52" className="w-full" preserveAspectRatio="none">
             <line x1="0" y1="13" x2="240" y2="13" stroke="#1E3550" strokeWidth="0.5"/>
             <line x1="0" y1="26" x2="240" y2="26" stroke="#1E3550" strokeWidth="0.5"/>
@@ -400,14 +320,14 @@ function DashboardMockup() {
         <div className="bg-[#D4A2540A] border border-[#D4A25425] rounded-xl p-3 space-y-2">
           <div className="flex items-center gap-1.5">
             <span className="text-[#D4A254] text-[10px]">⚠</span>
-            <span className="text-[9px] font-semibold text-[#D4A254]">Expenses increased 14% this month.</span>
+            <span className="text-[9px] font-semibold text-[#D4A254]">{t("expensesIncreased")}</span>
           </div>
           <div className="space-y-1 pl-3 border-l border-[#1E3550]">
             <div className="text-[8px] text-[#7BA8C4]">
-              <span className="text-[#A8C6E0]">Main cause:</span> Software subscriptions increased by €82.
+              <span className="text-[#A8C6E0]">{t("mainCause")}</span> {t("mainCauseBody")}
             </div>
             <div className="text-[8px] text-[#7BA8C4]">
-              <span className="text-[#3AB5A0]">Recommended:</span> Reducing unused subscriptions could improve annual cashflow by €984.
+              <span className="text-[#3AB5A0]">{t("recommended")}</span> {t("recommendedBody")}
             </div>
           </div>
         </div>
@@ -415,12 +335,12 @@ function DashboardMockup() {
         {/* Forecast row */}
         <div className="grid grid-cols-2 gap-2">
           <div className="bg-[#3AB5A00A] border border-[#3AB5A018] rounded-xl p-2.5">
-            <div className="text-[8px] text-[#7BA8C4] mb-1">Next month forecast</div>
-            <div className="text-xs font-bold text-[#3AB5A0]">€1,890 cashflow</div>
+            <div className="text-[8px] text-[#7BA8C4] mb-1">{t("nextMonthForecast")}</div>
+            <div className="text-xs font-bold text-[#3AB5A0]">{t("nextMonthCashflow")}</div>
           </div>
           <div className="bg-[#0D1B2B] rounded-xl p-2.5">
-            <div className="text-[8px] text-[#7BA8C4] mb-1">Annual projection</div>
-            <div className="text-xs font-bold text-[#4CC4A4]">€22,680</div>
+            <div className="text-[8px] text-[#7BA8C4] mb-1">{t("annualProjection")}</div>
+            <div className="text-xs font-bold text-[#4CC4A4]">{t("annualProjectionValue")}</div>
           </div>
         </div>
 

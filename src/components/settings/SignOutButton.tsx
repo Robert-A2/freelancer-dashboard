@@ -2,10 +2,13 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { createClient } from "@/lib/supabase/client";
 
 export default function SignOutButton() {
   const router = useRouter();
+  const t = useTranslations("settings");
+  const tc = useTranslations("common");
   const [signingOut, setSigningOut] = useState(false);
 
   async function handleSignOut() {
@@ -18,7 +21,7 @@ export default function SignOutButton() {
 
   return (
     <button onClick={handleSignOut} disabled={signingOut} className="btn-secondary flex-shrink-0">
-      {signingOut ? "Signing out…" : "Sign out"}
+      {signingOut ? t("signingOut") : tc("buttons.signOut")}
     </button>
   );
 }

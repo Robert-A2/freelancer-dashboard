@@ -1,5 +1,7 @@
 import { prisma } from "./prisma";
 import { Decimal } from "@prisma/client/runtime/library";
+import { getLocale } from "next-intl/server";
+import { INTL_LOCALES, type Locale } from "@/i18n/locales";
 
 export async function recalculateMonthlyAnalytics(userId: string): Promise<void> {
   const transactions = await prisma.transaction.findMany({
@@ -115,6 +117,8 @@ export interface MonthPoint {
 // (not to today). This prevents trailing zero-value months that distort charts
 // and mislead the intelligence engine into thinking income collapsed.
 export async function getHistoricalData(userId: string, months: number): Promise<MonthPoint[]> {
+  const locale = (await getLocale()) as Locale;
+
   // Find the boundaries of actual data
   const [firstRecord, lastRecord] = await Promise.all([
     prisma.monthlyAnalytics.findFirst({
@@ -160,7 +164,7 @@ export async function getHistoricalData(userId: string, months: number): Promise
   while (cursor <= end) {
     const m     = cursor.getUTCMonth() + 1;
     const y     = cursor.getUTCFullYear();
-    const label = cursor.toLocaleDateString("en-IE", { month: "short", year: "2-digit", timeZone: "UTC" });
+    const label = cursor.toLocaleDateString(INTL_LOCALES[locale], { month: "short", year: "2-digit", timeZone: "UTC" });
     const rec   = recordMap.get(`${y}-${m}`);
 
     result.push({
@@ -183,6 +187,8 @@ export async function getHistoricalData(userId: string, months: number): Promise
 // Uses most-recent-data month as "current", not wall-clock month.
 // Also returns the actual month labels so the UI displays the right dates.
 export async function getMonthlyComparison(userId: string) {
+  const locale = (await getLocale()) as Locale;
+
   const latestRecord = await prisma.monthlyAnalytics.findFirst({
     where: { userId },
     orderBy: [{ year: "desc" }, { month: "desc" }],
@@ -223,8 +229,8 @@ export async function getMonthlyComparison(userId: string) {
 
   // Human-readable labels for the actual months being compared (UTC so the
   // integer year/month values are never shifted by the server's local timezone)
-  const currLabel = new Date(Date.UTC(currYear, currMonth - 1, 1)).toLocaleDateString("en-IE", { month: "short", year: "numeric", timeZone: "UTC" });
-  const prevLabel = new Date(Date.UTC(prevYear, prevMonth - 1, 1)).toLocaleDateString("en-IE", { month: "short", year: "numeric", timeZone: "UTC" });
+  const currLabel = new Date(Date.UTC(currYear, currMonth - 1, 1)).toLocaleDateString(INTL_LOCALES[locale], { month: "short", year: "numeric", timeZone: "UTC" });
+  const prevLabel = new Date(Date.UTC(prevYear, prevMonth - 1, 1)).toLocaleDateString(INTL_LOCALES[locale], { month: "short", year: "numeric", timeZone: "UTC" });
 
   return {
     current: curr,
@@ -645,11 +651,13 @@ export interface DataCoverage {
   rangeLabel: string | null;   // "January 2023 – January 2024"
 }
 
-function fmtUTCMonth(date: Date): string {
-  return date.toLocaleDateString("en-IE", { month: "long", year: "numeric", timeZone: "UTC" });
+function fmtUTCMonth(date: Date, locale: Locale): string {
+  return date.toLocaleDateString(INTL_LOCALES[locale], { month: "long", year: "numeric", timeZone: "UTC" });
 }
 
 export async function getDataCoverage(userId: string): Promise<DataCoverage> {
+  const locale = (await getLocale()) as Locale;
+
   const agg = await prisma.transaction.aggregate({
     where: { userId },
     _count: { id: true },
@@ -669,8 +677,8 @@ export async function getDataCoverage(userId: string): Promise<DataCoverage> {
   const msPerMonth = msPerYear / 12;
   const span       = latest.getTime() - earliest.getTime();
 
-  const fromLabel = fmtUTCMonth(earliest);
-  const toLabel   = fmtUTCMonth(latest);
+  const fromLabel = fmtUTCMonth(earliest, locale);
+  const toLabel   = fmtUTCMonth(latest, locale);
   const rangeLabel = fromLabel === toLabel ? fromLabel : `${fromLabel} – ${toLabel}`;
 
   return {

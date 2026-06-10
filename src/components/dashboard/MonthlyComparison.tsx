@@ -1,7 +1,11 @@
 "use client";
 
 import { Fragment } from "react";
+import { useTranslations, useLocale } from "next-intl";
 import { formatCurrency } from "@/utils/finance";
+import { INTL_LOCALES, type Locale } from "@/i18n/locales";
+import type { Insight } from "@/lib/insight-types";
+import InsightText from "@/components/ui/InsightText";
 
 interface MonthData {
   totalIncome: number;
@@ -14,7 +18,7 @@ interface Props {
   current: MonthData | null;
   previous: MonthData | null;
   changes: { income: number; expenses: number; savings: number; cashflow: number } | null;
-  interpretation?: string;
+  interpretation?: Insight | null;
   currLabel?: string;
   prevLabel?: string;
 }
@@ -27,16 +31,19 @@ function changePct(curr: number, prev: number): number {
 export default function MonthlyComparison({
   current, previous, changes, interpretation, currLabel: currLabelProp, prevLabel: prevLabelProp,
 }: Props) {
+  const t = useTranslations("dashboard.monthlyComparison");
+  const tm = useTranslations("metrics");
+  const locale = useLocale() as Locale;
   const now      = new Date();
   const prevDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-  const currLabel = currLabelProp ?? now.toLocaleDateString("en-IE", { month: "short", year: "numeric" });
-  const prevLabel = prevLabelProp ?? prevDate.toLocaleDateString("en-IE", { month: "short", year: "numeric" });
+  const currLabel = currLabelProp ?? now.toLocaleDateString(INTL_LOCALES[locale], { month: "short", year: "numeric" });
+  const prevLabel = prevLabelProp ?? prevDate.toLocaleDateString(INTL_LOCALES[locale], { month: "short", year: "numeric" });
 
   if (!current || !previous || !changes) {
     return (
       <div className="card">
-        <p className="label mb-2">Monthly Comparison</p>
-        <p className="text-[#7BA8C4] text-sm">Need at least 2 months of data to compare.</p>
+        <p className="label mb-2">{t("label")}</p>
+        <p className="text-[#7BA8C4] text-sm">{t("needMoreData")}</p>
       </div>
     );
   }
@@ -47,31 +54,31 @@ export default function MonthlyComparison({
   const cashflowChangePct = changePct(currCashflow, prevCashflow);
 
   const rows = [
-    { label: "Income",   prev: previous.totalIncome,   curr: current.totalIncome,   pct: changes.income,   invertBad: false },
-    { label: "Expenses", prev: previous.totalExpenses, curr: current.totalExpenses, pct: changes.expenses, invertBad: true  },
-    { label: "Cashflow", prev: prevCashflow,            curr: currCashflow,           pct: cashflowChangePct, invertBad: false },
+    { key: "income",   label: tm("income"),   prev: previous.totalIncome,   curr: current.totalIncome,   pct: changes.income,   invertBad: false },
+    { key: "expenses", label: tm("expenses"), prev: previous.totalExpenses, curr: current.totalExpenses, pct: changes.expenses, invertBad: true  },
+    { key: "cashflow", label: tm("cashflow"), prev: prevCashflow,            curr: currCashflow,           pct: cashflowChangePct, invertBad: false },
   ];
 
   if (!previousHasData) {
     return (
       <div className="card">
         <div className="mb-4">
-          <p className="label mb-1">Monthly Summary</p>
+          <p className="label mb-1">{t("monthlySummary")}</p>
           <h3 className="text-lg font-semibold text-[#E8F0F8]">{currLabel}</h3>
         </div>
         <div className="space-y-3">
           {rows.map((row) => (
-            <div key={row.label} className="flex items-center justify-between py-2 border-b border-[#243F5E] last:border-0">
+            <div key={row.key} className="flex items-center justify-between py-2 border-b border-[#243F5E] last:border-0">
               <span className="text-sm text-[#7BA8C4]">{row.label}</span>
               <span className="text-sm font-semibold text-[#E8F0F8] tabular-nums">
-                {formatCurrency(row.curr)}
+                {formatCurrency(row.curr, locale)}
               </span>
             </div>
           ))}
         </div>
         <div className="mt-4 px-3 py-2.5 bg-[#3AB5A00A] border border-[#3AB5A018] rounded-xl">
           <p className="text-xs text-[#7BA8C4]">
-            <span className="text-[#3AB5A0] font-medium">Upload another month</span> to start comparing periods and see what changed.
+            <span className="text-[#3AB5A0] font-medium">{t("uploadAnotherMonth")}</span> {t("toStartComparing")}
           </p>
         </div>
       </div>
@@ -81,8 +88,8 @@ export default function MonthlyComparison({
   return (
     <div className="card">
       <div className="mb-4 md:mb-5">
-        <p className="label mb-1">Monthly Comparison</p>
-        <h3 className="text-lg font-semibold text-[#E8F0F8]">What changed?</h3>
+        <p className="label mb-1">{t("label")}</p>
+        <h3 className="text-lg font-semibold text-[#E8F0F8]">{t("whatChanged")}</h3>
       </div>
 
       {/* Desktop table */}
@@ -90,7 +97,7 @@ export default function MonthlyComparison({
         <div className="pb-2 border-b border-[#243F5E]" />
         <div className="text-xs text-[#6A97B4] text-right pb-2 border-b border-[#243F5E] whitespace-nowrap">{prevLabel}</div>
         <div className="text-xs font-medium text-[#E8F0F8] text-right pb-2 border-b border-[#243F5E] whitespace-nowrap">{currLabel}</div>
-        <div className="text-xs text-[#6A97B4] text-right pb-2 border-b border-[#243F5E]">Change</div>
+        <div className="text-xs text-[#6A97B4] text-right pb-2 border-b border-[#243F5E]">{tm("change")}</div>
 
         {rows.map((row, i) => {
           const changeAmt = row.curr - row.prev;
@@ -102,13 +109,13 @@ export default function MonthlyComparison({
           const arrow     = row.pct > 0 ? "↑" : row.pct < 0 ? "↓" : "→";
 
           return (
-            <Fragment key={row.label}>
+            <Fragment key={row.key}>
               <div className={`text-sm text-[#7BA8C4] py-3 ${border}`}>{row.label}</div>
-              <div className={`text-sm text-[#6A97B4] tabular-nums text-right py-3 ${border}`}>{formatCurrency(row.prev)}</div>
-              <div className={`text-sm font-semibold text-[#E8F0F8] tabular-nums text-right py-3 ${border}`}>{formatCurrency(row.curr)}</div>
+              <div className={`text-sm text-[#6A97B4] tabular-nums text-right py-3 ${border}`}>{formatCurrency(row.prev, locale)}</div>
+              <div className={`text-sm font-semibold text-[#E8F0F8] tabular-nums text-right py-3 ${border}`}>{formatCurrency(row.curr, locale)}</div>
               <div className={`flex items-center gap-2 justify-end py-3 ${border}`}>
                 <span className={`text-xs font-medium tabular-nums whitespace-nowrap ${amtCls}`}>
-                  {changeAmt >= 0 ? "+" : "−"}{formatCurrency(Math.abs(changeAmt))}
+                  {changeAmt >= 0 ? "+" : "−"}{formatCurrency(Math.abs(changeAmt), locale)}
                 </span>
                 <span className={`text-xs font-semibold px-1.5 py-0.5 rounded whitespace-nowrap ${chipCls}`}>
                   {arrow} {Math.abs(row.pct)}%
@@ -129,22 +136,22 @@ export default function MonthlyComparison({
           const arrow     = row.pct > 0 ? "↑" : row.pct < 0 ? "↓" : "→";
 
           return (
-            <div key={row.label} className="bg-[#1A3048] rounded-xl p-4">
+            <div key={row.key} className="bg-[#1A3048] rounded-xl p-4">
               <p className="text-sm font-medium text-[#E8F0F8] mb-3">{row.label}</p>
               <div className="grid grid-cols-3 gap-3">
                 <div>
                   <p className="text-xs text-[#6A97B4] mb-1">{prevLabel}</p>
-                  <p className="text-sm text-[#6A97B4] tabular-nums">{formatCurrency(row.prev)}</p>
+                  <p className="text-sm text-[#6A97B4] tabular-nums">{formatCurrency(row.prev, locale)}</p>
                 </div>
                 <div>
                   <p className="text-xs text-[#6A97B4] mb-1">{currLabel}</p>
-                  <p className="text-sm font-semibold text-[#E8F0F8] tabular-nums">{formatCurrency(row.curr)}</p>
+                  <p className="text-sm font-semibold text-[#E8F0F8] tabular-nums">{formatCurrency(row.curr, locale)}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-xs text-[#6A97B4] mb-1">Change</p>
+                  <p className="text-xs text-[#6A97B4] mb-1">{tm("change")}</p>
                   <div className="flex flex-col items-end gap-1">
                     <span className={`text-xs font-medium tabular-nums ${amtCls}`}>
-                      {changeAmt >= 0 ? "+" : "−"}{formatCurrency(Math.abs(changeAmt))}
+                      {changeAmt >= 0 ? "+" : "−"}{formatCurrency(Math.abs(changeAmt), locale)}
                     </span>
                     <span className={`text-xs font-semibold px-1.5 py-0.5 rounded ${chipCls}`}>
                       {arrow} {Math.abs(row.pct)}%
@@ -160,8 +167,8 @@ export default function MonthlyComparison({
       {interpretation && (
         <div className="mt-4 px-3 py-2.5 bg-[#1A3048] rounded-xl">
           <p className="text-sm text-[#A8C6E0] leading-relaxed">
-            <span className="text-[#3AB5A0] font-semibold">What this means: </span>
-            {interpretation}
+            <span className="text-[#3AB5A0] font-semibold">{t("whatThisMeans")}</span>
+            <InsightText insight={interpretation} />
           </p>
         </div>
       )}

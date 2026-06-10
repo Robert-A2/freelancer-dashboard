@@ -1,14 +1,18 @@
 "use client";
 
 import Link from "next/link";
+import { useTranslations, useLocale } from "next-intl";
 import { formatCurrency } from "@/utils/finance";
+import { INTL_LOCALES, type Locale } from "@/i18n/locales";
+import type { Insight } from "@/lib/insight-types";
+import InsightText from "@/components/ui/InsightText";
 
 interface Transaction {
   id: string; date: string; description: string; amount: number; type: string; category: string;
 }
 interface Props {
   transactions: Transaction[];
-  notable?: string[];
+  notable?: Insight[];
 }
 
 const TYPE_STYLES: Record<string, string> = {
@@ -22,25 +26,31 @@ const TYPE_PREFIX: Record<string, string> = {
 };
 
 export default function RecentTransactions({ transactions, notable }: Props) {
+  const t = useTranslations("dashboard.recentTransactions");
+  const tCategories = useTranslations("categories");
+  const locale = useLocale() as Locale;
+
   if (transactions.length === 0) {
     return (
       <div className="card">
-        <p className="label mb-2">Recent Activity</p>
-        <p className="text-[#7BA8C4] text-sm">No transactions yet. Upload a CSV to get started.</p>
+        <p className="label mb-2">{t("label")}</p>
+        <p className="text-[#7BA8C4] text-sm">{t("empty")}</p>
       </div>
     );
   }
 
   return (
     <div className="card">
-      <p className="label mb-3">Recent Activity</p>
+      <p className="label mb-3">{t("label")}</p>
 
       {notable && notable.length > 0 && (
         <div className="mb-3 space-y-1">
           {notable.map((note, i) => (
             <div key={i} className="flex items-start gap-2 px-3 py-2.5 bg-[#1A3048] rounded-lg">
               <span className="text-[#3AB5A0] text-xs mt-0.5 flex-shrink-0">★</span>
-              <p className="text-sm text-[#A8C6E0]">{note}</p>
+              <p className="text-sm text-[#A8C6E0]">
+                <InsightText insight={note} />
+              </p>
             </div>
           ))}
         </div>
@@ -56,15 +66,15 @@ export default function RecentTransactions({ transactions, notable }: Props) {
               <p className="text-sm font-medium text-[#E8F0F8] truncate">{tx.description}</p>
               <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                 <p className="text-xs text-[#6A97B4]">
-                  {new Date(tx.date).toLocaleDateString("en-IE", { day: "numeric", month: "short", timeZone: "UTC" })}
+                  {new Date(tx.date).toLocaleDateString(INTL_LOCALES[locale], { day: "numeric", month: "short", timeZone: "UTC" })}
                 </p>
-                <span className="text-xs px-1.5 py-0.5 bg-[#1A3048] rounded text-[#7BA8C4] capitalize">
-                  {tx.category}
+                <span className="text-xs px-1.5 py-0.5 bg-[#1A3048] rounded text-[#7BA8C4]">
+                  {tCategories.has(tx.category) ? tCategories(tx.category) : tx.category}
                 </span>
               </div>
             </div>
             <span className={`text-sm font-semibold whitespace-nowrap flex-shrink-0 ${TYPE_STYLES[tx.type] ?? "text-[#E8F0F8]"}`}>
-              {TYPE_PREFIX[tx.type]}{formatCurrency(tx.amount)}
+              {TYPE_PREFIX[tx.type]}{formatCurrency(tx.amount, locale)}
             </span>
           </div>
         ))}
@@ -75,7 +85,7 @@ export default function RecentTransactions({ transactions, notable }: Props) {
           href="/history"
           className="flex items-center justify-center gap-1.5 text-sm text-[#3AB5A0] hover:text-[#2E9D8A] font-medium transition-colors py-1"
         >
-          View all transactions
+          {t("viewAll")}
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
           </svg>

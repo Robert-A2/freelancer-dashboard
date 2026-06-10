@@ -2,17 +2,18 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 
-const DELETED_ITEMS = [
-  "Account",
-  "Uploaded CSV files",
-  "Transactions",
-  "Categories and corrections",
-  "Dashboard data",
-  "Analytics",
-  "Forecasts",
-  "Historical insights",
-];
+const DELETED_ITEM_KEYS = [
+  "account",
+  "uploads",
+  "transactions",
+  "categories",
+  "dashboardData",
+  "analytics",
+  "forecasts",
+  "historicalInsights",
+] as const;
 
 const CONFIRM_WORD = "DELETE";
 
@@ -20,6 +21,8 @@ type Step = "closed" | "confirming" | "deleting" | "done";
 
 export default function DeleteAccountSection({ email }: { email: string }) {
   const router = useRouter();
+  const t = useTranslations("settings.deleteAccount");
+  const tc = useTranslations("common");
   const [step, setStep] = useState<Step>("closed");
   const [input, setInput] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -37,7 +40,7 @@ export default function DeleteAccountSection({ email }: { email: string }) {
     const res = await fetch("/api/account", { method: "DELETE" });
 
     if (!res.ok) {
-      setError("Something went wrong while deleting your account. Please try again.");
+      setError(t("error"));
       setStep("confirming");
       return;
     }
@@ -52,16 +55,15 @@ export default function DeleteAccountSection({ email }: { email: string }) {
   return (
     <>
       <div className="card border-[#D9707025]">
-        <p className="label text-[#D97070] mb-1">Danger Zone</p>
+        <p className="label text-[#D97070] mb-1">{t("dangerZone")}</p>
         <p className="text-sm text-[#7BA8C4] leading-relaxed mb-4">
-          Permanently delete your account and every record associated with it —
-          uploads, transactions, categories, analytics, and forecasts. This cannot be undone.
+          {t("warning")}
         </p>
         <button
           onClick={() => setStep("confirming")}
           className="text-sm font-semibold px-5 py-3 rounded-xl bg-[#D9707015] hover:bg-[#D9707025] text-[#D97070] transition-colors duration-150 min-h-[48px]"
         >
-          Delete Account
+          {t("button")}
         </button>
       </div>
 
@@ -74,8 +76,8 @@ export default function DeleteAccountSection({ email }: { email: string }) {
                 <div className="w-12 h-12 mx-auto mb-4 bg-[#4CC4A420] rounded-full flex items-center justify-center text-[#4CC4A4] text-xl font-bold">
                   ✓
                 </div>
-                <p className="text-lg font-semibold text-[#E8F0F8] mb-1.5">Account successfully deleted</p>
-                <p className="text-sm text-[#7BA8C4]">Taking you back to the homepage…</p>
+                <p className="text-lg font-semibold text-[#E8F0F8] mb-1.5">{t("deletedHeading")}</p>
+                <p className="text-sm text-[#7BA8C4]">{t("deletedBody")}</p>
               </div>
             ) : (
               <>
@@ -84,25 +86,31 @@ export default function DeleteAccountSection({ email }: { email: string }) {
                     ⚠
                   </div>
                   <div>
-                    <h2 className="text-lg font-bold text-[#E8F0F8]">Delete Account</h2>
-                    <p className="text-xs text-[#D97070] font-medium">This action is permanent and cannot be undone</p>
+                    <h2 className="text-lg font-bold text-[#E8F0F8]">{t("heading")}</h2>
+                    <p className="text-xs text-[#D97070] font-medium">{t("permanentNotice")}</p>
                   </div>
                 </div>
 
                 <p className="text-sm text-[#A8C6E0] mb-2">
-                  Deleting <span className="font-medium text-[#E8F0F8]">{email}</span> will permanently remove the following:
+                  {t.rich("willRemove", {
+                    email,
+                    b: (chunks) => <span className="font-medium text-[#E8F0F8]">{chunks}</span>,
+                  })}
                 </p>
                 <ul className="bg-[#1A3048] rounded-xl px-4 py-3 mb-5 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5">
-                  {DELETED_ITEMS.map((item) => (
-                    <li key={item} className="text-xs text-[#7BA8C4] flex items-center gap-2">
+                  {DELETED_ITEM_KEYS.map((key) => (
+                    <li key={key} className="text-xs text-[#7BA8C4] flex items-center gap-2">
                       <span className="w-1 h-1 rounded-full bg-[#D97070] flex-shrink-0" />
-                      {item}
+                      {t(`items.${key}`)}
                     </li>
                   ))}
                 </ul>
 
                 <label className="block text-sm text-[#A8C6E0] mb-2">
-                  To confirm, type <span className="font-mono font-semibold text-[#D97070]">{CONFIRM_WORD}</span> below:
+                  {t.rich("confirmPrompt", {
+                    word: CONFIRM_WORD,
+                    b: (chunks) => <span className="font-mono font-semibold text-[#D97070]">{chunks}</span>,
+                  })}
                 </label>
                 <input
                   type="text"
@@ -125,14 +133,14 @@ export default function DeleteAccountSection({ email }: { email: string }) {
                     disabled={step === "deleting"}
                     className="btn-secondary flex-1 order-2 sm:order-1"
                   >
-                    Cancel
+                    {tc("buttons.cancel")}
                   </button>
                   <button
                     onClick={handleDelete}
                     disabled={input !== CONFIRM_WORD || step === "deleting"}
                     className="flex-1 order-1 sm:order-2 font-semibold px-6 py-3 rounded-xl transition-colors duration-150 min-h-[48px] bg-[#D97070] hover:bg-[#C75F5F] text-[#0D1B2B] disabled:opacity-30 disabled:cursor-not-allowed"
                   >
-                    {step === "deleting" ? "Deleting…" : "Delete Account"}
+                    {step === "deleting" ? t("deleting") : t("button")}
                   </button>
                 </div>
               </>

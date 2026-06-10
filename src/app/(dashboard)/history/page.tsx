@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getDataCoverage } from "@/lib/analytics-engine";
 import { Suspense } from "react";
+import { getTranslations } from "next-intl/server";
 import HistoryFilters from "@/components/history/HistoryFilters";
 import NeedsReviewBanner from "@/components/history/NeedsReviewBanner";
 import RecategorizeAllButton from "@/components/history/RecategorizeAllButton";
@@ -74,6 +75,7 @@ export default async function HistoryPage({ searchParams }: { searchParams: Prom
     displayTransactions = pagedTransactions;
   }
 
+  const t = await getTranslations("history");
   const pages = Math.ceil(displayTotal / limit);
   const categories = distinctCategories.map((c) => c.category).filter(Boolean).sort() as string[];
   const years = distinctYears.map((r) => r.year);
@@ -95,9 +97,9 @@ export default async function HistoryPage({ searchParams }: { searchParams: Prom
     <div className="space-y-8 md:space-y-10">
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h1 className="text-2xl font-bold">History</h1>
+          <h1 className="text-2xl font-bold">{t("heading")}</h1>
           <p className="text-[#7BA8C4] text-sm mt-0.5">
-            {displayTotal.toLocaleString()} transaction{displayTotal !== 1 ? "s" : ""}
+            {t("transactionCount", { count: displayTotal })}
           </p>
         </div>
         <RecategorizeAllButton />
@@ -118,7 +120,7 @@ export default async function HistoryPage({ searchParams }: { searchParams: Prom
 
       {displayTransactions.length === 0 ? (
         <div className="card text-center py-12">
-          <p className="text-[#6A97B4]">No transactions match these filters.</p>
+          <p className="text-[#6A97B4]">{t("noResults")}</p>
         </div>
       ) : (
         <TransactionList
@@ -136,9 +138,9 @@ export default async function HistoryPage({ searchParams }: { searchParams: Prom
 
       {pages > 1 && (
         <div className="flex items-center justify-center gap-3">
-          {page > 1 && <a href={buildPageUrl(page - 1)} className="btn-secondary px-4 py-2 text-sm">← Previous</a>}
-          <span className="text-sm text-[#6A97B4]">Page {page} of {pages}</span>
-          {page < pages && <a href={buildPageUrl(page + 1)} className="btn-secondary px-4 py-2 text-sm">Next →</a>}
+          {page > 1 && <a href={buildPageUrl(page - 1)} className="btn-secondary px-4 py-2 text-sm">{t("pagination.previous")}</a>}
+          <span className="text-sm text-[#6A97B4]">{t("pagination.pageOf", { page, pages })}</span>
+          {page < pages && <a href={buildPageUrl(page + 1)} className="btn-secondary px-4 py-2 text-sm">{t("pagination.next")}</a>}
         </div>
       )}
     </div>

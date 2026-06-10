@@ -3,19 +3,20 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { createClient } from "@/lib/supabase/client";
 
-function friendlyError(raw: string): string {
+function friendlyError(raw: string, t: ReturnType<typeof useTranslations<"auth.signup.errors">>): string {
   const msg = raw.toLowerCase();
   if (msg.includes("user already registered") || msg.includes("already been registered"))
-    return "An account with this email already exists. Try signing in instead.";
+    return t("alreadyRegistered");
   if (msg.includes("password should be at least") || msg.includes("password is too short"))
-    return "Password must be at least 8 characters.";
+    return t("passwordTooShort");
   if (msg.includes("unable to validate email") || msg.includes("invalid email"))
-    return "Please enter a valid email address.";
+    return t("invalidEmail");
   if (msg.includes("email rate limit") || msg.includes("too many requests"))
-    return "Too many attempts. Please wait a moment and try again.";
-  return "Something went wrong. Please try again.";
+    return t("rateLimit");
+  return t("generic");
 }
 
 function Spinner() {
@@ -31,6 +32,10 @@ type Mode = "signup" | "confirm";
 
 export default function SignupPage() {
   const router = useRouter();
+  const t = useTranslations("auth.signup");
+  const tErrors = useTranslations("auth.signup.errors");
+  const tAuth = useTranslations("auth");
+  const tc = useTranslations("common");
 
   const [mode, setMode]         = useState<Mode>("signup");
   const [fullName, setFullName] = useState("");
@@ -55,7 +60,7 @@ export default function SignupPage() {
     });
 
     if (signUpError) {
-      setError(friendlyError(signUpError.message));
+      setError(friendlyError(signUpError.message, tErrors));
       setLoading(false);
       return;
     }
@@ -91,8 +96,8 @@ export default function SignupPage() {
       <div className="min-h-screen flex items-center justify-center px-4 bg-[#0D1B2B]">
         <div className="w-full max-w-sm">
           <div className="mb-8 text-center">
-            <h1 className="text-2xl font-bold text-[#E8F0F8]">Freelancer OS</h1>
-            <p className="text-[#7BA8C4] text-sm mt-1">Financial clarity built for freelancers</p>
+            <h1 className="text-2xl font-bold text-[#E8F0F8]">{tc("appName")}</h1>
+            <p className="text-[#7BA8C4] text-sm mt-1">{tc("tagline")}</p>
           </div>
 
           <div className="card text-center space-y-5">
@@ -103,20 +108,20 @@ export default function SignupPage() {
             </div>
 
             <div>
-              <h2 className="text-lg font-semibold text-[#E8F0F8]">Check your inbox</h2>
+              <h2 className="text-lg font-semibold text-[#E8F0F8]">{t("confirm.heading")}</h2>
               <p className="text-sm text-[#7BA8C4] mt-1">
-                We sent a confirmation link to{" "}
+                {t("confirm.body")}{" "}
                 <span className="text-[#E8F0F8] font-medium">{email}</span>
               </p>
             </div>
 
             <p className="text-sm text-[#7BA8C4]">
-              Click the link in the email to activate your account, then sign in below.
+              {t("confirm.instructions")}
             </p>
 
             <div className="pt-1">
               {resentDone ? (
-                <p className="text-sm text-[#4CC4A4]">Email sent again. Check your inbox and spam folder.</p>
+                <p className="text-sm text-[#4CC4A4]">{t("confirm.resendSent")}</p>
               ) : (
                 <button
                   onClick={handleResend}
@@ -124,17 +129,17 @@ export default function SignupPage() {
                   className="text-sm text-[#3AB5A0] hover:underline disabled:opacity-50 flex items-center gap-2 mx-auto"
                 >
                   {resending && <Spinner />}
-                  {resending ? "Sending…" : "Resend confirmation email"}
+                  {resending ? t("confirm.sending") : t("confirm.resend")}
                 </button>
               )}
             </div>
 
             <div className="pt-2 border-t border-[#1E3550] space-y-2">
               <Link href="/login" className="block text-sm text-[#3AB5A0] hover:underline font-medium">
-                Go to sign in →
+                {t("confirm.goToSignIn")}
               </Link>
               <p className="text-xs text-[#6A97B4]">
-                Check your spam folder if you don&apos;t see the email.
+                {t("confirm.checkSpam")}
               </p>
             </div>
           </div>
@@ -147,25 +152,25 @@ export default function SignupPage() {
     <div className="min-h-screen flex items-center justify-center px-4 bg-[#0D1B2B]">
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
-          <h1 className="text-2xl font-bold text-[#E8F0F8]">Freelancer OS</h1>
-          <p className="text-[#7BA8C4] text-sm mt-1">Financial clarity built for freelancers</p>
+          <h1 className="text-2xl font-bold text-[#E8F0F8]">{tc("appName")}</h1>
+          <p className="text-[#7BA8C4] text-sm mt-1">{tc("tagline")}</p>
         </div>
 
         <div className="card">
           <div className="mb-6">
-            <h2 className="text-lg font-semibold">Create your account</h2>
+            <h2 className="text-lg font-semibold">{t("heading")}</h2>
             <p className="text-sm text-[#7BA8C4] mt-1">
-              Upload your bank CSV and understand your money in minutes.
+              {t("subtitle")}
             </p>
           </div>
 
           <form onSubmit={handleSignup} className="space-y-5">
             <div>
-              <label className="label block mb-2">Full name</label>
+              <label className="label block mb-2">{t("fullName")}</label>
               <input
                 type="text"
                 className="input"
-                placeholder="Your name"
+                placeholder={t("fullNamePlaceholder")}
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 required
@@ -175,7 +180,7 @@ export default function SignupPage() {
             </div>
 
             <div>
-              <label className="label block mb-2">Email</label>
+              <label className="label block mb-2">{t("email")}</label>
               <input
                 type="email"
                 className="input"
@@ -188,12 +193,12 @@ export default function SignupPage() {
             </div>
 
             <div>
-              <label className="label block mb-2">Password</label>
+              <label className="label block mb-2">{t("password")}</label>
               <div className="relative">
                 <input
                   type={showPassword ? "text" : "password"}
                   className="input pr-12"
-                  placeholder="Min. 8 characters"
+                  placeholder={t("passwordPlaceholder")}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
@@ -205,7 +210,7 @@ export default function SignupPage() {
                   onClick={() => setShowPassword(!showPassword)}
                   tabIndex={-1}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-[#6A97B4] hover:text-[#E8F0F8] transition-colors p-1 rounded"
-                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  aria-label={showPassword ? tAuth("hidePassword") : tAuth("showPassword")}
                 >
                   {showPassword ? (
                     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
@@ -220,7 +225,7 @@ export default function SignupPage() {
                 </button>
               </div>
               {password.length > 0 && password.length < 8 && (
-                <p className="text-xs text-[#D4A254] mt-1.5">At least 8 characters needed.</p>
+                <p className="text-xs text-[#D4A254] mt-1.5">{t("passwordHint")}</p>
               )}
             </div>
 
@@ -231,15 +236,15 @@ export default function SignupPage() {
             <button type="submit" className="btn-primary w-full" disabled={loading}>
               {loading ? (
                 <span className="flex items-center justify-center gap-2">
-                  <Spinner /> Creating account…
+                  <Spinner /> {t("creatingAccount")}
                 </span>
-              ) : "Create account"}
+              ) : t("createAccount")}
             </button>
           </form>
 
           <p className="text-center text-sm text-[#6A97B4] mt-5">
-            Already have an account?{" "}
-            <Link href="/login" className="text-[#3AB5A0] hover:underline font-medium">Sign in</Link>
+            {t("alreadyHaveAccount")}{" "}
+            <Link href="/login" className="text-[#3AB5A0] hover:underline font-medium">{t("signIn")}</Link>
           </p>
         </div>
       </div>

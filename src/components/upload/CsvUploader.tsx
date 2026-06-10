@@ -2,6 +2,8 @@
 
 import { useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations, useLocale } from "next-intl";
+import { INTL_LOCALES, type Locale } from "@/i18n/locales";
 
 interface ImportResult {
   totalRows: number;
@@ -25,6 +27,8 @@ type Stage =
 
 export default function CsvUploader() {
   const router = useRouter();
+  const t = useTranslations("upload");
+  const locale = useLocale() as Locale;
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
   const [stage, setStage] = useState<Stage>({ status: "idle" });
@@ -32,7 +36,7 @@ export default function CsvUploader() {
   const processFile = useCallback(
     async (file: File) => {
       if (!file.name.toLowerCase().endsWith(".csv")) {
-        setStage({ status: "error", message: "Only .csv files are supported." });
+        setStage({ status: "error", message: "only-csv" });
         return;
       }
 
@@ -47,7 +51,7 @@ export default function CsvUploader() {
       if (!presignRes.ok) {
         setStage({
           status: "error",
-          message: presignData.error ?? "Failed to prepare upload. Please try again.",
+          message: presignData.error ?? "prepare-failed",
         });
         return;
       }
@@ -59,7 +63,7 @@ export default function CsvUploader() {
           setStage({ status: "uploading", progress: pct, fileName: file.name });
         });
       } catch {
-        setStage({ status: "error", message: "Upload to storage failed. Please try again." });
+        setStage({ status: "error", message: "storage-upload-failed" });
         return;
       }
 
@@ -74,7 +78,7 @@ export default function CsvUploader() {
       const data = await processRes.json();
 
       if (!processRes.ok) {
-        setStage({ status: "error", message: data.error || "Processing failed." });
+        setStage({ status: "error", message: data.error || "processing-failed" });
         return;
       }
 
@@ -134,10 +138,10 @@ export default function CsvUploader() {
           onClick={() => inputRef.current?.click()}
         >
           <div className="text-4xl mb-3">📂</div>
-          <p className="text-[#E8F0F8] font-semibold mb-1">Drop your CSV here</p>
-          <p className="text-sm text-[#7BA8C4]">or click to browse</p>
+          <p className="text-[#E8F0F8] font-semibold mb-1">{t("dropzone.title")}</p>
+          <p className="text-sm text-[#7BA8C4]">{t("dropzone.subtitle")}</p>
           <p className="text-xs text-[#6A97B4] mt-3">
-            Any size · Any date range · Duplicates skipped automatically
+            {t("dropzone.hint")}
           </p>
           <input
             ref={inputRef}
@@ -156,15 +160,15 @@ export default function CsvUploader() {
     return (
       <div className="card py-10 flex flex-col items-center gap-6">
         <div className="text-center">
-          <p className="font-semibold text-[#E8F0F8]">Uploading {stage.fileName}</p>
+          <p className="font-semibold text-[#E8F0F8]">{t("uploading.title", { fileName: stage.fileName })}</p>
           <p className="text-sm text-[#7BA8C4] mt-1">
-            Going directly to Supabase Storage. No file size limit
+            {t("uploading.subtitle")}
           </p>
         </div>
 
         <div className="w-full max-w-sm">
           <div className="flex justify-between text-xs text-[#6A97B4] mb-1.5">
-            <span>Uploading…</span>
+            <span>{t("uploading.label")}</span>
             <span>{stage.progress}%</span>
           </div>
           <div className="h-2 bg-[#1E3550] rounded-full overflow-hidden">
@@ -184,9 +188,9 @@ export default function CsvUploader() {
       <div className="card py-10 flex flex-col items-center gap-4">
         <div className="w-10 h-10 border-4 border-[#3AB5A0] border-t-transparent rounded-full animate-spin" />
         <div className="text-center">
-          <p className="font-semibold text-[#E8F0F8]">Processing {stage.fileName}</p>
+          <p className="font-semibold text-[#E8F0F8]">{t("processing.title", { fileName: stage.fileName })}</p>
           <p className="text-sm text-[#7BA8C4] mt-1">
-            Parsing · Deduplicating · Categorising · Updating analytics…
+            {t("processing.subtitle")}
           </p>
         </div>
       </div>
@@ -201,7 +205,7 @@ export default function CsvUploader() {
     // display as the previous day/month in the user's local timezone.
     const fmt = (iso: string | null) =>
       iso
-        ? new Date(iso).toLocaleDateString("en-IE", { month: "long", year: "numeric", timeZone: "UTC" })
+        ? new Date(iso).toLocaleDateString(INTL_LOCALES[locale], { month: "long", year: "numeric", timeZone: "UTC" })
         : null;
 
     const dateFrom = fmt(result.dateRangeFrom);
@@ -211,6 +215,13 @@ export default function CsvUploader() {
         ? `${dateFrom} – ${dateTo}`
         : dateFrom ?? null;
 
+    const stats = [
+      { label: t("done.stats.imported"), value: result.importedRows.toLocaleString(locale), color: "text-[#4CC4A4]" },
+      { label: t("done.stats.duplicates"), value: result.duplicateRows.toLocaleString(locale), color: "text-[#6A97B4]" },
+      { label: t("done.stats.total"), value: result.totalRows.toLocaleString(locale), color: "text-[#E8F0F8]" },
+      { label: t("done.stats.invalid"), value: result.skippedRows.toLocaleString(locale), color: "text-[#D4A254]" },
+    ];
+
     return (
       <div className="card space-y-5">
         <div className="flex items-center gap-3">
@@ -218,18 +229,13 @@ export default function CsvUploader() {
             ✓
           </div>
           <div>
-            <p className="font-semibold text-[#4CC4A4]">Import complete</p>
+            <p className="font-semibold text-[#4CC4A4]">{t("done.title")}</p>
             <p className="text-sm text-[#7BA8C4]">{fileName}</p>
           </div>
         </div>
 
         <div className="grid grid-cols-2 gap-3">
-          {[
-            { label: "Transactions imported", value: result.importedRows.toLocaleString(), color: "text-[#4CC4A4]" },
-            { label: "Duplicates skipped", value: result.duplicateRows.toLocaleString(), color: "text-[#6A97B4]" },
-            { label: "Total rows", value: result.totalRows.toLocaleString(), color: "text-[#E8F0F8]" },
-            { label: "Invalid rows", value: result.skippedRows.toLocaleString(), color: "text-[#D4A254]" },
-          ].map((s) => (
+          {stats.map((s) => (
             <div key={s.label} className="bg-[#1A3048] rounded-xl p-3 text-center">
               <p className={`text-2xl font-bold ${s.color}`}>{s.value}</p>
               <p className="text-xs text-[#6A97B4] mt-1">{s.label}</p>
@@ -241,17 +247,17 @@ export default function CsvUploader() {
           <div className="bg-[#1A3048] rounded-xl px-4 py-3 space-y-1.5">
             {dateRangeLabel && (
               <div className="flex items-center justify-between text-sm">
-                <span className="text-[#7BA8C4]">Analysis range</span>
+                <span className="text-[#7BA8C4]">{t("done.analysisRange")}</span>
                 <span className="font-medium text-[#E8F0F8]">{dateRangeLabel}</span>
               </div>
             )}
             <div className="flex items-center justify-between text-sm">
-              <span className="text-[#7BA8C4]">Transactions imported</span>
-              <span className="font-medium text-[#4CC4A4]">{result.importedRows.toLocaleString()}</span>
+              <span className="text-[#7BA8C4]">{t("done.transactionsImported")}</span>
+              <span className="font-medium text-[#4CC4A4]">{result.importedRows.toLocaleString(locale)}</span>
             </div>
             {result.categoriesDetected > 0 && (
               <div className="flex items-center justify-between text-sm">
-                <span className="text-[#7BA8C4]">Categories detected</span>
+                <span className="text-[#7BA8C4]">{t("done.categoriesDetected")}</span>
                 <span className="font-medium text-[#3AB5A0]">{result.categoriesDetected}</span>
               </div>
             )}
@@ -260,41 +266,41 @@ export default function CsvUploader() {
 
         {result.typeBreakdown && (
           <div className="bg-[#1A3048] rounded-xl px-4 py-3 space-y-2">
-            <p className="text-xs font-semibold text-[#6A97B4] uppercase tracking-wide">What we found</p>
+            <p className="text-xs font-semibold text-[#6A97B4] uppercase tracking-wide">{t("done.whatWeFound")}</p>
             <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
               {result.typeBreakdown.income > 0 && (
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-[#7BA8C4]">Income payments</span>
-                  <span className="font-medium text-[#4CC4A4]">{result.typeBreakdown.income.toLocaleString()}</span>
+                  <span className="text-[#7BA8C4]">{t("done.incomePayments")}</span>
+                  <span className="font-medium text-[#4CC4A4]">{result.typeBreakdown.income.toLocaleString(locale)}</span>
                 </div>
               )}
               {result.typeBreakdown.expense > 0 && (
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-[#7BA8C4]">Expenses</span>
-                  <span className="font-medium text-[#D4A254]">{result.typeBreakdown.expense.toLocaleString()}</span>
+                  <span className="text-[#7BA8C4]">{t("done.expenses")}</span>
+                  <span className="font-medium text-[#D4A254]">{result.typeBreakdown.expense.toLocaleString(locale)}</span>
                 </div>
               )}
               {result.typeBreakdown.savings > 0 && (
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-[#7BA8C4]">Savings transfers</span>
-                  <span className="font-medium text-[#3AB5A0]">{result.typeBreakdown.savings.toLocaleString()}</span>
+                  <span className="text-[#7BA8C4]">{t("done.savingsTransfers")}</span>
+                  <span className="font-medium text-[#3AB5A0]">{result.typeBreakdown.savings.toLocaleString(locale)}</span>
                 </div>
               )}
               {result.typeBreakdown.transfer > 0 && (
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-[#7BA8C4]">Internal transfers</span>
-                  <span className="font-medium text-[#6A97B4]">{result.typeBreakdown.transfer.toLocaleString()}</span>
+                  <span className="text-[#7BA8C4]">{t("done.internalTransfers")}</span>
+                  <span className="font-medium text-[#6A97B4]">{result.typeBreakdown.transfer.toLocaleString(locale)}</span>
                 </div>
               )}
             </div>
             {result.typeBreakdown.transfer > 0 && (
               <p className="text-xs text-[#6A97B4] pt-1">
-                Internal transfers (between your own accounts) are excluded from income and expense totals.
+                {t("done.transferNote")}
               </p>
             )}
             <div className="pt-1 border-t border-[#1E3550]">
               <a href="/history" className="text-xs text-[#3AB5A0] hover:underline">
-                Review categorisation in History →
+                {t("done.reviewCategorisation")}
               </a>
             </div>
           </div>
@@ -304,23 +310,20 @@ export default function CsvUploader() {
           <div className="flex items-start gap-2.5 px-3 py-3 bg-[#D4A2540A] border border-[#D4A25425] rounded-xl">
             <span className="text-[#D4A254] text-base flex-shrink-0">⚠</span>
             <p className="text-xs text-[#D4A254] leading-relaxed">
-              Multiple currencies detected ({result.currencies.join(", ")}). Totals and insights
-              are calculated across all amounts. Results may be inaccurate if currencies were
-              not converted before export. Consider exporting a single-currency statement for
-              best accuracy.
+              {t("done.mixedCurrencies", { currencies: result.currencies.join(", ") })}
             </p>
           </div>
         )}
 
         <div className="flex gap-3">
           <button onClick={reset} className="btn-secondary flex-1">
-            Upload another file
+            {t("done.uploadAnother")}
           </button>
           <button
             onClick={() => router.push("/dashboard?firstUpload=true")}
             className="btn-primary flex-1"
           >
-            View Dashboard
+            {t("done.viewDashboard")}
           </button>
         </div>
       </div>
@@ -328,7 +331,7 @@ export default function CsvUploader() {
   }
 
   // ── Error ──────────────────────────────────────────────────────────────────
-  const err = parseUploadError(stage.message);
+  const err = parseUploadError(stage.message, t);
   return (
     <div className="card space-y-4">
       <div className="flex items-start gap-3">
@@ -344,7 +347,7 @@ export default function CsvUploader() {
       </div>
 
       <div className="bg-[#1A3048] rounded-xl px-4 py-3">
-        <p className="text-xs font-semibold text-[#6A97B4] uppercase tracking-wide mb-2">What to try</p>
+        <p className="text-xs font-semibold text-[#6A97B4] uppercase tracking-wide mb-2">{t("errors.whatToTry")}</p>
         <ul className="space-y-1.5">
           {err.steps.map((step, i) => (
             <li key={i} className="text-sm text-[#E8F0F8] flex items-start gap-2">
@@ -357,13 +360,13 @@ export default function CsvUploader() {
 
       <div className="flex flex-col gap-2">
         <button onClick={reset} className="btn-primary w-full">
-          Try a different file
+          {t("errors.tryDifferentFile")}
         </button>
         <a
           href="mailto:support@freelanceros.app?subject=CSV Upload Issue"
           className="text-xs text-center text-[#6A97B4] hover:text-[#E8F0F8] transition-colors py-1"
         >
-          Still stuck? Email us and we&apos;ll help →
+          {t("errors.stillStuck")}
         </a>
       </div>
     </div>
@@ -371,67 +374,52 @@ export default function CsvUploader() {
 }
 
 // ── Error parser ───────────────────────────────────────────────────────────────
-function parseUploadError(message: string): {
+function parseUploadError(
+  message: string,
+  t: ReturnType<typeof useTranslations<"upload">>
+): {
   heading: string;
   reason: string;
   steps: string[];
 } {
   const lower = message.toLowerCase();
 
+  if (lower === "only-csv" || lower.includes("only .csv") || lower.includes("not a csv") || lower.includes(".csv files are supported")) {
+    return {
+      heading: t("errors.unsupportedFile.heading"),
+      reason: t("errors.unsupportedFile.reason"),
+      steps: t.raw("errors.unsupportedFile.steps") as string[],
+    };
+  }
+
   if (lower.includes("no valid transactions") || lower.includes("check your csv")) {
     return {
-      heading: "We couldn't find your transactions",
-      reason: "Your file uploaded successfully but we couldn't read the transaction data inside it.",
-      steps: [
-        "Make sure you exported as CSV, not Excel (.xlsx) or PDF",
-        "Re-export directly from your bank's website or app",
-        "The file should have Date, Description, and Amount columns",
-      ],
+      heading: t("errors.noTransactions.heading"),
+      reason: t("errors.noTransactions.reason"),
+      steps: t.raw("errors.noTransactions.steps") as string[],
     };
   }
 
   if (lower.includes("empty")) {
     return {
-      heading: "The file appears to be empty",
-      reason: "We received your file but it had no content inside.",
-      steps: [
-        "Check that you selected the right file",
-        "Try re-exporting from your bank — the download may not have completed",
-      ],
+      heading: t("errors.emptyFile.heading"),
+      reason: t("errors.emptyFile.reason"),
+      steps: t.raw("errors.emptyFile.steps") as string[],
     };
   }
 
-  if (lower.includes("only .csv") || lower.includes("not a csv") || lower.includes(".csv files are supported")) {
+  if (lower === "prepare-failed" || lower === "storage-upload-failed" || lower.includes("failed to prepare") || lower.includes("storage") || lower.includes("network") || lower.includes("connection")) {
     return {
-      heading: "This file type is not supported",
-      reason: "We accept CSV files only. Excel, PDF, and other formats cannot be processed.",
-      steps: [
-        "Go to your bank's website and look for 'Export as CSV'",
-        "Avoid downloading as Excel (.xlsx) or PDF",
-        "Most banks label this option 'Download statement' or 'Export transactions'",
-      ],
-    };
-  }
-
-  if (lower.includes("failed to prepare") || lower.includes("storage") || lower.includes("network") || lower.includes("connection")) {
-    return {
-      heading: "Connection problem",
-      reason: "We couldn't reach our servers. This is usually temporary.",
-      steps: [
-        "Check your internet connection",
-        "Wait a moment and try again",
-      ],
+      heading: t("errors.connectionProblem.heading"),
+      reason: t("errors.connectionProblem.reason"),
+      steps: t.raw("errors.connectionProblem.steps") as string[],
     };
   }
 
   return {
-    heading: "Something went wrong",
-    reason: "We had trouble processing your file. This can happen with unusual bank export formats.",
-    steps: [
-      "Try re-exporting from your bank's website",
-      "Make sure the file is saved as CSV (not Excel or PDF)",
-      "Check your internet connection and try again",
-    ],
+    heading: t("errors.generic.heading"),
+    reason: t("errors.generic.reason"),
+    steps: t.raw("errors.generic.steps") as string[],
   };
 }
 

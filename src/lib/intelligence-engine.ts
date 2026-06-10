@@ -1,6 +1,9 @@
-﻿// Financial Intelligence Engine V2
+// Financial Intelligence Engine V2
 // Every insight names exact months, years, and amounts — no generic "last 6 months" language.
 // What happened · Why it happened · What action improves the outcome.
+//
+// Insights are returned as { key, values } descriptors (see insight-types.ts) and
+// rendered locale-aware via t.rich() — no hardcoded English strings here.
 
 import type {
   CategoryTrend,
@@ -8,8 +11,13 @@ import type {
   MonthlySeasonality,
   MonthPoint,
 } from "./analytics-engine";
+import type { Insight, RankedInsight, InsightValue } from "./insight-types";
+import { cat } from "./insight-types";
+import { formatCurrency } from "@/utils/finance";
+import { INTL_LOCALES, type Locale } from "@/i18n/locales";
 
 export type { CategoryTrend, YearlySnapshot, MonthlySeasonality, MonthPoint };
+export type { RankedInsight } from "./insight-types";
 
 export interface RecentTx {
   description: string;
@@ -23,37 +31,30 @@ export interface RecentTx {
 // instead of guessing from the rendered sentence.
 export type InsightCategory = "growth" | "cashflow" | "spending" | "seasonality" | "clients";
 
-export interface RankedInsight {
-  text: string;
-  category: InsightCategory;
-}
-
 export interface DashboardIntelligence {
-  snapshotSummary: string;
-  snapshotContext: string[];
-  comparisonInterpretation: string;
-  trajectoryInsight: string;
-  trajectoryDetails: string[];
-  forecastReasons: string[];
-  forecastImprovements: string[];
-  cashflowDeficitReason: string | null;
+  snapshotSummary: Insight | null;
+  snapshotContext: Insight[];
+  comparisonInterpretation: Insight | null;
+  trajectoryInsight: Insight | null;
+  trajectoryDetails: Insight[];
+  forecastReasons: Insight[];
+  forecastImprovements: Insight[];
+  cashflowDeficitReason: Insight | null;
   healthStatus: "healthy" | "watch" | "at-risk";
-  healthStatusExplanation: string;
+  healthStatusExplanation: Insight | null;
   businessTrendDirection: "improving" | "stable" | "weakening";
-  biggestRisk: string | null;
-  biggestOpportunity: string | null;
-  seasonalInsights: string[];
-  notableTransactions: string[];
+  biggestRisk: Insight | null;
+  biggestOpportunity: Insight | null;
+  seasonalInsights: Insight[];
+  notableTransactions: Insight[];
 }
 
 // ── Formatters ─────────────────────────────────────────────────────────────
 
-const eur = (n: number) =>
-  new Intl.NumberFormat("en-IE", {
-    style: "currency",
-    currency: "EUR",
-    maximumFractionDigits: 0,
-  }).format(Math.abs(n));
+// Mirrors the old eur() helper's Math.abs() behaviour, locale-aware.
+function fmtAmt(n: number, locale: Locale): string {
+  return formatCurrency(Math.abs(n), locale);
+}
 
 const pct = (current: number, base: number): number => {
   if (base === 0) return current > 0 ? 100 : 0;
@@ -63,32 +64,13 @@ const pct = (current: number, base: number): number => {
 const avg = (arr: number[]): number =>
   arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0;
 
-// e.g. monthLabel(2024, 3) → "March 2024"
-function monthLabel(year: number, month: number, style: "long" | "short" = "long"): string {
-  return new Date(Date.UTC(year, month - 1, 1)).toLocaleDateString("en-IE", {
+// e.g. monthYearLabel(2024, 3, "en", "long") → "March 2024" / monthYearLabel(2024, 3, "fr", "long") → "mars 2024"
+function monthYearLabel(year: number, month: number, locale: Locale, style: "long" | "short" = "long"): string {
+  return new Date(Date.UTC(year, month - 1, 1)).toLocaleDateString(INTL_LOCALES[locale], {
     month: style,
     year: "numeric",
     timeZone: "UTC",
   });
-}
-
-function capitalize(s: string): string {
-  return s.charAt(0).toUpperCase() + s.slice(1);
-}
-
-// Known category display overrides (handles acronyms capitalize() would mangle)
-const CATEGORY_DISPLAY: Record<string, string> = {
-  "ai tools": "AI tools",
-};
-
-// For sentence-start positions — capitalises first letter, preserves acronyms
-function displayCat(s: string): string {
-  return CATEGORY_DISPLAY[s.toLowerCase()] ?? capitalize(s);
-}
-
-// For mid-sentence positions — keeps lowercase except for known acronyms
-function inlineCat(s: string): string {
-  return CATEGORY_DISPLAY[s.toLowerCase()] ?? s;
 }
 
 // ── Trend helpers ──────────────────────────────────────────────────────────
@@ -149,24 +131,24 @@ function topChangedCategories(
     .slice(0, limit);
 }
 
-function categoryYearRange(cat: CategoryTrend) {
-  const years = Object.keys(cat.yearlyTotals).map(Number).sort();
+function categoryYearRange(c: CategoryTrend) {
+  const years = Object.keys(c.yearlyTotals).map(Number).sort((a, b) => a - b);
   if (years.length < 2) return null;
   return {
     from: years[0],
     to: years[years.length - 1],
-    fromAmt: cat.yearlyTotals[years[0]] ?? 0,
-    toAmt: cat.yearlyTotals[years[years.length - 1]] ?? 0,
+    fromAmt: c.yearlyTotals[years[0]] ?? 0,
+    toAmt: c.yearlyTotals[years[years.length - 1]] ?? 0,
   };
 }
 
 // ── Seasonal helpers ───────────────────────────────────────────────────────
 
 const QUARTERS = [
-  { label: "Q1 (January – March)", months: [1, 2, 3] },
-  { label: "Q2 (April – June)", months: [4, 5, 6] },
-  { label: "Q3 (July – September)", months: [7, 8, 9] },
-  { label: "Q4 (October – December)", months: [10, 11, 12] },
+  { id: "q1", months: [1, 2, 3] },
+  { id: "q2", months: [4, 5, 6] },
+  { id: "q3", months: [7, 8, 9] },
+  { id: "q4", months: [10, 11, 12] },
 ];
 
 function quarterAvg(
@@ -215,32 +197,54 @@ function detectIncomeType(recentTxs: RecentTx[], active: MonthPoint[]): IncomeTy
 }
 
 // ── Language helpers ───────────────────────────────────────────────────────
-// These functions return the right phrase depending on income type,
-// so a salaried user never sees "client payments" or "pipeline" language.
+// These return Insight descriptors with an `incomeType` select tag, so a
+// salaried user never sees "client payments" or "pipeline" language.
 
-function phraseIncomeAboveAvg(it: IncomeType, currentInc: number, avgInc: number, diff: number, months: number): string {
-  const base = `Income (${eur(currentInc)}) is ${diff}% above your ${months}-month average of ${eur(avgInc)}`;
-  if (it === "salary") return `${base}, higher than your usual monthly amount.`;
-  return `${base}, likely reflecting higher client payments than your typical month.`;
+function phraseIncomeAboveAvg(it: IncomeType, currentInc: number, avgInc: number, diff: number, months: number, locale: Locale): Insight {
+  return {
+    key: "insights.context.incomeAboveAvg",
+    values: {
+      incomeType: it === "salary" ? "salary" : "other",
+      current: fmtAmt(currentInc, locale),
+      pct: String(diff),
+      months,
+      avg: fmtAmt(avgInc, locale),
+    },
+  };
 }
 
-function phraseIncomeBelowAvg(it: IncomeType, currentInc: number, avgInc: number, diff: number, months: number): string {
-  const base = `Income (${eur(currentInc)}) is ${Math.abs(diff)}% below your ${months}-month average of ${eur(avgInc)}`;
-  if (it === "salary") return `${base}, lower than your usual monthly amount.`;
-  return `${base}. Fewer or lower-value client payments this month.`;
+function phraseIncomeBelowAvg(it: IncomeType, currentInc: number, avgInc: number, diff: number, months: number, locale: Locale): Insight {
+  return {
+    key: "insights.context.incomeBelowAvg",
+    values: {
+      incomeType: it === "salary" ? "salary" : "other",
+      current: fmtAmt(currentInc, locale),
+      pct: String(Math.abs(diff)),
+      months,
+      avg: fmtAmt(avgInc, locale),
+    },
+  };
 }
 
-function phraseIncomeDecline(it: IncomeType, pctDrop: number): string {
-  if (it === "salary") return `Income declined ${pctDrop}% compared to last month.`;
-  if (it === "mixed")  return `Income declined ${pctDrop}% compared to last month. Review both your employment income and client payments.`;
-  return `Income declined ${pctDrop}% compared to last month. Fewer client payments received. Monitor your pipeline.`;
+function phraseIncomeDecline(it: IncomeType, pctDrop: number): Insight {
+  return {
+    key: "insights.comparison.incomeDecline",
+    values: { incomeType: it, pct: String(pctDrop) },
+  };
 }
 
-function phraseIncomeYoYDrop(it: IncomeType, dropPct: number, prevYear: number, prevAmt: number, lastYear: number, lastAmt: number): string {
-  const base = `Income fell ${dropPct}% from ${prevYear} (${eur(prevAmt)}) to ${lastYear} (${eur(lastAmt)}).`;
-  if (it === "salary") return `${base} Review whether this reflects a pay change or a gap period.`;
-  if (it === "mixed")  return `${base} Consider growing your freelance income or reviewing employment terms.`;
-  return `${base} Additional client revenue may be required to restore historical cashflow levels.`;
+function phraseIncomeYoYDrop(it: IncomeType, dropPct: number, prevYear: number, prevAmt: number, lastYear: number, lastAmt: number, locale: Locale): Insight {
+  return {
+    key: "insights.forecast.incomeYoYDrop",
+    values: {
+      incomeType: it,
+      pct: String(dropPct),
+      prevYear: String(prevYear),
+      prevAmount: fmtAmt(prevAmt, locale),
+      lastYear: String(lastYear),
+      lastAmount: fmtAmt(lastAmt, locale),
+    },
+  };
 }
 
 // ── Historical insights — ranked and grouped by theme ─────────────────────
@@ -261,7 +265,8 @@ export function buildHistoricalInsights(
   categories: CategoryTrend[],
   yearlySnapshots: YearlySnapshot[],
   seasonality: MonthlySeasonality[],
-  incomeConcentration?: { topSourceDesc: string | null; topSourcePct: number; totalSources: number; isHighConcentration: boolean }
+  incomeConcentration: { topSourceDesc: string | null; topSourcePct: number; totalSources: number; isHighConcentration: boolean } | undefined,
+  locale: Locale
 ): RankedInsight[] {
   const active = history.filter((h) => h.income > 0 || h.expenses > 0);
   const avgIncome = avg(active.map((h) => h.income));
@@ -270,7 +275,7 @@ export function buildHistoricalInsights(
   const lastMonth = active[active.length - 1] ?? null;
 
   const insights: RankedInsight[] = [];
-  const push = (category: InsightCategory, text: string) => insights.push({ text, category });
+  const push = (category: InsightCategory, insight: Insight) => insights.push({ ...insight, category });
 
   // ── Historical highlights — exact years and months ─────────────────────
 
@@ -280,7 +285,10 @@ export function buildHistoricalInsights(
     const firstYear = yearlySnapshots[0];
     const lastYear = yearlySnapshots[yearlySnapshots.length - 1];
 
-    push("growth", `Best income year: ${bestIncYear.year}, ${eur(bestIncYear.income)} in total income.`);
+    push("growth", {
+      key: "insights.bestIncomeYear",
+      values: { year: String(bestIncYear.year), amount: fmtAmt(bestIncYear.income, locale) },
+    });
 
     if (yearlySnapshots.length >= 3 && firstYear.year !== lastYear.year) {
       // Only use firstYear as a comparison base if it has at least 6 months of data.
@@ -289,22 +297,33 @@ export function buildHistoricalInsights(
 
       const incGrowth = pct(lastYear.income, firstYear.income);
       if (firstYearIsComplete && Math.abs(incGrowth) >= 10 && Math.abs(incGrowth) <= 1000) {
-        push(
-          "growth",
-          `Income ${incGrowth > 0 ? "grew" : "declined"} ${Math.abs(incGrowth)}% from ${firstYear.year} (${eur(firstYear.income)}) to ${lastYear.year} (${eur(lastYear.income)}).`
-        );
+        push("growth", {
+          key: "insights.incomeGrowthYearly",
+          values: {
+            direction: incGrowth > 0 ? "grew" : "declined",
+            pct: String(Math.abs(incGrowth)),
+            fromYear: String(firstYear.year),
+            fromAmount: fmtAmt(firstYear.income, locale),
+            toYear: String(lastYear.year),
+            toAmount: fmtAmt(lastYear.income, locale),
+          },
+        });
       }
 
       // Show highest expense year — only attach a growth % when the base year is reliable
       if (highExpYear.year !== firstYear.year) {
         const expGrowth = pct(highExpYear.expenses, firstYear.expenses);
         const showPct = firstYearIsComplete && expGrowth >= 20 && expGrowth <= 1000;
-        push(
-          "spending",
-          showPct
-            ? `Highest expense year: ${highExpYear.year} at ${eur(highExpYear.expenses)}. Expenses grew ${expGrowth}% since ${firstYear.year}.`
-            : `Highest expense year: ${highExpYear.year}, ${eur(highExpYear.expenses)} in total expenses.`
-        );
+        push("spending", {
+          key: "insights.highestExpenseYear",
+          values: {
+            withGrowth: showPct ? "yes" : "no",
+            year: String(highExpYear.year),
+            amount: fmtAmt(highExpYear.expenses, locale),
+            pct: String(expGrowth),
+            baseYear: String(firstYear.year),
+          },
+        });
       }
     }
 
@@ -313,32 +332,45 @@ export function buildHistoricalInsights(
     const totalExp = yearlySnapshots.reduce((s, y) => s + y.expenses, 0);
     if (totalInc > 0) {
       const margin = Math.round(((totalInc - totalExp) / totalInc) * 100);
-      push(
-        "cashflow",
-        `Overall cashflow margin from ${firstYear.year} to ${lastYear.year}: ${margin}% of income${margin >= 20 ? " — strong." : margin >= 10 ? " — healthy." : margin >= 0 ? " — tight. Watch expense growth." : " — negative overall. Expenses exceeded income across this period."}`
-      );
+      const tier = margin >= 20 ? "strong" : margin >= 10 ? "healthy" : margin >= 0 ? "tight" : "negative";
+      push("cashflow", {
+        key: "insights.overallCashflowMargin",
+        values: { fromYear: String(firstYear.year), toYear: String(lastYear.year), pct: String(margin), tier },
+      });
     }
 
     // Cashflow streak with exact dates
     const streak = longestPositiveStreakWithDates(active);
     if (streak) {
-      push(
-        "cashflow",
-        `Longest positive cashflow streak: ${streak.length} consecutive months (${monthLabel(streak.startYear, streak.startMonth, "short")} – ${monthLabel(streak.endYear, streak.endMonth, "short")}).`
-      );
+      push("cashflow", {
+        key: "insights.longestPositiveStreak",
+        values: {
+          count: streak.length,
+          startMonth: monthYearLabel(streak.startYear, streak.startMonth, locale, "short"),
+          endMonth: monthYearLabel(streak.endYear, streak.endMonth, locale, "short"),
+        },
+      });
     }
   } else if (active.length >= 3 && firstMonth && lastMonth) {
-    push(
-      "growth",
-      `Average monthly income from ${monthLabel(firstMonth.year, firstMonth.monthNum, "short")} to ${monthLabel(lastMonth.year, lastMonth.monthNum, "short")}: ${eur(avgIncome)}.`
-    );
-    push("spending", `Average monthly expenses across this period: ${eur(avgExpenses)}.`);
+    push("growth", {
+      key: "insights.avgMonthlyIncomeRange",
+      values: {
+        startMonth: monthYearLabel(firstMonth.year, firstMonth.monthNum, locale, "short"),
+        endMonth: monthYearLabel(lastMonth.year, lastMonth.monthNum, locale, "short"),
+        amount: fmtAmt(avgIncome, locale),
+      },
+    });
+    push("spending", {
+      key: "insights.avgMonthlyExpenses",
+      values: { amount: fmtAmt(avgExpenses, locale) },
+    });
     if (avgIncome > 0 && avgExpenses > 0) {
       const avgCfMargin = Math.round(((avgIncome - avgExpenses) / avgIncome) * 100);
-      push(
-        "cashflow",
-        `Average cashflow margin: ${avgCfMargin}% of income — ${avgCfMargin >= 20 ? "strong." : avgCfMargin >= 10 ? "healthy." : avgCfMargin >= 0 ? "tight." : "negative (expenses exceeded income on average)."}`
-      );
+      const tier = avgCfMargin >= 20 ? "strong" : avgCfMargin >= 10 ? "healthy" : avgCfMargin >= 0 ? "tight" : "negative";
+      push("cashflow", {
+        key: "insights.avgCashflowMargin",
+        values: { pct: String(avgCfMargin), tier },
+      });
     }
   }
 
@@ -346,10 +378,10 @@ export function buildHistoricalInsights(
   if (active.length >= 3) {
     const best = active.reduce((b, h) => (h.income > b.income ? h : b));
     if (best.income > 0) {
-      push(
-        "growth",
-        `Best income month on record: ${monthLabel(best.year, best.monthNum, "short")} at ${eur(best.income)}.`
-      );
+      push("growth", {
+        key: "insights.bestIncomeMonth",
+        values: { month: monthYearLabel(best.year, best.monthNum, locale, "short"), amount: fmtAmt(best.income, locale) },
+      });
     }
   }
 
@@ -358,10 +390,10 @@ export function buildHistoricalInsights(
     const recentActive6 = active.slice(-6);
     const recentNegCount = recentActive6.filter(h => h.income - h.expenses < 0).length;
     if (recentNegCount >= 3 && active.length >= 6) {
-      push(
-        "cashflow",
-        `Cashflow was negative in ${recentNegCount} of the last 6 months. Building a 2–3 month expense reserve would protect against future income gaps.`
-      );
+      push("cashflow", {
+        key: "insights.negativeCashflowRecent",
+        values: { count: recentNegCount },
+      });
     }
 
     // Flag if cashflow margin deteriorated year-over-year
@@ -371,10 +403,15 @@ export function buildHistoricalInsights(
       const lastMargin = lastY.income > 0 ? (lastY.income - lastY.expenses) / lastY.income : 0;
       const prevMargin = prevY.income > 0 ? (prevY.income - prevY.expenses) / prevY.income : 0;
       if (prevMargin > 0.1 && lastMargin < prevMargin * 0.5) {
-        push(
-          "cashflow",
-          `Cashflow margin fell from ${Math.round(prevMargin * 100)}% in ${prevY.year} to ${Math.round(lastMargin * 100)}% in ${lastY.year}. Expenses are growing faster than income.`
-        );
+        push("cashflow", {
+          key: "insights.cashflowMarginDeclined",
+          values: {
+            prevPct: String(Math.round(prevMargin * 100)),
+            prevYear: String(prevY.year),
+            lastPct: String(Math.round(lastMargin * 100)),
+            lastYear: String(lastY.year),
+          },
+        });
       }
     }
   }
@@ -393,10 +430,10 @@ export function buildHistoricalInsights(
       const avgExpInGap = avg(incomeGaps.map((h) => h.expenses));
 
       if (recentGaps.length >= 1) {
-        push(
-          "cashflow",
-          `Income gap${totalGaps !== 1 ? "s" : ""} detected: ${totalGaps} month${totalGaps !== 1 ? "s" : ""} with expenses but no income recorded (avg ${eur(avgExpInGap)}/month in gaps). A 2–3 month income reserve would cover future gaps.`
-        );
+        push("cashflow", {
+          key: "insights.incomeGapsDetected",
+          values: { count: totalGaps, amount: fmtAmt(avgExpInGap, locale) },
+        });
       }
     }
   }
@@ -407,7 +444,7 @@ export function buildHistoricalInsights(
 
   if (activeSeason.length >= 4) {
     const quarterData = QUARTERS.map((q) => ({
-      label: q.label,
+      id: q.id,
       ...quarterAvg(seasonality, q.months),
     })).filter((q) => q.income > 0);
 
@@ -415,19 +452,24 @@ export function buildHistoricalInsights(
       const peakQ = quarterData.reduce((b, q) => (q.income > b.income ? q : b));
       const lowestQ = quarterData.reduce((b, q) => (q.income < b.income ? q : b));
 
-      if (peakQ.label !== lowestQ.label && pct(peakQ.income, lowestQ.income) > 10) {
-        push(
-          "seasonality",
-          `Income peaks in ${peakQ.label} (averaging ${eur(peakQ.income)}/month historically) and is lowest in ${lowestQ.label} (averaging ${eur(lowestQ.income)}/month).`
-        );
+      if (peakQ.id !== lowestQ.id && pct(peakQ.income, lowestQ.income) > 10) {
+        push("seasonality", {
+          key: "insights.seasonalIncomePeak",
+          values: {
+            peakQuarter: peakQ.id,
+            peakAmount: fmtAmt(peakQ.income, locale),
+            lowQuarter: lowestQ.id,
+            lowAmount: fmtAmt(lowestQ.income, locale),
+          },
+        });
       }
 
       const peakExpQ = quarterData.reduce((b, q) => (q.expenses > b.expenses ? q : b));
       if (peakExpQ.expenses > 0 && pct(peakExpQ.expenses, avg(quarterData.map((q) => q.expenses))) > 15) {
-        push(
-          "seasonality",
-          `Expenses are highest in ${peakExpQ.label} (avg ${eur(peakExpQ.expenses)}/month) . Plan cashflow buffer for this period.`
-        );
+        push("seasonality", {
+          key: "insights.seasonalExpensePeak",
+          values: { quarter: peakExpQ.id, amount: fmtAmt(peakExpQ.expenses, locale) },
+        });
       }
     }
 
@@ -435,56 +477,68 @@ export function buildHistoricalInsights(
     const peak = activeSeason.reduce((b, s) => (s.avgIncome > b.avgIncome ? s : b));
     const lowest = activeSeason.reduce((b, s) => (s.avgIncome < b.avgIncome ? s : b));
     if (peak.monthName !== lowest.monthName) {
-      push(
-        "seasonality",
-        `${peak.monthName} is historically your strongest income month (avg ${eur(peak.avgIncome)}); ${lowest.monthName} is typically your weakest (avg ${eur(lowest.avgIncome)}).`
-      );
+      push("seasonality", {
+        key: "insights.seasonalStrongestWeakestMonth",
+        values: {
+          peakMonth: String(peak.monthOfYear),
+          peakAmount: fmtAmt(peak.avgIncome, locale),
+          lowMonth: String(lowest.monthOfYear),
+          lowAmount: fmtAmt(lowest.avgIncome, locale),
+        },
+      });
     }
   }
 
   // ── Category insights — exact years and growth amounts ──────────────────
 
-  for (const cat of categories.slice(0, 6)) {
-    const range = categoryYearRange(cat);
+  for (const c of categories.slice(0, 6)) {
+    const range = categoryYearRange(c);
     if (!range) continue;
 
     const { from, to, fromAmt, toAmt } = range;
     if (from === to) continue;
 
     const totalGrowth = pct(toAmt, fromAmt);
+    const years = to - from;
 
-    if (cat.yearOverYearTrend === "growing" && totalGrowth >= 20) {
-      push(
-        "spending",
-        `${displayCat(cat.category)} costs grew from ${eur(fromAmt)} in ${from} to ${eur(toAmt)} in ${to} (+${totalGrowth}% over ${to - from} year${to - from !== 1 ? "s" : ""}).`
-      );
-    } else if (cat.yearOverYearTrend === "declining" && totalGrowth <= -20) {
-      push(
-        "spending",
-        `${displayCat(cat.category)} costs fell from ${eur(fromAmt)} in ${from} to ${eur(toAmt)} in ${to} (${totalGrowth}% reduction over ${to - from} year${to - from !== 1 ? "s" : ""}).`
-      );
+    if (c.yearOverYearTrend === "growing" && totalGrowth >= 20) {
+      push("spending", {
+        key: "insights.categoryGrew",
+        values: { category: cat(c.category), fromAmount: fmtAmt(fromAmt, locale), fromYear: String(from), toAmount: fmtAmt(toAmt, locale), toYear: String(to), pct: String(totalGrowth), years },
+      });
+    } else if (c.yearOverYearTrend === "declining" && totalGrowth <= -20) {
+      push("spending", {
+        key: "insights.categoryFell",
+        values: { category: cat(c.category), fromAmount: fmtAmt(fromAmt, locale), fromYear: String(from), toAmount: fmtAmt(toAmt, locale), toYear: String(to), pct: String(Math.abs(totalGrowth)), years },
+      });
     } else if (toAmt > fromAmt * 2) {
-      push(
-        "spending",
-        `${displayCat(cat.category)} expenses more than doubled from ${eur(fromAmt)} in ${from} to ${eur(toAmt)} in ${to}.`
-      );
+      push("spending", {
+        key: "insights.categoryDoubled",
+        values: { category: cat(c.category), fromAmount: fmtAmt(fromAmt, locale), fromYear: String(from), toAmount: fmtAmt(toAmt, locale), toYear: String(to) },
+      });
     }
   }
 
   // Subscription growth check with exact years
   const subCat = categories.find((c) => c.category === "subscriptions" || c.category === "software");
   if (subCat) {
-    const years = Object.keys(subCat.yearlyTotals).map(Number).sort();
+    const years = Object.keys(subCat.yearlyTotals).map(Number).sort((a, b) => a - b);
     if (years.length >= 3) {
       const growingEveryYear = years.every((y, i) => {
         if (i === 0) return true;
         return (subCat.yearlyTotals[y] ?? 0) >= (subCat.yearlyTotals[years[i - 1]] ?? 0);
       });
       if (growingEveryYear) {
-        push(
-          "spending",
-          `${displayCat(subCat.category)} costs have increased every year from ${years[0]} (${eur(subCat.yearlyTotals[years[0]] ?? 0)}) to ${years[years.length - 1]} (${eur(subCat.yearlyTotals[years[years.length - 1]] ?? 0)}).`
-        );
+        push("spending", {
+          key: "insights.categorySubscriptionsGrewEveryYear",
+          values: {
+            category: cat(subCat.category),
+            fromYear: String(years[0]),
+            fromAmount: fmtAmt(subCat.yearlyTotals[years[0]] ?? 0, locale),
+            toYear: String(years[years.length - 1]),
+            toAmount: fmtAmt(subCat.yearlyTotals[years[years.length - 1]] ?? 0, locale),
+          },
+        });
       }
     }
   }
@@ -492,15 +546,19 @@ export function buildHistoricalInsights(
   // ── Client concentration ─────────────────────────────────────────────────
   if (incomeConcentration && incomeConcentration.totalSources > 0) {
     if (incomeConcentration.isHighConcentration) {
-      push(
-        "clients",
-        `Client concentration: ${incomeConcentration.topSourcePct}% of income over the last 12 months came from a single source${incomeConcentration.topSourceDesc ? ` (${incomeConcentration.topSourceDesc})` : ""}. Diversifying reduces the impact if that source slows down.`
-      );
+      push("clients", {
+        key: "insights.clientConcentration",
+        values: {
+          pct: String(incomeConcentration.topSourcePct),
+          hasSource: incomeConcentration.topSourceDesc ? "yes" : "no",
+          source: incomeConcentration.topSourceDesc ?? "",
+        },
+      });
     } else {
-      push(
-        "clients",
-        `Income is reasonably diversified: your largest client made up ${incomeConcentration.topSourcePct}% of the last 12 months' income across ${incomeConcentration.totalSources} sources.`
-      );
+      push("clients", {
+        key: "insights.incomeReasonablyDiversified",
+        values: { pct: String(incomeConcentration.topSourcePct), total: incomeConcentration.totalSources },
+      });
     }
   }
 
@@ -528,7 +586,8 @@ export function generateDashboardIntelligence(
   _yearlySnapshots: YearlySnapshot[],
   _seasonality: MonthlySeasonality[],
   // Optional: income concentration data from DB query
-  incomeConcentration?: { topSourceDesc: string | null; topSourcePct: number; totalSources: number; isHighConcentration: boolean }
+  incomeConcentration: { topSourceDesc: string | null; topSourcePct: number; totalSources: number; isHighConcentration: boolean } | undefined,
+  locale: Locale
 ): DashboardIntelligence {
   // Defensive: guard against undefined inputs that can arrive at runtime
   const categories: CategoryTrend[] = _categories ?? [];
@@ -536,16 +595,16 @@ export function generateDashboardIntelligence(
   const seasonality: MonthlySeasonality[] = _seasonality ?? [];
 
   const empty: DashboardIntelligence = {
-    snapshotSummary: "Upload a CSV to see your financial picture.",
+    snapshotSummary: { key: "insights.snapshot.uploadPrompt" },
     snapshotContext: [],
-    comparisonInterpretation: "",
-    trajectoryInsight: "",
+    comparisonInterpretation: null,
+    trajectoryInsight: null,
     trajectoryDetails: [],
     forecastReasons: [],
     forecastImprovements: [],
     cashflowDeficitReason: null,
     healthStatus: "watch",
-    healthStatusExplanation: "",
+    healthStatusExplanation: null,
     businessTrendDirection: "stable",
     biggestRisk: null,
     biggestOpportunity: null,
@@ -569,9 +628,6 @@ export function generateDashboardIntelligence(
   const firstMonth = active[0] ?? null;
   const lastMonth = active[active.length - 1] ?? null;
 
-  const dataFrom = firstMonth ? monthLabel(firstMonth.year, firstMonth.monthNum) : null;
-  const dataTo = lastMonth ? monthLabel(lastMonth.year, lastMonth.monthNum) : null;
-
   // ── SNAPSHOT SUMMARY ────────────────────────────────────────────────────
 
   const biggestExpIncrease = topChangedCategories(categories, "up", 1)[0];
@@ -583,58 +639,55 @@ export function generateDashboardIntelligence(
   const expUp = changes && changes.expenses > 5;
   const cashflowOk = (current.totalIncome - current.totalExpenses) >= 0;
 
-  let snapshotSummary: string;
+  let snapshotSummary: Insight;
 
   if (!previous) {
-    snapshotSummary = cashflowOk
-      ? "First data imported. Cashflow is positive."
-      : "First data imported. Expenses are exceeding income.";
+    snapshotSummary = { key: "insights.snapshot.firstUpload", values: { cashflowOk: cashflowOk ? "positive" : "negative" } };
   } else if (incUp && expDown) {
-    snapshotSummary = "Excellent month. Income grew while expenses fell.";
+    snapshotSummary = { key: "insights.snapshot.excellentMonth" };
   } else if (incUp && expUp) {
     snapshotSummary = biggestExpIncrease
-      ? `Income increased but expenses also rose, primarily due to ${inlineCat(biggestExpIncrease.category)} costs (${eur(biggestExpIncrease.changeAmount)} more than last month).`
-      : "Income grew this month, but rising expenses offset the gain.";
+      ? { key: "insights.snapshot.incomeUpExpensesUp", values: { hasCategory: "yes", category: cat(biggestExpIncrease.category), amount: fmtAmt(biggestExpIncrease.changeAmount, locale) } }
+      : { key: "insights.snapshot.incomeUpExpensesUp", values: { hasCategory: "no" } };
   } else if (incDown && expUp) {
     snapshotSummary = biggestExpIncrease
-      ? `Difficult month. Income fell while ${inlineCat(biggestExpIncrease.category)} spending rose by ${eur(biggestExpIncrease.changeAmount)} compared to last month.`
-      : "Difficult month. Income fell and expenses rose simultaneously.";
+      ? { key: "insights.snapshot.incomeDownExpensesUp", values: { hasCategory: "yes", category: cat(biggestExpIncrease.category), amount: fmtAmt(biggestExpIncrease.changeAmount, locale) } }
+      : { key: "insights.snapshot.incomeDownExpensesUp", values: { hasCategory: "no" } };
   } else if (!cashflowOk) {
     snapshotSummary = biggestExpIncrease
-      ? `Expenses exceeded income this month, primarily due to ${inlineCat(biggestExpIncrease.category)} costs.`
-      : "Expenses exceeded income this month. Cashflow is negative.";
+      ? { key: "insights.snapshot.expensesExceedIncome", values: { hasCategory: "yes", category: cat(biggestExpIncrease.category) } }
+      : { key: "insights.snapshot.expensesExceedIncome", values: { hasCategory: "no" } };
   } else if (expUp && biggestExpIncrease) {
-    snapshotSummary = `Expenses increased this month, led by ${inlineCat(biggestExpIncrease.category)} (${eur(biggestExpIncrease.changeAmount)} above last month). Cashflow remains positive.`;
+    snapshotSummary = { key: "insights.snapshot.expensesIncreasedLed", values: { category: cat(biggestExpIncrease.category), amount: fmtAmt(biggestExpIncrease.changeAmount, locale) } };
   } else if (expDown && biggestExpDecrease) {
-    snapshotSummary = `Good cost control. ${inlineCat(biggestExpDecrease.category)} spending fell ${eur(Math.abs(biggestExpDecrease.changeAmount))} compared to last month.`;
+    snapshotSummary = { key: "insights.snapshot.goodCostControl", values: { category: cat(biggestExpDecrease.category), amount: fmtAmt(Math.abs(biggestExpDecrease.changeAmount), locale) } };
   } else {
-    snapshotSummary = "Stable month. Finances are holding steady.";
+    snapshotSummary = { key: "insights.snapshot.stableMonth" };
   }
 
   // ── SNAPSHOT CONTEXT ────────────────────────────────────────────────────
 
-  const snapshotContext: string[] = [];
+  const snapshotContext: Insight[] = [];
 
-  if (dataFrom && dataTo && active.length > 1) {
-    snapshotContext.push(
-      `Analysis covers ${active.length} months of data from ${dataFrom} to ${dataTo}.`
-    );
+  if (firstMonth && lastMonth && active.length > 1) {
+    snapshotContext.push({
+      key: "insights.context.analysisCovers",
+      values: {
+        months: active.length,
+        fromMonth: monthYearLabel(firstMonth.year, firstMonth.monthNum, locale, "long"),
+        toMonth: monthYearLabel(lastMonth.year, lastMonth.monthNum, locale, "long"),
+      },
+    });
   }
 
   if (avgIncome > 0) {
     const diff = pct(current.totalIncome, avgIncome);
     if (diff > 5) {
-      snapshotContext.push(
-        phraseIncomeAboveAvg(incomeType, current.totalIncome, avgIncome, diff, active.length)
-      );
+      snapshotContext.push(phraseIncomeAboveAvg(incomeType, current.totalIncome, avgIncome, diff, active.length, locale));
     } else if (diff < -5) {
-      snapshotContext.push(
-        phraseIncomeBelowAvg(incomeType, current.totalIncome, avgIncome, diff, active.length)
-      );
+      snapshotContext.push(phraseIncomeBelowAvg(incomeType, current.totalIncome, avgIncome, diff, active.length, locale));
     } else {
-      snapshotContext.push(
-        `Income is in line with your ${active.length}-month average of ${eur(avgIncome)}.`
-      );
+      snapshotContext.push({ key: "insights.context.incomeInLine", values: { months: active.length, avg: fmtAmt(avgIncome, locale) } });
     }
   }
 
@@ -642,62 +695,63 @@ export function generateDashboardIntelligence(
     const diff = pct(current.totalExpenses, avgExpenses);
     const topCat = categories[0];
     if (diff > 10 && topCat) {
-      snapshotContext.push(
-        `Expenses (${eur(current.totalExpenses)}) are ${diff}% above your historical average. ${displayCat(topCat.category)} is your largest expense category at ${eur(topCat.currentMonthTotal)} this month.`
-      );
+      snapshotContext.push({
+        key: "insights.context.expensesAboveAvgTopCat",
+        values: { current: fmtAmt(current.totalExpenses, locale), pct: String(diff), category: cat(topCat.category), amount: fmtAmt(topCat.currentMonthTotal, locale) },
+      });
     } else if (diff < -10) {
-      snapshotContext.push(
-        `Expenses (${eur(current.totalExpenses)}) are ${Math.abs(diff)}% below your historical average of ${eur(avgExpenses)}. Good cost control this month.`
-      );
+      snapshotContext.push({
+        key: "insights.context.expensesBelowAvg",
+        values: { current: fmtAmt(current.totalExpenses, locale), pct: String(Math.abs(diff)), avg: fmtAmt(avgExpenses, locale) },
+      });
     }
   }
 
   // ── COMPARISON INTERPRETATION ────────────────────────────────────────────
 
-  let comparisonInterpretation = "";
+  let comparisonInterpretation: Insight | null = null;
 
   if (changes && previous) {
     const { income: ic, expenses: ec } = changes;
     const driversUp = topChangedCategories(categories, "up", 2);
     const driversDown = topChangedCategories(categories, "down", 2);
 
-    const driverText = (cats: CategoryTrend[]) =>
-      cats.map((c) => `${inlineCat(c.category)} (${eur(c.changeAmount)} more)`).join(" and ");
-
-    const driverTextDown = (cats: CategoryTrend[]) =>
-      cats.map((c) => `${inlineCat(c.category)} (${eur(Math.abs(c.changeAmount))} less)`).join(" and ");
+    const driverValues = (cats: CategoryTrend[], useAbs: boolean): Record<string, InsightValue> => {
+      const values: Record<string, InsightValue> = { driverCount: cats.length === 0 ? "0" : cats.length === 1 ? "1" : "2" };
+      if (cats[0]) { values.cat1 = cat(cats[0].category); values.amt1 = fmtAmt(useAbs ? Math.abs(cats[0].changeAmount) : cats[0].changeAmount, locale); }
+      if (cats[1]) { values.cat2 = cat(cats[1].category); values.amt2 = fmtAmt(useAbs ? Math.abs(cats[1].changeAmount) : cats[1].changeAmount, locale); }
+      return values;
+    };
 
     if (ic > 5 && ec < 0) {
-      comparisonInterpretation = driversDown.length
-        ? `Income grew and expenses fell. Strongest monthly outcome. Cost reductions in ${driverTextDown(driversDown)}.`
-        : "Income grew and expenses fell. Your best possible monthly result.";
+      comparisonInterpretation = { key: "insights.comparison.incomeUpExpensesDown", values: driverValues(driversDown, true) };
     } else if (ic > 5 && ec > 5) {
-      comparisonInterpretation = driversUp.length
-        ? (ic > ec
-          ? `Income grew faster than expenses (+${ic}% vs +${ec}%). Cashflow improved. Expense increase driven by ${driverText(driversUp)}.`
-          : `Expenses grew faster than income (+${ec}% vs +${ic}%). Cashflow tightened, driven by ${driverText(driversUp)}.`)
-        : (ic > ec
-          ? `Income growth (+${ic}%) outpaced expense growth (+${ec}%). Cashflow improved.`
-          : `Expenses (+${ec}%) grew faster than income (+${ic}%). Cashflow under pressure.`);
+      if (ic > ec) {
+        comparisonInterpretation = driversUp.length
+          ? { key: "insights.comparison.incomeOutpacesExpensesWithDrivers", values: { ...driverValues(driversUp, false), icPct: String(ic), ecPct: String(ec) } }
+          : { key: "insights.comparison.incomeOutpacesExpenses", values: { icPct: String(ic), ecPct: String(ec) } };
+      } else {
+        comparisonInterpretation = driversUp.length
+          ? { key: "insights.comparison.expensesOutpaceIncomeWithDrivers", values: { ...driverValues(driversUp, false), icPct: String(ic), ecPct: String(ec) } }
+          : { key: "insights.comparison.expensesOutpaceIncome", values: { icPct: String(ic), ecPct: String(ec) } };
+      }
     } else if (ic < -5 && ec > 5) {
-      comparisonInterpretation = driversUp.length
-        ? `Income fell ${Math.abs(ic)}% while expenses rose ${ec}%, driven by ${driverText(driversUp)}. Cashflow deteriorated significantly.`
-        : `Income fell while expenses rose. Cashflow deteriorated this month.`;
+      comparisonInterpretation = { key: "insights.comparison.incomeDownExpensesUp", values: { ...driverValues(driversUp, false), icPct: String(Math.abs(ic)), ecPct: String(ec) } };
     } else if (ic < -5) {
       comparisonInterpretation = phraseIncomeDecline(incomeType, Math.abs(ic));
     } else if (ec > 10 && driversUp.length) {
-      comparisonInterpretation = `Expenses jumped ${ec}% this month, primarily due to ${driverText(driversUp)}.`;
+      comparisonInterpretation = { key: "insights.comparison.expensesJumped", values: { ...driverValues(driversUp, false), ecPct: String(ec) } };
     } else if (changes.cashflow > 10) {
-      comparisonInterpretation = "Cashflow improved meaningfully . Spending discipline or higher income compared to last month.";
+      comparisonInterpretation = { key: "insights.comparison.cashflowImprovedMeaningfully" };
     } else {
-      comparisonInterpretation = "Finances were broadly stable compared to last month.";
+      comparisonInterpretation = { key: "insights.comparison.stable" };
     }
   }
 
   // ── TRAJECTORY — analyses the COMPLETE uploaded history, not a fixed window ─
 
-  let trajectoryInsight = "";
-  const trajectoryDetails: string[] = [];
+  let trajectoryInsight: Insight | null = null;
+  const trajectoryDetails: Insight[] = [];
 
   const spanMonths = active.length;
   const firstPoint = active[0];
@@ -705,10 +759,10 @@ export function generateDashboardIntelligence(
   const growingExpCats = categories.filter((c) => c.yearOverYearTrend === "growing").slice(0, 2);
 
   if (spanMonths < 3) {
-    trajectoryInsight = "More data needed for trend analysis . Keep uploading monthly statements.";
+    trajectoryInsight = { key: "insights.trajectory.moreDataNeeded" };
   } else {
-    const startLabel = monthLabel(firstPoint.year, firstPoint.monthNum, "short");
-    const endLabel = monthLabel(lastPoint.year, lastPoint.monthNum, "short");
+    const startMonth = monthYearLabel(firstPoint.year, firstPoint.monthNum, locale, "short");
+    const endMonth = monthYearLabel(lastPoint.year, lastPoint.monthNum, locale, "short");
     const overallIncChange = pct(lastPoint.income, firstPoint.income);
     const overallExpChange = pct(lastPoint.expenses, firstPoint.expenses);
     const avgMonthlyInc = avg(active.map((h) => h.income));
@@ -719,18 +773,23 @@ export function generateDashboardIntelligence(
       const lastYear = yearlySnapshots[yearlySnapshots.length - 1];
 
       // Use first year with ≥6 months as the reliable base for % comparisons.
-      // A partial first year (e.g. only Dec 2023) produces absurd growth figures.
       const reliableBase = yearlySnapshots.find((y) => y.monthCount >= 6) ?? yearlySnapshots[0];
       const yearSpan = lastYear.year - reliableBase.year;
       const totalIncGrowth = pct(lastYear.income, reliableBase.income);
 
-      if (totalIncGrowth > 10) {
-        trajectoryInsight = `Income grew ${totalIncGrowth}% over ${yearSpan} year${yearSpan !== 1 ? "s" : ""}, from ${eur(reliableBase.income)}/year in ${reliableBase.year} to ${eur(lastYear.income)}/year in ${lastYear.year}.`;
-      } else if (totalIncGrowth < -10) {
-        trajectoryInsight = `Income declined ${Math.abs(totalIncGrowth)}% over ${yearSpan} year${yearSpan !== 1 ? "s" : ""}, from ${eur(reliableBase.income)}/year in ${reliableBase.year} to ${eur(lastYear.income)}/year in ${lastYear.year}.`;
-      } else {
-        trajectoryInsight = `Income has been broadly stable over ${yearSpan} years (${reliableBase.year}–${lastYear.year}), averaging ${eur(avgMonthlyInc)}/month.`;
-      }
+      trajectoryInsight = {
+        key: "insights.trajectory.multiYear",
+        values: {
+          direction: totalIncGrowth > 10 ? "grew" : totalIncGrowth < -10 ? "declined" : "stable",
+          pct: String(Math.abs(totalIncGrowth)),
+          years: yearSpan,
+          fromYear: String(reliableBase.year),
+          fromAmount: fmtAmt(reliableBase.income, locale),
+          toYear: String(lastYear.year),
+          toAmount: fmtAmt(lastYear.income, locale),
+          avgAmount: fmtAmt(avgMonthlyInc, locale),
+        },
+      };
 
       // Year-by-year breakdown
       yearlySnapshots.forEach((snap, i) => {
@@ -739,37 +798,69 @@ export function generateDashboardIntelligence(
 
         // Partial previous year makes percentages meaningless — just state the totals
         if (prev.monthCount < 6) {
-          trajectoryDetails.push(
-            `${snap.year}: income ${eur(snap.income)}, expenses ${eur(snap.expenses)}.`
-          );
+          trajectoryDetails.push({
+            key: "insights.trajectory.yearSummaryPartial",
+            values: { year: String(snap.year), income: fmtAmt(snap.income, locale), expenses: fmtAmt(snap.expenses, locale) },
+          });
           return;
         }
 
         const yoyInc = pct(snap.income, prev.income);
         const yoyExp = pct(snap.expenses, prev.expenses);
-        const direction =
-          yoyInc > 5 ? `↑ ${yoyInc}%` : yoyInc < -5 ? `↓ ${Math.abs(yoyInc)}%` : "→ stable";
+        const direction = yoyInc > 5 ? "up" : yoyInc < -5 ? "down" : "stable";
         const expNote =
-          yoyExp > yoyInc + 5 && yoyExp <= 1000
-            ? ` (expenses grew faster at +${yoyExp}%)`
-            : yoyExp < -5
-            ? ` (expenses fell ${Math.abs(yoyExp)}%)`
-            : "";
-        trajectoryDetails.push(
-          `${snap.year}: income ${direction} to ${eur(snap.income)}${expNote}.`
-        );
+          yoyExp > yoyInc + 5 && yoyExp <= 1000 ? "faster"
+          : yoyExp < -5 ? "fell"
+          : "none";
+        trajectoryDetails.push({
+          key: "insights.trajectory.yearOverYear",
+          values: {
+            year: String(snap.year),
+            direction,
+            pct: String(Math.abs(yoyInc)),
+            income: fmtAmt(snap.income, locale),
+            expNote,
+            expPct: String(Math.abs(yoyExp)),
+          },
+        });
       });
 
     } else if (spanMonths >= 12) {
       // ── 12-23 MONTHS: full-year with half-year comparison ─────────────────
       if (overallIncChange > 5 && overallExpChange <= overallIncChange) {
-        trajectoryInsight = `Over ${spanMonths} months (${startLabel} → ${endLabel}), income grew ${overallIncChange}%, from ${eur(firstPoint.income)} to ${eur(lastPoint.income)}.${overallExpChange > 0 ? ` Expenses also rose ${overallExpChange}%.` : " Expenses stayed controlled."}`;
+        trajectoryInsight = {
+          key: "insights.trajectory.growthWithExpenseNote",
+          values: {
+            months: spanMonths, startMonth, endMonth,
+            pct: String(overallIncChange),
+            fromAmount: fmtAmt(firstPoint.income, locale),
+            toAmount: fmtAmt(lastPoint.income, locale),
+            expNote: overallExpChange > 0 ? "rose" : "controlled",
+            expPct: String(overallExpChange),
+          },
+        };
       } else if (overallIncChange < -5) {
-        trajectoryInsight = `Over ${spanMonths} months (${startLabel} → ${endLabel}), income declined ${Math.abs(overallIncChange)}%, from ${eur(firstPoint.income)} to ${eur(lastPoint.income)}.${growingExpCats.length ? ` ${displayCat(growingExpCats[0].category)} costs continued growing.` : ""}`;
+        trajectoryInsight = {
+          key: "insights.trajectory.declineOverPeriod",
+          values: {
+            months: spanMonths, startMonth, endMonth,
+            pct: String(Math.abs(overallIncChange)),
+            fromAmount: fmtAmt(firstPoint.income, locale),
+            toAmount: fmtAmt(lastPoint.income, locale),
+            hasGrowingCat: growingExpCats.length ? "yes" : "no",
+            category: growingExpCats.length ? cat(growingExpCats[0].category) : "",
+          },
+        };
       } else if (overallExpChange > overallIncChange + 5) {
-        trajectoryInsight = `From ${startLabel} to ${endLabel}, expenses grew ${overallExpChange}% while income grew only ${overallIncChange}%. Cashflow margin is narrowing over time.`;
+        trajectoryInsight = {
+          key: "insights.trajectory.expensesOutpacingIncome",
+          values: { startMonth, endMonth, expPct: String(overallExpChange), incPct: String(overallIncChange) },
+        };
       } else {
-        trajectoryInsight = `Over ${spanMonths} months (${startLabel} → ${endLabel}), income averaged ${eur(avgMonthlyInc)}/month and expenses averaged ${eur(avgMonthlyExp)}/month.`;
+        trajectoryInsight = {
+          key: "insights.trajectory.stableAverages",
+          values: { months: spanMonths, startMonth, endMonth, avgIncome: fmtAmt(avgMonthlyInc, locale), avgExpenses: fmtAmt(avgMonthlyExp, locale) },
+        };
       }
 
       // Compare first half to second half
@@ -782,37 +873,80 @@ export function generateDashboardIntelligence(
       const shExp = avg(secondHalf.map((h) => h.expenses));
       const halfIncChange = pct(shInc, fhInc);
       const halfExpChange = pct(shExp, fhExp);
-      const fhStart = monthLabel(firstHalf[0].year, firstHalf[0].monthNum, "short");
-      const fhEnd = monthLabel(firstHalf[firstHalf.length - 1].year, firstHalf[firstHalf.length - 1].monthNum, "short");
-      const shStart = monthLabel(secondHalf[0].year, secondHalf[0].monthNum, "short");
-      const shEnd = monthLabel(secondHalf[secondHalf.length - 1].year, secondHalf[secondHalf.length - 1].monthNum, "short");
+      const fhStart = monthYearLabel(firstHalf[0].year, firstHalf[0].monthNum, locale, "short");
+      const fhEnd = monthYearLabel(firstHalf[firstHalf.length - 1].year, firstHalf[firstHalf.length - 1].monthNum, locale, "short");
+      const shStart = monthYearLabel(secondHalf[0].year, secondHalf[0].monthNum, locale, "short");
+      const shEnd = monthYearLabel(secondHalf[secondHalf.length - 1].year, secondHalf[secondHalf.length - 1].monthNum, locale, "short");
 
-      trajectoryDetails.push(
-        `${fhStart}–${fhEnd}: avg income ${eur(fhInc)}/month, expenses ${eur(fhExp)}/month.`
-      );
-      trajectoryDetails.push(
-        `${shStart}–${shEnd}: avg income ${eur(shInc)}/month ${halfIncChange >= 0 ? `(+${halfIncChange}%)` : `(${halfIncChange}%)`}, expenses ${eur(shExp)}/month${halfExpChange > 5 ? ` (+${halfExpChange}%)` : ""}.`
-      );
+      trajectoryDetails.push({
+        key: "insights.trajectory.firstHalf",
+        values: { startMonth: fhStart, endMonth: fhEnd, avgIncome: fmtAmt(fhInc, locale), avgExpenses: fmtAmt(fhExp, locale) },
+      });
+      trajectoryDetails.push({
+        key: "insights.trajectory.secondHalf",
+        values: {
+          startMonth: shStart, endMonth: shEnd,
+          avgIncome: fmtAmt(shInc, locale),
+          incSign: halfIncChange >= 0 ? "pos" : "neg",
+          incChange: String(Math.abs(halfIncChange)),
+          avgExpenses: fmtAmt(shExp, locale),
+          expNote: halfExpChange > 5 ? "higher" : "none",
+          expChange: String(halfExpChange),
+        },
+      });
 
     } else {
       // ── 3-11 MONTHS: full window from first to last ───────────────────────
       if (overallIncChange > 5 && overallExpChange <= 5) {
-        trajectoryInsight = `Income grew ${overallIncChange}% from ${eur(firstPoint.income)} in ${startLabel} to ${eur(lastPoint.income)} in ${endLabel}. Expenses remained under control.`;
+        trajectoryInsight = {
+          key: "insights.trajectory.growthControlled",
+          values: { pct: String(overallIncChange), fromAmount: fmtAmt(firstPoint.income, locale), startMonth, toAmount: fmtAmt(lastPoint.income, locale), endMonth },
+        };
       } else if (overallIncChange > 5 && overallExpChange > overallIncChange) {
-        trajectoryInsight = `Income grew ${overallIncChange}% from ${startLabel} to ${endLabel}, but expenses grew faster at ${overallExpChange}%. Cashflow margin narrowing.`;
+        trajectoryInsight = {
+          key: "insights.trajectory.growthButExpensesFaster",
+          values: { incPct: String(overallIncChange), startMonth, endMonth, expPct: String(overallExpChange) },
+        };
       } else if (overallIncChange < -5) {
-        trajectoryInsight = `Income fell ${Math.abs(overallIncChange)}% from ${eur(firstPoint.income)} in ${startLabel} to ${eur(lastPoint.income)} in ${endLabel}.`;
+        trajectoryInsight = {
+          key: "insights.trajectory.decline",
+          values: { pct: String(Math.abs(overallIncChange)), fromAmount: fmtAmt(firstPoint.income, locale), startMonth, toAmount: fmtAmt(lastPoint.income, locale), endMonth },
+        };
       } else if (overallExpChange > 10 && growingExpCats.length) {
-        trajectoryInsight = `Expenses rose ${overallExpChange}% from ${startLabel} to ${endLabel}, driven by ${growingExpCats.map((c) => inlineCat(c.category)).join(" and ")}. Income held at ${eur(avgMonthlyInc)}/month.`;
+        trajectoryInsight = {
+          key: "insights.trajectory.expensesRoseDrivenBy",
+          values: {
+            expPct: String(overallExpChange), startMonth, endMonth,
+            driverCount: growingExpCats.length === 1 ? "1" : "2",
+            cat1: cat(growingExpCats[0].category),
+            ...(growingExpCats[1] ? { cat2: cat(growingExpCats[1].category) } : {}),
+            avgIncome: fmtAmt(avgMonthlyInc, locale),
+          },
+        };
       } else {
-        trajectoryInsight = `From ${startLabel} to ${endLabel}: income averaged ${eur(avgMonthlyInc)}/month, expenses ${eur(avgMonthlyExp)}/month.`;
+        trajectoryInsight = {
+          key: "insights.trajectory.averagesOverPeriod",
+          values: { startMonth, endMonth, avgIncome: fmtAmt(avgMonthlyInc, locale), avgExpenses: fmtAmt(avgMonthlyExp, locale) },
+        };
       }
 
       if (Math.abs(overallIncChange) >= 5) {
-        trajectoryDetails.push(`Income: ${eur(firstPoint.income)} in ${startLabel} → ${eur(lastPoint.income)} in ${endLabel} (${overallIncChange > 0 ? "+" : ""}${overallIncChange}%).`);
+        trajectoryDetails.push({
+          key: "insights.trajectory.incomeChange",
+          values: {
+            fromAmount: fmtAmt(firstPoint.income, locale), startMonth, toAmount: fmtAmt(lastPoint.income, locale), endMonth,
+            sign: overallIncChange > 0 ? "pos" : "neg", pct: String(Math.abs(overallIncChange)),
+          },
+        });
       }
       if (Math.abs(overallExpChange) >= 5) {
-        trajectoryDetails.push(`Expenses: ${eur(firstPoint.expenses)} in ${startLabel} → ${eur(lastPoint.expenses)} in ${endLabel} (${overallExpChange > 0 ? "+" : ""}${overallExpChange}%).`);
+        trajectoryDetails.push({
+          key: "insights.trajectory.expenseChange",
+          values: {
+            fromAmount: fmtAmt(firstPoint.expenses, locale), startMonth, toAmount: fmtAmt(lastPoint.expenses, locale), endMonth,
+            sign: overallExpChange > 0 ? "pos" : "neg", pct: String(Math.abs(overallExpChange)),
+          },
+        });
       }
     }
 
@@ -824,13 +958,19 @@ export function generateDashboardIntelligence(
       const priorAvgInc = avg(prior3.map((h) => h.income));
       const momentum = pct(recentAvgInc, priorAvgInc);
       if (Math.abs(momentum) >= 10) {
-        const r3s = monthLabel(recent3[0].year, recent3[0].monthNum, "short");
-        const r3e = monthLabel(recent3[2].year, recent3[2].monthNum, "short");
-        const p3s = monthLabel(prior3[0].year, prior3[0].monthNum, "short");
-        const p3e = monthLabel(prior3[2].year, prior3[2].monthNum, "short");
-        trajectoryDetails.push(
-          `Recent momentum: income averaged ${eur(recentAvgInc)}/month in ${r3s}–${r3e} vs ${eur(priorAvgInc)}/month in ${p3s}–${p3e} (${momentum > 0 ? "+" : ""}${momentum}%).`
-        );
+        trajectoryDetails.push({
+          key: "insights.trajectory.recentMomentum",
+          values: {
+            recentAvg: fmtAmt(recentAvgInc, locale),
+            recentStart: monthYearLabel(recent3[0].year, recent3[0].monthNum, locale, "short"),
+            recentEnd: monthYearLabel(recent3[2].year, recent3[2].monthNum, locale, "short"),
+            priorAvg: fmtAmt(priorAvgInc, locale),
+            priorStart: monthYearLabel(prior3[0].year, prior3[0].monthNum, locale, "short"),
+            priorEnd: monthYearLabel(prior3[2].year, prior3[2].monthNum, locale, "short"),
+            sign: momentum > 0 ? "pos" : "neg",
+            pct: String(Math.abs(momentum)),
+          },
+        });
       }
     }
   }
@@ -838,7 +978,7 @@ export function generateDashboardIntelligence(
   // ── HEALTH STATUS ────────────────────────────────────────────────────────
 
   let healthStatus: "healthy" | "watch" | "at-risk" = "watch";
-  let healthStatusExplanation = "";
+  let healthStatusExplanation: Insight | null = null;
 
   if (active.length >= 3) {
     const totalMo = active.length;
@@ -851,19 +991,17 @@ export function generateDashboardIntelligence(
 
     if (posMo / totalMo >= 0.7 && recentNegCount <= 1 && rIncDir !== "down") {
       healthStatus = "healthy";
-      healthStatusExplanation =
-        rIncDir === "up"
-          ? `Cashflow positive in ${posMo} of ${totalMo} months, with income growing recently.`
-          : `Cashflow positive in ${posMo} of ${totalMo} months. Your finances are stable.`;
+      healthStatusExplanation = rIncDir === "up"
+        ? { key: "insights.health.healthyGrowing", values: { posMo, totalMo } }
+        : { key: "insights.health.healthyStable", values: { posMo, totalMo } };
     } else if (posMo / totalMo < 0.5 || (rExpDir === "up" && rIncDir === "down") || recentNegCount >= 4) {
       healthStatus = "at-risk";
-      healthStatusExplanation =
-        rExpDir === "up" && rIncDir === "down"
-          ? `Income is declining while expenses are rising . Cashflow is under significant pressure.`
-          : `Your cashflow was negative in ${negMo} of the last ${totalMo} months, meaning expenses exceeded income in more than half of your recorded months.`;
+      healthStatusExplanation = rExpDir === "up" && rIncDir === "down"
+        ? { key: "insights.health.atRiskSqueeze" }
+        : { key: "insights.health.atRiskNegative", values: { negMo, totalMo } };
     } else {
       healthStatus = "watch";
-      healthStatusExplanation = `Cashflow mixed. Positive in ${posMo} of ${totalMo} months, negative in ${negMo}. Monitor spending and income closely.`;
+      healthStatusExplanation = { key: "insights.health.watchMixed", values: { posMo, totalMo, negMo } };
     }
   }
 
@@ -894,14 +1032,14 @@ export function generateDashboardIntelligence(
 
   // ── BIGGEST RISK / OPPORTUNITY — declared here, populated below ───────────
 
-  let biggestRisk: string | null = null;
-  let biggestOpportunity: string | null = null;
+  let biggestRisk: Insight | null = null;
+  let biggestOpportunity: Insight | null = null;
 
   // ── FORECAST REASONS & IMPROVEMENTS — exact window ───────────────────────
 
-  const forecastReasons: string[] = [];
-  const forecastImprovements: string[] = [];
-  let cashflowDeficitReason: string | null = null;
+  const forecastReasons: Insight[] = [];
+  const forecastImprovements: Insight[] = [];
+  let cashflowDeficitReason: Insight | null = null;
 
   if (forecast && active.length >= 2) {
     // Forecast uses ALL months with recent weighting — describe the full history
@@ -921,36 +1059,34 @@ export function generateDashboardIntelligence(
       ? trendDir([...prior3.map((h) => h.expenses), ...recent3.map((h) => h.expenses)])
       : "stable";
 
-    // reasons[0] — basis line (short, used as header subtext in UI)
-    forecastReasons.push(
-      `Based on ${totalMonths} months of history. Recent months influence the forecast more than older data.`
-    );
+    // reasons[0] — basis line (header subtext in UI)
+    forecastReasons.push({ key: "insights.forecast.basis", values: { months: totalMonths } });
 
     // reasons[1] — cashflow health stat (rendered as a visual badge in UI)
     forecastReasons.push(
       posPct >= 75
-        ? `Cashflow positive in ${posMonths} of ${totalMonths} months.`
+        ? { key: "insights.forecast.cashflowPositiveHigh", values: { posMonths, totalMonths } }
         : posPct >= 50
-        ? `Cashflow positive in ${posMonths} of ${totalMonths} months. Recent trend matters most.`
-        : `Cashflow was negative in ${negMonths} of ${totalMonths} months.`
+        ? { key: "insights.forecast.cashflowPositiveMedium", values: { posMonths, totalMonths } }
+        : { key: "insights.forecast.cashflowNegative", values: { negMonths, totalMonths } }
     );
 
-    // reasons[2] — income trend (short, rendered as a single plain line in UI)
-    if (incTrendRecent === "up") {
-      forecastReasons.push(`Income trending up, avg ${eur(recentIncAvg)}/month recently.`);
-    } else if (incTrendRecent === "down") {
-      forecastReasons.push(`Income declining, avg ${eur(recentIncAvg)}/month recently.`);
-    } else {
-      forecastReasons.push(`Income stable at ${eur(recentIncAvg)}/month recently.`);
-    }
+    // reasons[2] — income trend (rendered as a single plain line in UI)
+    forecastReasons.push(
+      incTrendRecent === "up"
+        ? { key: "insights.forecast.incomeTrendingUp", values: { amount: fmtAmt(recentIncAvg, locale) } }
+        : incTrendRecent === "down"
+        ? { key: "insights.forecast.incomeDeclining", values: { amount: fmtAmt(recentIncAvg, locale) } }
+        : { key: "insights.forecast.incomeStable", values: { amount: fmtAmt(recentIncAvg, locale) } }
+    );
 
-    // reasons[3] — expense pressure (optional, appended to reasons[2] line in UI)
+    // reasons[3] — expense pressure (optional, rendered as a separate line in UI)
     if (expTrendRecent === "up") {
       const growingCats = categories.filter((c) => c.yearOverYearTrend === "growing").slice(0, 1);
       forecastReasons.push(
         growingCats.length
-          ? `Expenses rising, led by ${inlineCat(growingCats[0].category)}.`
-          : `Expenses trending up recently.`
+          ? { key: "insights.forecast.expensesRisingLed", values: { category: cat(growingCats[0].category) } }
+          : { key: "insights.forecast.expensesRisingGeneral" }
       );
     }
 
@@ -973,20 +1109,19 @@ export function generateDashboardIntelligence(
         ? Math.round((topCat.currentMonthTotal / recentExpAvg) * 100)
         : 0;
       const isGrowing = topCat?.yearOverYearTrend === "growing";
-      const growingNote = isGrowing ? ` This has been growing year-on-year.` : "";
 
       if (incDown && expUp) {
         cashflowDeficitReason = topCat
-          ? `Income is declining (${eur(recentIncAvg)}/month recently) while ${inlineCat(topCat.category)} costs are rising. ${eur(topCat.currentMonthTotal)}/month (${topCatPct}% of spending). Both trends are compounding the deficit.`
-          : `Income is declining while expenses are rising simultaneously. Both trends are compounding the deficit.`;
+          ? { key: "insights.forecast.deficitBothTrends", values: { recentIncome: fmtAmt(recentIncAvg, locale), category: cat(topCat.category), amount: fmtAmt(topCat.currentMonthTotal, locale), pct: String(topCatPct) } }
+          : { key: "insights.forecast.deficitBothTrendsGeneral" };
       } else if (incDown) {
-        cashflowDeficitReason = `The deficit is primarily an income problem. Revenue has been declining and is now averaging ${eur(recentIncAvg)}/month, no longer covering expenses of ${eur(recentExpAvg)}/month.`;
+        cashflowDeficitReason = { key: "insights.forecast.deficitIncomeProblem", values: { recentIncome: fmtAmt(recentIncAvg, locale), recentExpenses: fmtAmt(recentExpAvg, locale) } };
       } else if (expUp && topCat) {
-        cashflowDeficitReason = `The deficit is driven by rising expenses. ${displayCat(topCat.category)} is the largest cost at ${eur(topCat.currentMonthTotal)}/month (${topCatPct}% of spending).${growingNote} Income is stable at ${eur(recentIncAvg)}/month.`;
+        cashflowDeficitReason = { key: "insights.forecast.deficitExpenseDriven", values: { category: cat(topCat.category), amount: fmtAmt(topCat.currentMonthTotal, locale), pct: String(topCatPct), growing: isGrowing ? "yes" : "no", recentIncome: fmtAmt(recentIncAvg, locale) } };
       } else if (topCat) {
-        cashflowDeficitReason = `Expenses (${eur(recentExpAvg)}/month) are consistently exceeding income (${eur(recentIncAvg)}/month). ${displayCat(topCat.category)} is the largest expense at ${eur(topCat.currentMonthTotal)}/month (${topCatPct}% of spending).${growingNote}`;
+        cashflowDeficitReason = { key: "insights.forecast.deficitExpensesExceedIncome", values: { recentExpenses: fmtAmt(recentExpAvg, locale), recentIncome: fmtAmt(recentIncAvg, locale), category: cat(topCat.category), amount: fmtAmt(topCat.currentMonthTotal, locale), pct: String(topCatPct), growing: isGrowing ? "yes" : "no" } };
       } else {
-        cashflowDeficitReason = `Expenses (${eur(recentExpAvg)}/month) are consistently exceeding income (${eur(recentIncAvg)}/month).`;
+        cashflowDeficitReason = { key: "insights.forecast.deficitGeneral", values: { recentExpenses: fmtAmt(recentExpAvg, locale), recentIncome: fmtAmt(recentIncAvg, locale) } };
       }
     }
 
@@ -994,16 +1129,15 @@ export function generateDashboardIntelligence(
     const subCat = categories.find((c) => c.category === "subscriptions" || c.category === "software");
     if (subCat && subCat.currentMonthTotal > 50) {
       const reduction = 50;
-      forecastImprovements.push(
-        `Reducing ${inlineCat(subCat.category)} spending by ${eur(reduction)}/month would improve annual cashflow by ${eur(reduction * 12)}.`
-      );
+      forecastImprovements.push({
+        key: "insights.forecast.reduceSubscriptions",
+        values: { category: cat(subCat.category), reduction: fmtAmt(reduction, locale), annual: fmtAmt(reduction * 12, locale) },
+      });
     }
 
     if (forecast.projectedIncome - forecast.projectedExpenses < 0) {
       const deficit = Math.abs(forecast.projectedIncome - forecast.projectedExpenses);
-      forecastImprovements.push(
-        `To restore positive cashflow, either reduce expenses by ${eur(deficit)}/month or increase income by the same amount.`
-      );
+      forecastImprovements.push({ key: "insights.forecast.restoreCashflow", values: { amount: fmtAmt(deficit, locale) } });
     }
 
     if (incTrendRecent !== "up" && yearlySnapshots.length >= 2) {
@@ -1012,7 +1146,7 @@ export function generateDashboardIntelligence(
       const yoy = pct(last.income, prev.income);
       if (yoy < 0) {
         forecastImprovements.push(
-          phraseIncomeYoYDrop(incomeType, Math.abs(yoy), prev.year, prev.income, last.year, last.income)
+          phraseIncomeYoYDrop(incomeType, Math.abs(yoy), prev.year, prev.income, last.year, last.income, locale)
         );
       }
     }
@@ -1021,15 +1155,11 @@ export function generateDashboardIntelligence(
       const cashflowMargin = forecast.projectedIncome > 0
         ? Math.round(((forecast.projectedIncome - forecast.projectedExpenses) / forecast.projectedIncome) * 100)
         : 0;
-      if (cashflowMargin < 20) {
-        forecastImprovements.push(
-          `Cashflow margin is ${cashflowMargin}% of projected income. Reducing variable expenses will strengthen your buffer during slower months.`
-        );
-      } else {
-        forecastImprovements.push(
-          `Cashflow margin is ${cashflowMargin}% of projected income — a healthy buffer. Keep fixed costs from growing faster than income.`
-        );
-      }
+      forecastImprovements.push(
+        cashflowMargin < 20
+          ? { key: "insights.forecast.marginLow", values: { pct: String(cashflowMargin) } }
+          : { key: "insights.forecast.marginHealthy", values: { pct: String(cashflowMargin) } }
+      );
     }
 
     // ── BIGGEST OPPORTUNITY ───────────────────────────────────────────────
@@ -1039,19 +1169,19 @@ export function generateDashboardIntelligence(
 
     if (forecast.projectedIncome - forecast.projectedExpenses < 0) {
       const deficit = Math.abs(forecast.projectedIncome - forecast.projectedExpenses);
-      biggestOpportunity = `Reducing monthly expenses by ${eur(deficit)} would restore positive cashflow, an improvement of ${eur(deficit * 12)} per year.`;
+      biggestOpportunity = { key: "insights.opportunity.restoreCashflow", values: { amount: fmtAmt(deficit, locale), annual: fmtAmt(deficit * 12, locale) } };
     } else if (oppSubCat && oppSubCat.currentMonthTotal > 100) {
-      biggestOpportunity = `Reviewing ${inlineCat(oppSubCat.category)} spending (${eur(oppSubCat.currentMonthTotal)}/month) could free up ${eur(oppSubCat.currentMonthTotal * 12)} annually.`;
+      biggestOpportunity = { key: "insights.opportunity.reviewSubscriptions", values: { category: cat(oppSubCat.category), monthly: fmtAmt(oppSubCat.currentMonthTotal, locale), annual: fmtAmt(oppSubCat.currentMonthTotal * 12, locale) } };
     } else {
       const cashflowMarginOpp = forecast.projectedIncome > 0
         ? Math.round(((forecast.projectedIncome - forecast.projectedExpenses) / forecast.projectedIncome) * 100)
         : 0;
       if (cashflowMarginOpp < 15 && forecast.projectedIncome > 0) {
         const surplus = Math.round(forecast.projectedIncome * 0.15 - (forecast.projectedIncome - forecast.projectedExpenses));
-        biggestOpportunity = `Reducing monthly expenses by ${eur(surplus)} would lift your cashflow margin to 15%, adding ${eur(surplus * 12)} in annual surplus.`;
+        biggestOpportunity = { key: "insights.opportunity.increaseMargin", values: { amount: fmtAmt(surplus, locale), annual: fmtAmt(surplus * 12, locale) } };
       }
       if (!biggestOpportunity) {
-        biggestOpportunity = `Maintaining consistent positive cashflow and keeping fixed costs controlled builds long-term financial resilience.`;
+        biggestOpportunity = { key: "insights.opportunity.maintainConsistency" };
       }
     }
   }
@@ -1060,8 +1190,10 @@ export function generateDashboardIntelligence(
   // Generated once via the shared builder so the Dashboard and Analytics
   // pages render identical, consistently-categorised insights.
 
-  const rankedInsights = buildHistoricalInsights(history, categories, yearlySnapshots, seasonality, incomeConcentration);
-  const seasonalInsights = rankedInsights.filter((r) => r.category === "seasonality").map((r) => r.text);
+  const rankedInsights = buildHistoricalInsights(history, categories, yearlySnapshots, seasonality, incomeConcentration, locale);
+  const seasonalInsights: Insight[] = rankedInsights
+    .filter((r) => r.category === "seasonality")
+    .map(({ key, values }) => ({ key, values }));
 
   // ── BIGGEST RISK ──────────────────────────────────────────────────────────
   // Priority order: structural (income+expense squeeze) → growing category →
@@ -1086,32 +1218,32 @@ export function generateDashboardIntelligence(
   }) : [];
 
   if (riskIncDir === "down" && riskExpDir === "up") {
-    biggestRisk = "Income is declining while expenses are rising. The gap between them is widening.";
+    biggestRisk = { key: "insights.risk.incomeExpenseSqueeze" };
   } else if (topGrowingRisk) {
     const riskRange = categoryYearRange(topGrowingRisk);
     if (riskRange && riskRange.fromAmt > 0) {
       const growth = pct(riskRange.toAmt, riskRange.fromAmt);
       biggestRisk = growth >= 20
-        ? `${displayCat(topGrowingRisk.category)} costs grew ${growth}% from ${riskRange.from} to ${riskRange.to} . The fastest growing expense category.`
-        : `${displayCat(topGrowingRisk.category)} spending is trending upward year-on-year and may continue to pressure cashflow.`;
+        ? { key: "insights.risk.categoryFastestGrowing", values: { category: cat(topGrowingRisk.category), pct: String(growth), fromYear: String(riskRange.from), toYear: String(riskRange.to) } }
+        : { key: "insights.risk.categoryTrendingUp", values: { category: cat(topGrowingRisk.category) } };
     } else {
-      biggestRisk = `${displayCat(topGrowingRisk.category)} spending is trending upward year-on-year.`;
+      biggestRisk = { key: "insights.risk.categoryTrendingUpBrief", values: { category: cat(topGrowingRisk.category) } };
     }
   } else if (incomeConcentration?.isHighConcentration) {
     // Client concentration — the most dangerous freelancer-specific structural risk
-    biggestRisk = `${incomeConcentration.topSourcePct}% of income over the last 12 months came from a single source. If this source stops, cashflow will be significantly impacted. Diversifying income sources reduces this risk.`;
+    biggestRisk = { key: "insights.risk.clientConcentration", values: { pct: String(incomeConcentration.topSourcePct) } };
   } else if (recentIncomeGaps.length >= 1) {
     const avgExp = avg(recentIncomeGaps.map((h) => h.expenses));
-    biggestRisk = `${recentIncomeGaps.length} month${recentIncomeGaps.length !== 1 ? "s" : ""} in the last 12 months had expenses but no income (avg ${eur(avgExp)}/month in those months). Building a 2–3 month income reserve would protect against future gaps.`;
+    biggestRisk = { key: "insights.risk.incomeGaps", values: { count: recentIncomeGaps.length, amount: fmtAmt(avgExp, locale) } };
   } else if (uncatPctVal > 15) {
-    biggestRisk = `${uncatPctVal}% of expenses are uncategorised . Hidden spending patterns may be affecting cashflow without being visible.`;
+    biggestRisk = { key: "insights.risk.uncategorizedSpending", values: { pct: String(uncatPctVal) } };
   } else if (riskIncDir === "down") {
-    biggestRisk = `Income has been declining recently, averaging ${eur(avg(riskWin.map((h) => h.income)))}/month over the last ${riskWin.length} months.`;
+    biggestRisk = { key: "insights.risk.incomeDeclining", values: { amount: fmtAmt(avg(riskWin.map((h) => h.income)), locale), months: riskWin.length } };
   }
 
   // ── NOTABLE TRANSACTIONS ─────────────────────────────────────────────────
 
-  const notableTransactions: string[] = [];
+  const notableTransactions: Insight[] = [];
 
   if (recentTxs.length > 0) {
     const incomes = recentTxs.filter((t) => t.type === "income");
@@ -1119,12 +1251,12 @@ export function generateDashboardIntelligence(
 
     if (incomes.length > 0) {
       const largest = incomes.reduce((m, t) => (t.amount > m.amount ? t : m), incomes[0]);
-      notableTransactions.push(`Largest payment received: ${largest.description} (${eur(largest.amount)}).`);
+      notableTransactions.push({ key: "insights.notable.largestIncome", values: { description: largest.description, amount: fmtAmt(largest.amount, locale) } });
     }
 
     if (expenses.length > 0) {
       const largest = expenses.reduce((m, t) => (t.amount > m.amount ? t : m), expenses[0]);
-      notableTransactions.push(`Largest expense: ${largest.description} (${eur(largest.amount)}).`);
+      notableTransactions.push({ key: "insights.notable.largestExpense", values: { description: largest.description, amount: fmtAmt(largest.amount, locale) } });
     }
 
     const recurring = recentTxs.filter(
@@ -1134,17 +1266,13 @@ export function generateDashboardIntelligence(
     );
     if (recurring.length > 0) {
       const total = recurring.reduce((s, t) => s + t.amount, 0);
-      notableTransactions.push(
-        `${recurring.length} recurring charge${recurring.length !== 1 ? "s" : ""} detected, ${eur(total)} in total. Review annually to avoid subscription creep.`
-      );
+      notableTransactions.push({ key: "insights.notable.recurringCharges", values: { count: recurring.length, amount: fmtAmt(total, locale) } });
     }
 
     if (avgExpenses > 0) {
       const high = expenses.filter((t) => t.amount > avgExpenses * 0.4 && t.amount > 200);
       if (high.length > 0) {
-        notableTransactions.push(
-          `High-value expense flagged: ${high[0].description} (${eur(high[0].amount)}), above typical single-transaction threshold.`
-        );
+        notableTransactions.push({ key: "insights.notable.highValueExpense", values: { description: high[0].description, amount: fmtAmt(high[0].amount, locale) } });
       }
     }
   }

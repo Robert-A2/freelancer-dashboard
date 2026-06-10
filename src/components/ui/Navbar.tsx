@@ -4,7 +4,9 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import FeedbackButton from "./FeedbackButton";
+import LanguageSwitcher from "./LanguageSwitcher";
 
 const IconHome = () => (
   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
@@ -39,16 +41,17 @@ const IconSettings = () => (
 );
 
 const NAV_LINKS = [
-  { href: "/dashboard", label: "Dashboard", mobileLabel: "Home",     Icon: IconHome      },
-  { href: "/upload",    label: "Upload CSV", mobileLabel: "Upload",   Icon: IconUpload    },
-  { href: "/history",   label: "History",    mobileLabel: "History",  Icon: IconHistory   },
-  { href: "/analytics", label: "Analytics",  mobileLabel: "Analytics",Icon: IconAnalytics },
-  { href: "/forecast",  label: "Forecast",   mobileLabel: "Forecast", Icon: IconForecast  },
-];
+  { href: "/dashboard", key: "dashboard", Icon: IconHome      },
+  { href: "/upload",    key: "upload",    Icon: IconUpload    },
+  { href: "/history",   key: "history",   Icon: IconHistory   },
+  { href: "/analytics", key: "analytics", Icon: IconAnalytics },
+  { href: "/forecast",  key: "forecast",  Icon: IconForecast  },
+] as const;
 
 export default function Navbar() {
   const pathname = usePathname();
   const router   = useRouter();
+  const t = useTranslations("common");
   const [pending, setPending] = useState<string | null>(null);
 
   // Clear pending once the real pathname catches up
@@ -72,10 +75,10 @@ export default function Navbar() {
         <div className="max-w-5xl mx-auto px-5 sm:px-6 flex items-center justify-between h-16">
           <div className="flex items-center gap-6">
             <span className="font-semibold text-[#E8F0F8] text-sm tracking-tight">
-              Freelancer OS
+              {t("appName")}
             </span>
             <div className="hidden md:flex items-center gap-0.5">
-              {NAV_LINKS.map(({ href, label }) => (
+              {NAV_LINKS.map(({ href, key }) => (
                 <Link
                   key={href}
                   href={href}
@@ -86,17 +89,18 @@ export default function Navbar() {
                       : "text-[#7BA8C4] hover:text-[#E8F0F8] hover:bg-[#1A3048]"
                   }`}
                 >
-                  {label}
+                  {t(`nav.${key}`)}
                 </Link>
               ))}
             </div>
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-2">
+            <LanguageSwitcher className="hidden sm:flex" />
             <FeedbackButton />
             <Link
               href="/settings"
               onClick={() => setPending("/settings")}
-              title="Settings"
+              title={t("nav.settings")}
               className={`p-2.5 rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center ${
                 isActive("/settings")
                   ? "bg-[#3AB5A012] text-[#3AB5A0]"
@@ -109,7 +113,7 @@ export default function Navbar() {
               onClick={handleSignOut}
               className="text-xs text-[#6A97B4] hover:text-[#7BA8C4] transition-colors px-3 py-2 min-h-[44px]"
             >
-              Sign out
+              {t("buttons.signOut")}
             </button>
           </div>
         </div>
@@ -118,7 +122,7 @@ export default function Navbar() {
       {/* Mobile bottom navigation */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-[#132537] border-t border-[#243F5E]">
         <div className="flex items-stretch">
-          {NAV_LINKS.map(({ href, mobileLabel, Icon }) => {
+          {NAV_LINKS.map(({ href, key, Icon }) => {
             const active = isActive(href);
             return (
               <Link
@@ -133,7 +137,7 @@ export default function Navbar() {
                   <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-[#3AB5A0] rounded-full" />
                 )}
                 <Icon />
-                <span className="text-[11px] font-medium leading-none">{mobileLabel}</span>
+                <span className="text-[11px] font-medium leading-none">{t(`nav.${key}Mobile`)}</span>
               </Link>
             );
           })}

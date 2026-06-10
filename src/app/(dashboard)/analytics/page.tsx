@@ -1,5 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import { getTranslations, getLocale } from "next-intl/server";
+import { INTL_LOCALES, type Locale } from "@/i18n/locales";
 import {
   getHistoricalData, getCategoryInsights, getClientInsights, getDataCoverage, getIncomeConcentration,
   getCategorizationHealth,
@@ -35,6 +37,11 @@ export default async function AnalyticsPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
+  const t = await getTranslations("analytics");
+  const tm = await getTranslations("metrics");
+  const tCategories = await getTranslations("categories");
+  const locale = (await getLocale()) as Locale;
+
   // Anchor YTD to the user's most recent data year, not the current calendar year.
   // A user with data ending Dec 2024 visiting in 2026 would otherwise see €0 for both years.
   const latestDataRecord = await prisma.monthlyAnalytics.findFirst({
@@ -49,7 +56,7 @@ export default async function AnalyticsPage() {
   // Cap at the latest data month — never inflate to 12 for a past year
   const dataMonthMax = latestDataRecord?.month ?? now.getUTCMonth() + 1;
   // "Year to date" is only accurate when the data includes the current calendar year
-  const ytdSectionLabel = dataYear === now.getUTCFullYear() ? "Year to date" : "Annual comparison";
+  const ytdSectionLabel = dataYear === now.getUTCFullYear() ? t("ytdSection.yearToDate") : t("ytdSection.annualComparison");
 
   // Exactly 12 months ending at the last data month — UTC midnight
   const incSince = new Date(Date.UTC(dataYear, dataMonthMax - 12, 1));
@@ -94,7 +101,8 @@ export default async function AnalyticsPage() {
     categoryInsights.topExpenseCategories,
     categoryInsights.yearlySnapshots,
     categoryInsights.seasonality,
-    concentration
+    concentration,
+    locale
   );
 
   const ytdInc  = Number(ytdThis._sum.totalIncome   ?? 0);
@@ -117,8 +125,8 @@ export default async function AnalyticsPage() {
     <div className="space-y-8 md:space-y-10">
 
       <div>
-        <h1 className="text-2xl font-bold">Analytics</h1>
-        <p className="text-[#7BA8C4] text-sm mt-0.5">Deep dive into your financial patterns</p>
+        <h1 className="text-2xl font-bold">{t("title")}</h1>
+        <p className="text-[#7BA8C4] text-sm mt-0.5">{t("subtitle")}</p>
       </div>
 
       {coverage.count > 0 && <DataCoverageBar coverage={coverage} />}
@@ -126,9 +134,9 @@ export default async function AnalyticsPage() {
       {!hasData && (
         <div className="card text-center py-16">
           <div className="text-5xl mb-4">📊</div>
-          <h2 className="text-xl font-semibold mb-2">No data yet</h2>
-          <p className="text-[#7BA8C4] mb-6 max-w-sm mx-auto">Upload your bank statement to unlock full analytics.</p>
-          <Link href="/upload" className="btn-primary inline-block">Upload CSV</Link>
+          <h2 className="text-xl font-semibold mb-2">{t("emptyState.heading")}</h2>
+          <p className="text-[#7BA8C4] mb-6 max-w-sm mx-auto">{t("emptyState.body")}</p>
+          <Link href="/upload" className="btn-primary inline-block">{t("emptyState.cta")}</Link>
         </div>
       )}
 
@@ -137,24 +145,24 @@ export default async function AnalyticsPage() {
           {/* ── 1. Year-to-date vs prior year ─────────────────────────────── */}
           <CollapsibleSection
             label={ytdSectionLabel}
-            title={`${dataYear} vs ${prevYear}`}
-            subtitle={`January – ${new Date(Date.UTC(dataYear, dataMonthMax - 1, 1)).toLocaleDateString("en-IE", { month: "long", timeZone: "UTC" })}, same window for both years`}
+            title={t("ytdSection.titleVs", { dataYear: String(dataYear), prevYear: String(prevYear) })}
+            subtitle={t("ytdSection.subtitle", { endMonth: new Date(Date.UTC(dataYear, dataMonthMax - 1, 1)).toLocaleDateString(INTL_LOCALES[locale], { month: "long", timeZone: "UTC" }) })}
           >
             <div className="card">
               {prevInc === 0 && (
-                <p className="text-xs text-[#6A97B4] mb-4">No {prevYear} data yet</p>
+                <p className="text-xs text-[#6A97B4] mb-4">{t("ytdSection.noDataYet", { year: String(prevYear) })}</p>
               )}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                 {[
-                  { label: "Income",   curr: ytdInc,  prev: prevInc,  color: "text-[#4CC4A4]", invert: false },
-                  { label: "Expenses", curr: ytdExp,  prev: prevExp,  color: "text-[#D4A254]", invert: true  },
-                  { label: "Cashflow", curr: ytdCash, prev: prevCash, color: ytdCash >= 0 ? "text-[#3AB5A0]" : "text-[#D97070]", invert: false },
+                  { key: "income",   label: tm("income"),   curr: ytdInc,  prev: prevInc,  color: "text-[#4CC4A4]", invert: false },
+                  { key: "expenses", label: tm("expenses"), curr: ytdExp,  prev: prevExp,  color: "text-[#D4A254]", invert: true  },
+                  { key: "cashflow", label: tm("cashflow"), curr: ytdCash, prev: prevCash, color: ytdCash >= 0 ? "text-[#3AB5A0]" : "text-[#D97070]", invert: false },
                 ].map((item) => {
                   const change = prevInc > 0 ? pctChange(item.curr, item.prev) : null;
-                  const displayVal    = formatCurrency(item.curr);
-                  const prevDisplayVal = `${formatCurrency(item.prev)} last yr`;
+                  const displayVal    = formatCurrency(item.curr, locale);
+                  const prevDisplayVal = t("ytdSection.lastYr", { amount: formatCurrency(item.prev, locale) });
                   return (
-                    <div key={item.label} className="bg-[#1A3048] rounded-xl p-4">
+                    <div key={item.key} className="bg-[#1A3048] rounded-xl p-4">
                       <p className="label mb-1">{item.label}</p>
                       <p className={`text-lg font-bold tabular-nums ${item.color} mb-1`}>{displayVal}</p>
                       <div className="flex items-center gap-2">
@@ -166,7 +174,7 @@ export default async function AnalyticsPage() {
                 })}
                 {/* Margin — shown as a fourth cell alongside the three currency metrics */}
                 <div className="bg-[#1A3048] rounded-xl p-4">
-                  <p className="label mb-1">Margin</p>
+                  <p className="label mb-1">{tm("margin")}</p>
                   <p className={`text-lg font-bold tabular-nums mb-1 ${
                     ytdMargin === null ? "text-[#6A97B4]"
                       : ytdMargin >= 30 ? "text-[#4CC4A4]"
@@ -180,10 +188,10 @@ export default async function AnalyticsPage() {
                       <ChangeChip value={ytdMargin - prevMargin} />
                     )}
                     {prevMargin !== null && (
-                      <span className="text-xs text-[#6A97B4]">{prevMargin}% last yr</span>
+                      <span className="text-xs text-[#6A97B4]">{t("ytdSection.marginLastYr", { pct: String(prevMargin) })}</span>
                     )}
                     {ytdMargin !== null && prevMargin === null && (
-                      <span className="text-xs text-[#6A97B4]">of income kept</span>
+                      <span className="text-xs text-[#6A97B4]">{t("ytdSection.ofIncomeKept")}</span>
                     )}
                   </div>
                 </div>
@@ -192,18 +200,18 @@ export default async function AnalyticsPage() {
           </CollapsibleSection>
 
           {/* ── 2. Cashflow chart with intelligence ───────────────────────── */}
-          <CollapsibleSection label="Monthly cashflow" title="Income minus Expenses">
+          <CollapsibleSection label={t("cashflowSection.label")} title={t("cashflowSection.title")}>
             <CashflowChart data={chartData} hideHeader />
           </CollapsibleSection>
 
           {/* ── 3. Income sources + Expense breakdown ─────────────────────── */}
-          <CollapsibleSection label="Breakdowns" title="Income sources & Expenses">
+          <CollapsibleSection label={t("breakdownsSection.label")} title={t("breakdownsSection.title")}>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 md:gap-6">
               <div className="card">
-                <p className="label mb-1">Income sources</p>
-                <p className="text-xs text-[#6A97B4] mb-4">Last 12 months of your data, by category</p>
+                <p className="label mb-1">{t("breakdownsSection.incomeSources")}</p>
+                <p className="text-xs text-[#6A97B4] mb-4">{t("breakdownsSection.last12Months")}</p>
                 {incomeBySource.length === 0 ? (
-                  <p className="text-[#7BA8C4] text-sm">No income data</p>
+                  <p className="text-[#7BA8C4] text-sm">{t("breakdownsSection.noIncomeData")}</p>
                 ) : (
                   <div className="space-y-4">
                     {incomeBySource.map((src) => {
@@ -212,10 +220,10 @@ export default async function AnalyticsPage() {
                       return (
                         <div key={src.category}>
                           <div className="flex justify-between text-sm mb-1">
-                            <span className="capitalize text-[#A8C6E0]">{src.category}</span>
+                            <span className="text-[#A8C6E0]">{tCategories.has(src.category) ? tCategories(src.category) : src.category}</span>
                             <div className="flex gap-3">
                               <span className="text-[#6A97B4]">{pct}%</span>
-                              <span className="font-medium text-[#4CC4A4]">{formatCurrency(amount)}</span>
+                              <span className="font-medium text-[#4CC4A4]">{formatCurrency(amount, locale)}</span>
                             </div>
                           </div>
                           <div className="h-1.5 bg-[#243F5E] rounded-full overflow-hidden">
@@ -229,10 +237,10 @@ export default async function AnalyticsPage() {
               </div>
 
               <div className="card">
-                <p className="label mb-1">Expense breakdown</p>
-                <p className="text-xs text-[#6A97B4] mb-4">All time, share of total spending</p>
+                <p className="label mb-1">{t("breakdownsSection.expenseBreakdown")}</p>
+                <p className="text-xs text-[#6A97B4] mb-4">{t("breakdownsSection.allTime")}</p>
                 {categoryBreakdown.length === 0 ? (
-                  <p className="text-[#7BA8C4] text-sm">No expense data</p>
+                  <p className="text-[#7BA8C4] text-sm">{t("breakdownsSection.noExpenseData")}</p>
                 ) : (
                   <div className="space-y-4">
                     {categoryBreakdown.map((cat) => {
@@ -245,12 +253,12 @@ export default async function AnalyticsPage() {
                         <div key={cat.category}>
                           <div className="flex justify-between text-sm mb-1">
                             <div className="flex items-center gap-1.5">
-                              <span className="capitalize text-[#A8C6E0]">{cat.category}</span>
+                              <span className="text-[#A8C6E0]">{tCategories.has(cat.category) ? tCategories(cat.category) : cat.category}</span>
                               {arrow && <span className={`text-xs font-bold ${arrowColor}`}>{arrow}</span>}
                             </div>
                             <div className="flex gap-3">
                               <span className="text-[#6A97B4]">{pct}%</span>
-                              <span className="font-medium text-[#D4A254]">{formatCurrency(amount)}</span>
+                              <span className="font-medium text-[#D4A254]">{formatCurrency(amount, locale)}</span>
                             </div>
                           </div>
                           <div className="h-1.5 bg-[#243F5E] rounded-full overflow-hidden">
@@ -267,33 +275,36 @@ export default async function AnalyticsPage() {
 
           {/* ── 3b. Categorization health ─────────────────────────────────── */}
           <CollapsibleSection
-            label="Categorization health"
-            title="How well we understand your transactions"
-            subtitle="Categorization accuracy, plus the merchants that need your attention."
+            label={t("categorizationSection.label")}
+            title={t("categorizationSection.title")}
+            subtitle={t("categorizationSection.subtitle")}
           >
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 md:gap-6">
               <div className="card lg:col-span-1">
-                <p className="label mb-1">Categorized</p>
+                <p className="label mb-1">{t("categorizationSection.categorized")}</p>
                 <p className="text-3xl font-bold text-[#4CC4A4] mb-1">{categorizationHealth.categorizedPct}%</p>
                 <p className="text-xs text-[#6A97B4]">
-                  {categorizationHealth.uncategorizedCount.toLocaleString()} of {categorizationHealth.totalCount.toLocaleString()} transactions
-                  ({categorizationHealth.uncategorizedPct}%) still uncategorized
+                  {t("categorizationSection.uncategorizedSummary", {
+                    uncategorized: categorizationHealth.uncategorizedCount,
+                    total: categorizationHealth.totalCount,
+                    pct: String(categorizationHealth.uncategorizedPct),
+                  })}
                 </p>
                 <div className="h-1.5 bg-[#243F5E] rounded-full overflow-hidden mt-4">
                   <div className="h-full bg-[#4CC4A4] rounded-full opacity-70" style={{ width: `${categorizationHealth.categorizedPct}%` }} />
                 </div>
                 {categorizationHealth.uncategorizedCount > 0 && (
                   <Link href="/history?confidence=low" className="inline-block mt-4 text-sm text-[#3AB5A0] hover:text-[#4CC4A4] font-medium transition-colors">
-                    Review uncategorized →
+                    {t("categorizationSection.reviewUncategorized")}
                   </Link>
                 )}
               </div>
 
               <div className="card lg:col-span-1">
-                <p className="label mb-1">Most common uncategorized merchants</p>
-                <p className="text-xs text-[#6A97B4] mb-4">Worth a manual fix — we&apos;ll remember it next time</p>
+                <p className="label mb-1">{t("categorizationSection.mostCommonUncategorized")}</p>
+                <p className="text-xs text-[#6A97B4] mb-4">{t("categorizationSection.worthManualFix")}</p>
                 {categorizationHealth.topUncategorizedMerchants.length === 0 ? (
-                  <p className="text-[#7BA8C4] text-sm">Nothing uncategorized — nicely done.</p>
+                  <p className="text-[#7BA8C4] text-sm">{t("categorizationSection.nothingUncategorized")}</p>
                 ) : (
                   <ul className="space-y-2">
                     {categorizationHealth.topUncategorizedMerchants.map((m) => (
@@ -307,10 +318,10 @@ export default async function AnalyticsPage() {
               </div>
 
               <div className="card lg:col-span-1">
-                <p className="label mb-1">Most corrected merchants</p>
-                <p className="text-xs text-[#6A97B4] mb-4">Manual fixes that taught the system new rules</p>
+                <p className="label mb-1">{t("categorizationSection.mostCorrectedMerchants")}</p>
+                <p className="text-xs text-[#6A97B4] mb-4">{t("categorizationSection.manualFixesSubtitle")}</p>
                 {categorizationHealth.topCorrectedMerchants.length === 0 ? (
-                  <p className="text-[#7BA8C4] text-sm">No corrections yet — categories are running on built-in rules.</p>
+                  <p className="text-[#7BA8C4] text-sm">{t("categorizationSection.noCorrectionsYet")}</p>
                 ) : (
                   <ul className="space-y-2">
                     {categorizationHealth.topCorrectedMerchants.map((m) => (
@@ -328,9 +339,9 @@ export default async function AnalyticsPage() {
           {/* ── 4. Client Insights ────────────────────────────────────────── */}
           {clientInsights && (
             <CollapsibleSection
-              label="Client insights"
-              title="Where your revenue comes from"
-              subtitle="Revenue concentration, client activity, and growth."
+              label={t("clientSection.label")}
+              title={t("clientSection.title")}
+              subtitle={t("clientSection.subtitle")}
             >
               <ClientInsights data={clientInsights} />
             </CollapsibleSection>
@@ -340,9 +351,9 @@ export default async function AnalyticsPage() {
           {rankedInsights.length > 0 && (
             <div id="financial-story">
               <CollapsibleSection
-                label="Your financial story"
-                title="Full historical analysis"
-                subtitle="Every insight from your upload history, grouped by theme."
+                label={t("storySection.label")}
+                title={t("storySection.title")}
+                subtitle={t("storySection.subtitle")}
               >
                 <FinancialStory insights={rankedInsights} totalMonths={nonZeroMonths} />
               </CollapsibleSection>
