@@ -34,3 +34,13 @@ export function monthLabel(month: number, year: number, locale: Locale = DEFAULT
     timeZone: "UTC",
   });
 }
+
+// `period` is a locale-independent "YYYY-MM" string (e.g. "2027-03").
+export function monthYearLabel(period: string, locale: Locale = DEFAULT_LOCALE): string {
+  const [year, month] = period.split("-").map(Number);
+  return new Date(Date.UTC(year, month - 1, 1)).toLocaleDateString(INTL_LOCALES[locale], {
+    month: "long",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+}

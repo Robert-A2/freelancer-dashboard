@@ -39,6 +39,15 @@ function buildSeasonalMap(
   return map;
 }
 
+const PERIOD_RE = /^\d{4}-\d{2}$/;
+
+// Locale-independent "YYYY-MM" for the month following `date` — formatted
+// for display via `monthYearLabel()` at render time.
+function nextPeriod(date: Date): string {
+  const next = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 1));
+  return `${next.getUTCFullYear()}-${String(next.getUTCMonth() + 1).padStart(2, "0")}`;
+}
+
 export async function generateForecast(userId: string): Promise<ForecastResult | null> {
   const records = await prisma.monthlyAnalytics.findMany({
     where: { userId },
@@ -93,12 +102,7 @@ export async function generateForecast(userId: string): Promise<ForecastResult |
     n >= 12 ? "high" : n >= 4 ? "medium" : "low";
 
   const now = new Date();
-  const nextMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
-  const forecastPeriod = nextMonth.toLocaleDateString("en-IE", {
-    month: "long",
-    year: "numeric",
-    timeZone: "UTC",
-  });
+  const forecastPeriod = nextPeriod(now);
 
   // Upsert the forecast for this period (re-running within the same month
   // would otherwise hit the (userId, forecastPeriod) unique constraint),
@@ -142,12 +146,19 @@ export async function getLatestForecast(userId: string): Promise<ForecastResult 
   const confidence: "low" | "medium" | "high" =
     monthsCount >= 12 ? "high" : monthsCount >= 4 ? "medium" : "low";
 
+  // Rows written before the "YYYY-MM" format was introduced still hold a
+  // locale-formatted string (e.g. "March 2027") — derive the period from
+  // generatedAt instead until the next generateForecast() overwrites it.
+  const forecastPeriod = PERIOD_RE.test(forecast.forecastPeriod)
+    ? forecast.forecastPeriod
+    : nextPeriod(forecast.generatedAt);
+
   return {
     projectedIncome:   Number(forecast.projectedIncome),
     projectedExpenses: Number(forecast.projectedExpenses),
     projectedSavings:  Number(forecast.projectedSavings),
     projectedCashflow: Number(forecast.projectedCashflow),
-    forecastPeriod:    forecast.forecastPeriod,
+    forecastPeriod,
     basedOnMonths:     monthsCount,
     confidence,
     seasonallyAdjusted: monthsCount >= 24,

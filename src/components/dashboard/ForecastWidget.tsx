@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations, useLocale } from "next-intl";
-import { formatCurrency } from "@/utils/finance";
+import { formatCurrency, monthYearLabel } from "@/utils/finance";
 import type { Locale } from "@/i18n/locales";
 import type { Insight } from "@/lib/insight-types";
 import InsightText from "@/components/ui/InsightText";
@@ -62,7 +62,7 @@ export default function ForecastWidget({ forecast, reasons, improvements, defici
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="label mb-1">{t("label")}</p>
-          <h3 className="text-lg font-semibold text-[#E8F0F8] truncate">{forecastPeriod}</h3>
+          <h3 className="text-lg font-semibold text-[#E8F0F8] truncate">{monthYearLabel(forecastPeriod, locale)}</h3>
           <p className="text-xs text-[#6A97B4] mt-0.5 leading-relaxed">
             {reasons?.[0]
               ? <InsightText insight={reasons[0]} />
