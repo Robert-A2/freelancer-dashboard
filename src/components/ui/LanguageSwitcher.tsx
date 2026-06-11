@@ -4,7 +4,7 @@ import { useTransition } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { setUserLocale } from "@/lib/locale-actions";
-import { LOCALES, LOCALE_LABELS, type Locale } from "@/i18n/locales";
+import { LOCALES, LOCALE_LABELS, LOCALE_LABELS_SHORT, type Locale } from "@/i18n/locales";
 
 export default function LanguageSwitcher({ className = "" }: { className?: string }) {
   const locale = useLocale();
@@ -34,13 +34,14 @@ export default function LanguageSwitcher({ className = "" }: { className?: strin
             onClick={() => handleChange(l)}
             disabled={isPending}
             aria-current={locale === l ? "true" : undefined}
-            className={`px-1.5 py-1 rounded transition-colors disabled:opacity-60 ${
+            className={`px-1 sm:px-1.5 py-1 rounded transition-colors disabled:opacity-60 ${
               locale === l
                 ? "text-[#3AB5A0]"
                 : "text-[#6A97B4] hover:text-[#E8F0F8]"
             }`}
           >
-            {LOCALE_LABELS[l]}
+            <span className="sm:hidden">{LOCALE_LABELS_SHORT[l]}</span>
+            <span className="hidden sm:inline">{LOCALE_LABELS[l]}</span>
           </button>
         </span>
       ))}

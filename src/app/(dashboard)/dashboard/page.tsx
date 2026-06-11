@@ -111,12 +111,12 @@ export default async function DashboardPage({
   const hasData = totalTx > 0;
   const nonZeroMonths = chartData.filter((d) => d.income > 0 || d.expenses > 0).length;
 
-  // Risk computed from historical data
+  // Risk computed from historical data — mirrors forecast/page.tsx's cashflow risk
+  // calculation so the Dashboard and Forecast pages never disagree on the same data.
   const activeMonths      = chartData.filter(d => d.income > 0 || d.expenses > 0);
 
-  const last12Active       = activeMonths.slice(-12);
-  const riskPositiveMonths = last12Active.filter(d => d.income - d.expenses >= 0).length;
-  const riskTotalMonths    = last12Active.length;
+  const riskPositiveMonths = activeMonths.filter(d => d.cashflow >= 0).length;
+  const riskTotalMonths    = activeMonths.length;
   const posRatio           = riskTotalMonths > 0 ? riskPositiveMonths / riskTotalMonths : 0;
   const riskLevel: "low" | "medium" | "high" | "critical" =
     posRatio >= 0.85 ? "low" :

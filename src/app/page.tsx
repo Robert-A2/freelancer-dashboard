@@ -31,14 +31,14 @@ export default async function LandingPage() {
 
       {/* ── Navbar ──────────────────────────────────────────────────────── */}
       <nav className="sticky top-0 z-50 border-b border-[#1E3550] bg-[#0D1B2B]/95 backdrop-blur-sm">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 flex items-center justify-between h-14">
-          <span className="font-bold text-[#E8F0F8] tracking-tight">{tc("appName")}</span>
-          <div className="flex items-center gap-3">
+        <div className="max-w-6xl mx-auto px-3 sm:px-6 flex items-center justify-between h-14 gap-2">
+          <span className="font-bold text-[#E8F0F8] tracking-tight text-sm sm:text-base shrink-0">{tc("appName")}</span>
+          <div className="flex items-center gap-1.5 sm:gap-3">
             <LanguageSwitcher />
-            <Link href="/login" className="text-sm text-[#7BA8C4] hover:text-[#E8F0F8] transition-colors px-3 py-2">
+            <Link href="/login" className="text-xs sm:text-sm text-[#7BA8C4] hover:text-[#E8F0F8] transition-colors px-1.5 sm:px-3 py-2 whitespace-nowrap">
               {tc("buttons.signIn")}
             </Link>
-            <Link href="/signup" className="bg-[#3AB5A0] hover:bg-[#2E9D8A] text-[#0D1B2B] text-sm font-semibold px-4 py-2 rounded-xl transition-colors">
+            <Link href="/signup" className="bg-[#3AB5A0] hover:bg-[#2E9D8A] text-[#0D1B2B] text-xs sm:text-sm font-semibold px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-xl transition-colors whitespace-nowrap">
               {tc("buttons.getStarted")}
             </Link>
           </div>

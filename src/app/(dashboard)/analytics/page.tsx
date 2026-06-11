@@ -118,6 +118,13 @@ export default async function AnalyticsPage() {
   const ytdMargin  = ytdInc  > 0 ? Math.round((ytdCash  / ytdInc)  * 100) : null;
   const prevMargin = prevInc > 0 ? Math.round((prevCash / prevInc) * 100) : null;
 
+  // The prior-year window is only a fair comparison if data coverage actually
+  // extends back that far. Otherwise a partial prior year (e.g. data starting
+  // mid-year) compares a full window against a sliver and produces wildly
+  // inflated % changes (e.g. 6 months of data vs. 1 month).
+  const prevYearStart = new Date(Date.UTC(prevYear, 0, 1));
+  const showPrevYearComparison = prevInc > 0 && !!coverage.earliest && coverage.earliest <= prevYearStart;
+
   const totalExpenses = categoryBreakdown.reduce((s, c) => s + Number(c._sum.amount ?? 0), 0);
   const totalIncSrc   = incomeBySource.reduce((s, c) => s + Number(c._sum.amount ?? 0), 0);
 
@@ -149,7 +156,7 @@ export default async function AnalyticsPage() {
             subtitle={t("ytdSection.subtitle", { endMonth: new Date(Date.UTC(dataYear, dataMonthMax - 1, 1)).toLocaleDateString(INTL_LOCALES[locale], { month: "long", timeZone: "UTC" }) })}
           >
             <div className="card">
-              {prevInc === 0 && (
+              {!showPrevYearComparison && (
                 <p className="text-xs text-[#6A97B4] mb-4">{t("ytdSection.noDataYet", { year: String(prevYear) })}</p>
               )}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -158,7 +165,7 @@ export default async function AnalyticsPage() {
                   { key: "expenses", label: tm("expenses"), curr: ytdExp,  prev: prevExp,  color: "text-[#D4A254]", invert: true  },
                   { key: "cashflow", label: tm("cashflow"), curr: ytdCash, prev: prevCash, color: ytdCash >= 0 ? "text-[#3AB5A0]" : "text-[#D97070]", invert: false },
                 ].map((item) => {
-                  const change = prevInc > 0 ? pctChange(item.curr, item.prev) : null;
+                  const change = showPrevYearComparison ? pctChange(item.curr, item.prev) : null;
                   const displayVal    = formatCurrency(item.curr, locale);
                   const prevDisplayVal = t("ytdSection.lastYr", { amount: formatCurrency(item.prev, locale) });
                   return (
@@ -167,7 +174,7 @@ export default async function AnalyticsPage() {
                       <p className={`text-lg font-bold tabular-nums ${item.color} mb-1`}>{displayVal}</p>
                       <div className="flex items-center gap-2">
                         {change !== null && <ChangeChip value={change} invert={item.invert} />}
-                        {item.prev !== 0 && <span className="text-xs text-[#6A97B4]">{prevDisplayVal}</span>}
+                        {showPrevYearComparison && <span className="text-xs text-[#6A97B4]">{prevDisplayVal}</span>}
                       </div>
                     </div>
                   );
@@ -184,13 +191,13 @@ export default async function AnalyticsPage() {
                     {ytdMargin !== null ? `${ytdMargin}%` : "—"}
                   </p>
                   <div className="flex items-center gap-2">
-                    {ytdMargin !== null && prevMargin !== null && prevInc > 0 && (
+                    {ytdMargin !== null && prevMargin !== null && showPrevYearComparison && (
                       <ChangeChip value={ytdMargin - prevMargin} />
                     )}
-                    {prevMargin !== null && (
+                    {prevMargin !== null && showPrevYearComparison && (
                       <span className="text-xs text-[#6A97B4]">{t("ytdSection.marginLastYr", { pct: String(prevMargin) })}</span>
                     )}
-                    {ytdMargin !== null && prevMargin === null && (
+                    {ytdMargin !== null && !showPrevYearComparison && (
                       <span className="text-xs text-[#6A97B4]">{t("ytdSection.ofIncomeKept")}</span>
                     )}
                   </div>

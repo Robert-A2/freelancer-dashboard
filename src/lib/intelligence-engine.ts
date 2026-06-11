@@ -1237,7 +1237,9 @@ export function generateDashboardIntelligence(
     biggestRisk = { key: "insights.risk.incomeGaps", values: { count: recentIncomeGaps.length, amount: fmtAmt(avgExp, locale) } };
   } else if (uncatPctVal > 15) {
     biggestRisk = { key: "insights.risk.uncategorizedSpending", values: { pct: String(uncatPctVal) } };
-  } else if (riskIncDir === "down") {
+  } else if (riskIncDir === "down" && businessTrendDirection !== "improving") {
+    // Don't flag a recent dip as the "biggest risk" when the broader trend is
+    // still positive — that contradicts an "Improving"/"growing" headline.
     biggestRisk = { key: "insights.risk.incomeDeclining", values: { amount: fmtAmt(avg(riskWin.map((h) => h.income)), locale), months: riskWin.length } };
   }
 
