@@ -51,12 +51,17 @@
   },
   "landing": {
     "hero": {
-      "badge": "Built for freelancers",
+      "badge": "Made by a freelancer, for freelancers",
       "title": "Finally understand where your money goes.",
-      "subtitle": "Upload your bank statement and get a complete financial insight. What happened, why it happened, and what to do next. In minutes, not spreadsheets.",
+      "subtitle": "Freelance income doesn't arrive on a schedule. Most finance tools assume it does. Freelancer OS reads your bank statement and shows you what actually happened, what's coming next, and what to do about it.",
       "cta": "Upload your first CSV →",
       "alreadyHaveAccount": "Already have an account? Sign in",
-      "tagline": "Free · Any bank · Any CSV format"
+      "tagline": "Free · Any bank · Any CSV format",
+      "trust": {
+        "encrypted": "Encrypted",
+        "neverSold": "Never sold",
+        "deleteAnytime": "Delete anytime"
+      }
     },
     "understand": {
       "eyebrow": "After one upload",
@@ -81,24 +86,73 @@
         }
       ]
     },
-    "howItWorks": {
-      "eyebrow": "Simple process",
-      "title": "How it works",
-      "subtitle": "From bank statement to financial clarity in under a minute.",
+    "recognition": {
+      "eyebrow": "If this sounds familiar",
+      "title": "Most months don't look like the last one.",
+      "body": "One month feels comfortable. The next, a client pays late and everything feels tight. You've got a spreadsheet you update sometimes. You're fairly sure things are okay, but fairly sure isn't the same as knowing.",
+      "items": [
+        "I don't know if this month was actually good, or just felt good.",
+        "I have no idea where 400 euros a month quietly disappears to.",
+        "I can't tell if my business is growing, or I'm just busier.",
+        "The only time I really look at this properly is at tax time."
+      ]
+    },
+    "walkthrough": {
+      "eyebrow": "What happens after you upload",
+      "title": "From bank statement to financial clarity in under a minute.",
+      "caption": "This is what happens in about 30 seconds.",
       "steps": [
         {
-          "title": "Upload your CSV",
-          "body": "Export from any bank: Revolut, Monzo, AIB, HSBC, Wise, or any bank worldwide. Columns and formats detected automatically."
+          "label": "Upload",
+          "title": "Upload your statement",
+          "body": "Export a CSV from any bank. Revolut, Monzo, AIB, HSBC, Wise, or any bank worldwide."
         },
         {
-          "title": "We do the analysis",
-          "body": "Transactions categorised, patterns detected, forecasts generated. Your complete financial picture appears in seconds."
+          "label": "Detect",
+          "title": "Transactions detected",
+          "body": "Every row is read automatically. Dates, amounts and descriptions, all in one place."
         },
         {
-          "title": "You understand your money",
-          "body": "Clear answers to the questions freelancers actually ask. What is my cashflow? Am I growing? What should I cut?"
+          "label": "Categorise",
+          "title": "Automatically categorised",
+          "body": "Software, client payments, travel, taxes. Tagged for you, and you can correct anything in one click."
+        },
+        {
+          "label": "Insights",
+          "title": "Plain language insights",
+          "body": "What changed this month and why, explained in words you'd use yourself."
+        },
+        {
+          "label": "Forecast",
+          "title": "What's coming next",
+          "body": "A cashflow forecast built from your own patterns, not industry averages."
+        },
+        {
+          "label": "Recommend",
+          "title": "What to do about it",
+          "body": "Specific suggestions based on your numbers, not generic advice."
         }
-      ]
+      ],
+      "sample": {
+        "transactions": [
+          { "desc": "Acme Ltd payment", "amount": "+€2,400.00", "category": "Client payment" },
+          { "desc": "Adobe Creative Cloud", "amount": "-€59.99", "category": "Software" },
+          { "desc": "Train ticket to Lyon", "amount": "-€84.00", "category": "Travel" },
+          { "desc": "Transfer to savings", "amount": "-€500.00", "category": "Savings" }
+        ],
+        "income": "Income",
+        "expenses": "Expenses",
+        "cashflow": "Cashflow",
+        "incomeValue": "€2,400.00",
+        "expensesValue": "€143.99",
+        "cashflowValue": "€2,256.01",
+        "insightTitle": "Software costs are up 14% this month",
+        "insightBody": "Mainly a new Adobe plan added in March.",
+        "forecastLabel": "Next month",
+        "forecastValue": "Cashflow around €1,890",
+        "recommendationTitle": "Suggestion",
+        "recommendationBody": "Cancelling unused subscriptions could add about €984 a year to your cashflow."
+      }
     },
     "history": {
       "eyebrow": "Deep history",
@@ -129,38 +183,22 @@
         }
       ]
     },
-    "whyFreelancers": {
-      "eyebrow": "Built for how you work",
-      "title": "Why freelancers use Freelancer OS",
+    "philosophy": {
+      "eyebrow": "Why this exists",
+      "title": "Financial clarity shouldn't be a luxury.",
+      "subtitle": "A few things we believe, and why Freelancer OS works the way it does.",
       "items": [
         {
-          "title": "Irregular income",
-          "points": [
-            "Some months are great. Some are not.",
-            "Track your income patterns and spot slow periods before they hit.",
-            "Plan ahead instead of reacting."
-          ]
+          "title": "You shouldn't need an accountant to understand your own business.",
+          "body": "Your bank statement already has the answers. We just make them visible."
         },
         {
-          "title": "Variable expenses",
-          "points": [
-            "Tools, subscriptions, and costs change constantly.",
-            "See what is growing, what you can cut, and what it means for cashflow."
-          ]
+          "title": "Irregular income doesn't mean uninformed decisions.",
+          "body": "Forecasts and insights built for how freelancers actually get paid, not how salaried tools assume everyone gets paid."
         },
         {
-          "title": "Cashflow uncertainty",
-          "points": [
-            "Know if next month looks safe before it arrives.",
-            "Forecasts built from your actual history, not industry averages."
-          ]
-        },
-        {
-          "title": "Long-term visibility",
-          "points": [
-            "Is your business growing or shrinking?",
-            "See the full trajectory across months and years, not just this month."
-          ]
+          "title": "Your data is yours.",
+          "body": "Upload it, learn from it, or delete it whenever you want. Nothing locks you in."
         }
       ]
     },
@@ -178,12 +216,20 @@
           "body": "We never sell, share, or use your data for advertising."
         },
         {
+          "title": "You're always in control",
+          "body": "Recategorise any transaction and everything updates instantly: totals, forecasts and insights."
+        },
+        {
           "title": "Delete anytime",
           "body": "Remove your account and all data permanently with one click."
         },
         {
           "title": "No third-party tracking",
           "body": "Your financial data stays on our servers only."
+        },
+        {
+          "title": "Early days, real numbers",
+          "body": "Categorisation won't be perfect on day one. Correct anything and it learns for next time."
         }
       ]
     },
@@ -191,26 +237,10 @@
       "title": "Start understanding your finances today.",
       "body": "Upload your first bank statement in under a minute. No setup. No spreadsheets. Just clarity.",
       "cta": "Get started free →",
-      "tagline": "Free · Any bank · Takes 60 seconds"
+      "tagline": "Free · Delete your data anytime · Takes about a minute"
     },
     "footer": {
       "tagline": "Financial clarity built for freelancers"
-    },
-    "mockup": {
-      "incomeVsExpenses": "Income vs Expenses, 12 months",
-      "income": "Income",
-      "expenses": "Expenses",
-      "savings": "Savings",
-      "cashflow": "Cashflow",
-      "expensesIncreased": "Expenses increased 14% this month.",
-      "mainCause": "Main cause:",
-      "mainCauseBody": "Software subscriptions increased by €82.",
-      "recommended": "Recommended:",
-      "recommendedBody": "Reducing unused subscriptions could improve annual cashflow by €984.",
-      "nextMonthForecast": "Next month forecast",
-      "nextMonthCashflow": "€1,890 cashflow",
-      "annualProjection": "Annual projection",
-      "annualProjectionValue": "€22,680"
     }
   },
   "auth": {

@@ -51,12 +51,17 @@
   },
   "landing": {
     "hero": {
-      "badge": "Conçu pour les freelances",
+      "badge": "Conçu par un freelance, pour les freelances",
       "title": "Comprenez enfin où va votre argent.",
-      "subtitle": "Importez votre relevé bancaire et obtenez une analyse financière complète : ce qui s'est passé, pourquoi, et ce qu'il faut faire ensuite. En quelques minutes, sans tableurs.",
+      "subtitle": "Les revenus de freelance n'arrivent pas selon un calendrier fixe. La plupart des outils financiers partent du principe que si. Freelancer OS lit votre relevé bancaire et vous montre ce qui s'est vraiment passé, ce qui arrive ensuite, et ce qu'il faut faire.",
       "cta": "Importez votre premier CSV →",
       "alreadyHaveAccount": "Vous avez déjà un compte ? Se connecter",
-      "tagline": "Gratuit · Toutes banques · Tous formats CSV"
+      "tagline": "Gratuit · Toutes banques · Tous formats CSV",
+      "trust": {
+        "encrypted": "Chiffré",
+        "neverSold": "Jamais revendu",
+        "deleteAnytime": "Suppression à tout moment"
+      }
     },
     "understand": {
       "eyebrow": "Après un seul import",
@@ -81,24 +86,73 @@
         }
       ]
     },
-    "howItWorks": {
-      "eyebrow": "Processus simple",
-      "title": "Comment ça marche",
-      "subtitle": "Du relevé bancaire à la clarté financière en moins d'une minute.",
+    "recognition": {
+      "eyebrow": "Si ça vous parle",
+      "title": "La plupart des mois ne ressemblent pas au précédent.",
+      "body": "Un mois, tout semble aller. Le mois suivant, un client paie en retard et tout devient tendu. Vous avez un tableur que vous mettez à jour de temps en temps. Vous pensez que tout va bien, mais le penser n'est pas la même chose que le savoir.",
+      "items": [
+        "Je ne sais pas si ce mois a vraiment été bon, ou si j'en ai juste eu l'impression.",
+        "Je n'ai aucune idée d'où disparaissent 400 euros chaque mois.",
+        "Je ne sais pas si mon activité progresse, ou si je suis simplement plus occupé.",
+        "Le seul moment où je regarde vraiment tout ça, c'est au moment des impôts."
+      ]
+    },
+    "walkthrough": {
+      "eyebrow": "Ce qui se passe après votre import",
+      "title": "Du relevé bancaire à la clarté financière en moins d'une minute.",
+      "caption": "Voici ce qui se passe en environ 30 secondes.",
       "steps": [
         {
-          "title": "Importez votre CSV",
-          "body": "Exportez depuis n'importe quelle banque : Revolut, Monzo, AIB, HSBC, Wise, ou toute autre banque dans le monde. Colonnes et formats détectés automatiquement."
+          "label": "Import",
+          "title": "Importez votre relevé",
+          "body": "Exportez un CSV depuis n'importe quelle banque. Revolut, Monzo, AIB, HSBC, Wise, ou toute autre banque dans le monde."
         },
         {
-          "title": "Nous faisons l'analyse",
-          "body": "Transactions catégorisées, tendances détectées, prévisions générées. Votre situation financière complète apparaît en quelques secondes."
+          "label": "Détection",
+          "title": "Transactions détectées",
+          "body": "Chaque ligne est lue automatiquement. Dates, montants et descriptions, tout au même endroit."
         },
         {
-          "title": "Vous comprenez votre argent",
-          "body": "Des réponses claires aux questions que se posent vraiment les freelances. Quelle est ma trésorerie ? Est-ce que je progresse ? Que dois-je réduire ?"
+          "label": "Catégorisation",
+          "title": "Catégorisées automatiquement",
+          "body": "Logiciels, paiements clients, déplacements, impôts. Étiquetées pour vous, et vous pouvez tout corriger en un clic."
+        },
+        {
+          "label": "Analyses",
+          "title": "Des analyses en langage clair",
+          "body": "Ce qui a changé ce mois-ci et pourquoi, expliqué avec vos propres mots."
+        },
+        {
+          "label": "Prévision",
+          "title": "Ce qui arrive ensuite",
+          "body": "Une prévision de trésorerie basée sur vos propres habitudes, pas sur des moyennes sectorielles."
+        },
+        {
+          "label": "Recommandation",
+          "title": "Ce qu'il faut faire",
+          "body": "Des suggestions précises basées sur vos chiffres, pas des conseils génériques."
         }
-      ]
+      ],
+      "sample": {
+        "transactions": [
+          { "desc": "Paiement Acme Ltd", "amount": "+2 400,00 €", "category": "Paiement client" },
+          { "desc": "Adobe Creative Cloud", "amount": "-59,99 €", "category": "Logiciels" },
+          { "desc": "Billet de train pour Lyon", "amount": "-84,00 €", "category": "Déplacements" },
+          { "desc": "Virement vers épargne", "amount": "-500,00 €", "category": "Épargne" }
+        ],
+        "income": "Revenus",
+        "expenses": "Dépenses",
+        "cashflow": "Trésorerie",
+        "incomeValue": "2 400,00 €",
+        "expensesValue": "143,99 €",
+        "cashflowValue": "2 256,01 €",
+        "insightTitle": "Les coûts logiciels augmentent de 14 % ce mois-ci",
+        "insightBody": "Principalement à cause d'un nouvel abonnement Adobe ajouté en mars.",
+        "forecastLabel": "Mois prochain",
+        "forecastValue": "Trésorerie autour de 1 890 €",
+        "recommendationTitle": "Suggestion",
+        "recommendationBody": "Annuler les abonnements inutilisés pourrait ajouter environ 984 € par an à votre trésorerie."
+      }
     },
     "history": {
       "eyebrow": "Historique approfondi",
@@ -129,38 +183,22 @@
         }
       ]
     },
-    "whyFreelancers": {
-      "eyebrow": "Conçu pour votre façon de travailler",
-      "title": "Pourquoi les freelances utilisent Freelancer OS",
+    "philosophy": {
+      "eyebrow": "Pourquoi Freelancer OS existe",
+      "title": "La clarté financière ne devrait pas être un luxe.",
+      "subtitle": "Quelques convictions qui expliquent pourquoi Freelancer OS fonctionne ainsi.",
       "items": [
         {
-          "title": "Revenus irréguliers",
-          "points": [
-            "Certains mois sont excellents. D'autres moins.",
-            "Suivez vos tendances de revenus et repérez les périodes creuses avant qu'elles n'arrivent.",
-            "Anticipez au lieu de réagir."
-          ]
+          "title": "Vous ne devriez pas avoir besoin d'un comptable pour comprendre votre propre activité.",
+          "body": "Votre relevé bancaire contient déjà les réponses. Nous les rendons simplement visibles."
         },
         {
-          "title": "Dépenses variables",
-          "points": [
-            "Outils, abonnements et coûts changent constamment.",
-            "Voyez ce qui augmente, ce que vous pouvez réduire, et ce que cela signifie pour votre trésorerie."
-          ]
+          "title": "Des revenus irréguliers ne devraient pas mener à des décisions mal informées.",
+          "body": "Des prévisions et des analyses pensées pour la façon dont les freelances sont vraiment payés, pas pour des outils conçus pour des salaires fixes."
         },
         {
-          "title": "Incertitude de trésorerie",
-          "points": [
-            "Sachez si le mois prochain s'annonce serein avant qu'il n'arrive.",
-            "Des prévisions basées sur votre historique réel, pas sur des moyennes sectorielles."
-          ]
-        },
-        {
-          "title": "Visibilité à long terme",
-          "points": [
-            "Votre activité est-elle en croissance ou en déclin ?",
-            "Visualisez toute la trajectoire sur plusieurs mois et années, pas seulement ce mois-ci."
-          ]
+          "title": "Vos données vous appartiennent.",
+          "body": "Importez-les, apprenez-en, ou supprimez-les quand vous le souhaitez. Rien ne vous retient."
         }
       ]
     },
@@ -178,12 +216,20 @@
           "body": "Nous ne vendons, ne partageons ni n'utilisons jamais vos données à des fins publicitaires."
         },
         {
+          "title": "Vous gardez le contrôle",
+          "body": "Recatégorisez n'importe quelle transaction et tout se met à jour instantanément : totaux, prévisions et analyses."
+        },
+        {
           "title": "Suppression à tout moment",
           "body": "Supprimez votre compte et toutes vos données définitivement en un clic."
         },
         {
           "title": "Aucun suivi tiers",
           "body": "Vos données financières restent uniquement sur nos serveurs."
+        },
+        {
+          "title": "Encore récent, des chiffres réels",
+          "body": "La catégorisation ne sera pas parfaite dès le premier jour. Corrigez ce qu'il faut, et elle apprend pour la prochaine fois."
         }
       ]
     },
@@ -191,26 +237,10 @@
       "title": "Commencez à comprendre vos finances dès aujourd'hui.",
       "body": "Importez votre premier relevé bancaire en moins d'une minute. Aucune configuration. Aucun tableur. Juste de la clarté.",
       "cta": "Commencer gratuitement →",
-      "tagline": "Gratuit · Toutes banques · 60 secondes"
+      "tagline": "Gratuit · Suppression de vos données à tout moment · Environ une minute"
     },
     "footer": {
       "tagline": "Clarté financière conçue pour les freelances"
-    },
-    "mockup": {
-      "incomeVsExpenses": "Revenus vs Dépenses, 12 mois",
-      "income": "Revenus",
-      "expenses": "Dépenses",
-      "savings": "Épargne",
-      "cashflow": "Trésorerie",
-      "expensesIncreased": "Les dépenses ont augmenté de 14 % ce mois-ci.",
-      "mainCause": "Cause principale :",
-      "mainCauseBody": "Les abonnements logiciels ont augmenté de 82 €.",
-      "recommended": "Recommandé :",
-      "recommendedBody": "Réduire les abonnements inutilisés pourrait améliorer la trésorerie annuelle de 984 €.",
-      "nextMonthForecast": "Prévision du mois prochain",
-      "nextMonthCashflow": "1 890 € de trésorerie",
-      "annualProjection": "Projection annuelle",
-      "annualProjectionValue": "22 680 €"
     }
   },
   "auth": {
