@@ -162,14 +162,15 @@ export default async function ForecastPage() {
     });
   }
 
-  // Annual projections (cashflow = income − expenses; savings removed from display)
+  // Annual projections — cashflow = forecast.projectedCashflow (Income − Expenses),
+  // the same definition used everywhere else (see forecast-engine.ts).
   const annualIncome    = forecast ? forecast.projectedIncome   * 12 : 0;
   const annualExpenses  = forecast ? forecast.projectedExpenses * 12 : 0;
-  const annualCashflow  = forecast ? (forecast.projectedIncome - forecast.projectedExpenses) * 12 : 0;
+  const annualCashflow  = forecast ? forecast.projectedCashflow * 12 : 0;
 
   // Projected cashflow margin: what % of projected income is kept after expenses
   const projMarginPct = forecast && forecast.projectedIncome > 0
-    ? Math.round(((forecast.projectedIncome - forecast.projectedExpenses) / forecast.projectedIncome) * 100)
+    ? Math.round((forecast.projectedCashflow / forecast.projectedIncome) * 100)
     : null;
 
   const health = HEALTH[intel.healthStatus];
@@ -290,7 +291,7 @@ export default async function ForecastPage() {
               {[
                 { key: "income",   label: t("yearEndProjection.items.income"),   value: formatCurrency(annualIncome, locale),   sub: forecast ? t("yearEndProjection.perMonthAvg", { amount: formatCurrency(forecast.projectedIncome, locale) }) : null,   color: "text-[#4CC4A4]",  border: "border-[#4CC4A415]" },
                 { key: "expenses", label: t("yearEndProjection.items.expenses"), value: formatCurrency(annualExpenses, locale),  sub: forecast ? t("yearEndProjection.perMonthAvg", { amount: formatCurrency(forecast.projectedExpenses, locale) }) : null,  color: "text-[#D4A254]",  border: "border-[#D4A25415]" },
-                { key: "cashflow", label: t("yearEndProjection.items.cashflow"), value: formatCurrency(annualCashflow, locale),  sub: forecast ? t("yearEndProjection.perMonthAvg", { amount: formatCurrency(forecast.projectedIncome - forecast.projectedExpenses, locale) }) : null, color: annualCashflow >= 0 ? "text-[#3AB5A0]" : "text-[#D97070]", border: "border-[#243F5E]" },
+                { key: "cashflow", label: t("yearEndProjection.items.cashflow"), value: formatCurrency(annualCashflow, locale),  sub: forecast ? t("yearEndProjection.perMonthAvg", { amount: formatCurrency(forecast.projectedCashflow, locale) }) : null, color: annualCashflow >= 0 ? "text-[#3AB5A0]" : "text-[#D97070]", border: "border-[#243F5E]" },
                 {
                   key: "margin",
                   label: t("yearEndProjection.items.margin"),

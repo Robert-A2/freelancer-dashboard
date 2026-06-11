@@ -388,7 +388,7 @@ export function buildHistoricalInsights(
   // ── Cashflow consistency check ──────────────────────────────────────────
   {
     const recentActive6 = active.slice(-6);
-    const recentNegCount = recentActive6.filter(h => h.income - h.expenses < 0).length;
+    const recentNegCount = recentActive6.filter(h => h.cashflow < 0).length;
     if (recentNegCount >= 3 && active.length >= 6) {
       push("cashflow", {
         key: "insights.negativeCashflowRecent",
@@ -400,8 +400,8 @@ export function buildHistoricalInsights(
     if (yearlySnapshots.length >= 2) {
       const lastY = yearlySnapshots[yearlySnapshots.length - 1];
       const prevY = yearlySnapshots[yearlySnapshots.length - 2];
-      const lastMargin = lastY.income > 0 ? (lastY.income - lastY.expenses) / lastY.income : 0;
-      const prevMargin = prevY.income > 0 ? (prevY.income - prevY.expenses) / prevY.income : 0;
+      const lastMargin = lastY.income > 0 ? lastY.cashflow / lastY.income : 0;
+      const prevMargin = prevY.income > 0 ? prevY.cashflow / prevY.income : 0;
       if (prevMargin > 0.1 && lastMargin < prevMargin * 0.5) {
         push("cashflow", {
           key: "insights.cashflowMarginDeclined",
@@ -637,7 +637,7 @@ export function generateDashboardIntelligence(
   const expDown = changes && changes.expenses < -2;
   const incDown = changes && changes.income < -5;
   const expUp = changes && changes.expenses > 5;
-  const cashflowOk = (current.totalIncome - current.totalExpenses) >= 0;
+  const cashflowOk = current.netCashflow >= 0;
 
   let snapshotSummary: Insight;
 
@@ -1092,7 +1092,7 @@ export function generateDashboardIntelligence(
 
     // ── Why cashflow is negative ───────────────────────────────────────────
 
-    if (forecast.projectedIncome - forecast.projectedExpenses < 0) {
+    if (forecast.projectedCashflow < 0) {
       const recentExpAvg = avg(recent3.map((h) => h.expenses));
 
       // Top categories by actual spending this month, then by recent average
@@ -1135,8 +1135,8 @@ export function generateDashboardIntelligence(
       });
     }
 
-    if (forecast.projectedIncome - forecast.projectedExpenses < 0) {
-      const deficit = Math.abs(forecast.projectedIncome - forecast.projectedExpenses);
+    if (forecast.projectedCashflow < 0) {
+      const deficit = Math.abs(forecast.projectedCashflow);
       forecastImprovements.push({ key: "insights.forecast.restoreCashflow", values: { amount: fmtAmt(deficit, locale) } });
     }
 
@@ -1151,9 +1151,9 @@ export function generateDashboardIntelligence(
       }
     }
 
-    if (forecast.projectedIncome - forecast.projectedExpenses >= 0 && forecastImprovements.length < 2) {
+    if (forecast.projectedCashflow >= 0 && forecastImprovements.length < 2) {
       const cashflowMargin = forecast.projectedIncome > 0
-        ? Math.round(((forecast.projectedIncome - forecast.projectedExpenses) / forecast.projectedIncome) * 100)
+        ? Math.round((forecast.projectedCashflow / forecast.projectedIncome) * 100)
         : 0;
       forecastImprovements.push(
         cashflowMargin < 20
@@ -1167,17 +1167,17 @@ export function generateDashboardIntelligence(
       (c) => c.category === "subscriptions" || c.category === "software" || c.category === "ai tools"
     );
 
-    if (forecast.projectedIncome - forecast.projectedExpenses < 0) {
-      const deficit = Math.abs(forecast.projectedIncome - forecast.projectedExpenses);
+    if (forecast.projectedCashflow < 0) {
+      const deficit = Math.abs(forecast.projectedCashflow);
       biggestOpportunity = { key: "insights.opportunity.restoreCashflow", values: { amount: fmtAmt(deficit, locale), annual: fmtAmt(deficit * 12, locale) } };
     } else if (oppSubCat && oppSubCat.currentMonthTotal > 100) {
       biggestOpportunity = { key: "insights.opportunity.reviewSubscriptions", values: { category: cat(oppSubCat.category), monthly: fmtAmt(oppSubCat.currentMonthTotal, locale), annual: fmtAmt(oppSubCat.currentMonthTotal * 12, locale) } };
     } else {
       const cashflowMarginOpp = forecast.projectedIncome > 0
-        ? Math.round(((forecast.projectedIncome - forecast.projectedExpenses) / forecast.projectedIncome) * 100)
+        ? Math.round((forecast.projectedCashflow / forecast.projectedIncome) * 100)
         : 0;
       if (cashflowMarginOpp < 15 && forecast.projectedIncome > 0) {
-        const surplus = Math.round(forecast.projectedIncome * 0.15 - (forecast.projectedIncome - forecast.projectedExpenses));
+        const surplus = Math.round(forecast.projectedIncome * 0.15 - forecast.projectedCashflow);
         biggestOpportunity = { key: "insights.opportunity.increaseMargin", values: { amount: fmtAmt(surplus, locale), annual: fmtAmt(surplus * 12, locale) } };
       }
       if (!biggestOpportunity) {

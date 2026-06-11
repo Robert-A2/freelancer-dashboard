@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { recalculateMonthlyAnalytics } from "@/lib/analytics-engine";
+import { generateForecast } from "@/lib/forecast-engine";
 import { categorizeTransaction, type LearnedRules } from "@/lib/categorization";
 import { Prisma } from "@prisma/client";
 
@@ -47,7 +48,8 @@ export async function POST(_request: NextRequest) {
         if (
           result.category !== tx.category ||
           result.confidence !== tx.categoryConfidence ||
-          result.source !== (tx.categorySource ?? null)
+          result.source !== (tx.categorySource ?? null) ||
+          result.transactionType !== tx.transactionType
         ) {
           changedCount++;
           updates.push(
@@ -57,6 +59,7 @@ export async function POST(_request: NextRequest) {
                 category: result.category,
                 categoryConfidence: result.confidence,
                 categorySource: result.source,
+                transactionType: result.transactionType,
               },
             })
           );
@@ -67,6 +70,7 @@ export async function POST(_request: NextRequest) {
     }
 
     await recalculateMonthlyAnalytics(user.id);
+    await generateForecast(user.id);
 
     const newUncategorized = await prisma.transaction.count({
       where: { userId: user.id, category: "uncategorized" },

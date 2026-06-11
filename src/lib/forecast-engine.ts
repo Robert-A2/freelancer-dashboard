@@ -54,7 +54,13 @@ export async function generateForecast(userId: string): Promise<ForecastResult |
     orderBy: [{ year: "asc" }, { month: "asc" }],
   });
 
-  if (records.length === 0) return null;
+  if (records.length === 0) {
+    // No analytics left to forecast from (e.g. the user deleted their last
+    // import) — remove any stale forecast so dashboards don't show projections
+    // for data that no longer exists.
+    await prisma.forecast.deleteMany({ where: { userId } });
+    return null;
+  }
 
   const incomes   = records.map((r) => Number(r.totalIncome));
   const expenses  = records.map((r) => Number(r.totalExpenses));
@@ -96,7 +102,9 @@ export async function generateForecast(userId: string): Promise<ForecastResult |
   }
   // ── End seasonal adjustment ────────────────────────────────────────────
 
-  const projectedCashflow = projectedIncome - projectedExpenses - projectedSavings;
+  // Cashflow = Income − Expenses (same definition as recalculateMonthlyAnalytics'
+  // netCashflow). Savings are projected separately and excluded from cashflow.
+  const projectedCashflow = projectedIncome - projectedExpenses;
   const n = records.length;
   const confidence: "low" | "medium" | "high" =
     n >= 12 ? "high" : n >= 4 ? "medium" : "low";

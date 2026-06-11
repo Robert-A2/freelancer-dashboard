@@ -2,7 +2,17 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { recalculateMonthlyAnalytics } from "@/lib/analytics-engine";
-import { normalizeMerchantKey } from "@/lib/categorization";
+import { generateForecast } from "@/lib/forecast-engine";
+import { normalizeMerchantKey, type CategorizationResult } from "@/lib/categorization";
+
+// Mirrors the transactionType derivation in categorizeTransaction()'s learned-rule
+// layer: savings/transfer categories carry a fixed type, everything else is
+// income/expense based on the transaction's own signed amount.
+function deriveTransactionType(category: string, signedAmount: number): CategorizationResult["transactionType"] {
+  if (category === "savings") return "savings";
+  if (category === "transfer") return "transfer";
+  return signedAmount > 0 ? "income" : "expense";
+}
 
 export async function PATCH(request: NextRequest) {
   try {
@@ -19,25 +29,50 @@ export async function PATCH(request: NextRequest) {
     // Verify the transaction belongs to this user
     const tx = await prisma.transaction.findFirst({
       where: { id: transactionId, userId: user.id },
-      select: { id: true, description: true, category: true },
+      select: { id: true, description: true, category: true, amount: true, transactionType: true },
     });
 
     if (!tx) return NextResponse.json({ error: "Transaction not found" }, { status: 404 });
 
-    const updateData = { category: newCategory, categoryConfidence: "high", categorySource: "learned" };
     let affectedCount = 1;
 
     if (applyToSimilar) {
-      // Update every transaction with the same description — fixes all future and past entries
-      const result = await prisma.transaction.updateMany({
+      // Update every transaction with the same description — fixes all future and past entries.
+      // Each transaction's transactionType is re-derived from its OWN signed amount
+      // (stored amounts are absolute values; sign is recovered from the existing
+      // transactionType), so e.g. a refund and a charge sharing a description don't
+      // both get forced to the same income/expense type.
+      const similar = await prisma.transaction.findMany({
         where: { userId: user.id, description: tx.description },
-        data: updateData,
+        select: { id: true, amount: true, transactionType: true },
       });
-      affectedCount = result.count;
+      await prisma.$transaction(
+        similar.map((t) => {
+          const amount = Number(t.amount);
+          const signedAmount = t.transactionType === "income" ? amount : -amount;
+          return prisma.transaction.update({
+            where: { id: t.id },
+            data: {
+              category: newCategory,
+              categoryConfidence: "high",
+              categorySource: "learned",
+              transactionType: deriveTransactionType(newCategory, signedAmount),
+            },
+          });
+        })
+      );
+      affectedCount = similar.length;
     } else {
+      const amount = Number(tx.amount);
+      const signedAmount = tx.transactionType === "income" ? amount : -amount;
       await prisma.transaction.update({
         where: { id: transactionId },
-        data: updateData,
+        data: {
+          category: newCategory,
+          categoryConfidence: "high",
+          categorySource: "learned",
+          transactionType: deriveTransactionType(newCategory, signedAmount),
+        },
       });
     }
 
@@ -63,8 +98,10 @@ export async function PATCH(request: NextRequest) {
       },
     });
 
-    // Recalculate monthly analytics so dashboards and forecasts reflect the change
+    // Recalculate monthly analytics, then regenerate the forecast from the updated
+    // analytics so dashboards, charts, and forecasts all reflect the change.
     await recalculateMonthlyAnalytics(user.id);
+    await generateForecast(user.id);
 
     return NextResponse.json({ success: true });
   } catch (error) {

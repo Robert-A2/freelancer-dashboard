@@ -23,11 +23,6 @@ interface Props {
   prevLabel?: string;
 }
 
-function changePct(curr: number, prev: number): number {
-  if (prev === 0) return curr > 0 ? 100 : 0;
-  return Math.round(((curr - prev) / Math.abs(prev)) * 100);
-}
-
 export default function MonthlyComparison({
   current, previous, changes, interpretation, currLabel: currLabelProp, prevLabel: prevLabelProp,
 }: Props) {
@@ -49,14 +44,15 @@ export default function MonthlyComparison({
   }
 
   const previousHasData = previous.totalIncome > 0 || previous.totalExpenses > 0;
-  const currCashflow      = current.totalIncome  - current.totalExpenses;
-  const prevCashflow      = previous.totalIncome - previous.totalExpenses;
-  const cashflowChangePct = changePct(currCashflow, prevCashflow);
+  // Cashflow = netCashflow (Income − Expenses) — single definition shared with
+  // SummaryCards, charts, risk/health scoring, and forecasts.
+  const currCashflow = current.netCashflow;
+  const prevCashflow = previous.netCashflow;
 
   const rows = [
     { key: "income",   label: tm("income"),   prev: previous.totalIncome,   curr: current.totalIncome,   pct: changes.income,   invertBad: false },
     { key: "expenses", label: tm("expenses"), prev: previous.totalExpenses, curr: current.totalExpenses, pct: changes.expenses, invertBad: true  },
-    { key: "cashflow", label: tm("cashflow"), prev: prevCashflow,            curr: currCashflow,           pct: cashflowChangePct, invertBad: false },
+    { key: "cashflow", label: tm("cashflow"), prev: prevCashflow,            curr: currCashflow,           pct: changes.cashflow, invertBad: false },
   ];
 
   if (!previousHasData) {

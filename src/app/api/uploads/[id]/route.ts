@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { recalculateMonthlyAnalytics } from "@/lib/analytics-engine";
+import { generateForecast } from "@/lib/forecast-engine";
 
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -23,8 +24,11 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     });
     await prisma.csvImport.delete({ where: { id } });
 
-    // Recalculate monthly analytics so dashboards and forecasts reflect the removal
+    // Recalculate monthly analytics, then regenerate the forecast so dashboards
+    // and forecasts reflect the removal (and don't show a stale projection if
+    // this was the user's last import).
     await recalculateMonthlyAnalytics(user.id);
+    await generateForecast(user.id);
 
     return NextResponse.json({ success: true, deletedCount });
   } catch (error) {

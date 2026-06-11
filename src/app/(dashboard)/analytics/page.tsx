@@ -110,9 +110,10 @@ export default async function AnalyticsPage() {
   const prevInc  = Number(ytdPrev._sum.totalIncome   ?? 0);
   const prevExp  = Number(ytdPrev._sum.totalExpenses ?? 0);
 
-  // Cashflow = income − expenses (savings excluded from display)
-  const ytdCash  = ytdInc  - ytdExp;
-  const prevCash = prevInc - prevExp;
+  // Cashflow = netCashflow (Income − Expenses) — single definition shared with
+  // the dashboard, charts, risk/health scoring, and forecasts.
+  const ytdCash  = Number(ytdThis._sum.netCashflow ?? 0);
+  const prevCash = Number(ytdPrev._sum.netCashflow ?? 0);
 
   // Cashflow margin: % of income kept after expenses, for both years
   const ytdMargin  = ytdInc  > 0 ? Math.round((ytdCash  / ytdInc)  * 100) : null;

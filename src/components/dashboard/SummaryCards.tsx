@@ -56,8 +56,10 @@ export default function SummaryCards({
   const c = current  ?? { totalIncome: 0, totalExpenses: 0, totalSavings: 0, netCashflow: 0 };
   const p = previous ?? { totalIncome: 0, totalExpenses: 0, totalSavings: 0, netCashflow: 0 };
 
-  const currCashflow  = c.totalIncome - c.totalExpenses;
-  const prevCashflow  = p.totalIncome - p.totalExpenses;
+  // Cashflow = netCashflow (Income − Expenses) — single definition shared with
+  // charts, risk/health scoring, and forecasts (see analytics-engine.ts).
+  const currCashflow  = c.netCashflow;
+  const prevCashflow  = p.netCashflow;
   const spendRate     = c.totalIncome > 0 ? Math.round((c.totalExpenses / c.totalIncome) * 100) : 0;
   const margin        = c.totalIncome > 0 ? 100 - spendRate : null;
   const prevSpendRate = p.totalIncome > 0 ? Math.round((p.totalExpenses / p.totalIncome) * 100) : 0;

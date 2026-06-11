@@ -112,14 +112,22 @@ export default async function DashboardPage({
   const nonZeroMonths = chartData.filter((d) => d.income > 0 || d.expenses > 0).length;
 
   // Risk computed from historical data — mirrors forecast/page.tsx's cashflow risk
-  // calculation so the Dashboard and Forecast pages never disagree on the same data.
+  // calculation exactly (including the income-trend check) so the Dashboard and
+  // Forecast pages never disagree on the same data.
   const activeMonths      = chartData.filter(d => d.income > 0 || d.expenses > 0);
 
   const riskPositiveMonths = activeMonths.filter(d => d.cashflow >= 0).length;
   const riskTotalMonths    = activeMonths.length;
   const posRatio           = riskTotalMonths > 0 ? riskPositiveMonths / riskTotalMonths : 0;
+
+  const last6    = activeMonths.slice(-6);
+  const prev6    = activeMonths.slice(-12, -6);
+  const avgLast6 = last6.length ? last6.reduce((s, d) => s + d.income, 0) / last6.length : 0;
+  const avgPrev6 = prev6.length ? prev6.reduce((s, d) => s + d.income, 0) / prev6.length : 0;
+  const incTrend = avgPrev6 > 0 ? (avgLast6 - avgPrev6) / avgPrev6 : 0;
+
   const riskLevel: "low" | "medium" | "high" | "critical" =
-    posRatio >= 0.85 ? "low" :
+    posRatio >= 0.85 && incTrend > -0.05 ? "low" :
     posRatio >= 0.65 ? "medium" :
     posRatio >= 0.40 ? "high" : "critical";
 

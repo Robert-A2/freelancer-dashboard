@@ -58,8 +58,12 @@ const SAVINGS_TRANSFER_OVERRIDES = [
 // ── General transfer detection ─────────────────────────────────────────────────
 // Internal account movements — excluded from income AND expenses so they never
 // inflate cashflow figures.
+//
+// "internal transfer" / "own transfer" / "my account" / "between accounts"
+// structurally reference the user's OWN accounts and never name a third party,
+// so they're unambiguous regardless of amount sign.
 const TRANSFER_KEYWORDS = [
-  "transfer to", "transfer from", "internal transfer", "own transfer",
+  "internal transfer", "own transfer",
   "between accounts", "my account", "to my account", "from my account",
   "pocket transfer", "monzo pot", "revolut vault", "revolut savings",
   "bunq pocket", "bunq savings", "starling space", "round up",
@@ -72,6 +76,15 @@ const TRANSFER_KEYWORDS = [
   "taptap send", "worldremit", "remitly", "xoom", "azimo", "moneygram",
   "western union",
 ];
+
+// "Transfer to X" / "Transfer from X" are AMBIGUOUS for incoming money: many
+// banks describe an incoming Faster Payment / SEPA credit FROM A CLIENT as
+// "TRANSFER FROM ACME CONSULTING LTD". A positive amount matching one of these
+// is only treated as an internal transfer when the description also names the
+// account owner (a genuine self-transfer, see isSelfTransfer below) — otherwise
+// it falls through to income detection (Priority 5) so real client payments are
+// never silently dropped.
+const AMBIGUOUS_TRANSFER_KEYWORDS = ["transfer to", "transfer from"];
 
 // ── Savings detection ──────────────────────────────────────────────────────────
 // Money being intentionally set aside. Treated separately from expenses so the
@@ -241,6 +254,15 @@ export function categorizeTransaction(
   // PRIORITY 2 — General internal transfers (neutral, excluded from cashflow)
   if (TRANSFER_KEYWORDS.some((kw) => lower.includes(kw))) {
     return { transactionType: "transfer", category: "transfer", confidence: "high", source: "merchant" };
+  }
+  // "Transfer to/from X" — only a transfer if X is the account owner themself
+  // (or the amount is leaving the account, e.g. moving funds to another of the
+  // user's own accounts). A positive amount with no owner-name match is treated
+  // as a third-party payment and falls through to income detection below.
+  if (AMBIGUOUS_TRANSFER_KEYWORDS.some((kw) => lower.includes(kw))) {
+    if (amount <= 0 || isSelfTransfer(lower, ownerName)) {
+      return { transactionType: "transfer", category: "transfer", confidence: "high", source: "merchant" };
+    }
   }
 
   // PRIORITY 3 — Savings (investment platforms, ISA, pension, etc.)

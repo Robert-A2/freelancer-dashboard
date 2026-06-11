@@ -44,11 +44,12 @@ export default function ForecastWidget({ forecast, reasons, improvements, defici
     );
   }
 
-  const { projectedIncome, projectedExpenses, forecastPeriod, confidence } = forecast;
+  const { projectedIncome, projectedExpenses, projectedCashflow, forecastPeriod, confidence } = forecast;
 
-  const operatingCashflow = projectedIncome - projectedExpenses;
-  const cashflowNegative  = operatingCashflow < 0;
-  const projectedMargin   = projectedIncome > 0 ? Math.round((operatingCashflow / projectedIncome) * 100) : null;
+  // Cashflow = projectedCashflow (Income − Expenses) — single definition shared
+  // with SummaryCards, charts, risk/health scoring, and the forecast engine.
+  const cashflowNegative = projectedCashflow < 0;
+  const projectedMargin  = projectedIncome > 0 ? Math.round((projectedCashflow / projectedIncome) * 100) : null;
 
   const cashflowHealthText  = reasons?.[1] ?? null;
   const cashflowHealthIsNeg = cashflowHealthText?.key === "insights.forecast.cashflowNegative";
@@ -79,7 +80,7 @@ export default function ForecastWidget({ forecast, reasons, improvements, defici
         {[
           { label: tm("income"),   value: formatCurrency(projectedIncome, locale),  color: "text-[#4CC4A4]" },
           { label: tm("expenses"), value: formatCurrency(projectedExpenses, locale), color: "text-[#D4A254]" },
-          { label: tm("cashflow"), value: formatCurrency(operatingCashflow, locale), color: cashflowNegative ? "text-[#D97070]" : "text-[#3AB5A0]" },
+          { label: tm("cashflow"), value: formatCurrency(projectedCashflow, locale), color: cashflowNegative ? "text-[#D97070]" : "text-[#3AB5A0]" },
           {
             label: tm("margin"),
             value: projectedMargin !== null ? `${projectedMargin}%` : "—",
