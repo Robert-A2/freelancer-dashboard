@@ -32,6 +32,13 @@ function stripBOM(text: string): string {
   return text.startsWith("﻿") ? text.slice(1) : text;
 }
 
+// ── Diacritic-insensitive lowercase ──────────────────────────────────────────
+// Lets accented headers ("Libellé", "Débit", "Crédit", "Montant") match the
+// same keyword lists as their unaccented equivalents.
+function normalize(s: string): string {
+  return s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
+}
+
 // ── Metadata row skipping ─────────────────────────────────────────────────────
 // Many banks prepend account info before the actual CSV header, e.g.:
 //   Barclays Bank PLC
@@ -40,10 +47,10 @@ function stripBOM(text: string): string {
 //   Date,Description,Amount
 function findHeaderRowIndex(lines: string[]): number {
   for (let i = 0; i < Math.min(lines.length, 20); i++) {
-    const lower = lines[i].toLowerCase();
+    const lower = normalize(lines[i]);
     const hasDate    = /\bdate\b|datum\b|fecha\b|data\b/.test(lower);
-    const hasAmount  = /amount|debit|credit|betrag|bedrag|importe|money.?in|money.?out|paid.?in|paid.?out|withdrawal|deposit/.test(lower);
-    const hasDesc    = /description|details|narrative|payee|merchant|reference|memo|omschrijving|particulars/.test(lower);
+    const hasAmount  = /amount|montant|debit|credit|betrag|bedrag|importe|money.?in|money.?out|paid.?in|paid.?out|withdrawal|deposit/.test(lower);
+    const hasDesc    = /description|details|narrative|payee|merchant|reference|memo|omschrijving|particulars|libelle/.test(lower);
     if (hasDate && (hasAmount || hasDesc)) return i;
   }
   return 0;
@@ -56,7 +63,7 @@ function detectColumns(headers: string[]): {
   descCol: string | null;
   amountCol: string | null;
 } {
-  const lower = headers.map((h) => h.toLowerCase().trim());
+  const lower = headers.map((h) => normalize(h));
 
   const dateCandidates = [
     "date", "transaction date", "trans date", "value date", "booking date",
@@ -67,13 +74,13 @@ function detectColumns(headers: string[]): {
     "description", "details", "narrative", "memo", "payee", "merchant",
     "name", "reference", "particulars", "transaction description",
     "omschrijving", "payment reference", "transaction details",
-    "beneficiary name", "remittance info",
+    "beneficiary name", "remittance info", "libelle",
   ];
   // Only use as single amount col if NOT also paired with a separate debit col.
   // debit/credit pair detection happens separately and overrides this.
   const amountCandidates = [
     "amount", "transaction amount", "value", "net amount", "local amount",
-    "betrag", "importe", "bedrag", "sum",
+    "betrag", "importe", "bedrag", "sum", "montant",
   ];
 
   const find = (candidates: string[]) => {
@@ -101,7 +108,7 @@ function detectDebitCreditColumns(headers: string[]): {
   creditCol: string | null;
   drCrCol: string | null;   // indicator column: "D"/"C" or "Dr"/"Cr" etc.
 } {
-  const lower = headers.map((h) => h.toLowerCase().trim());
+  const lower = headers.map((h) => normalize(h));
 
   const debitKeywords  = ["debit", "withdrawal", "money out", "paid out", "payments out", "out ", "amount out", "withdrawals"];
   const creditKeywords = ["credit", "deposit", "money in", "paid in", "payments in", "in ",  "amount in", "deposits"];

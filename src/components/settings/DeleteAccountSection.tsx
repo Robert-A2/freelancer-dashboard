@@ -15,14 +15,13 @@ const DELETED_ITEM_KEYS = [
   "historicalInsights",
 ] as const;
 
-const CONFIRM_WORD = "DELETE";
-
 type Step = "closed" | "confirming" | "deleting" | "done";
 
 export default function DeleteAccountSection({ email }: { email: string }) {
   const router = useRouter();
   const t = useTranslations("settings.deleteAccount");
   const tc = useTranslations("common");
+  const CONFIRM_WORD = t("confirmWord");
   const [step, setStep] = useState<Step>("closed");
   const [input, setInput] = useState("");
   const [error, setError] = useState<string | null>(null);

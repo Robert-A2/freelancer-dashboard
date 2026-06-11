@@ -156,7 +156,7 @@ export default function SummaryCards({
               {context.map((line, i) => (
                 <li key={i} className="text-sm text-[#A8C6E0] flex items-start gap-2.5 leading-relaxed">
                   <span className="text-[#4CC4A4] opacity-60 mt-1 flex-shrink-0">·</span>
-                  <InsightText insight={line} />
+                  <span><InsightText insight={line} /></span>
                 </li>
               ))}
             </ul>

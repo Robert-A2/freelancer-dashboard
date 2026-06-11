@@ -124,7 +124,7 @@ export default function ForecastWidget({ forecast, reasons, improvements, defici
               {trendSegments.map((seg, i) => (
                 <span key={i} className="inline-flex items-center gap-1.5">
                   {i > 0 && <span className="text-[#4CC4A440]">·</span>}
-                  <InsightText insight={seg} />
+                  <span><InsightText insight={seg} /></span>
                 </span>
               ))}
             </p>
@@ -146,7 +146,7 @@ export default function ForecastWidget({ forecast, reasons, improvements, defici
                 {improvements.slice(0, 3).map((imp, i) => (
                   <li key={i} className="text-sm text-[#A8C6E0] flex items-start gap-2">
                     <span className="text-[#3AB5A0] flex-shrink-0 mt-0.5 font-bold">→</span>
-                    <InsightText insight={imp} />
+                    <span><InsightText insight={imp} /></span>
                   </li>
                 ))}
               </ul>

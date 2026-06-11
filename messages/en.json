@@ -333,6 +333,7 @@
         "forecasts": "Forecasts",
         "historicalInsights": "Historical insights"
       },
+      "confirmWord": "DELETE",
       "confirmPrompt": "To confirm, type <b>{word}</b> below:",
       "deleting": "Deleting…",
       "deletedHeading": "Account successfully deleted",

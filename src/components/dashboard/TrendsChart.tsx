@@ -104,7 +104,7 @@ export default function TrendsChart({ data, trajectoryInsight, trajectoryDetails
               {trajectoryDetails.map((line, i) => (
                 <li key={i} className="text-sm text-[#A8C6E0] flex items-start gap-2">
                   <span className="text-[#4CC4A4] opacity-70 flex-shrink-0 mt-0.5">·</span>
-                  <InsightText insight={line} />
+                  <span><InsightText insight={line} /></span>
                 </li>
               ))}
             </ul>

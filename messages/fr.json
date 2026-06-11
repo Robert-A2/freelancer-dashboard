@@ -333,6 +333,7 @@
         "forecasts": "Prévisions",
         "historicalInsights": "Aperçus historiques"
       },
+      "confirmWord": "SUPPRIMER",
       "confirmPrompt": "Pour confirmer, tapez <b>{word}</b> ci-dessous :",
       "deleting": "Suppression en cours…",
       "deletedHeading": "Compte supprimé avec succès",
