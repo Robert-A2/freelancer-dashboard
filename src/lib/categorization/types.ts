@@ -34,3 +34,31 @@ export interface MerchantPack {
   label: string;
   entries: MerchantEntry[];
 }
+
+/**
+ * Flattened shape of a `Merchant` row (plus its `MerchantAlias` rows) as
+ * fetched from the database. Kept separate from the Prisma model types so
+ * `src/lib/categorization` stays DB-agnostic and testable without a database.
+ */
+export interface DbMerchantRow {
+  keyword: string;
+  /** income | expense | savings | transfer */
+  transactionType: string;
+  category: string;
+  confidence: Confidence;
+  aliases: string[];
+}
+
+/**
+ * Pre-merged lookup structure built once per categorization run (e.g. once per
+ * CSV import or recategorize-all pass) and passed into `categorizeTransaction`.
+ * Each bucket lines up with an existing static array in `engine.ts` and is
+ * concatenated with it at the matching priority point.
+ */
+export interface MerchantIndex {
+  expenseHigh: MerchantEntry[];
+  expenseMedium: MerchantEntry[];
+  incomePatterns: Array<{ keywords: string[]; subcategory: string; confidence: Confidence }>;
+  savingsKeywords: string[];
+  transferKeywords: string[];
+}

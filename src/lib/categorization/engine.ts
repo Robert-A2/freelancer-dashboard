@@ -1,6 +1,16 @@
-import type { CategorizationResult, Confidence, LearnedRules, MerchantEntry } from "./types";
+import type { CategorizationResult, Confidence, LearnedRules, MerchantEntry, MerchantIndex } from "./types";
 import { ACTIVE_PACKS } from "./packs";
 import { KEYWORD_PATTERNS } from "./keywords";
+
+// ── Diacritic stripping ──────────────────────────────────────────────────────────
+// Bank exports are inconsistent about accents (e.g. "Virement épargne" vs the
+// "virement epargne" keyword below), so descriptions AND every keyword list are
+// normalized through this before matching — accented and unaccented spellings of
+// the same word always match each other. Exported so merchant-db.ts can apply
+// the same normalization to DB-sourced merchant keywords/aliases.
+export function stripDiacritics(s: string): string {
+  return s.normalize("NFD").replace(/[̀-ͯ]/g, "");
+}
 
 // ── Merchant-key normalization ──────────────────────────────────────────────────
 // Used both when persisting a learned rule (on correction) and when looking one up
@@ -8,8 +18,7 @@ import { KEYWORD_PATTERNS } from "./keywords";
 // transaction-to-transaction (reference numbers, card-terminal IDs, punctuation)
 // while keeping the merchant name intact — e.g. "PAYPAL *UBER 88213764" -> "paypal uber".
 export function normalizeMerchantKey(description: string): string {
-  return description
-    .toLowerCase()
+  return stripDiacritics(description.toLowerCase())
     .replace(/[*#]/g, " ")
     .replace(/\b\d{4,}\b/g, " ")
     .replace(/\s+/g, " ")
@@ -53,7 +62,7 @@ const SAVINGS_TRANSFER_OVERRIDES = [
   "bunq",
   "trade republic",
   "lightyear",
-];
+].map(stripDiacritics);
 
 // ── General transfer detection ─────────────────────────────────────────────────
 // Internal account movements — excluded from income AND expenses so they never
@@ -75,7 +84,7 @@ const TRANSFER_KEYWORDS = [
   // money movement (e.g. sending money to family abroad), not business expense
   "taptap send", "worldremit", "remitly", "xoom", "azimo", "moneygram",
   "western union",
-];
+].map(stripDiacritics);
 
 // "Transfer to X" / "Transfer from X" are AMBIGUOUS for incoming money: many
 // banks describe an incoming Faster Payment / SEPA credit FROM A CLIENT as
@@ -84,7 +93,7 @@ const TRANSFER_KEYWORDS = [
 // account owner (a genuine self-transfer, see isSelfTransfer below) — otherwise
 // it falls through to income detection (Priority 5) so real client payments are
 // never silently dropped.
-const AMBIGUOUS_TRANSFER_KEYWORDS = ["transfer to", "transfer from"];
+const AMBIGUOUS_TRANSFER_KEYWORDS = ["transfer to", "transfer from"].map(stripDiacritics);
 
 // ── Savings detection ──────────────────────────────────────────────────────────
 // Money being intentionally set aside. Treated separately from expenses so the
@@ -101,11 +110,12 @@ const SAVINGS_KEYWORDS = [
   // French savings/investment products
   "livret a", "ldds", "livret jeune", "pea ", " pea",
   "boursorama epargne", "fortuneo epargne", "yomoni", "nalo ",
-];
+].map(stripDiacritics);
 
 // ── Tax payments ───────────────────────────────────────────────────────────────
 const TAX_KEYWORDS = [
-  "hmrc", "irs ", " irs", "revenue commissioners", "impôts", "impots.gouv",
+  "hmrc", "hm revenue & customs", "hm revenue and customs",
+  "irs ", " irs", "revenue commissioners", "impôts", "impots.gouv",
   "vat payment", "income tax", "tax payment", "corporation tax",
   "social security", "prsi ", " prsi", "national insurance",
   "usc payment", "estimated tax", "preliminary tax", "tax return",
@@ -118,7 +128,7 @@ const TAX_KEYWORDS = [
   "cfe ", " cfe", "cotisation fonciere", "cotisation sociale",
   "carsat", "ircantec", "caisse de retraite", "tresor public",
   "prelevement a la source", "acoss", "ville de paris", "mairie de",
-];
+].map(stripDiacritics);
 
 // ── Income patterns (ordered by specificity) ───────────────────────────────────
 // Any positive amount that doesn't match savings/transfer keywords is treated as
@@ -127,7 +137,7 @@ const TAX_KEYWORDS = [
 // names, "medium" for generic descriptive phrases. Kept separate from the expense
 // merchant entries below — e.g. Stripe/PayPal are income sources here but expense
 // "banking fees" merchants on the negative-amount side.
-const INCOME_PATTERNS: Array<{ keywords: string[]; subcategory: string; confidence: Confidence }> = [
+const INCOME_PATTERNS_RAW: Array<{ keywords: string[]; subcategory: string; confidence: Confidence }> = [
   { keywords: ["stripe"], subcategory: "stripe", confidence: "high" },
   { keywords: ["paypal"], subcategory: "paypal", confidence: "high" },
   {
@@ -173,6 +183,7 @@ const INCOME_PATTERNS: Array<{ keywords: string[]; subcategory: string; confiden
   },
   { keywords: ["refund", "reimbursement", "cashback", "rebate", "remboursement"], subcategory: "refund", confidence: "medium" },
 ];
+const INCOME_PATTERNS = INCOME_PATTERNS_RAW.map((pattern) => ({ ...pattern, keywords: pattern.keywords.map(stripDiacritics) }));
 
 // ── Personal-transfer heuristics (Layer 5 fallback) ────────────────────────────
 // "To Robert Arthur" / "From Camille Pervenche" — money moving to/from a named
@@ -190,9 +201,36 @@ function isPersonalTransferPattern(description: string): boolean {
 
 function isSelfTransfer(lower: string, ownerName?: string): boolean {
   if (!ownerName) return false;
-  const parts = ownerName.toLowerCase().split(/\s+/).filter((p) => p.length > 1);
+  const parts = stripDiacritics(ownerName.toLowerCase()).split(/\s+/).filter((p) => p.length > 1);
   if (parts.length < 2) return false;
   return parts.every((p) => lower.includes(p));
+}
+
+// "...transfer to/from <target>" — captures whatever follows the matched
+// AMBIGUOUS_TRANSFER_KEYWORDS phrase, e.g. "TRANSFER FROM ACME CONSULTING LTD"
+// -> "acme consulting ltd".
+const TRANSFER_TO_FROM_TARGET = /transfer (?:to|from)\s+(.+)$/;
+
+// True only when <target> genuinely IS the account owner — every word of the
+// owner's name is present, and any extra words are just a trailing reference
+// number/code (e.g. "Robert Arthur Ref 12345"), not extra name words. This is
+// intentionally stricter than isSelfTransfer: it's what stops a client whose
+// name happens to contain the owner's first+last name (e.g. owner "Paul Martin"
+// vs "PAUL MARTIN CONSULTING LTD") from being misread as an internal transfer
+// and having their payment silently excluded from income.
+function isTransferToOwner(lower: string, ownerName?: string): boolean {
+  if (!ownerName) return false;
+  const match = TRANSFER_TO_FROM_TARGET.exec(lower);
+  if (!match) return false;
+
+  const ownerWords = stripDiacritics(ownerName.toLowerCase()).split(/\s+/).filter((p) => p.length > 1);
+  if (ownerWords.length < 2) return false;
+
+  const targetWords = match[1].split(/\s+/).filter(Boolean);
+  if (!ownerWords.every((w) => targetWords.includes(w))) return false;
+
+  const extraWords = targetWords.filter((w) => !ownerWords.includes(w));
+  return extraWords.every((w) => /\d/.test(w) || /^(ref\.?|reference|no\.?|number)$/.test(w) || /^[-#.]+$/.test(w));
 }
 
 // ── Unified expense-merchant lookup ─────────────────────────────────────────────
@@ -204,7 +242,7 @@ function isSelfTransfer(lower: string, ownerName?: string): boolean {
 const ALL_EXPENSE_ENTRIES: MerchantEntry[] = [
   ...ACTIVE_PACKS.flatMap((pack) => pack.entries),
   ...KEYWORD_PATTERNS,
-];
+].map((entry) => ({ ...entry, keyword: stripDiacritics(entry.keyword) }));
 const HIGH_CONFIDENCE_ENTRIES = ALL_EXPENSE_ENTRIES.filter((e) => e.confidence === "high");
 const MEDIUM_CONFIDENCE_ENTRIES = ALL_EXPENSE_ENTRIES.filter((e) => e.confidence === "medium");
 
@@ -228,9 +266,31 @@ export function categorizeTransaction(
   description: string,
   amount: number,
   learnedRules?: LearnedRules,
-  ownerName?: string
+  ownerName?: string,
+  merchantIndex?: MerchantIndex
 ): CategorizationResult {
-  const lower = description.toLowerCase();
+  const lower = stripDiacritics(description.toLowerCase());
+
+  // DB-backed merchant entries (src/lib/categorization/merchant-db.ts) are
+  // merged into the same buckets the static arrays below feed, so additions
+  // to the Merchant table take effect without any engine changes. When no
+  // index is supplied (e.g. existing tests calling this directly), these are
+  // just the original static arrays.
+  const transferKw = merchantIndex?.transferKeywords.length
+    ? [...TRANSFER_KEYWORDS, ...merchantIndex.transferKeywords]
+    : TRANSFER_KEYWORDS;
+  const savingsKw = merchantIndex?.savingsKeywords.length
+    ? [...SAVINGS_KEYWORDS, ...merchantIndex.savingsKeywords]
+    : SAVINGS_KEYWORDS;
+  const incomePatterns = merchantIndex?.incomePatterns.length
+    ? [...merchantIndex.incomePatterns, ...INCOME_PATTERNS]
+    : INCOME_PATTERNS;
+  const highEntries = merchantIndex?.expenseHigh.length
+    ? [...HIGH_CONFIDENCE_ENTRIES, ...merchantIndex.expenseHigh]
+    : HIGH_CONFIDENCE_ENTRIES;
+  const mediumEntries = merchantIndex?.expenseMedium.length
+    ? [...MEDIUM_CONFIDENCE_ENTRIES, ...merchantIndex.expenseMedium]
+    : MEDIUM_CONFIDENCE_ENTRIES;
 
   // LAYER 1 — Learned exact match. User corrections are ground truth, so this
   // runs before every hardcoded rule and can override built-in keywords.
@@ -252,21 +312,23 @@ export function categorizeTransaction(
   }
 
   // PRIORITY 2 — General internal transfers (neutral, excluded from cashflow)
-  if (TRANSFER_KEYWORDS.some((kw) => lower.includes(kw))) {
+  if (transferKw.some((kw) => lower.includes(kw))) {
     return { transactionType: "transfer", category: "transfer", confidence: "high", source: "merchant" };
   }
-  // "Transfer to/from X" — only a transfer if X is the account owner themself
-  // (or the amount is leaving the account, e.g. moving funds to another of the
-  // user's own accounts). A positive amount with no owner-name match is treated
-  // as a third-party payment and falls through to income detection below.
-  if (AMBIGUOUS_TRANSFER_KEYWORDS.some((kw) => lower.includes(kw))) {
-    if (amount <= 0 || isSelfTransfer(lower, ownerName)) {
-      return { transactionType: "transfer", category: "transfer", confidence: "high", source: "merchant" };
-    }
+  // "Transfer to/from X" — only a transfer if X IS the account owner (a genuine
+  // self-transfer between the user's own accounts), checked via
+  // isTransferToOwner regardless of amount sign. Otherwise:
+  //  - a positive amount falls through to income detection (a client payment
+  //    described as "TRANSFER FROM ACME CONSULTING LTD" must never be lost), and
+  //  - a negative amount falls through to expense merchant/keyword matching (a
+  //    "Transfer to ABC Supplies Ltd" is a real vendor payment, not money
+  //    leaving via an internal transfer).
+  if (AMBIGUOUS_TRANSFER_KEYWORDS.some((kw) => lower.includes(kw)) && isTransferToOwner(lower, ownerName)) {
+    return { transactionType: "transfer", category: "transfer", confidence: "high", source: "merchant" };
   }
 
   // PRIORITY 3 — Savings (investment platforms, ISA, pension, etc.)
-  if (SAVINGS_KEYWORDS.some((kw) => lower.includes(kw))) {
+  if (savingsKw.some((kw) => lower.includes(kw))) {
     return { transactionType: "savings", category: "savings", confidence: "high", source: "merchant" };
   }
 
@@ -279,7 +341,7 @@ export function categorizeTransaction(
   // ANY positive amount is income. We try to sub-categorise it first, but the
   // fallback ensures no client payment is ever lost.
   if (amount > 0) {
-    for (const pattern of INCOME_PATTERNS) {
+    for (const pattern of incomePatterns) {
       if (pattern.keywords.some((kw) => lower.includes(kw))) {
         return {
           transactionType: "income",
@@ -294,14 +356,14 @@ export function categorizeTransaction(
 
   // PRIORITY 6 — Expense (negative amounts)
   // Layers 1–2: exact/partial known-merchant brand match (high confidence),
-  // searched across every active global + country pack at once.
-  const brandMatch = findBestMatch(lower, HIGH_CONFIDENCE_ENTRIES);
+  // searched across every active global + country pack (plus DB merchants) at once.
+  const brandMatch = findBestMatch(lower, highEntries);
   if (brandMatch) {
     return { transactionType: "expense", category: brandMatch.category, confidence: "high", source: "merchant" };
   }
   // Layer 3: generic descriptive keyword / pattern match (medium confidence) —
   // e.g. "boulangerie" -> food, "pharmacie" -> health, "tabac" -> personal spending.
-  const genericMatch = findBestMatch(lower, MEDIUM_CONFIDENCE_ENTRIES);
+  const genericMatch = findBestMatch(lower, mediumEntries);
   if (genericMatch) {
     return { transactionType: "expense", category: genericMatch.category, confidence: "medium", source: "keyword" };
   }

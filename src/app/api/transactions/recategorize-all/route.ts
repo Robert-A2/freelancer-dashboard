@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { recalculateMonthlyAnalytics } from "@/lib/analytics-engine";
 import { generateForecast } from "@/lib/forecast-engine";
 import { categorizeTransaction, type LearnedRules } from "@/lib/categorization";
+import { loadMerchantIndex, reportUncategorizedMerchants } from "@/lib/merchant-reports";
 import { Prisma } from "@prisma/client";
 
 const BATCH_SIZE = 500;
@@ -26,6 +27,7 @@ export async function POST(_request: NextRequest) {
       select: { merchantKey: true, category: true },
     });
     const learnedRules: LearnedRules = new Map(rules.map((r) => [r.merchantKey, r.category]));
+    const merchantIndex = await loadMerchantIndex();
 
     const transactions = await prisma.transaction.findMany({
       where: { userId: user.id },
@@ -33,6 +35,7 @@ export async function POST(_request: NextRequest) {
     });
 
     let changedCount = 0;
+    const stillUncategorized: Array<{ description: string; category: string }> = [];
 
     for (let i = 0; i < transactions.length; i += BATCH_SIZE) {
       const batch = transactions.slice(i, i + BATCH_SIZE);
@@ -43,7 +46,11 @@ export async function POST(_request: NextRequest) {
         // existing transactionType so income/expense detection matches import-time behavior.
         const amount = Number(tx.amount);
         const signedAmount = tx.transactionType === "income" ? amount : -amount;
-        const result = categorizeTransaction(tx.description, signedAmount, learnedRules, ownerName);
+        const result = categorizeTransaction(tx.description, signedAmount, learnedRules, ownerName, merchantIndex);
+
+        if (result.category === "uncategorized") {
+          stillUncategorized.push({ description: tx.description, category: result.category });
+        }
 
         if (
           result.category !== tx.category ||
@@ -71,6 +78,9 @@ export async function POST(_request: NextRequest) {
 
     await recalculateMonthlyAnalytics(user.id);
     await generateForecast(user.id);
+
+    // ── Feed the global uncategorized-merchant worklist ────────────────────
+    await reportUncategorizedMerchants(stillUncategorized);
 
     const newUncategorized = await prisma.transaction.count({
       where: { userId: user.id, category: "uncategorized" },

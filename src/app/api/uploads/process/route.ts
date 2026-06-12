@@ -6,6 +6,7 @@ import { parseCsv } from "@/lib/csv-processor";
 import type { LearnedRules } from "@/lib/categorization";
 import { recalculateMonthlyAnalytics } from "@/lib/analytics-engine";
 import { generateForecast } from "@/lib/forecast-engine";
+import { loadMerchantIndex, reportUncategorizedMerchants } from "@/lib/merchant-reports";
 import { Decimal } from "@prisma/client/runtime/library";
 
 const BUCKET = "csv-imports";
@@ -44,6 +45,11 @@ export async function POST(request: NextRequest) {
     const learnedRules: LearnedRules = new Map(rules.map((r) => [r.merchantKey, r.category]));
     const ownerName = dbUser.fullName || undefined;
 
+    // ── Load DB-backed merchant directory ───────────────────────────────────
+    // Supplements the static packs with merchants added via prisma/seed.ts or
+    // future updates, without requiring a code deploy.
+    const merchantIndex = await loadMerchantIndex();
+
     // ── Read request body ──────────────────────────────────────────────────
     const { storagePath, fileName } = await request.json();
 
@@ -78,7 +84,7 @@ export async function POST(request: NextRequest) {
     }
 
     // ── Parse CSV ──────────────────────────────────────────────────────────
-    const { transactions, totalRows, validRows, skippedRows, currencies, hasMixedCurrencies, parsedEarliest, parsedLatest } = parseCsv(csvText, learnedRules, ownerName);
+    const { transactions, totalRows, validRows, skippedRows, currencies, hasMixedCurrencies, parsedEarliest, parsedLatest } = parseCsv(csvText, learnedRules, ownerName, merchantIndex);
 
     if (transactions.length === 0) {
       await cleanupStorage(admin, storagePath);
@@ -145,6 +151,9 @@ export async function POST(request: NextRequest) {
     // ── Update analytics + forecast ────────────────────────────────────────
     await recalculateMonthlyAnalytics(user.id);
     await generateForecast(user.id);
+
+    // ── Feed the global uncategorized-merchant worklist ────────────────────
+    await reportUncategorizedMerchants(transactions);
 
     // ── Clean up the file from storage ─────────────────────────────────────
     await cleanupStorage(admin, storagePath);

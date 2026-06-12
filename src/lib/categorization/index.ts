@@ -1,2 +1,3 @@
-export type { Confidence, CategorizationResult, LearnedRules, MerchantEntry, MerchantPack } from "./types";
-export { categorizeTransaction, normalizeMerchantKey } from "./engine";
+export type { Confidence, CategorizationResult, LearnedRules, MerchantEntry, MerchantPack, DbMerchantRow, MerchantIndex } from "./types";
+export { categorizeTransaction, normalizeMerchantKey, stripDiacritics } from "./engine";
+export { buildMerchantIndex } from "./merchant-db";

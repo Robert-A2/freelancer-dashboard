@@ -135,3 +135,59 @@ model Forecast {
   @@index([userId])
   @@map("forecasts")
 }
+
+// ── Merchant recognition infrastructure ────────────────────────────────────
+// Database-backed supplement to the static merchant packs in
+// src/lib/categorization/packs/ — additive layer merged into the engine's
+// matching waterfall via buildMerchantIndex(). Lets merchants be added or
+// corrected without a code deploy.
+model Merchant {
+  id              String   @id @default(uuid())
+  name            String                          // display name, e.g. "Carrefour"
+  keyword         String                          // lowercase match string, e.g. "carrefour"
+  transactionType String   @default("expense")    // income | expense | savings | transfer
+  category        String                          // e.g. "food", "taxes", "freelance platform"
+  confidence      String   @default("high")       // high | medium | low
+  country         String?                         // ISO 3166-1 alpha-2, null = international
+  notes           String?
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  aliases MerchantAlias[]
+
+  @@unique([keyword, transactionType])
+  @@index([country])
+  @@index([category])
+  @@map("merchants")
+}
+
+model MerchantAlias {
+  id         String   @id @default(uuid())
+  merchantId String
+  keyword    String   @unique                     // alternate lowercase match string
+  createdAt  DateTime @default(now())
+
+  merchant Merchant @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+
+  @@index([merchantId])
+  @@map("merchant_aliases")
+}
+
+// Global, cross-user signal: every transaction that falls through to
+// "uncategorized" is aggregated here by normalized merchant key, giving the
+// maintainer a worklist for the next seed-data update.
+model UncategorizedMerchantReport {
+  id                String   @id @default(uuid())
+  merchantKey       String   @unique              // normalizeMerchantKey(description)
+  sampleDescription String
+  occurrenceCount   Int      @default(1)
+  status            String   @default("new")      // new | reviewed | resolved | ignored
+  firstSeenAt       DateTime @default(now())
+  lastSeenAt        DateTime @default(now())
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([status, occurrenceCount])
+  @@map("uncategorized_merchant_reports")
+}
