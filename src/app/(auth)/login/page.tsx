@@ -16,6 +16,8 @@ function friendlyError(raw: string, t: ReturnType<typeof useTranslations<"auth.l
     return t("tooManyRequests");
   if (msg.includes("user not found"))
     return t("userNotFound");
+  if (msg.includes("email") && msg.includes("invalid"))
+    return t("invalidEmail");
   if (msg.includes("network") || msg.includes("fetch"))
     return t("network");
   return t("generic");

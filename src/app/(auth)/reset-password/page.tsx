@@ -32,24 +32,51 @@ function ResetPasswordForm() {
   const [exchanging, setExchanging] = useState(true);
 
   useEffect(() => {
-    const code = searchParams.get("code");
-    if (!code) {
+    const hasRecoveryParams =
+      searchParams.get("code") !== null ||
+      window.location.hash.includes("type=recovery");
+
+    if (!hasRecoveryParams) {
       setError(tErrors("invalidLink"));
       setExchanging(false);
       return;
     }
+
     const supabase = createClient();
-    supabase.auth.exchangeCodeForSession(code).then(({ error }) => {
-      setExchanging(false);
-      if (error) {
-        setError(tErrors("expiredLink"));
-      } else {
+
+    // The Supabase browser client automatically detects the recovery code
+    // (or token) in the URL and establishes the session on initialization,
+    // emitting a PASSWORD_RECOVERY event. Calling exchangeCodeForSession
+    // ourselves here would consume the single-use code a second time and
+    // always fail, so we just listen for the result instead.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "PASSWORD_RECOVERY") {
+        setExchanging(false);
         setReady(true);
-        router.replace("/reset-password");
       }
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams, router]);
+
+    // In case initialization already finished (and emitted the event)
+    // before this listener was attached.
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        setExchanging(false);
+        setReady(true);
+      }
+    });
+
+    const timeout = setTimeout(() => {
+      setExchanging((current) => {
+        if (current) setError(tErrors("expiredLink"));
+        return false;
+      });
+    }, 6000);
+
+    return () => {
+      subscription.unsubscribe();
+      clearTimeout(timeout);
+    };
+  }, [searchParams]);
 
   async function handleReset(e: React.SyntheticEvent) {
     e.preventDefault();

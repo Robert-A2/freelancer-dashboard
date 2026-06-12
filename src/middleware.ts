@@ -33,17 +33,25 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const publicPaths = ["/login", "/signup", "/reset-password"];
 
+  // Pages an already-authenticated user should be bounced away from.
+  // "/reset-password" is deliberately NOT included here: exchanging the
+  // recovery code signs the user in, but they still need to land on this
+  // page to set their new password — redirecting them away at that point
+  // would silently abort the password reset flow.
+  const authOnlyPaths = ["/login", "/signup"];
+
   // "/" is the landing page — public for unauthenticated visitors,
   // but authenticated users should go straight to the dashboard.
   const isLanding = pathname === "/";
   const isPublic  = isLanding || publicPaths.some((p) => pathname.startsWith(p));
+  const isAuthOnly = authOnlyPaths.some((p) => pathname.startsWith(p));
 
   if (!user && !isPublic) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
   // Redirect authenticated users away from auth pages AND the landing page
-  if (user && isPublic) {
+  if (user && (isLanding || isAuthOnly)) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 

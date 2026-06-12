@@ -260,6 +260,7 @@
         "emailNotConfirmed": "Veuillez vérifier votre boîte de réception et confirmer votre adresse e-mail avant de vous connecter.",
         "tooManyRequests": "Trop de tentatives. Veuillez patienter un instant et réessayer.",
         "userNotFound": "Aucun compte trouvé avec cette adresse e-mail.",
+        "invalidEmail": "Veuillez saisir une adresse e-mail valide.",
         "network": "Problème de connexion. Vérifiez votre connexion internet et réessayez.",
         "generic": "Une erreur s'est produite. Veuillez réessayer."
       },

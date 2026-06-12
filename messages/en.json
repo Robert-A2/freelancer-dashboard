@@ -260,6 +260,7 @@
         "emailNotConfirmed": "Please check your inbox and confirm your email address before signing in.",
         "tooManyRequests": "Too many attempts. Please wait a moment and try again.",
         "userNotFound": "No account found with this email address.",
+        "invalidEmail": "Please enter a valid email address.",
         "network": "Connection problem. Check your internet and try again.",
         "generic": "Something went wrong. Please try again."
       },
