@@ -792,7 +792,10 @@
       "annualComparison": "Comparaison annuelle",
       "titleVs": "{dataYear} vs {prevYear}",
       "subtitle": "Janvier – {endMonth}, même période pour les deux années",
-      "noDataYet": "Aucune donnée pour {year}",
+      "titleCurrent": "{startMonth} – {endMonth} {dataYear}",
+      "titleCurrentSingle": "{month} {dataYear}",
+      "subtitleCurrent": "Vos totaux pour cette période.",
+      "noComparisonYet": "La comparaison sur un an apparaîtra une fois qu'un historique complet d'un an aura été collecté.",
       "lastYr": "{amount} l'an dernier",
       "marginLastYr": "{pct} % l'an dernier",
       "ofIncomeKept": "des revenus conservés"
@@ -1055,7 +1058,8 @@
       "healthyStable": "En bonne santé et stable — <b>{posMo}</b> des <b>{totalMo}</b> derniers mois ont affiché une trésorerie positive.",
       "atRiskSqueeze": "À risque — les revenus sont en baisse tandis que les dépenses sont en hausse, ce qui comprime votre trésorerie.",
       "atRiskNegative": "À risque — <b>{negMo}</b> des <b>{totalMo}</b> derniers mois ont affiché une trésorerie négative.",
-      "watchMixed": "À surveiller — un bilan mitigé, avec <b>{posMo}</b> mois positifs et <b>{negMo}</b> mois négatifs sur les <b>{totalMo}</b> derniers."
+      "watchMixed": "À surveiller — un bilan mitigé, avec <b>{posMo}</b> mois positifs et <b>{negMo}</b> mois négatifs sur les <b>{totalMo}</b> derniers.",
+      "watchIncomeSlowing": "À surveiller — la trésorerie est restée positive sur les <b>{totalMo}</b> derniers mois (<b>{posMo}</b>/<b>{totalMo}</b>), mais les revenus ont ralenti récemment. Gardez un œil sur cette tendance."
     },
     "forecast": {
       "incomeYoYDrop": "{incomeType, select, freelance {Les revenus clients ont} salary {Le revenu salarial a} mixed {Les revenus ont} other {Les revenus ont}} chuté de <b>{pct} %</b>, passant de <b>{prevAmount}</b> en {prevYear} à <b>{lastAmount}</b> en {lastYear} — c'est un point à traiter en priorité.",
@@ -1065,6 +1069,7 @@
       "cashflowNegative": "La trésorerie a été négative sur <b>{negMonths}</b> des <b>{totalMonths}</b> derniers mois.",
       "incomeTrendingUp": "Les revenus sont en hausse récemment, avec une moyenne de <b>{amount}</b> sur les 3 derniers mois.",
       "incomeDeclining": "Les revenus sont en baisse récemment, avec une moyenne de <b>{amount}</b> sur les 3 derniers mois.",
+      "incomeDipWithinGrowth": "Les revenus ont reculé à une moyenne de <b>{amount}</b> sur les 3 derniers mois — un repli temporaire dans une tendance globale à la hausse.",
       "incomeStable": "Les revenus sont stables récemment, avec une moyenne de <b>{amount}</b> sur les 3 derniers mois.",
       "expensesRisingLed": "Les dépenses sont en hausse récemment, principalement à cause de <b>{category}</b>.",
       "expensesRisingGeneral": "Les dépenses sont en hausse récemment dans plusieurs catégories.",

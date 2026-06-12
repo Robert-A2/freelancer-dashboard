@@ -792,7 +792,10 @@
       "annualComparison": "Annual comparison",
       "titleVs": "{dataYear} vs {prevYear}",
       "subtitle": "January – {endMonth}, same window for both years",
-      "noDataYet": "No {year} data yet",
+      "titleCurrent": "{startMonth} – {endMonth} {dataYear}",
+      "titleCurrentSingle": "{month} {dataYear}",
+      "subtitleCurrent": "Your totals for this period so far.",
+      "noComparisonYet": "Year-over-year comparison will appear once a full year of history has been collected.",
       "lastYr": "{amount} last yr",
       "marginLastYr": "{pct}% last yr",
       "ofIncomeKept": "of income kept"
@@ -1055,7 +1058,8 @@
       "healthyStable": "Healthy and stable — <b>{posMo}</b> of the last <b>{totalMo}</b> months had positive cashflow.",
       "atRiskSqueeze": "At risk — income is trending down while expenses are trending up, squeezing your cashflow.",
       "atRiskNegative": "At risk — <b>{negMo}</b> of the last <b>{totalMo}</b> months had negative cashflow.",
-      "watchMixed": "Worth watching — a mixed picture, with <b>{posMo}</b> positive and <b>{negMo}</b> negative months out of the last <b>{totalMo}</b>."
+      "watchMixed": "Worth watching — a mixed picture, with <b>{posMo}</b> positive and <b>{negMo}</b> negative months out of the last <b>{totalMo}</b>.",
+      "watchIncomeSlowing": "Worth watching — cashflow has stayed positive in all <b>{posMo}</b> of the last <b>{totalMo}</b> months, but income has slowed recently. Keep an eye on this trend."
     },
     "forecast": {
       "incomeYoYDrop": "{incomeType, select, freelance {Client income} salary {Salary income} mixed {Income} other {Income}} fell <b>{pct}%</b> from <b>{prevAmount}</b> in {prevYear} to <b>{lastAmount}</b> in {lastYear} — addressing this should be a priority.",
@@ -1065,6 +1069,7 @@
       "cashflowNegative": "Cashflow has been negative in <b>{negMonths}</b> of the last <b>{totalMonths}</b> months.",
       "incomeTrendingUp": "Income has been trending up recently, averaging <b>{amount}</b> over the last 3 months.",
       "incomeDeclining": "Income has been declining recently, averaging <b>{amount}</b> over the last 3 months.",
+      "incomeDipWithinGrowth": "Income dipped to an average of <b>{amount}</b> over the last 3 months — a short-term pullback within your overall upward trend.",
       "incomeStable": "Income has been stable recently, averaging <b>{amount}</b> over the last 3 months.",
       "expensesRisingLed": "Expenses have been rising recently, led by <b>{category}</b>.",
       "expensesRisingGeneral": "Expenses have been rising recently across several categories.",

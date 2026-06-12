@@ -175,6 +175,14 @@ export default async function ForecastPage() {
 
   const health = HEALTH[intel.healthStatus];
   const trend  = TREND[intel.businessTrendDirection];
+
+  // The 0-100 score and the categorical health status answer different
+  // questions (overall foundation vs. a specific trend to watch) and can
+  // legitimately disagree — color them independently so a high score doesn't
+  // get painted amber just because something recent is "worth watching".
+  const scoreLevel: "healthy" | "watch" | "at-risk" =
+    healthScore >= 80 ? "healthy" : healthScore >= 50 ? "watch" : "at-risk";
+  const scoreColor = HEALTH[scoreLevel];
   const risk   = RISK_CONFIG[cashflowRisk];
 
   const fmtDate = (d: Date) => d.toLocaleDateString(INTL_LOCALES[locale], { month: "long", year: "numeric", timeZone: "UTC" });
@@ -213,11 +221,11 @@ export default async function ForecastPage() {
             <div className="card">
               <p className="label mb-3">{t("healthScore.label")}</p>
               <div className="flex items-end gap-2 mb-3">
-                <span className={`text-4xl font-bold tabular-nums ${health.text}`}>{healthScore}</span>
+                <span className={`text-4xl font-bold tabular-nums ${scoreColor.text}`}>{healthScore}</span>
                 <span className="text-[#475569] text-sm mb-1">{t("healthScore.outOf100")}</span>
               </div>
               <div className="h-2 bg-[#243F5E] rounded-full overflow-hidden mb-3">
-                <div className={`h-full rounded-full ${health.bar}`} style={{ width: `${healthScore}%` }} />
+                <div className={`h-full rounded-full ${scoreColor.bar}`} style={{ width: `${healthScore}%` }} />
               </div>
               <p className={`text-xs font-semibold mb-3 ${health.text}`}>{health.label}</p>
               <div className="space-y-1.5 border-t border-[#1E3550] pt-3">

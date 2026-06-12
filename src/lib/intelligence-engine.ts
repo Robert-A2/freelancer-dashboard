@@ -1001,7 +1001,9 @@ export function generateDashboardIntelligence(
         : { key: "insights.health.atRiskNegative", values: { negMo, totalMo } };
     } else {
       healthStatus = "watch";
-      healthStatusExplanation = { key: "insights.health.watchMixed", values: { posMo, totalMo, negMo } };
+      healthStatusExplanation = negMo === 0
+        ? { key: "insights.health.watchIncomeSlowing", values: { posMo, totalMo } }
+        : { key: "insights.health.watchMixed", values: { posMo, totalMo, negMo } };
     }
   }
 
@@ -1076,7 +1078,11 @@ export function generateDashboardIntelligence(
       incTrendRecent === "up"
         ? { key: "insights.forecast.incomeTrendingUp", values: { amount: fmtAmt(recentIncAvg, locale) } }
         : incTrendRecent === "down"
-        ? { key: "insights.forecast.incomeDeclining", values: { amount: fmtAmt(recentIncAvg, locale) } }
+        ? businessTrendDirection === "improving"
+          // A recent 3-month dip doesn't contradict an "Improving" overall
+          // trend — frame it as a short-term pullback, not a standalone decline.
+          ? { key: "insights.forecast.incomeDipWithinGrowth", values: { amount: fmtAmt(recentIncAvg, locale) } }
+          : { key: "insights.forecast.incomeDeclining", values: { amount: fmtAmt(recentIncAvg, locale) } }
         : { key: "insights.forecast.incomeStable", values: { amount: fmtAmt(recentIncAvg, locale) } }
     );
 
@@ -1125,10 +1131,20 @@ export function generateDashboardIntelligence(
       }
     }
 
+    // Cashflow margin — gates the cost-cutting suggestion below and drives
+    // the marginLow/marginHealthy message.
+    const cashflowMargin = forecast.projectedIncome > 0
+      ? Math.round((forecast.projectedCashflow / forecast.projectedIncome) * 100)
+      : 0;
+
     // Quantified improvements
     const subCat = categories.find((c) => c.category === "subscriptions" || c.category === "software");
-    if (subCat && subCat.currentMonthTotal > 50) {
-      const reduction = 50;
+    // Only suggest cutting discretionary tooling costs when margin isn't
+    // already healthy — "cut your subscriptions" reads as generic noise when
+    // cashflow is comfortable, and the reduction amount should scale with
+    // actual spend rather than a flat figure.
+    if (subCat && subCat.currentMonthTotal > 50 && cashflowMargin < 30) {
+      const reduction = Math.round(subCat.currentMonthTotal * 0.3);
       forecastImprovements.push({
         key: "insights.forecast.reduceSubscriptions",
         values: { category: cat(subCat.category), reduction: fmtAmt(reduction, locale), annual: fmtAmt(reduction * 12, locale) },
@@ -1152,9 +1168,6 @@ export function generateDashboardIntelligence(
     }
 
     if (forecast.projectedCashflow >= 0 && forecastImprovements.length < 2) {
-      const cashflowMargin = forecast.projectedIncome > 0
-        ? Math.round((forecast.projectedCashflow / forecast.projectedIncome) * 100)
-        : 0;
       forecastImprovements.push(
         cashflowMargin < 20
           ? { key: "insights.forecast.marginLow", values: { pct: String(cashflowMargin) } }

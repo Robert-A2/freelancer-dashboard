@@ -106,7 +106,10 @@ export default function CashflowChart({ data, hideHeader = false }: Props) {
     } else if (secondNeg > firstNeg + 1) {
       stabilityContent = t("cashflowChart.narrative.stabilityWeakening");
       stabilityColor   = "text-[#D97070]";
-    } else {
+    } else if (firstNeg > 0 || secondNeg > 0) {
+      // Only worth noting "unchanged" when there's something to compare —
+      // with zero negative months in both halves, "No negative months
+      // recorded" above already says everything there is to say.
       stabilityContent = t("cashflowChart.narrative.stabilityUnchanged");
       stabilityColor   = "text-[#7BA8C4]";
     }

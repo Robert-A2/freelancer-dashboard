@@ -126,6 +126,9 @@ export default async function AnalyticsPage() {
   const prevYearStart = new Date(Date.UTC(prevYear, 0, 1));
   const showPrevYearComparison = prevInc > 0 && !!coverage.earliest && coverage.earliest <= prevYearStart;
 
+  const ytdStartMonthLabel = new Date(Date.UTC(dataYear, 0, 1)).toLocaleDateString(INTL_LOCALES[locale], { month: "long", timeZone: "UTC" });
+  const ytdEndMonthLabel   = new Date(Date.UTC(dataYear, dataMonthMax - 1, 1)).toLocaleDateString(INTL_LOCALES[locale], { month: "long", timeZone: "UTC" });
+
   const totalExpenses = categoryBreakdown.reduce((s, c) => s + Number(c._sum.amount ?? 0), 0);
   const totalIncSrc   = incomeBySource.reduce((s, c) => s + Number(c._sum.amount ?? 0), 0);
 
@@ -153,12 +156,18 @@ export default async function AnalyticsPage() {
           {/* ── 1. Year-to-date vs prior year ─────────────────────────────── */}
           <CollapsibleSection
             label={ytdSectionLabel}
-            title={t("ytdSection.titleVs", { dataYear: String(dataYear), prevYear: String(prevYear) })}
-            subtitle={t("ytdSection.subtitle", { endMonth: new Date(Date.UTC(dataYear, dataMonthMax - 1, 1)).toLocaleDateString(INTL_LOCALES[locale], { month: "long", timeZone: "UTC" }) })}
+            title={showPrevYearComparison
+              ? t("ytdSection.titleVs", { dataYear: String(dataYear), prevYear: String(prevYear) })
+              : dataMonthMax === 1
+                ? t("ytdSection.titleCurrentSingle", { month: ytdStartMonthLabel, dataYear: String(dataYear) })
+                : t("ytdSection.titleCurrent", { startMonth: ytdStartMonthLabel, endMonth: ytdEndMonthLabel, dataYear: String(dataYear) })}
+            subtitle={showPrevYearComparison
+              ? t("ytdSection.subtitle", { endMonth: ytdEndMonthLabel })
+              : t("ytdSection.subtitleCurrent")}
           >
             <div className="card">
               {!showPrevYearComparison && (
-                <p className="text-xs text-[#6A97B4] mb-4">{t("ytdSection.noDataYet", { year: String(prevYear) })}</p>
+                <p className="text-xs text-[#6A97B4] mb-4">{t("ytdSection.noComparisonYet")}</p>
               )}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                 {[
