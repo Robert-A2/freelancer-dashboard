@@ -241,11 +241,13 @@ const years = to - from;
 
 | Insight key | Category | Condition |
 |---|---|---|
-| `insights.categoryGrew` | spending | `c.yearOverYearTrend === "growing"` and `totalGrowth >= 20`. |
+| `insights.categoryGrew` | spending | `c.yearOverYearTrend === "growing"` and `20 <= totalGrowth <= 1000`. |
 | `insights.categoryFell` | spending | `c.yearOverYearTrend === "declining"` and `totalGrowth <= -20`. |
 | `insights.categoryDoubled` | spending | Neither of the above, but `toAmt > fromAmt * 2` (more than doubled, regardless of the `yearOverYearTrend` label). |
 
 Each of these three is **mutually exclusive** per category (`else if` chain) — a category contributes at most one of these insights.
+
+> **Why `categoryGrew` is capped at 1000%**: `fromAmt` (the earliest year's total) can be tiny for a category that barely existed back then — e.g. one €20 bank fee in 2022. If `toAmt` later grows to €340, `pct(340, 20)` = **1600%**, producing a technically-correct but absurd-sounding *"Banking fees spending grew 1600% over 4 years"*. Capping at `<= 1000` (matching the same cap used for `incomeGrowthYearly`/`highestExpenseYear` in §5.1) excludes these cases from `categoryGrew`; they fall through to `categoryDoubled` instead, which conveys "more than doubled" without citing the inflated percentage. `categoryFell` doesn't need a symmetric cap — a percentage decrease is mathematically bounded at -100%.
 
 | Insight key | Category | Condition |
 |---|---|---|

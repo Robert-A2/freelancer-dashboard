@@ -501,7 +501,11 @@ export function buildHistoricalInsights(
     const totalGrowth = pct(toAmt, fromAmt);
     const years = to - from;
 
-    if (c.yearOverYearTrend === "growing" && totalGrowth >= 20) {
+    // Cap the cited percentage at 1000% — beyond that, a tiny `fromAmt` base
+    // (e.g. one €20 fee in the first year) produces a technically-correct but
+    // absurd-sounding "grew 1600%" headline. Fall through to "more than doubled"
+    // instead, which conveys the same signal without an inflated number.
+    if (c.yearOverYearTrend === "growing" && totalGrowth >= 20 && totalGrowth <= 1000) {
       push("spending", {
         key: "insights.categoryGrew",
         values: { category: cat(c.category), fromAmount: fmtAmt(fromAmt, locale), fromYear: String(from), toAmount: fmtAmt(toAmt, locale), toYear: String(to), pct: String(totalGrowth), years },
