@@ -7,6 +7,7 @@ import type { LearnedRules } from "@/lib/categorization";
 import { recalculateMonthlyAnalytics } from "@/lib/analytics-engine";
 import { generateForecast } from "@/lib/forecast-engine";
 import { loadMerchantIndex, reportUncategorizedMerchants } from "@/lib/merchant-reports";
+import { buildUserIntentRules } from "@/lib/intent-engine";
 import { Decimal } from "@prisma/client/runtime/library";
 
 const BUCKET = "csv-imports";
@@ -46,9 +47,14 @@ export async function POST(request: NextRequest) {
     const ownerName = dbUser.fullName || undefined;
 
     // ── Load DB-backed merchant directory ───────────────────────────────────
-    // Supplements the static packs with merchants added via prisma/seed.ts or
-    // future updates, without requiring a code deploy.
     const merchantIndex = await loadMerchantIndex();
+
+    // ── Load this user's intent rules ────────────────────────────────────────
+    const intentRuleRows = await prisma.userIntentRule.findMany({
+      where: { userId: user.id },
+      select: { merchantKey: true, intent: true },
+    });
+    const userIntentRules = buildUserIntentRules(intentRuleRows);
 
     // ── Read request body ──────────────────────────────────────────────────
     const { storagePath, fileName } = await request.json();
@@ -84,7 +90,7 @@ export async function POST(request: NextRequest) {
     }
 
     // ── Parse CSV ──────────────────────────────────────────────────────────
-    const { transactions, totalRows, validRows, skippedRows, currencies, hasMixedCurrencies, parsedEarliest, parsedLatest } = parseCsv(csvText, learnedRules, ownerName, merchantIndex);
+    const { transactions, totalRows, validRows, skippedRows, currencies, hasMixedCurrencies, parsedEarliest, parsedLatest } = parseCsv(csvText, learnedRules, ownerName, merchantIndex, userIntentRules);
 
     if (transactions.length === 0) {
       await cleanupStorage(admin, storagePath);
@@ -118,16 +124,20 @@ export async function POST(request: NextRequest) {
 
       const result = await prisma.transaction.createMany({
         data: batch.map((tx) => ({
-          userId: user.id,
-          csvImportId: csvImport.id,
-          transactionDate: tx.transactionDate,
-          description: tx.description,
-          amount: new Decimal(tx.amount),
-          transactionType: tx.transactionType,
-          category: tx.category,
+          userId:            user.id,
+          csvImportId:       csvImport.id,
+          transactionDate:   tx.transactionDate,
+          description:       tx.description,
+          amount:            new Decimal(tx.amount),
+          transactionType:   tx.transactionType,
+          category:          tx.category,
           categoryConfidence: tx.categoryConfidence,
-          categorySource: tx.categorySource,
-          sourceFile: fileName ?? null,
+          categorySource:    tx.categorySource,
+          sourceFile:        fileName ?? null,
+          intent:            tx.intent ?? null,
+          intentConfidence:  tx.intentConfidence ?? null,
+          intentSource:      tx.intentSource ?? null,
+          needsReview:       tx.needsReview,
         })),
         skipDuplicates: true,
       });

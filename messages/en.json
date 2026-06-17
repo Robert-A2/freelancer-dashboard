@@ -566,6 +566,16 @@
       "body": "Upload your bank statement CSV to get cashflow clarity, intelligent insights, and forecasts designed specifically for freelance income patterns.",
       "cta": "Upload CSV"
     },
+    "businessIntelligence": {
+      "title": "Business Intelligence",
+      "allTime": "All-time totals",
+      "businessProfit": "Business Profit",
+      "margin": "{margin}% margin",
+      "trueNetCashflow": "True Net Cashflow",
+      "trueNetCashflowNote": "After costs, personal spend & debt",
+      "personalBurnRate": "Personal Burn Rate",
+      "personalBurnRateNote": "Personal expenses & family support"
+    },
     "summaryCards": {
       "showing": "Showing",
       "risk": "Risk",
@@ -1059,7 +1069,20 @@
       "atRiskSqueeze": "At risk — income is trending down while expenses are trending up, squeezing your cashflow.",
       "atRiskNegative": "At risk — <b>{negMo}</b> of the last <b>{totalMo}</b> months had negative cashflow.",
       "watchMixed": "Worth watching — a mixed picture, with <b>{posMo}</b> positive and <b>{negMo}</b> negative months out of the last <b>{totalMo}</b>.",
-      "watchIncomeSlowing": "Worth watching — cashflow has stayed positive in all <b>{posMo}</b> of the last <b>{totalMo}</b> months, but income has slowed recently. Keep an eye on this trend."
+      "watchIncomeSlowing": "Worth watching — cashflow has stayed positive in all <b>{posMo}</b> of the last <b>{totalMo}</b> months, but income has slowed recently. Keep an eye on this trend.",
+      "healthyIntent": "Business is profitable (<b>{businessProfit}</b>) and true cashflow is positive (<b>{trueNetCashflow}</b>) — a strong financial position.",
+      "atRiskIntent": "At risk — business lost <b>{businessProfit}</b> and true cashflow is negative (<b>{trueNetCashflow}</b>).",
+      "watchIntentCashflow": "Worth watching — business is profitable (<b>{businessProfit}</b>) but total spending leaves true cashflow negative (<b>{trueNetCashflow}</b>).",
+      "watchIntentProfit": "Worth watching — business costs exceeded revenue by <b>{businessProfit}</b>, though other income keeps true cashflow positive (<b>{trueNetCashflow}</b>)."
+    },
+    "intent": {
+      "businessProfitHealthy": "Your business generated <b>{profit}</b> profit — a <b>{margin}%</b> margin.",
+      "businessProfitNegative": "Business costs exceeded revenue by <b>{loss}</b>.",
+      "profitMarginStrong": "A <b>{margin}%</b> profit margin is strong for a freelance business.",
+      "profitMarginLow": "A <b>{margin}%</b> profit margin is tight — costs are compressing your earnings.",
+      "familySupportCost": "Family support totals <b>{total}</b> — roughly <b>{monthly}</b>/month across your history.",
+      "savingsNetPosition": "You've deployed <b>{deployed}</b> to savings and withdrawn <b>{withdrawn}</b> — {direction, select, net_saved {a net saving} other {a net withdrawal}} of <b>{net}</b>.",
+      "incompleteDataWarning": "Recent income (<b>{recentAvg}</b>/month) is much lower than your historical average (<b>{historicalAvg}</b>/month) — some accounts may not be uploaded yet."
     },
     "forecast": {
       "incomeYoYDrop": "{incomeType, select, freelance {Client income} salary {Salary income} mixed {Income} other {Income}} fell <b>{pct}%</b> from <b>{prevAmount}</b> in {prevYear} to <b>{lastAmount}</b> in {lastYear} — addressing this should be a priority.",

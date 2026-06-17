@@ -1,18 +1,23 @@
 import Papa from "papaparse";
 import { categorizeTransaction, type LearnedRules, type Confidence, type MerchantIndex } from "./categorization";
+import { classifyIntent, type FinancialIntent, type UserIntentRules } from "./intent-engine";
 
 export interface RawRow {
   [key: string]: string;
 }
 
 export interface NormalizedTransaction {
-  transactionDate: Date;
-  description: string;
-  amount: number;
-  transactionType: "income" | "expense" | "savings" | "transfer";
-  category: string;
+  transactionDate:  Date;
+  description:      string;
+  amount:           number;
+  transactionType:  "income" | "expense" | "savings" | "transfer";
+  category:         string;
   categoryConfidence: Confidence;
-  categorySource: string;
+  categorySource:   string;
+  intent:           FinancialIntent | null;
+  intentConfidence: Confidence | null;
+  intentSource:     string | null;
+  needsReview:      boolean;
 }
 
 export interface ProcessResult {
@@ -281,7 +286,13 @@ export function parseDate(raw: string): Date | null {
 }
 
 // ── Main export ───────────────────────────────────────────────────────────────
-export function parseCsv(csvText: string, learnedRules?: LearnedRules, ownerName?: string, merchantIndex?: MerchantIndex): ProcessResult {
+export function parseCsv(
+  csvText: string,
+  learnedRules?: LearnedRules,
+  ownerName?: string,
+  merchantIndex?: MerchantIndex,
+  userIntentRules?: UserIntentRules,
+): ProcessResult {
   // 1. Strip BOM
   const clean = stripBOM(csvText);
 
@@ -369,16 +380,25 @@ export function parseCsv(csvText: string, learnedRules?: LearnedRules, ownerName
     }
 
     // ── Categorize ──────────────────────────────────────────────────────────
-    const { transactionType, category, confidence, source } = categorizeTransaction(description, amount, learnedRules, ownerName, merchantIndex);
+    const catResult = categorizeTransaction(description, amount, learnedRules, ownerName, merchantIndex);
+    const { transactionType, category, confidence, source } = catResult;
+
+    // ── Classify intent ─────────────────────────────────────────────────────
+    const { intent, intentConfidence, intentSource, needsReview } =
+      classifyIntent(description, catResult, userIntentRules);
 
     transactions.push({
-      transactionDate: date,
+      transactionDate:  date,
       description,
-      amount: Math.abs(amount),
+      amount:           Math.abs(amount),
       transactionType,
       category,
       categoryConfidence: confidence,
-      categorySource: source,
+      categorySource:   source,
+      intent,
+      intentConfidence,
+      intentSource,
+      needsReview,
     });
   }
 

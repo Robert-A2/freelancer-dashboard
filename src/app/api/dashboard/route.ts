@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
-import { getDashboardSummary } from "@/lib/analytics-engine";
+import { getDashboardSummary, getIntentBreakdown } from "@/lib/analytics-engine";
 import { getLatestForecast } from "@/lib/forecast-engine";
 
 export async function GET() {
@@ -13,7 +13,7 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const [summary, forecast, totalTransactions, lastImport] = await Promise.all([
+    const [summary, forecast, totalTransactions, lastImport, intentBreakdown] = await Promise.all([
       getDashboardSummary(user.id),
       getLatestForecast(user.id),
       prisma.transaction.count({ where: { userId: user.id } }),
@@ -22,6 +22,7 @@ export async function GET() {
         orderBy: { importedAt: "desc" },
         select: { importedAt: true, fileName: true, importedRows: true },
       }),
+      getIntentBreakdown(user.id),
     ]);
 
     return NextResponse.json({
@@ -52,6 +53,9 @@ export async function GET() {
       forecast,
       totalTransactions,
       lastImport,
+      // Intent-based financial breakdown — all-time totals.
+      // null when hasEnoughDataForDisplay is false (intent coverage < 80%).
+      intentBreakdown: intentBreakdown.hasEnoughDataForDisplay ? intentBreakdown : null,
     });
   } catch (error) {
     console.error("Dashboard error:", error);

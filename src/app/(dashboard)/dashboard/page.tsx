@@ -9,6 +9,7 @@ import {
   getDataCoverage,
   getCategoryInsights,
   getIncomeConcentration,
+  getIntentBreakdown,
 } from "@/lib/analytics-engine";
 import { getLatestForecast } from "@/lib/forecast-engine";
 import { generateDashboardIntelligence, buildHistoricalInsights } from "@/lib/intelligence-engine";
@@ -19,6 +20,7 @@ import MonthlyComparisonWidget from "@/components/dashboard/MonthlyComparison";
 import ForecastWidget from "@/components/dashboard/ForecastWidget";
 import RecentTransactions from "@/components/dashboard/RecentTransactions";
 import HistoricalInsights from "@/components/dashboard/HistoricalInsights";
+import BusinessIntelligence from "@/components/dashboard/BusinessIntelligence";
 import DataCoverageBar from "@/components/dashboard/DataCoverage";
 import FirstUploadBanner from "@/components/dashboard/FirstUploadBanner";
 import Link from "next/link";
@@ -39,7 +41,7 @@ export default async function DashboardPage({
 
   const params = await searchParams;
 
-  const [summary, forecast, chartData, comparison, totalTx, coverage, categoryInsights, concentration, dbUser, lastImport] =
+  const [summary, forecast, chartData, comparison, totalTx, coverage, categoryInsights, concentration, dbUser, lastImport, intentBreakdown] =
     await Promise.all([
       getDashboardSummary(user.id),
       getLatestForecast(user.id),
@@ -57,6 +59,7 @@ export default async function DashboardPage({
         orderBy: { importedAt: "desc" },
         select: { importedAt: true },
       }),
+      getIntentBreakdown(user.id),
     ]);
 
   const current = summary.current
@@ -105,7 +108,8 @@ export default async function DashboardPage({
     categoryInsights.yearlySnapshots,
     categoryInsights.seasonality,
     concentration,
-    locale
+    locale,
+    intentBreakdown.hasEnoughDataForDisplay ? intentBreakdown : null
   );
 
   const hasData = totalTx > 0;
@@ -235,6 +239,16 @@ export default async function DashboardPage({
             context={intel.snapshotContext}
             periodLabel={comparison.currLabel}
           />
+
+          {intentBreakdown.hasEnoughDataForDisplay && (
+            <BusinessIntelligence
+              businessProfit={intentBreakdown.businessProfit}
+              profitMarginPct={intentBreakdown.profitMarginPct}
+              personalSpend={intentBreakdown.personalSpend}
+              trueNetCashflow={intentBreakdown.trueNetCashflow}
+              intentInsights={intel.intentInsights}
+            />
+          )}
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
             <div className="lg:col-span-2">

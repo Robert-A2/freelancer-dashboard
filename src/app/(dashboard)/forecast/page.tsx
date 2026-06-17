@@ -5,7 +5,7 @@ import { INTL_LOCALES, type Locale } from "@/i18n/locales";
 import {
   getHistoricalData, getMonthlyComparison,
   getDashboardSummary, getCategoryInsights, getIncomeConcentration,
-  getDataCoverage,
+  getDataCoverage, getIntentBreakdown,
 } from "@/lib/analytics-engine";
 import { generateForecast } from "@/lib/forecast-engine";
 import { generateDashboardIntelligence } from "@/lib/intelligence-engine";
@@ -49,7 +49,7 @@ export default async function ForecastPage() {
     critical: { label: t("cashflowRisk.critical.label"), desc: t("cashflowRisk.critical.desc"), bg: "bg-[#D970700A]", border: "border-[#D9707025]", text: "text-[#D97070]" },
   };
 
-  const [forecast, chartData, monthCount, summary, comparison, categoryInsights, concentration, coverage] =
+  const [forecast, chartData, monthCount, summary, comparison, categoryInsights, concentration, coverage, intentBreakdown] =
     await Promise.all([
       generateForecast(user.id),
       getHistoricalData(user.id, 999),
@@ -59,6 +59,7 @@ export default async function ForecastPage() {
       getCategoryInsights(user.id),
       getIncomeConcentration(user.id),
       getDataCoverage(user.id),
+      getIntentBreakdown(user.id),
     ]);
 
   const current = summary.current
@@ -73,7 +74,8 @@ export default async function ForecastPage() {
     current, previous, comparison.changes, chartData, recent,
     forecast ? { projectedIncome: forecast.projectedIncome, projectedExpenses: forecast.projectedExpenses, projectedSavings: forecast.projectedSavings, projectedCashflow: forecast.projectedCashflow, basedOnMonths: forecast.basedOnMonths } : null,
     categoryInsights.topExpenseCategories, categoryInsights.yearlySnapshots, categoryInsights.seasonality,
-    concentration, locale
+    concentration, locale,
+    intentBreakdown.hasEnoughDataForDisplay ? intentBreakdown : null
   );
 
   const hasData = monthCount > 0;

@@ -42,6 +42,7 @@ export interface DashboardIntelligence {
   cashflowDeficitReason: Insight | null;
   healthStatus: "healthy" | "watch" | "at-risk";
   healthStatusExplanation: Insight | null;
+  intentInsights: Insight[];
   businessTrendDirection: "improving" | "stable" | "weakening";
   biggestRisk: Insight | null;
   biggestOpportunity: Insight | null;
@@ -591,7 +592,18 @@ export function generateDashboardIntelligence(
   _seasonality: MonthlySeasonality[],
   // Optional: income concentration data from DB query
   incomeConcentration: { topSourceDesc: string | null; topSourcePct: number; totalSources: number; isHighConcentration: boolean } | undefined,
-  locale: Locale
+  locale: Locale,
+  // Intent breakdown for dual-axis health scoring and intent-derived insights; falls back to cashflow logic when absent or coverage < 80%
+  intentBreakdown?: {
+    businessProfit: number;
+    businessRevenue: number;
+    profitMarginPct: number | null;
+    familySupport: number;
+    savingsMovement: number;
+    savingsWithdrawal: number;
+    trueNetCashflow: number;
+    intentCoveragePct: number;
+  } | null
 ): DashboardIntelligence {
   // Defensive: guard against undefined inputs that can arrive at runtime
   const categories: CategoryTrend[] = _categories ?? [];
@@ -609,6 +621,7 @@ export function generateDashboardIntelligence(
     cashflowDeficitReason: null,
     healthStatus: "watch",
     healthStatusExplanation: null,
+    intentInsights: [],
     businessTrendDirection: "stable",
     biggestRisk: null,
     biggestOpportunity: null,
@@ -984,7 +997,26 @@ export function generateDashboardIntelligence(
   let healthStatus: "healthy" | "watch" | "at-risk" = "watch";
   let healthStatusExplanation: Insight | null = null;
 
-  if (active.length >= 3) {
+  if (intentBreakdown && intentBreakdown.intentCoveragePct >= 80) {
+    // Intent-aware dual-axis scoring: businessProfit × trueNetCashflow
+    const { businessProfit, trueNetCashflow } = intentBreakdown;
+    if (businessProfit > 0 && trueNetCashflow > 0) {
+      healthStatus = "healthy";
+      healthStatusExplanation = { key: "insights.health.healthyIntent", values: { businessProfit: fmtAmt(businessProfit, locale), trueNetCashflow: fmtAmt(trueNetCashflow, locale) } };
+    } else if (businessProfit <= 0 && trueNetCashflow <= 0) {
+      healthStatus = "at-risk";
+      healthStatusExplanation = { key: "insights.health.atRiskIntent", values: { businessProfit: fmtAmt(Math.abs(businessProfit), locale), trueNetCashflow: fmtAmt(Math.abs(trueNetCashflow), locale) } };
+    } else if (businessProfit > 0) {
+      // Profitable business but personal spend erodes cashflow to negative
+      healthStatus = "watch";
+      healthStatusExplanation = { key: "insights.health.watchIntentCashflow", values: { businessProfit: fmtAmt(businessProfit, locale), trueNetCashflow: fmtAmt(Math.abs(trueNetCashflow), locale) } };
+    } else {
+      // Business costs exceed revenue but other income keeps cashflow positive
+      healthStatus = "watch";
+      healthStatusExplanation = { key: "insights.health.watchIntentProfit", values: { businessProfit: fmtAmt(Math.abs(businessProfit), locale), trueNetCashflow: fmtAmt(trueNetCashflow, locale) } };
+    }
+  } else if (active.length >= 3) {
+    // Fallback: cashflow-based logic when intent coverage < 80%
     const totalMo = active.length;
     const posMo = active.filter((h) => h.cashflow >= 0).length;
     const negMo = totalMo - posMo;
@@ -1203,6 +1235,65 @@ export function generateDashboardIntelligence(
     }
   }
 
+  // ── INTENT INSIGHTS — surfaced only when intent coverage ≥ 80% ──────────
+
+  const intentInsights: Insight[] = [];
+
+  if (intentBreakdown && intentBreakdown.intentCoveragePct >= 80) {
+    const { businessProfit, businessRevenue, profitMarginPct, familySupport,
+            savingsMovement, savingsWithdrawal } = intentBreakdown;
+    const margin = Math.round(profitMarginPct ?? 0);
+
+    // Business profit health
+    if (businessRevenue > 0) {
+      if (businessProfit > 0) {
+        intentInsights.push({ key: "insights.intent.businessProfitHealthy", values: { profit: fmtAmt(businessProfit, locale), margin: String(margin) } });
+        if (margin >= 60) {
+          intentInsights.push({ key: "insights.intent.profitMarginStrong", values: { margin: String(margin) } });
+        } else if (margin < 30) {
+          intentInsights.push({ key: "insights.intent.profitMarginLow", values: { margin: String(margin) } });
+        }
+      } else {
+        intentInsights.push({ key: "insights.intent.businessProfitNegative", values: { loss: fmtAmt(Math.abs(businessProfit), locale) } });
+      }
+    }
+
+    // Family support cost (only when material and we have enough history to compute a useful average)
+    if (familySupport > 0 && active.length >= 3) {
+      const monthlyAvg = familySupport / active.length;
+      intentInsights.push({ key: "insights.intent.familySupportCost", values: { total: fmtAmt(familySupport, locale), monthly: fmtAmt(monthlyAvg, locale) } });
+    }
+
+    // Savings net position
+    if (savingsMovement > 0) {
+      const netSavings = savingsMovement - savingsWithdrawal;
+      intentInsights.push({
+        key: "insights.intent.savingsNetPosition",
+        values: {
+          deployed: fmtAmt(savingsMovement, locale),
+          withdrawn: fmtAmt(savingsWithdrawal, locale),
+          net: fmtAmt(Math.abs(netSavings), locale),
+          direction: netSavings >= 0 ? "net_saved" : "net_withdrawn",
+        },
+      });
+    }
+
+    // Incomplete data warning — recent income anomalously low vs historical
+    // Signals a missing bank account (e.g. Hello Bank CSV not uploaded)
+    if (active.length >= 6) {
+      const recent3 = active.slice(-3);
+      const prior = active.slice(0, -3);
+      const recentAvgIncome = avg(recent3.map((h) => h.income));
+      const priorAvgIncome  = avg(prior.map((h) => h.income));
+      if (priorAvgIncome > 0 && recentAvgIncome < priorAvgIncome * 0.25) {
+        intentInsights.push({
+          key: "insights.intent.incompleteDataWarning",
+          values: { recentAvg: fmtAmt(recentAvgIncome, locale), historicalAvg: fmtAmt(priorAvgIncome, locale) },
+        });
+      }
+    }
+  }
+
   // ── HISTORICAL INSIGHTS — ranked and grouped by theme ────────────────────
   // Generated once via the shared builder so the Dashboard and Analytics
   // pages render identical, consistently-categorised insights.
@@ -1307,6 +1398,7 @@ export function generateDashboardIntelligence(
     cashflowDeficitReason,
     healthStatus,
     healthStatusExplanation,
+    intentInsights,
     businessTrendDirection,
     biggestRisk,
     biggestOpportunity,

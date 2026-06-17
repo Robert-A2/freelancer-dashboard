@@ -566,6 +566,16 @@
       "body": "Importez votre relevé bancaire CSV pour obtenir une vision claire de votre trésorerie, des analyses intelligentes et des prévisions conçues spécifiquement pour les revenus de freelance.",
       "cta": "Importer un CSV"
     },
+    "businessIntelligence": {
+      "title": "Intelligence Financière",
+      "allTime": "Totaux cumulés",
+      "businessProfit": "Bénéfice d'activité",
+      "margin": "{margin}% de marge",
+      "trueNetCashflow": "Flux de trésorerie net réel",
+      "trueNetCashflowNote": "Après charges, dépenses perso & dettes",
+      "personalBurnRate": "Burn Rate Personnel",
+      "personalBurnRateNote": "Dépenses perso & soutien familial"
+    },
     "summaryCards": {
       "showing": "Affichage",
       "risk": "Risque",
@@ -1059,7 +1069,20 @@
       "atRiskSqueeze": "À risque — les revenus sont en baisse tandis que les dépenses sont en hausse, ce qui comprime votre trésorerie.",
       "atRiskNegative": "À risque — <b>{negMo}</b> des <b>{totalMo}</b> derniers mois ont affiché une trésorerie négative.",
       "watchMixed": "À surveiller — un bilan mitigé, avec <b>{posMo}</b> mois positifs et <b>{negMo}</b> mois négatifs sur les <b>{totalMo}</b> derniers.",
-      "watchIncomeSlowing": "À surveiller — la trésorerie est restée positive sur les <b>{totalMo}</b> derniers mois (<b>{posMo}</b>/<b>{totalMo}</b>), mais les revenus ont ralenti récemment. Gardez un œil sur cette tendance."
+      "watchIncomeSlowing": "À surveiller — la trésorerie est restée positive sur les <b>{totalMo}</b> derniers mois (<b>{posMo}</b>/<b>{totalMo}</b>), mais les revenus ont ralenti récemment. Gardez un œil sur cette tendance.",
+      "healthyIntent": "L'activité est rentable (<b>{businessProfit}</b>) et la trésorerie nette est positive (<b>{trueNetCashflow}</b>) — une situation financière solide.",
+      "atRiskIntent": "À risque — l'activité a perdu <b>{businessProfit}</b> et la trésorerie nette est négative (<b>{trueNetCashflow}</b>).",
+      "watchIntentCashflow": "À surveiller — l'activité est rentable (<b>{businessProfit}</b>) mais les dépenses globales laissent la trésorerie nette négative (<b>{trueNetCashflow}</b>).",
+      "watchIntentProfit": "À surveiller — les charges ont dépassé les revenus de <b>{businessProfit}</b>, mais d'autres revenus maintiennent la trésorerie nette positive (<b>{trueNetCashflow}</b>)."
+    },
+    "intent": {
+      "businessProfitHealthy": "Votre activité a généré <b>{profit}</b> de bénéfice — une marge de <b>{margin} %</b>.",
+      "businessProfitNegative": "Les charges ont dépassé les revenus de <b>{loss}</b>.",
+      "profitMarginStrong": "Une marge bénéficiaire de <b>{margin} %</b> est solide pour une activité indépendante.",
+      "profitMarginLow": "Une marge bénéficiaire de <b>{margin} %</b> est serrée — les charges compriment vos revenus.",
+      "familySupportCost": "Le soutien familial représente <b>{total}</b> au total, soit environ <b>{monthly}</b>/mois.",
+      "savingsNetPosition": "Vous avez déployé <b>{deployed}</b> en épargne et retiré <b>{withdrawn}</b> — {direction, select, net_saved {une épargne nette} other {un retrait net}} de <b>{net}</b>.",
+      "incompleteDataWarning": "Les revenus récents (<b>{recentAvg}</b>/mois) sont bien inférieurs à votre moyenne historique (<b>{historicalAvg}</b>/mois) — certains comptes n'ont peut-être pas encore été importés."
     },
     "forecast": {
       "incomeYoYDrop": "{incomeType, select, freelance {Les revenus clients ont} salary {Le revenu salarial a} mixed {Les revenus ont} other {Les revenus ont}} chuté de <b>{pct} %</b>, passant de <b>{prevAmount}</b> en {prevYear} à <b>{lastAmount}</b> en {lastYear} — c'est un point à traiter en priorité.",

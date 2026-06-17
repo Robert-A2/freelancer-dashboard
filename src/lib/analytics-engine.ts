@@ -384,10 +384,13 @@ export interface CategorizationHealth {
   uncategorizedCount: number;
   topUncategorizedMerchants: { description: string; count: number }[];
   topCorrectedMerchants: { description: string; count: number }[];
+  // Intent understanding health
+  needsReviewCount: number;  // transfers flagged as "meaning unclear" — need user clarification
+  topNeedsReviewMerchants: { description: string; count: number }[];
 }
 
 export async function getCategorizationHealth(userId: string): Promise<CategorizationHealth> {
-  const [totalCount, uncategorizedCount, uncategorizedGroups, correctionGroups] = await Promise.all([
+  const [totalCount, uncategorizedCount, uncategorizedGroups, correctionGroups, needsReviewCount, needsReviewGroups] = await Promise.all([
     prisma.transaction.count({ where: { userId } }),
     prisma.transaction.count({ where: { userId, category: "uncategorized" } }),
     prisma.transaction.groupBy({
@@ -404,17 +407,27 @@ export async function getCategorizationHealth(userId: string): Promise<Categoriz
       orderBy: { _count: { description: "desc" } },
       take: 10,
     }),
+    prisma.transaction.count({ where: { userId, needsReview: true } }),
+    prisma.transaction.groupBy({
+      by: ["description"],
+      where: { userId, needsReview: true },
+      _count: { description: true },
+      orderBy: { _count: { description: "desc" } },
+      take: 10,
+    }),
   ]);
 
   const uncategorizedPct = totalCount > 0 ? (uncategorizedCount / totalCount) * 100 : 0;
 
   return {
     totalCount,
-    categorizedPct: Math.round((100 - uncategorizedPct) * 10) / 10,
+    categorizedPct:   Math.round((100 - uncategorizedPct) * 10) / 10,
     uncategorizedPct: Math.round(uncategorizedPct * 10) / 10,
     uncategorizedCount,
     topUncategorizedMerchants: uncategorizedGroups.map((g) => ({ description: g.description, count: g._count.description })),
-    topCorrectedMerchants: correctionGroups.map((g) => ({ description: g.description, count: g._count.description })),
+    topCorrectedMerchants:     correctionGroups.map((g) => ({ description: g.description, count: g._count.description })),
+    needsReviewCount,
+    topNeedsReviewMerchants:   needsReviewGroups.map((g) => ({ description: g.description, count: g._count.description })),
   };
 }
 
@@ -693,5 +706,231 @@ export async function getDataCoverage(userId: string): Promise<DataCoverage> {
     years: Math.floor(span / msPerYear),
     months: Math.round(span / msPerMonth),
     rangeLabel,
+  };
+}
+
+// ── Intent breakdown ──────────────────────────────────────────────────────────
+// Computes intent-aware financial metrics from the Transaction table directly
+// (not from MonthlyAnalytics). Amounts are stored as absolute positive values;
+// direction (revenue / cost / neutral) is determined by the intent bucket.
+//
+// Returns null-safe values: all monetary fields are 0 when no classified
+// transactions exist. `hasEnoughDataForDisplay` tells the UI whether to show
+// intent KPIs or a "back-fill required" prompt.
+
+// Intent groupings used to derive financial metrics.
+const BUSINESS_REVENUE_INTENTS  = new Set(["freelance_income", "salary"]);
+const BUSINESS_COST_INTENTS     = new Set(["business_expense", "tax_payment", "subscription"]);
+const PERSONAL_SPEND_INTENTS    = new Set(["personal_expense", "family_support"]);
+const DEBT_SERVICE_INTENTS      = new Set(["loan_repayment"]);
+const SAVINGS_INTENTS           = new Set(["savings_transfer"]);
+const SAVINGS_WITHDRAWAL_INTENTS= new Set(["savings_withdrawal"]);
+const INVESTMENT_INTENTS        = new Set(["investment"]);
+const OWNER_DRAW_INTENTS        = new Set(["owner_draw"]);
+const PASSIVE_INCOME_INTENTS    = new Set(["passive_income"]);
+const REFUND_INTENTS            = new Set(["refund"]);
+
+// Minimum intent coverage % before intent KPIs are considered reliable.
+const MIN_COVERAGE_PCT = 80;
+
+export interface IntentBreakdown {
+  // ── Business P&L ────────────────────────────────────────────────────────
+  businessRevenue:  number;
+  businessCosts:    number;
+  businessProfit:   number;
+  profitMarginPct:  number | null;  // null when revenue = 0
+
+  // ── Personal financial activity ──────────────────────────────────────────
+  personalSpend:    number;  // personal_expense + family_support
+  familySupport:    number;  // extracted separately — was invisible as "transfer"
+  debtService:      number;  // loan_repayment — was invisible as "transfer"
+  totalObligations: number;  // personalSpend + debtService
+
+  // ── Wealth allocation (within-ecosystem, do not affect cashflow) ─────────
+  savingsMovement:    number;  // savings_transfer: money deployed to savings
+  savingsWithdrawal:  number;  // savings_withdrawal: money returned from savings
+  investmentFlow:     number;
+  ownerDraw:          number;
+
+  // ── Other income ─────────────────────────────────────────────────────────
+  passiveIncome:    number;
+  refunds:          number;
+
+  // ── True net cashflow (corrects the transfer blind spot) ─────────────────
+  // = (businessRevenue + passiveIncome + refunds) − (businessCosts + personalSpend + debtService)
+  trueNetCashflow:  number;
+
+  // ── Full intent distribution ──────────────────────────────────────────────
+  distribution: Array<{
+    intent:      string | null;
+    count:       number;
+    totalAmount: number;
+  }>;
+
+  // ── Transfer-type transaction breakdown ───────────────────────────────────
+  // Shows what the previously-invisible "transfer" bucket actually contains.
+  transferBreakdown: {
+    totalCount:  number;
+    totalAmount: number;
+    byIntent: Array<{
+      intent:      string | null;
+      count:       number;
+      totalAmount: number;
+    }>;
+  };
+
+  // ── Coverage ──────────────────────────────────────────────────────────────
+  totalTransactions:       number;
+  intentClassifiedCount:   number;
+  intentCoveragePct:       number;
+  hasEnoughDataForDisplay: boolean;
+
+  // ── Needs-review queue ────────────────────────────────────────────────────
+  needsReviewCount:        number;
+  topNeedsReviewMerchants: Array<{ description: string; count: number }>;
+}
+
+export async function getIntentBreakdown(
+  userId: string,
+  year?: number,
+  month?: number,
+): Promise<IntentBreakdown> {
+  // Build date range filter — UTC-consistent with how parseDate() stores dates.
+  const dateFilter =
+    year !== undefined && month !== undefined
+      ? { transactionDate: { gte: new Date(Date.UTC(year, month - 1, 1)), lt: new Date(Date.UTC(year, month, 1)) } }
+      : year !== undefined
+      ? { transactionDate: { gte: new Date(Date.UTC(year, 0, 1)), lt: new Date(Date.UTC(year + 1, 0, 1)) } }
+      : {};
+
+  const base = { userId, ...dateFilter };
+
+  // Run all queries in parallel — independent of each other.
+  const [
+    byIntentRows,
+    transferByIntentRows,
+    totalCount,
+    classifiedCount,
+    needsReviewCount,
+    topNeedsReviewGroups,
+  ] = await Promise.all([
+    // Full distribution across all intent values (including null)
+    prisma.transaction.groupBy({
+      by: ["intent"],
+      where: base,
+      _sum:   { amount: true },
+      _count: { id: true },
+      orderBy: { _count: { id: "desc" } },
+    }),
+    // Transfer-type transactions broken down by intent
+    prisma.transaction.groupBy({
+      by: ["intent"],
+      where: { ...base, transactionType: "transfer" },
+      _sum:   { amount: true },
+      _count: { id: true },
+      orderBy: { _count: { id: "desc" } },
+    }),
+    prisma.transaction.count({ where: base }),
+    prisma.transaction.count({ where: { ...base, intent: { not: null } } }),
+    prisma.transaction.count({ where: { ...base, needsReview: true } }),
+    prisma.transaction.groupBy({
+      by: ["description"],
+      where: { ...base, needsReview: true },
+      _count: { id: true },
+      orderBy: { _count: { id: "desc" } },
+      take: 10,
+    }),
+  ]);
+
+  // Helper: sum amount for a set of intents from the groupBy result.
+  const sumIntents = (intents: Set<string>): number =>
+    byIntentRows
+      .filter((r) => r.intent !== null && intents.has(r.intent))
+      .reduce((acc, r) => acc + Number(r._sum.amount ?? 0), 0);
+
+  const businessRevenue = sumIntents(BUSINESS_REVENUE_INTENTS);
+  const businessCosts   = sumIntents(BUSINESS_COST_INTENTS);
+  const businessProfit  = businessRevenue - businessCosts;
+  const profitMarginPct = businessRevenue > 0
+    ? Math.round((businessProfit / businessRevenue) * 1000) / 10  // 1 decimal
+    : null;
+
+  // family_support is inside PERSONAL_SPEND_INTENTS; extract it separately so
+  // the response exposes the formerly-invisible transfer amount explicitly.
+  const familySupport = byIntentRows
+    .filter((r) => r.intent === "family_support")
+    .reduce((acc, r) => acc + Number(r._sum.amount ?? 0), 0);
+
+  const personalSpend    = sumIntents(PERSONAL_SPEND_INTENTS);
+  const debtService      = sumIntents(DEBT_SERVICE_INTENTS);
+  const totalObligations = personalSpend + debtService;
+
+  const savingsMovement    = sumIntents(SAVINGS_INTENTS);
+  const savingsWithdrawal  = sumIntents(SAVINGS_WITHDRAWAL_INTENTS);
+  const investmentFlow     = sumIntents(INVESTMENT_INTENTS);
+  const ownerDraw        = sumIntents(OWNER_DRAW_INTENTS);
+  const passiveIncome    = sumIntents(PASSIVE_INCOME_INTENTS);
+  const refunds          = sumIntents(REFUND_INTENTS);
+
+  const trueNetCashflow =
+    (businessRevenue + passiveIncome + refunds) -
+    (businessCosts + personalSpend + debtService);
+
+  const distribution = byIntentRows.map((r) => ({
+    intent:      r.intent,
+    count:       r._count.id,
+    totalAmount: Math.round(Number(r._sum.amount ?? 0) * 100) / 100,
+  }));
+
+  const transferTotalCount  = transferByIntentRows.reduce((a, r) => a + r._count.id, 0);
+  const transferTotalAmount = transferByIntentRows.reduce((a, r) => a + Number(r._sum.amount ?? 0), 0);
+
+  const intentCoveragePct = totalCount > 0
+    ? Math.round((classifiedCount / totalCount) * 1000) / 10
+    : 0;
+
+  return {
+    businessRevenue:  Math.round(businessRevenue * 100) / 100,
+    businessCosts:    Math.round(businessCosts   * 100) / 100,
+    businessProfit:   Math.round(businessProfit  * 100) / 100,
+    profitMarginPct,
+
+    personalSpend:    Math.round(personalSpend    * 100) / 100,
+    familySupport:    Math.round(familySupport     * 100) / 100,
+    debtService:      Math.round(debtService       * 100) / 100,
+    totalObligations: Math.round(totalObligations  * 100) / 100,
+
+    savingsMovement:   Math.round(savingsMovement    * 100) / 100,
+    savingsWithdrawal: Math.round(savingsWithdrawal  * 100) / 100,
+    investmentFlow:    Math.round(investmentFlow      * 100) / 100,
+    ownerDraw:         Math.round(ownerDraw           * 100) / 100,
+
+    passiveIncome:    Math.round(passiveIncome      * 100) / 100,
+    refunds:          Math.round(refunds            * 100) / 100,
+
+    trueNetCashflow:  Math.round(trueNetCashflow    * 100) / 100,
+
+    distribution,
+
+    transferBreakdown: {
+      totalCount:  transferTotalCount,
+      totalAmount: Math.round(transferTotalAmount * 100) / 100,
+      byIntent: transferByIntentRows.map((r) => ({
+        intent:      r.intent,
+        count:       r._count.id,
+        totalAmount: Math.round(Number(r._sum.amount ?? 0) * 100) / 100,
+      })),
+    },
+
+    totalTransactions:       totalCount,
+    intentClassifiedCount:   classifiedCount,
+    intentCoveragePct,
+    hasEnoughDataForDisplay: intentCoveragePct >= MIN_COVERAGE_PCT,
+
+    needsReviewCount,
+    topNeedsReviewMerchants: topNeedsReviewGroups.map((g) => ({
+      description: g.description,
+      count:       g._count.id,
+    })),
   };
 }

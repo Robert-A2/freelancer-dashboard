@@ -5,6 +5,7 @@ import { recalculateMonthlyAnalytics } from "@/lib/analytics-engine";
 import { generateForecast } from "@/lib/forecast-engine";
 import { categorizeTransaction, type LearnedRules } from "@/lib/categorization";
 import { loadMerchantIndex, reportUncategorizedMerchants } from "@/lib/merchant-reports";
+import { classifyIntent, buildUserIntentRules } from "@/lib/intent-engine";
 import { Prisma } from "@prisma/client";
 
 const BATCH_SIZE = 500;
@@ -22,16 +23,27 @@ export async function POST(_request: NextRequest) {
     const dbUser = await prisma.user.findUnique({ where: { id: user.id }, select: { fullName: true } });
     const ownerName = dbUser?.fullName || undefined;
 
-    const rules = await prisma.categoryRule.findMany({
-      where: { userId: user.id },
-      select: { merchantKey: true, category: true },
-    });
+    const [rules, intentRuleRows] = await Promise.all([
+      prisma.categoryRule.findMany({
+        where: { userId: user.id },
+        select: { merchantKey: true, category: true },
+      }),
+      prisma.userIntentRule.findMany({
+        where: { userId: user.id },
+        select: { merchantKey: true, intent: true },
+      }),
+    ]);
     const learnedRules: LearnedRules = new Map(rules.map((r) => [r.merchantKey, r.category]));
+    const userIntentRules = buildUserIntentRules(intentRuleRows);
     const merchantIndex = await loadMerchantIndex();
 
     const transactions = await prisma.transaction.findMany({
       where: { userId: user.id },
-      select: { id: true, description: true, amount: true, transactionType: true, category: true, categoryConfidence: true, categorySource: true },
+      select: {
+        id: true, description: true, amount: true, transactionType: true,
+        category: true, categoryConfidence: true, categorySource: true,
+        intent: true, intentConfidence: true, intentSource: true, needsReview: true,
+      },
     });
 
     let changedCount = 0;
@@ -52,21 +64,43 @@ export async function POST(_request: NextRequest) {
           stillUncategorized.push({ description: tx.description, category: result.category });
         }
 
-        if (
+        // Re-run intent classification unless the user has explicitly set this intent.
+        // intentSource:"user" means the user confirmed it — we never override that.
+        const intentResult = tx.intentSource !== "user"
+          ? classifyIntent(tx.description, result, userIntentRules)
+          : null;
+
+        const categoryChanged =
           result.category !== tx.category ||
           result.confidence !== tx.categoryConfidence ||
           result.source !== (tx.categorySource ?? null) ||
-          result.transactionType !== tx.transactionType
-        ) {
-          changedCount++;
+          result.transactionType !== tx.transactionType;
+
+        const intentChanged = intentResult !== null && (
+          intentResult.intent           !== (tx.intent ?? null) ||
+          intentResult.intentConfidence !== (tx.intentConfidence ?? null) ||
+          intentResult.intentSource     !== (tx.intentSource ?? null) ||
+          intentResult.needsReview      !== tx.needsReview
+        );
+
+        if (categoryChanged || intentChanged) {
+          if (categoryChanged) changedCount++;
           updates.push(
             prisma.transaction.update({
               where: { id: tx.id },
               data: {
-                category: result.category,
-                categoryConfidence: result.confidence,
-                categorySource: result.source,
-                transactionType: result.transactionType,
+                ...(categoryChanged ? {
+                  category:          result.category,
+                  categoryConfidence: result.confidence,
+                  categorySource:    result.source,
+                  transactionType:   result.transactionType,
+                } : {}),
+                ...(intentResult !== null ? {
+                  intent:            intentResult.intent,
+                  intentConfidence:  intentResult.intentConfidence,
+                  intentSource:      intentResult.intentSource,
+                  needsReview:       intentResult.needsReview,
+                } : {}),
               },
             })
           );
