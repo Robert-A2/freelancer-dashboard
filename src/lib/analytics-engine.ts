@@ -846,7 +846,7 @@ export async function getIntentBreakdown(
   const sumIntents = (intents: Set<string>): number =>
     byIntentRows
       .filter((r) => r.intent !== null && intents.has(r.intent))
-      .reduce((acc, r) => acc + Number(r._sum.amount ?? 0), 0);
+      .reduce((acc, r) => acc + Number(r._sum?.amount ?? 0), 0);
 
   const businessRevenue = sumIntents(BUSINESS_REVENUE_INTENTS);
   const businessCosts   = sumIntents(BUSINESS_COST_INTENTS);
@@ -859,7 +859,7 @@ export async function getIntentBreakdown(
   // the response exposes the formerly-invisible transfer amount explicitly.
   const familySupport = byIntentRows
     .filter((r) => r.intent === "family_support")
-    .reduce((acc, r) => acc + Number(r._sum.amount ?? 0), 0);
+    .reduce((acc, r) => acc + Number(r._sum?.amount ?? 0), 0);
 
   const personalSpend    = sumIntents(PERSONAL_SPEND_INTENTS);
   const debtService      = sumIntents(DEBT_SERVICE_INTENTS);
@@ -878,12 +878,12 @@ export async function getIntentBreakdown(
 
   const distribution = byIntentRows.map((r) => ({
     intent:      r.intent,
-    count:       r._count.id,
-    totalAmount: Math.round(Number(r._sum.amount ?? 0) * 100) / 100,
+    count:       r._count?.id ?? 0,
+    totalAmount: Math.round(Number(r._sum?.amount ?? 0) * 100) / 100,
   }));
 
-  const transferTotalCount  = transferByIntentRows.reduce((a, r) => a + r._count.id, 0);
-  const transferTotalAmount = transferByIntentRows.reduce((a, r) => a + Number(r._sum.amount ?? 0), 0);
+  const transferTotalCount  = transferByIntentRows.reduce((a, r) => a + (r._count?.id ?? 0), 0);
+  const transferTotalAmount = transferByIntentRows.reduce((a, r) => a + Number(r._sum?.amount ?? 0), 0);
 
   const intentCoveragePct = totalCount > 0
     ? Math.round((classifiedCount / totalCount) * 1000) / 10
@@ -917,8 +917,8 @@ export async function getIntentBreakdown(
       totalAmount: Math.round(transferTotalAmount * 100) / 100,
       byIntent: transferByIntentRows.map((r) => ({
         intent:      r.intent,
-        count:       r._count.id,
-        totalAmount: Math.round(Number(r._sum.amount ?? 0) * 100) / 100,
+        count:       r._count?.id ?? 0,
+        totalAmount: Math.round(Number(r._sum?.amount ?? 0) * 100) / 100,
       })),
     },
 
@@ -930,7 +930,7 @@ export async function getIntentBreakdown(
     needsReviewCount,
     topNeedsReviewMerchants: topNeedsReviewGroups.map((g) => ({
       description: g.description,
-      count:       g._count.id,
+      count:       g._count?.id ?? 0,
     })),
   };
 }
