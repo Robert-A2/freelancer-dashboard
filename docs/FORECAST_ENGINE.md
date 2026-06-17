@@ -3,8 +3,8 @@
 - **What it does**: Projects next month's income, expenses, savings, and cashflow from the user's historical `MonthlyAnalytics`, then (on the Forecast page) turns that projection — plus the rest of the dashboard's intelligence — into a 0–100 "Business Health Score," a cashflow risk level, a year-end projection, and a list of "key drivers."
 - **Why it exists**: A freelancer's biggest planning question is "what's coming next, and should I be worried?" Raw historical totals don't answer that — they need to be turned into a forward-looking number, with an honest signal about how much to trust it.
 - **Where the code is**:
-  - `src/lib/forecast-engine.ts` (176 lines) — the actual projection math (`generateForecast`, `getLatestForecast`), persisted to the `Forecast` table.
-  - `src/app/(dashboard)/forecast/page.tsx` (466 lines) — everything *derived* from that projection (Health Score, Cashflow Risk, Key Drivers, Year-End Projection, "How this forecast was built"). None of this is persisted; it's recomputed on every page load.
+  - `src/lib/forecast-engine.ts` — the actual projection math (`generateForecast`, `getLatestForecast`), persisted to the `Forecast` table.
+  - `src/app/(dashboard)/forecast/page.tsx` — everything *derived* from that projection (Health Score, Cashflow Risk, Key Drivers, Year-End Projection, "How this forecast was built"). None of this is persisted; it's recomputed on every page load.
 - **How to modify it safely**: see [How to modify](#how-to-modify-safely) at the bottom.
 
 ---
@@ -181,6 +181,7 @@ const confidence: "low" | "medium" | "high" =
 
 ```ts
 export interface ForecastResult {
+  // Core projection (unchanged — all consumers depend on these)
   projectedIncome: number;
   projectedExpenses: number;
   projectedSavings: number;
@@ -190,8 +191,56 @@ export interface ForecastResult {
   confidence: "low" | "medium" | "high";
   seasonallyAdjusted: boolean;
   generatedAt: Date;
+
+  // Intent-aware projections (null when intent coverage < 80% or < 3 months of history)
+  projectedBusinessRevenue: number | null;
+  projectedBusinessCosts:   number | null;
+  projectedBusinessProfit:  number | null;
+  projectedPersonalSpend:   number | null;
+  projectedDebtService:     number | null;
+  projectedTrueNetCashflow: number | null;
+  // true when last-3-month business revenue < 25% of historical average
+  hasIncompleteDataWarning: boolean;
 }
 ```
+
+The intent fields are stored in the `Forecast` table as a single `intentBreakdown Json?` column (null when coverage < 80%) and read back by `getLatestForecast()` into the typed fields above.
+
+---
+
+## 5b. Intent-based projections
+
+Runs inside `generateForecast()` **after** the core weighted average, gated on `records.length >= 3` and `intentCoveragePct >= 80`.
+
+**Coverage check** — queries `Transaction` twice: total count and count where `intent IS NOT NULL`. If `classifiedCount / totalCount < 0.80`, all intent fields remain `null` and the JSON column is stored as `null`.
+
+**Per-intent series** — all classified transactions are fetched and bucketed into a `byMonth` map keyed by `"YYYY-M"`. The five intent buckets:
+
+| Bucket | Intents |
+|---|---|
+| Business revenue | `freelance_income`, `salary` |
+| Business costs | `business_expense`, `tax_payment`, `subscription` |
+| Debt service | `loan_repayment` |
+| Personal spend | `personal_expense`, `family_support` |
+| Passive / refunds | `passive_income`, `refund` |
+
+Each bucket's monthly series is aligned to the `MonthlyAnalytics` record order (same time window, same month sequence) so all algorithms operate consistently.
+
+**Four forecast algorithms:**
+
+| Pattern | Series | Algorithm | Rationale |
+|---|---|---|---|
+| 1 | Business revenue | `weightedAvg()` (same as §3) | Freelance income is variable — recency matters, outliers shouldn't dominate |
+| 2 | Debt service | `rolling3Avg()` — mean of last 3 months | Fixed commitments, rarely change |
+| 3 | Business costs | `weightedAvg()` | Low variability, but recency still more relevant than old spend |
+| 4 | Personal spend | `rolling3Avg()` | Lifestyle-stable; recent 3 months is the best predictor |
+
+`projectedBusinessProfit = projectedBusinessRevenue − projectedBusinessCosts`
+`projectedTrueNetCashflow = projectedBusinessRevenue + projectedPassive − projectedBusinessCosts − projectedPersonalSpend − projectedDebtService`
+
+**Incomplete data guard** — fires when `revSeries.length >= 6` and `simpleAvg(revSeries.slice(-3)) < simpleAvg(revSeries.slice(0,-3)) * 0.25`. This detects the case where recent business revenue is anomalously low vs. the historical average — the primary signal that income is arriving in a bank account whose CSV hasn't been uploaded yet. Sets `hasIncompleteDataWarning = true`.
+
+**Storage** — the seven intent fields are serialised into a `StoredIntentBreakdown` object and written to `Forecast.intentBreakdown` (a `Json?` column). `null` is stored as `Prisma.JsonNull` when coverage < 80%. `getLatestForecast()` reads the column back with `forecast.intentBreakdown as StoredIntentBreakdown | null` and spreads the fields into the returned `ForecastResult`.
 
 ---
 

@@ -5,9 +5,10 @@
   2. **`generateDashboardIntelligence()`** — a single `DashboardIntelligence` object: snapshot summary, trajectory narrative, health status, business trend direction, biggest risk/opportunity, forecast reasons/improvements, and more — consumed by the Dashboard and Forecast pages.
 - **Why it exists**: A number alone ("income: €4,230, +12%") doesn't tell a freelancer what happened or what to do. This is the single place where "what the data shows" becomes "what the user reads" — every insight names exact months, years, amounts, and percentages (no generic "recently" or "lately"), and is built from a `{key, values}` descriptor so it renders correctly in English **and** French (see [TRANSLATIONS.md](./TRANSLATIONS.md)).
 - **Where the code is**:
-  - `src/lib/intelligence-engine.ts` (1,313 lines) — both exported functions and all their helpers.
+  - `src/lib/intelligence-engine.ts` — both exported functions and all their helpers.
   - `src/lib/insight-types.ts` (34 lines) — the `Insight` / `RankedInsight` / `InsightValue` types and the `cat()` / `resolveInsightValues()` helpers.
   - `src/components/ui/InsightText.tsx` (28 lines) — the component that renders an `Insight` via `t.rich()`.
+  - `src/components/dashboard/BusinessIntelligence.tsx` — "use client" component that renders intent-based all-time KPI cards and `intentInsights` bullets on the Dashboard.
 - **How to modify it safely**: see [How to modify](#how-to-modify-safely) at the bottom.
 
 ---
@@ -76,11 +77,13 @@ flowchart LR
     BHI --> RI["RankedInsight[]"]
 
     MA & CT & YS & MS & IC & FC & RT & CMP --> GDI["generateDashboardIntelligence()"]
+    IB["IntentBreakdown\ngetIntentBreakdown()"] --> GDI
     GDI --> DI["DashboardIntelligence"]
 
     RI --> HI["Dashboard:\n&lt;HistoricalInsights /&gt;"]
     RI --> FS["Analytics:\n&lt;FinancialStory /&gt;"]
     DI --> Dash["Dashboard page\n(SummaryCards, TrendsChart,\nForecastWidget, RecentTransactions,\nMonthlyComparison)"]
+    DI --> BI["Dashboard:\n&lt;BusinessIntelligence /&gt;\n(intentInsights + KPI cards)"]
     DI --> Fcst["Forecast page\n(Business Health Score,\nrisk/opportunity, key drivers)"]
 ```
 
@@ -278,7 +281,17 @@ export function generateDashboardIntelligence(
   yearlySnapshots: YearlySnapshot[],
   seasonality: MonthlySeasonality[],
   incomeConcentration: {...} | undefined,
-  locale: Locale
+  locale: Locale,
+  intentBreakdown?: {        // Optional — from getIntentBreakdown(). null when coverage < 80%.
+    businessProfit: number;
+    businessRevenue: number;
+    profitMarginPct: number | null;
+    familySupport: number;
+    savingsMovement: number;
+    savingsWithdrawal: number;
+    trueNetCashflow: number;
+    intentCoveragePct: number;
+  } | null
 ): DashboardIntelligence
 ```
 
@@ -296,6 +309,7 @@ export function generateDashboardIntelligence(
 | `cashflowDeficitReason` | `Insight \| null` | §6.6 | `ForecastWidget` (Dashboard) |
 | `healthStatus` | `"healthy" \| "watch" \| "at-risk"` | §6.5 | Dashboard header badge, Forecast page Health Score `statusScore` (see [FORECAST_ENGINE.md §8](./FORECAST_ENGINE.md)) |
 | `healthStatusExplanation` | `Insight \| null` | §6.5 | Forecast page health narrative banner |
+| `intentInsights` | `Insight[]` | §6.12 | `<BusinessIntelligence />` on the Dashboard (intent KPI bullet list) |
 | `businessTrendDirection` | `"improving" \| "stable" \| "weakening"` | §6.7 | Forecast page "Business Direction" card |
 | `biggestRisk` | `Insight \| null` | §6.8 | Forecast page "Biggest Risk" card |
 | `biggestOpportunity` | `Insight \| null` | §6.9 | Forecast page "Biggest Opportunity" card |
@@ -492,27 +506,45 @@ If `|momentum| >= 10`, push `insights.trajectory.recentMomentum` — `sign: "pos
 
 ### 6.5 Health Status
 
+Health status uses **dual-axis scoring** when intent data is available (coverage ≥ 80%), and falls back to cashflow-based logic otherwise.
+
+#### Dual-axis path (`intentBreakdown && intentCoveragePct >= 80`)
+
+```mermaid
+flowchart TD
+    A{"businessProfit > 0?"}
+    A -- yes --> B{"trueNetCashflow > 0?"}
+    A -- no  --> C{"trueNetCashflow > 0?"}
+    B -- yes --> H["healthy\nhealthyIntent"]
+    B -- no  --> W1["watch\nwatchIntentCashflow\n(profitable but overall spend leaves cashflow negative)"]
+    C -- yes --> W2["watch\nwatchIntentProfit\n(business losing money, other income keeps cashflow positive)"]
+    C -- no  --> R["at-risk\natRiskIntent"]
+```
+
+| `healthStatus` | Condition | `healthStatusExplanation` key |
+|---|---|---|
+| `"healthy"` | `businessProfit > 0` **and** `trueNetCashflow > 0` | `insights.health.healthyIntent` |
+| `"watch"` | `businessProfit > 0` but `trueNetCashflow <= 0` | `insights.health.watchIntentCashflow` |
+| `"watch"` | `businessProfit <= 0` but `trueNetCashflow > 0` | `insights.health.watchIntentProfit` |
+| `"at-risk"` | `businessProfit <= 0` **and** `trueNetCashflow <= 0` | `insights.health.atRiskIntent` |
+
+#### Cashflow-based fallback (`intentCoveragePct < 80` or no intentBreakdown)
+
 ```mermaid
 flowchart TD
     A{"active.length >= 3?"}
-    A -- no --> Z["stays 'watch', explanation = null\n(default initial values)"]
+    A -- no --> Z["stays 'watch', explanation = null"]
     A -- yes --> B["totalMo, posMo (cashflow>=0), negMo\nrecentWin = last min(6,active.length)\nrecentNegCount, rIncDir, rExpDir = trendDir(recentWin)"]
     B --> C{"posMo/totalMo >= 0.7 &&\nrecentNegCount <= 1 &&\nrIncDir !== 'down'?"}
     C -- yes --> C1["healthy\nrIncDir==='up' ? healthyGrowing : healthyStable"]
     C -- no --> D{"posMo/totalMo < 0.5 ||\n(rExpDir==='up' && rIncDir==='down') ||\nrecentNegCount >= 4?"}
-    D -- yes --> D1["at-risk\n(rExpDir==='up'&&rIncDir==='down') ? atRiskSqueeze : atRiskNegative"]
-    D -- no --> E1["watch\nnegMo===0 ? watchIncomeSlowing : watchMixed"]
+    D -- yes --> D1["at-risk\natRiskSqueeze or atRiskNegative"]
+    D -- no --> E1["watch\nwatchIncomeSlowing or watchMixed"]
 ```
 
-`recentWin = active.slice(-Math.min(6, active.length))` — the last up-to-6 active months. `rIncDir`/`rExpDir` are `trendDir()` over that window's income/expenses.
+`recentWin = active.slice(-Math.min(6, active.length))`. `rIncDir`/`rExpDir` are `trendDir()` over that window.
 
-| `healthStatus` | Condition | `healthStatusExplanation` |
-|---|---|---|
-| `"healthy"` | `posMo/totalMo >= 0.7` (≥70% of all active months had non-negative cashflow) **and** `recentNegCount <= 1` (at most 1 negative month in the recent window) **and** `rIncDir !== "down"` | `healthyGrowing` if `rIncDir === "up"`, else `healthyStable` |
-| `"at-risk"` | `posMo/totalMo < 0.5` **or** (`rExpDir==="up"` **and** `rIncDir==="down"` — a "squeeze") **or** `recentNegCount >= 4` (out of the last ≤6) | `atRiskSqueeze` if expenses-up-income-down, else `atRiskNegative` |
-| `"watch"` | Everything else | `watchIncomeSlowing` if `negMo === 0` (positive cashflow overall, but didn't qualify as "healthy" — usually a stalled/declining income trend), else `watchMixed` |
-
-> With `active.length < 3`, `healthStatus` stays at its initial value `"watch"` and `healthStatusExplanation` stays `null` — there's deliberately no "explanation" shown for too-little-data, since `trajectoryInsight` (`moreDataNeeded`) already covers that case.
+> With `active.length < 3`, `healthStatus` stays `"watch"` and `healthStatusExplanation` stays `null` — `trajectoryInsight` (`moreDataNeeded`) already covers that case.
 
 ---
 
@@ -692,6 +724,24 @@ Only `if (recentTxs.length > 0)`:
 | 2 | `insights.notable.largestExpense` | if any have `type === "expense"` — the single largest by `amount`. |
 | 3 | `insights.notable.recurringCharges` | if any expense tx has `category` in `{"subscriptions","software"}` **or** its `description` (lowercased) includes `"subscription"`. Shows `count` and the **sum** of all matching amounts. |
 | 4 | `insights.notable.highValueExpense` | only if `avgExpenses > 0`. Finds expenses where `amount > avgExpenses * 0.4 AND amount > 200` — both a *relative* (40% of typical monthly spend) and *absolute* (€200) bar, so this doesn't fire for someone with very low average expenses. Only the **first** match (`high[0]`) is shown. |
+
+---
+
+### 6.12 Intent Insights — `intentInsights`
+
+Only populated when `intentBreakdown && intentCoveragePct >= 80`. Returned as `intentInsights: Insight[]` on `DashboardIntelligence` and rendered by `<BusinessIntelligence />` on the Dashboard as a bullet list (regular insights) plus an amber warning box (`incompleteDataWarning`).
+
+| Insight key | Condition |
+|---|---|
+| `insights.intent.businessProfitHealthy` | `businessRevenue > 0 && businessProfit > 0` — shows profit amount and margin % |
+| `insights.intent.businessProfitNegative` | `businessRevenue > 0 && businessProfit <= 0` — shows the loss amount |
+| `insights.intent.profitMarginStrong` | Added after `businessProfitHealthy` when `margin >= 60` |
+| `insights.intent.profitMarginLow` | Added after `businessProfitHealthy` when `margin < 30` |
+| `insights.intent.familySupportCost` | `familySupport > 0 && active.length >= 3` — shows all-time total and per-month average |
+| `insights.intent.savingsNetPosition` | `savingsMovement > 0` — shows deployed, withdrawn, and net (`net_saved` or `net_withdrawn` via ICU select) |
+| `insights.intent.incompleteDataWarning` | `active.length >= 6` and last-3-month average income < 25% of prior historical average — signals a missing bank account CSV |
+
+`incompleteDataWarning` is deliberately **not** rendered as a regular bullet — `<BusinessIntelligence />` filters it out of the main list and renders it separately as an amber warning box below the other insights.
 
 ---
 

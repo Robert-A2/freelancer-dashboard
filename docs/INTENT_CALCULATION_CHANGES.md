@@ -1,11 +1,11 @@
-# Proposed Code Changes — Intent-Aware Financial Calculations
+# Intent-Aware Financial Calculations — Implementation Status
 
-Design proposal. Do not implement until approved.
+All changes below have been implemented and are live in production (as of 2026-06-17).
 Companion to FINANCIAL_MODEL.md and INTENT_TO_CALCULATION_MAPPING.md.
 
 ---
 
-## Change 1 — New analytics function: `getIntentBreakdown`
+## Change 1 — New analytics function: `getIntentBreakdown` ✓ DONE
 
 **File:** `src/lib/analytics-engine.ts`
 **Type:** Additive — new export, no existing code changed.
@@ -70,7 +70,7 @@ if profiling shows it is slow (it will not be at this data scale).
 
 ---
 
-## Change 2 — Extend `MonthlyAnalytics` with intent columns (optional, Phase 2)
+## Change 2 — Extend `MonthlyAnalytics` with intent columns ⏸ DEFERRED
 
 **File:** `prisma/schema.prisma` + `src/lib/analytics-engine.ts`
 **Type:** Schema migration required.
@@ -98,11 +98,11 @@ Migration is safe: all new columns have `@default(0)` so existing rows are not a
 Existing rows will show 0 until `recategorize-all` is run (same graceful-fallback logic
 as `getIntentBreakdown`).
 
-**Do not implement in Phase 1.** Validate the analytics function first.
+**Deferred indefinitely.** `getIntentBreakdown` is fast enough at the current dataset size (~2,500 transactions). Revisit if the dataset exceeds ~10,000 transactions.
 
 ---
 
-## Change 3 — Extend the forecast engine
+## Change 3 — Extend the forecast engine ✓ DONE
 
 **File:** `src/lib/forecast-engine.ts`
 **Type:** Additive — extend `ForecastResult`, extend `generateForecast`.
@@ -157,7 +157,7 @@ model Forecast {
 
 ---
 
-## Change 4 — Update the intelligence engine
+## Change 4 — Update the intelligence engine ✓ DONE
 
 **File:** `src/lib/intelligence-engine.ts`
 **Type:** Additive for new insights; one change to `healthStatus` logic.
@@ -203,7 +203,7 @@ New insight keys to add to the intelligence engine (rendered via i18n):
 
 ---
 
-## Change 5 — New API endpoint
+## Change 5 — New API endpoint ✓ DONE
 
 **File:** `src/app/api/analytics/intent-breakdown/route.ts`
 **Type:** New file.
@@ -222,7 +222,7 @@ and intent KPIs can be hidden gracefully when coverage is insufficient.
 
 ---
 
-## Change 6 — Dashboard API response extension
+## Change 6 — Dashboard API response extension ✓ DONE
 
 **File:** `src/app/api/dashboard/route.ts`
 **Type:** Additive — new optional fields in the response.
