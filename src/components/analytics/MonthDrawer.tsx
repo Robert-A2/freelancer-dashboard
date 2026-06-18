@@ -230,7 +230,7 @@ export default function MonthDrawer({
             {/* Tabs */}
             {breakdown && (
               <div className="flex border-b border-[#1E3A55]">
-                {(["cashflow", "expense", "income"] as const).map((tab) => {
+                {(["income", "expense", "cashflow"] as const).map((tab) => {
                   const labels = { cashflow: "Cashflow", expense: "Expenses", income: "Income" };
                   const colors = {
                     cashflow: "border-[#3AB5A0] text-[#3AB5A0]",
