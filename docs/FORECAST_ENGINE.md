@@ -29,7 +29,7 @@ flowchart LR
     PAGE --> HB["How This Forecast Was Built"]
 ```
 
-`forecast-engine.ts` answers **"what will next month's numbers be?"** — three plain numbers (income, expenses, cashflow) plus a confidence label, persisted so the dashboard can show a forecast without recomputing it on every page.
+`forecast-engine.ts` answers **"what will next month's numbers be?"** — three plain numbers (income, expenses, cashflow) plus a confidence score and diagnostic signals, persisted so the dashboard can show a forecast without recomputing it on every page.
 
 `forecast/page.tsx` answers **"so what does that mean for my business?"** — it combines the persisted forecast with the full historical chart (`MonthPoint[]` from [ANALYTICS_ENGINE.md](./ANALYTICS_ENGINE.md)) and the narrative insights from `intelligence-engine.ts` (see [INTELLIGENCE_ENGINE.md](./INTELLIGENCE_ENGINE.md)) to produce everything the user actually sees: the score, the risk badge, the key drivers list, and the year-end numbers.
 
@@ -39,35 +39,39 @@ flowchart LR
 
 ```mermaid
 flowchart TD
-    A["Load all MonthlyAnalytics rows for user\norder by year, month (oldest -> newest)"] --> B{"records.length === 0?"}
+    A["Load all MonthlyAnalytics rows for user\norder by year, month (oldest → newest)"] --> B{"records.length === 0?"}
     B -- yes --> B1["delete any stale Forecast row\n(user deleted their last import)\nreturn null"]
     B -- no --> C["incomes[] / expenses[] / savings[]\n= records.map(Number(total*))"]
-    C --> D["weightedAvg(incomes)   -> projectedIncome\nweightedAvg(expenses)  -> projectedExpenses\nweightedAvg(savings)   -> projectedSavings"]
-    D --> E{"records.length >= 24?"}
-    E -- yes --> SEAS["Seasonal adjustment\n(see §4)"]
-    E -- no --> F
-    SEAS --> F["projectedCashflow =\nprojectedIncome - projectedExpenses"]
-    F --> G["confidence:\nn>=12 -> high\nn>=4  -> medium\nelse  -> low"]
-    G --> H["forecastPeriod = nextPeriod(today) -- 'YYYY-MM'\n(the calendar month AFTER today, not after the last data point)"]
-    H --> I["upsert Forecast\nwhere (userId, forecastPeriod)"]
-    I --> J["prune: keep only the single most\nrecently-generated Forecast row\nfor this user"]
-    J --> K["return ForecastResult"]
+    C --> REC["detectRecurringExpenses()\n→ recurringFloor\n(expense floor from stable fixed costs)"]
+    REC --> D["weightedAvg(incomes) → projectedIncome\nweightedAvg(expenses) → projectedExpenses\nMath.max(recurringFloor, projectedExpenses)"]
+    D --> E{"records.length >= 12?"}
+    E -- yes --> SEAS["Seasonal adjustment\n30% blend at 12–23 months\n50% blend at 24+ months\n(see §4)"]
+    E -- no --> GAP
+    SEAS --> GAP["Gap fraction:\n(range months − data months) / range months"]
+    GAP --> CLS["Classification %:\ncategorized txns / total txns"]
+    CLS --> CONF["computeConfidence()\n4-factor score (see §5)"]
+    CONF --> INC["Incomplete data warning\n(generic — not bank-specific)"]
+    INC --> INTENT["Intent projections\n(gated on ≥3 months + 80% intent coverage)"]
+    INTENT --> PER["forecastPeriod = nextPeriod(last data month)\n— anchored to data, not wall clock"]
+    PER --> F["projectedCashflow = projectedIncome − projectedExpenses"]
+    F --> G["upsert Forecast row\nprune: keep only most-recent row"]
+    G --> K["return ForecastResult"]
 ```
 
-**Where `records` comes from**: every row of `MonthlyAnalytics` for this user, oldest first — i.e. the *entire* history, not just the last N months. Older months still influence the projection, just with a smaller weight (§3).
+**Where `records` comes from**: every row of `MonthlyAnalytics` for this user, oldest first — the *entire* history, not just the last N months. Older months still influence the projection via the weighted average (§3), just with a smaller weight.
 
-**Called from** (always immediately after `recalculateMonthlyAnalytics(userId)` — see [ANALYTICS_ENGINE.md](./ANALYTICS_ENGINE.md)):
+**Called from** (always immediately after `recalculateMonthlyAnalytics(userId)`):
 
 | Call site | When |
 |---|---|
 | `src/app/api/uploads/process/route.ts` | After a CSV import finishes |
 | `src/app/api/uploads/[id]/route.ts` | After an import is **deleted** |
 | `src/app/api/transactions/recategorize/route.ts` | After a single transaction is recategorized |
-| `src/app/api/transactions/recategorize-all/route.ts` | After a bulk "apply this category to all similar transactions" action |
+| `src/app/api/transactions/recategorize-all/route.ts` | After a bulk recategorization action |
 | `src/app/(dashboard)/forecast/page.tsx` | Every time the Forecast page is loaded (cheap — one pass over `MonthlyAnalytics`) |
 | `POST /api/forecast` | Manual refresh trigger, if ever wired up client-side |
 
-> **Why regenerate so often?** The projection is a pure function of `MonthlyAnalytics`. Any time that table changes — new data, a recategorization that moves a transaction from "expense" to "transfer," a deleted import — the projection is stale until recomputed. Recomputing is cheap (it's a handful of numbers per month, not per transaction), so it's simplest to just always re-run it.
+> **Why regenerate so often?** The projection is a pure function of `MonthlyAnalytics`. Any time that table changes — new data, a recategorization, a deleted import — the projection is stale until recomputed. Recomputing is cheap (a handful of numbers per month, not per transaction), so it's simplest to always re-run it.
 
 ---
 
@@ -124,97 +128,194 @@ weighted average = Σ(value[i] × weight[i]) / Σ(weight[i])
 
 ## 4. Seasonal adjustment — `buildSeasonalMap()`
 
-Only runs if `records.length >= 24` (at least 2 full years of `MonthlyAnalytics`), so that every calendar month has appeared **at least twice** in history before it's allowed to influence the projection.
+Runs if `records.length >= 12` (at least 12 months of `MonthlyAnalytics`). The blend factor depends on how much history is available:
+
+| History | Blend factor | Rationale |
+|---|---|---|
+| 12–23 months | **30%** | Enough for seasonality to be directionally correct, but sample sizes per month are thin (1–2 occurrences). A light blend avoids over-weighting noisy ratios. |
+| 24+ months | **50%** | Every month has appeared ≥2 times — the seasonal ratio is more reliable. |
 
 ```ts
-function buildSeasonalMap(records: { month: number; value: number }[]) {
-  const map: Record<number, { total: number; count: number }> = {};
-  for (const r of records) {
-    if (!map[r.month]) map[r.month] = { total: 0, count: 0 };
-    map[r.month].total += r.value;
-    map[r.month].count += 1;
-  }
-  return map;
-}
+const blend = records.length >= 24 ? 0.5 : 0.3;
 ```
 
 Steps, for income (expenses are identical, run independently):
 
 1. Build `incomeSeasonMap`: for each calendar month 1–12, the total and count of `totalIncome` across all years.
-2. `overallAvgIncome` = the plain average of `totalIncome` across **all** months in history.
-3. `nextMonthNum = ((now.getUTCMonth() + 1) % 12) + 1` — the calendar month number (1–12) of *next month*, based on **today's real-world date**, not the user's last data point.
-4. If `incomeSeasonMap[nextMonthNum]` exists and has `count >= 2` and `overallAvgIncome > 0`:
+2. `avgIncome` = the plain average of `totalIncome` across **all** months in history.
+3. **`nextMonthNum`** is derived from the **last `MonthlyAnalytics` record**, not from `new Date()`. The forecast targets the month after the user's last data point — "what does the next period look like?" — not "what is next calendar month from today?". This is consistent with the "anchor to the data" principle elsewhere in the app (see [ANALYTICS_ENGINE.md](./ANALYTICS_ENGINE.md)).
+4. If `incomeSeasonMap[nextMonthNum]` exists and has `count >= 2` and `avgIncome > 0`:
    ```
-   ratio = (seasonal total for that month / seasonal count) / overallAvgIncome
-   projectedIncome = projectedIncome × 0.5 + projectedIncome × ratio × 0.5
-                    = projectedIncome × (0.5 + ratio × 0.5)
+   ratio = (seasonal total for that month / seasonal count) / avgIncome
+   projectedIncome = projectedIncome × (1 − blend) + projectedIncome × ratio × blend
    ```
-   i.e. a **50/50 blend** between the plain weighted average and "the weighted average scaled by how this calendar month historically compares to the yearly average."
-5. Expenses go through the exact same blend independently, using `expenseSeasonMap` and `overallAvgExpenses`.
+5. Expenses go through the same blend independently, but the seasonal result is always bounded from below by `recurringFloor` (§5b) — seasonality cannot push expenses below the detected stable fixed-cost floor.
 6. `seasonallyAdjusted = true` if **either** the income or expense adjustment was applied.
 
-> **Why a 50/50 blend instead of using the seasonal ratio directly?** With only 2–3 occurrences of a given month in history, the seasonal ratio is noisy — one unusually high or low August could otherwise swing the whole projection. Blending halves the impact, so seasonality nudges the forecast in the right direction without letting a thin sample dominate it.
-
-> **Why ≥24 months specifically?** `count >= 2` for *every* month requires at least 2 full years of data in the best case. 24 is the earliest point where that's even possible. Below that threshold, `seasonallyAdjusted` stays `false` and the projection is purely the weighted average from §3.
-
-> **A note on "next month"**: unlike the rest of the app (see the "anchor to the data, not the wall clock" principle in [ANALYTICS_ENGINE.md](./ANALYTICS_ENGINE.md)), `nextMonthNum` and `forecastPeriod` (§6) are both based on **`new Date()` — the real-world date the forecast is generated on** — not the user's latest `MonthlyAnalytics` row. For an actively-used account this is the same thing. If a user's data is stale (e.g. they haven't uploaded in 6 months), the forecast still labels itself "next calendar month from today," even though the underlying weighted average is computed from months that ended well before that. The *numbers* are still a reasonable projection of "if recent patterns continue"; only the *period label* can drift from the data. Keep this in mind if you ever change either calculation — they should probably move together.
+> **Why the 30%/50% split?** At 12–23 months each calendar month has appeared at most once in history — only the most recent occurrence is in the map. A 30% blend lets the signal nudge the forecast without a single data point dominating. At 24+ months, `count >= 2` is satisfied for all months, so the ratio is more reliable and a 50% blend is appropriate.
 
 ---
 
-## 5. Cashflow, confidence, and `ForecastResult`
+## 5. Confidence score — `computeConfidence()`
+
+The confidence system was rebuilt from a simple threshold rule (`>=12 → "high"`) into a **4-factor weighted composite**, returning a numeric `0–1` score plus categorical level and plain-English reasons.
+
+```ts
+function computeConfidence(
+  monthCount: number,
+  incomeValues: number[],
+  expenseValues: number[],
+  gapFraction: number,
+  classifiedPct: number
+): { score: number; level: "low" | "medium" | "high"; reasons: string[] }
+```
+
+### The four factors
+
+| Factor | Weight | Formula | What it measures |
+|---|---|---|---|
+| **History depth** | 40% | `Math.min(1, monthCount / 12)` | Months of data. Full marks at ≥12 months, proportional below. |
+| **Income volatility** | 25% | `Math.max(0, 1 − clamp(CV, 0, 1.5) / 1.5)` | Coefficient of Variation (CV = stdDev/mean) on non-zero income months. Stable income → score near 1; CV ≥1.5 → score 0. |
+| **Gap fraction** | 20% | `Math.max(0, 1 − gapFraction × 2)` | Fraction of calendar months in the data range with no `MonthlyAnalytics` row. Each 10% gap subtracts 20% from this factor (so ≥50% gaps → 0). |
+| **Classification %** | 15% | `classifiedPct / 100` (capped at 1) | Percentage of transactions with a category assigned. Higher categorization → better intent and expense-floor signals. |
+
+**Composite**:
+```
+score = depthScore × 0.40 + volatilityScore × 0.25 + gapScore × 0.20 + classScore × 0.15
+```
+
+**Categorical level**:
+```
+level = score >= 0.65 ? "high" : score >= 0.40 ? "medium" : "low"
+```
+
+**Plain-English `reasons[]`** — four entries, one per factor, e.g.:
+- `"14 months of history — solid foundation for forecasting."`
+- `"Income varies significantly month to month — projections carry more uncertainty."`
+- `"Some months have no transaction data — possible gaps in uploaded history."`
+- `"78% of transactions categorized."`
+
+The reasons array is stored in the `Forecast` row's JSON blob and displayed in the "How This Forecast Was Built" panel (§12).
+
+### Gap fraction calculation
+
+```ts
+const totalMonthsInRange =
+  (last.year - first.year) * 12 + (last.month - first.month) + 1;
+gapFraction = (totalMonthsInRange - records.length) / totalMonthsInRange;
+```
+
+If the user uploaded one CSV covering January–December 2024 but has no data for June (month deleted, or never uploaded), `totalMonthsInRange = 12`, `records.length = 11`, `gapFraction ≈ 0.083`. A sparse 6-month import in a 12-month window would produce `gapFraction = 0.5`, lowering the gap factor to 0.
+
+### Classification percentage
+
+```ts
+const [totalTxCount, classifiedTxCount] = await Promise.all([
+  prisma.transaction.count({ where: { userId } }),
+  prisma.transaction.count({ where: { userId, category: { not: undefined } } }),
+]);
+const classifiedPct = totalTxCount > 0 ? (classifiedTxCount / totalTxCount) * 100 : 0;
+```
+
+> **`not: undefined` vs `not: null`**: Prisma's type for the `not` filter in `StringFilter` doesn't accept literal `null` — it must be `undefined`, which Prisma interprets as "the field exists and has any value" (i.e. is not null in the database).
+
+---
+
+## 5b. Recurring expense detection — `detectRecurringExpenses()`
+
+Runs **before** the weighted average is applied to expenses. Its purpose is to create a stable floor below which the expense projection cannot be pushed — even in months with unusually low recorded spending.
+
+```ts
+async function detectRecurringExpenses(
+  userId: string,
+  records: { year: number; month: number }[]
+): Promise<{ total: number; categories: { category: string; monthlyAvg: number }[] }>
+```
+
+**Algorithm**:
+
+1. Fetch all `expense` transactions for the user.
+2. Group by `category` × calendar month — produce `catMonth: Map<category, Map<"YYYY-M", totalAmount>>`.
+3. For each category, compute:
+   - `appearanceRate = nonZeroMonths / totalMonthsInRange` — how often the category shows up.
+   - `cv = coefficientOfVariation(nonZeroAmounts)` — how consistent the amounts are.
+4. A category is **recurring** if `appearanceRate >= 0.70` **and** `cv <= 0.50` (present in ≥70% of months, with ≤50% variation in amount).
+5. `recurringFloor = Σ monthlyAvg` across all recurring categories.
+
+**How the floor is used**:
+
+```ts
+// After weightedAvg(expenses):
+if (records.length >= 3 && recurringFloor > 0) {
+  projectedExpenses = Math.max(recurringFloor, projectedExpenses);
+}
+// After seasonal adjustment (if applied):
+projectedExpenses = Math.max(recurringFloor, seasonal);
+```
+
+This means the projected expenses never drop below the sum of the user's stable fixed costs — even if recent months had unusually low spending, or if seasonality would otherwise suggest a very low-expense month.
+
+> **Why CV ≤ 0.50?** A CV of 0 would mean perfectly identical amounts every month (e.g. a fixed subscription). 0.50 allows about ±50% variation around the mean, which covers subscriptions with minor fluctuations, consistent phone/utility bills, regular software fees, etc. Categories with CV > 0.50 are considered too variable to be "recurring" (e.g. ad spend, materials costs).
+
+---
+
+## 5c. Cashflow, confidence tier, and `ForecastResult`
 
 ```ts
 const projectedCashflow = projectedIncome - projectedExpenses;
-const n = records.length;
-const confidence: "low" | "medium" | "high" =
-  n >= 12 ? "high" : n >= 4 ? "medium" : "low";
 ```
 
-- **`projectedCashflow`** uses the exact same definition as `MonthlyAnalytics.netCashflow` (income − expenses; savings are tracked separately and excluded — see [DATABASE.md §5](./DATABASE.md#5-transaction) and [ANALYTICS_ENGINE.md](./ANALYTICS_ENGINE.md)).
-- **`confidence`** is based on `n`, the **total number of `MonthlyAnalytics` rows** — all-time history, *not* the "active months" count used by the Health Score on the page (§7). A user with 12 months of history but several zero-activity months still gets `"high"` confidence here.
+`projectedCashflow` uses the same definition as `MonthlyAnalytics.netCashflow` (income − expenses; savings are tracked separately).
 
-| `confidence` | Months of history (`n`) | Meaning shown to the user |
-|---|---|---|
-| `"low"` | < 4 | Very little history — treat the projection as a rough guess |
-| `"medium"` | 4–11 | Enough to spot a trend, not enough for a full seasonal cycle |
-| `"high"` | ≥ 12 | At least a year of data — projection reflects a full annual cycle |
+The `confidence` label is derived from `confidenceScore` (§5), not from a raw month count:
+
+```ts
+const confidence: "low" | "medium" | "high" =
+  score >= 0.65 ? "high" : score >= 0.40 ? "medium" : "low";
+```
 
 ```ts
 export interface ForecastResult {
-  // Core projection (unchanged — all consumers depend on these)
-  projectedIncome: number;
+  // Core projection
+  projectedIncome:   number;
   projectedExpenses: number;
-  projectedSavings: number;
+  projectedSavings:  number;
   projectedCashflow: number;
-  forecastPeriod: string;       // "YYYY-MM"
-  basedOnMonths: number;         // = n
-  confidence: "low" | "medium" | "high";
+  forecastPeriod:    string;        // "YYYY-MM" — month after the user's last data point
+  basedOnMonths:     number;        // total MonthlyAnalytics rows
+  confidence:        "low" | "medium" | "high";
+  confidenceScore:   number;        // 0–1 numeric composite (see §5)
+  confidenceReasons: string[];      // human-readable per-factor notes (see §5)
   seasonallyAdjusted: boolean;
   generatedAt: Date;
 
-  // Intent-aware projections (null when intent coverage < 80% or < 3 months of history)
+  // Intent-aware projections (null when intent coverage < 80% or < 3 months)
   projectedBusinessRevenue: number | null;
   projectedBusinessCosts:   number | null;
   projectedBusinessProfit:  number | null;
   projectedPersonalSpend:   number | null;
   projectedDebtService:     number | null;
   projectedTrueNetCashflow: number | null;
-  // true when last-3-month business revenue < 25% of historical average
-  hasIncompleteDataWarning: boolean;
+
+  // Data quality signals
+  hasIncompleteDataWarning: boolean;  // recent income substantially below historical average
+  recurringExpensesTotal:   number;   // monthly floor from detected recurring costs (§5b)
+  gapFraction:              number;   // fraction of months in date range with no data (§5)
+  classifiedPct:            number;   // % of transactions with a category (§5)
 }
 ```
 
-The intent fields are stored in the `Forecast` table as a single `intentBreakdown Json?` column (null when coverage < 80%) and read back by `getLatestForecast()` into the typed fields above.
+The intent fields are stored in the `Forecast` table as a single `intentBreakdown Json?` column (see §5d) and read back by `getLatestForecast()` into the typed fields above.
 
 ---
 
-## 5b. Intent-based projections
+## 5d. Intent-based projections
 
 Runs inside `generateForecast()` **after** the core weighted average, gated on `records.length >= 3` and `intentCoveragePct >= 80`.
 
 **Coverage check** — queries `Transaction` twice: total count and count where `intent IS NOT NULL`. If `classifiedCount / totalCount < 0.80`, all intent fields remain `null` and the JSON column is stored as `null`.
 
-**Per-intent series** — all classified transactions are fetched and bucketed into a `byMonth` map keyed by `"YYYY-M"`. The five intent buckets:
+**Per-intent series** — all intent-classified transactions are fetched and bucketed into a `byMonth` map keyed by `"YYYY-M"`. The five intent buckets:
 
 | Bucket | Intents |
 |---|---|
@@ -224,7 +325,7 @@ Runs inside `generateForecast()` **after** the core weighted average, gated on `
 | Personal spend | `personal_expense`, `family_support` |
 | Passive / refunds | `passive_income`, `refund` |
 
-Each bucket's monthly series is aligned to the `MonthlyAnalytics` record order (same time window, same month sequence) so all algorithms operate consistently.
+Each bucket's monthly series is aligned to the `MonthlyAnalytics` record order so all algorithms operate consistently.
 
 **Four forecast algorithms:**
 
@@ -235,12 +336,33 @@ Each bucket's monthly series is aligned to the `MonthlyAnalytics` record order (
 | 3 | Business costs | `weightedAvg()` | Low variability, but recency still more relevant than old spend |
 | 4 | Personal spend | `rolling3Avg()` | Lifestyle-stable; recent 3 months is the best predictor |
 
-`projectedBusinessProfit = projectedBusinessRevenue − projectedBusinessCosts`
-`projectedTrueNetCashflow = projectedBusinessRevenue + projectedPassive − projectedBusinessCosts − projectedPersonalSpend − projectedDebtService`
+```
+projectedBusinessProfit  = projectedBusinessRevenue − projectedBusinessCosts
+projectedTrueNetCashflow = projectedBusinessRevenue + projectedPassive
+                         − projectedBusinessCosts − projectedPersonalSpend
+                         − projectedDebtService
+```
 
-**Incomplete data guard** — fires when `revSeries.length >= 6` and `simpleAvg(revSeries.slice(-3)) < simpleAvg(revSeries.slice(0,-3)) * 0.25`. This detects the case where recent business revenue is anomalously low vs. the historical average — the primary signal that income is arriving in a bank account whose CSV hasn't been uploaded yet. Sets `hasIncompleteDataWarning = true`.
+**Incomplete data guard** — fires when `incomes.length >= 3` and the average of the last 2 months' income is less than 35% of the historical average (excluding those 2 months), provided the historical average exceeds €200. Also fires if the most recent month has zero income after a non-zero history (again, provided history average > €200).
 
-**Storage** — the seven intent fields are serialised into a `StoredIntentBreakdown` object and written to `Forecast.intentBreakdown` (a `Json?` column). `null` is stored as `Prisma.JsonNull` when coverage < 80%. `getLatestForecast()` reads the column back with `forecast.intentBreakdown as StoredIntentBreakdown | null` and spreads the fields into the returned `ForecastResult`.
+This is a **generic signal** — it does not assume a specific bank, data format, or account. It simply detects that recent income looks anomalously low relative to historical patterns, which could mean: a missing CSV upload, a slow month, or truly reduced business activity. The UI shows a warning banner asking the user to verify their data is complete, rather than asserting a specific cause.
+
+```ts
+// Generic incomplete data check — no bank-specific assumptions
+if (incomes.length >= 3) {
+  const recentAvg   = simpleAvg(incomes.slice(-2));
+  const historicAvg = simpleAvg(incomes.slice(0, -2));
+  if (historicAvg > 200 && recentAvg < historicAvg * 0.35) {
+    hasIncompleteDataWarning = true;
+  }
+}
+if (incomes.length >= 2 && incomes[incomes.length - 1] === 0
+    && simpleAvg(incomes.slice(0, -1)) > 200) {
+  hasIncompleteDataWarning = true;
+}
+```
+
+**Storage** — all signal fields (`confidenceScore`, `confidenceReasons`, `recurringExpensesTotal`, `gapFraction`, `classifiedPct`, `hasIncompleteDataWarning`) plus the seven intent fields are serialised into a `StoredBreakdown` object and written to `Forecast.intentBreakdown` (a `Json?` column). `getLatestForecast()` reads the column back and spreads all fields into the returned `ForecastResult`.
 
 ---
 
@@ -252,10 +374,17 @@ function nextPeriod(date: Date): string {
   return `${next.getUTCFullYear()}-${String(next.getUTCMonth() + 1).padStart(2, "0")}`;
 }
 
-const forecastPeriod = nextPeriod(new Date());
+// Anchored to the user's last data point, not the wall clock
+const lastRecord     = records[records.length - 1];
+const lastDataDate   = new Date(Date.UTC(lastRecord.year, lastRecord.month - 1, 1));
+const forecastPeriod = nextPeriod(lastDataDate);
 ```
 
-`forecastPeriod` is a locale-independent `"YYYY-MM"` string for the calendar month after *today*. It's formatted for display via `monthYearLabel()` (`src/utils/finance.ts`) at render time, not stored pre-formatted.
+`forecastPeriod` is a locale-independent `"YYYY-MM"` string for the calendar month after the user's **last data point** — "what does the month after my most recent data look like?" This is consistent with the "anchor to the data, not the wall clock" principle used throughout the app (see [ANALYTICS_ENGINE.md](./ANALYTICS_ENGINE.md)).
+
+> **Important difference from the old behavior**: the previous engine used `nextPeriod(new Date())` — next calendar month from today. If a user's data ended in December 2024 and they run the app in June 2026, the old engine would label the forecast "July 2026" while projecting from data that ended 18 months earlier. The new engine labels it "January 2025" — the honest next step from the data.
+
+`forecastPeriod` is formatted for display via `monthYearLabel()` (`src/utils/finance.ts`) at render time, not stored pre-formatted.
 
 ```ts
 await prisma.forecast.upsert({
@@ -275,8 +404,8 @@ if (stale.length > 0) {
 }
 ```
 
-1. **Upsert** on the `(userId, forecastPeriod)` unique constraint — if `generateForecast` runs again within the same calendar month (e.g. after another upload), it updates the existing row rather than erroring on the unique constraint.
-2. **Prune** — after upserting, fetch all `Forecast` rows for this user ordered by `generatedAt` descending, skip the first (the one just written), and delete the rest. This keeps **exactly one row per user**, always the most recently generated — including when the calendar rolls over to a new month and a new `forecastPeriod` value is introduced. No scheduled cleanup job is needed.
+1. **Upsert** on the `(userId, forecastPeriod)` unique constraint — running `generateForecast` again within the same data window updates the existing row rather than erroring.
+2. **Prune** — after upserting, keep only the most recently-generated row. No scheduled cleanup job is needed.
 
 ### Edge case: no data at all
 
@@ -287,34 +416,42 @@ if (records.length === 0) {
 }
 ```
 
-If the user has deleted their last import (and `recalculateMonthlyAnalytics` consequently left zero `MonthlyAnalytics` rows), any existing `Forecast` row is deleted too — so the dashboard doesn't keep showing a projection for data that no longer exists. The Forecast page's `hasData` check (`monthCount > 0`) then renders the empty state instead.
+If the user has deleted their last import, any existing `Forecast` row is deleted so the dashboard doesn't keep showing a projection for data that no longer exists.
 
 ---
 
 ## 7. `getLatestForecast(userId)` — the read path
 
-Used by `/api/dashboard` and the main `/dashboard` page (cheaper than `generateForecast` — no recomputation, just a lookup):
+Used by the main `/dashboard` page (cheaper than `generateForecast` — no recomputation, just a lookup):
 
 ```ts
-const forecast = await prisma.forecast.findFirst({
-  where: { userId },
-  orderBy: { generatedAt: "desc" },
+const forecast    = await prisma.forecast.findFirst({
+  where: { userId }, orderBy: { generatedAt: "desc" },
 });
 if (!forecast) return null;
 
 const monthsCount = await prisma.monthlyAnalytics.count({ where: { userId } });
-const confidence = monthsCount >= 12 ? "high" : monthsCount >= 4 ? "medium" : "low";
 
 const forecastPeriod = PERIOD_RE.test(forecast.forecastPeriod)
   ? forecast.forecastPeriod
   : nextPeriod(forecast.generatedAt);
+
+const ib = forecast.intentBreakdown as StoredBreakdown | null;
+
+// Backward-compat: if confidenceScore not in stored JSON, derive from month count
+const storedScore = ib?.confidenceScore
+  ?? (monthsCount >= 12 ? 0.75 : monthsCount >= 4 ? 0.50 : 0.25);
+const confidence: "low" | "medium" | "high" =
+  storedScore >= 0.65 ? "high" : storedScore >= 0.40 ? "medium" : "low";
 ```
 
-Three things are **recomputed fresh on read**, not trusted from the stored row:
+Three things are **recomputed or read from the JSON blob**, not trusted as raw database columns:
 
-- **`confidence`** — derived from the *current* `MonthlyAnalytics` count, so confidence reflects today's data even if the stored `Forecast` row hasn't been regenerated since.
-- **`seasonallyAdjusted`** — simply `monthsCount >= 24` (the same threshold as §4), recomputed rather than stored.
-- **`forecastPeriod`** — guarded by `PERIOD_RE = /^\d{4}-\d{2}$/`. Rows written before the `"YYYY-MM"` format was introduced may still contain an old locale-formatted string (e.g. `"March 2027"`). If the stored value doesn't match the pattern, `forecastPeriod` is derived from `nextPeriod(forecast.generatedAt)` instead — a one-time compatibility shim that self-heals the next time `generateForecast()` runs and overwrites the row.
+- **`confidence` and `confidenceScore`** — read from `ib.confidenceScore` in the stored JSON. For rows written before the new system (no `confidenceScore` in JSON), a backward-compatible default is derived from `monthsCount` (`>=12 → 0.75`, `>=4 → 0.50`, else `0.25`).
+- **`seasonallyAdjusted`** — `monthsCount >= 12` (the new seasonality threshold, §4). Recomputed from the live row count rather than stored, so it self-updates as the user imports more data without waiting for the next forecast regeneration.
+- **`forecastPeriod`** — guarded by `PERIOD_RE = /^\d{4}-\d{2}$/`. Rows written before the `"YYYY-MM"` format was introduced may still contain an old locale-formatted string (e.g. `"March 2027"`). If the stored value doesn't match the pattern, `forecastPeriod` falls back to `nextPeriod(forecast.generatedAt)`.
+
+All data-quality fields (`confidenceReasons`, `recurringExpensesTotal`, `gapFraction`, `classifiedPct`, `hasIncompleteDataWarning`) are read directly from `ib` with backward-compat defaults of `[]`, `0`, `0`, `0`, and `false` respectively.
 
 ---
 
@@ -331,7 +468,7 @@ const negativeCount = activeMonths.length - positiveCount;
 const posRatio      = activeMonths.length > 0 ? positiveCount / activeMonths.length : 0;
 ```
 
-`activeMonths` excludes months where the user had literally zero income and zero expenses (e.g. months before they started using the account, or gaps in their CSV history) — these shouldn't count against (or for) them.
+`activeMonths` excludes months where the user had literally zero income and zero expenses.
 
 ### Step 2 — income trend (last 6 vs. previous 6 months)
 
@@ -343,8 +480,6 @@ const avgPrev6 = prev6.length ? prev6.reduce((s, d) => s + d.income, 0) / prev6.
 const incTrend = avgPrev6 > 0 ? (avgLast6 - avgPrev6) / avgPrev6 : 0;
 const incPct   = Math.round(incTrend * 100);
 ```
-
-`incTrend` is the percentage change in average monthly income between the two 6-month windows. If there's no `prev6` data (less than 7 active months total) or `avgPrev6` is 0, `incTrend` is `0` (treated as stable).
 
 ### Step 3 — the four score components (sum capped at 100)
 
@@ -359,9 +494,9 @@ const healthScore   = Math.min(100, cashflowScore + trendScore + depthScore + st
 | Component | Max | Formula | What it rewards |
 |---|---|---|---|
 | **Cashflow consistency** | 40 | `round(posRatio × 40)` | The fraction of active months with `cashflow >= 0` |
-| **Income trend** | 25 | `>+5%` → 25, `>−5%` → 15, else → 5 | Growing income scores highest; a moderate decline still gets partial credit; only a >5% drop scores low |
-| **Data depth** | 20 | `≥12` months → 20, `≥6` → 12, else → 5 | More history = a more reliable score, independent of how good the numbers are |
-| **Health status** | 15 | `healthy` → 15, `watch` → 8, `at-risk`/other → 0 | Pulls in the categorical assessment from `intelligence-engine.ts` (see [INTELLIGENCE_ENGINE.md](./INTELLIGENCE_ENGINE.md)) |
+| **Income trend** | 25 | `>+5%` → 25, `>−5%` → 15, else → 5 | Growing income scores highest; a moderate decline still gets partial credit |
+| **Data depth** | 20 | `≥12` months → 20, `≥6` → 12, else → 5 | More history = a more reliable score |
+| **Health status** | 15 | `healthy` → 15, `watch` → 8, `at-risk` → 0 | Pulls in the categorical assessment from `intelligence-engine.ts` |
 
 ### Step 4 — coloring the score (`scoreLevel`)
 
@@ -370,7 +505,7 @@ const scoreLevel: "healthy" | "watch" | "at-risk" =
   healthScore >= 80 ? "healthy" : healthScore >= 50 ? "watch" : "at-risk";
 ```
 
-> **Why is this a *separate* tier from `intel.healthStatus`, when `statusScore` already factors `intel.healthStatus` in?** They answer different questions. `intel.healthStatus` (see [INTELLIGENCE_ENGINE.md](./INTELLIGENCE_ENGINE.md)) is about *recent trajectory* — "is something worth watching right now?" `healthScore`/`scoreLevel` is about the *overall foundation* — consistency, trend, and history combined. A business with a long, consistently-positive history (`scoreLevel: "healthy"`, score ≥ 80) might still have `intel.healthStatus === "watch"` because of one recent dip — and that's a legitimate, *useful* disagreement: the score says "you're on solid ground," the status narrative says "but here's something to keep an eye on." Coloring the score card by `scoreLevel` rather than `intel.healthStatus` means a single recent blip can't paint an otherwise-strong score amber. **Do not collapse these into one value** — it would hide real information.
+> **Why is this a *separate* tier from `intel.healthStatus`?** They answer different questions. `intel.healthStatus` is about *recent trajectory* — "is something worth watching right now?" `healthScore`/`scoreLevel` is about the *overall foundation* — consistency, trend, and history combined. **Do not collapse these into one value** — it would hide real information.
 
 ---
 
@@ -385,46 +520,23 @@ const cashflowRisk: "low" | "medium" | "high" | "critical" =
 
 | Level | Condition | Displayed as |
 |---|---|---|
-| `low` | ≥85% of active months had non-negative cashflow **and** income isn't declining >5% | Green badge, `cashflowRisk.low.*` copy |
-| `medium` | ≥65% positive months (and didn't qualify for `low`) | Amber badge |
+| `low` | ≥85% positive months **and** income not declining >5% | Green badge |
+| `medium` | ≥65% positive months | Amber badge |
 | `high` | ≥40% positive months | Red badge |
 | `critical` | <40% positive months | Red badge, more urgent copy |
-
-This is intentionally a **different calculation** from `healthScore`/`scoreLevel` — it's a narrower, single-purpose "should I be worried about running out of cash" signal, driven only by `posRatio` and `incTrend`, whereas the Health Score also weighs data depth and the categorical health status.
 
 ---
 
 ## 10. Key Drivers
 
-An ordered list, built incrementally — each driver is `{ label, detail, positive: boolean }`, rendered with an ↑ (green, `positive: true`) or ↓ (amber, `positive: false`) icon.
+An ordered list, built incrementally — each driver is `{ label, detail, positive: boolean }`, rendered with an ↑ (green) or ↓ (amber) icon.
 
-```mermaid
-flowchart TD
-    A["avgPrev6 > 0?"] -->|yes, incPct > 3| B["'Income growing' (positive)"]
-    A -->|yes, incPct < -3| C["'Income declining' (negative)"]
-    A -->|yes, else| D["'Income stable' (positive)"]
-    A -->|no| E["skip — not enough history"]
+1. **Income trend** (only if `avgPrev6 > 0`): growing / declining / stable.
+2. **Biggest expense category** (if `topExpenseCategories` is non-empty): the single largest all-time expense category.
+3. **Cashflow consistency**: "All months cashflow-positive" or "{n} of {total} months had negative cashflow."
+4. **Seasonal adjustment** (if `forecast?.seasonallyAdjusted`): "Seasonal adjustment applied."
 
-    F["topExpenseCategories.length > 0?"] -->|yes| G["'Biggest expense: {category}'\npositive = NOT growing y/y"]
-
-    H{"negativeCount === 0\n&& activeMonths.length >= 3?"} -->|yes| I["'All months cashflow-positive' (positive)"]
-    H -->|no, negativeCount > 0| J["'{n} months with negative cashflow' (negative)"]
-
-    K["forecast?.seasonallyAdjusted?"] -->|yes| L["'Seasonal adjustment applied' (positive)"]
-```
-
-1. **Income trend** (only if `avgPrev6 > 0`, i.e. there's a prior-6-month baseline to compare against):
-   - `incPct > 3` → *"Income growing"* (positive) — shows `avgLast6` vs `avgPrev6` formatted as currency.
-   - `incPct < -3` → *"Income declining"* (negative) — same detail, with `Math.abs(incPct)`.
-   - otherwise → *"Income stable"* (positive).
-2. **Biggest expense category** (if `categoryInsights.topExpenseCategories` is non-empty — see [ANALYTICS_ENGINE.md](./ANALYTICS_ENGINE.md)): the single largest all-time expense category, labeled `positive: !growing` where `growing = top.yearOverYearTrend === "growing"`. The category key is translated via the `categories` namespace if a translation exists, otherwise shown raw (see [TRANSLATIONS.md](./TRANSLATIONS.md)).
-3. **Cashflow consistency**:
-   - If `negativeCount === 0 && activeMonths.length >= 3` → *"All months cashflow-positive"* (positive).
-   - Else if `negativeCount > 0` → *"{negativeCount} of {activeMonths.length} months had negative cashflow"* (negative).
-   - (If neither condition is true — fewer than 3 active months and none negative — no driver is added for this.)
-4. **Seasonal adjustment** (if `forecast?.seasonallyAdjusted`): *"Seasonal adjustment applied"* (positive) — tells the user the projection accounted for which calendar month is coming next.
-
-All copy comes from the `forecast.keyDrivers.*` translation keys (`messages/en.json` / `messages/fr.json`).
+All copy comes from the `forecast.keyDrivers.*` translation keys.
 
 ---
 
@@ -434,14 +546,9 @@ All copy comes from the `forecast.keyDrivers.*` translation keys (`messages/en.j
 const annualIncome   = forecast ? forecast.projectedIncome   * 12 : 0;
 const annualExpenses = forecast ? forecast.projectedExpenses * 12 : 0;
 const annualCashflow = forecast ? forecast.projectedCashflow * 12 : 0;
-
-const projMarginPct = forecast && forecast.projectedIncome > 0
-  ? Math.round((forecast.projectedCashflow / forecast.projectedIncome) * 100)
-  : null;
 ```
 
-- **Income / Expenses / Cashflow** are simply the monthly projection × 12 — i.e. "if next month repeats 12 times." This is a deliberately simple extrapolation; it does **not** re-run the seasonal logic per month, so it under/over-states totals for businesses with strong seasonality (the per-month figure shown alongside each card is the more honest number).
-- **Margin** (`projMarginPct`) is "what % of projected income is left after expenses" — i.e. the projected cashflow margin. `null` if `projectedIncome` is 0 (avoids dividing by zero / showing a meaningless "−∞%" or "0%").
+Simple extrapolation — "if next month repeats 12 times." Does **not** re-run the seasonal logic per month. The per-month figure shown alongside each card is the more honest number.
 
 | Margin | Color |
 |---|---|
@@ -454,24 +561,31 @@ const projMarginPct = forecast && forecast.projectedIncome > 0
 
 ## 12. "How This Forecast Was Built" panel
 
-A transparency panel at the bottom of the Forecast page — shown so users can sanity-check *why* the numbers look the way they do, not just trust them blindly.
+A transparency panel at the bottom of the Forecast page.
+
+### Incomplete data warning
+
+An amber warning banner is shown **above** the "How Built" section whenever `forecast?.hasIncompleteDataWarning` is true. It tells the user that recent income looks substantially lower than their historical average and suggests verifying that all statements have been uploaded. It does **not** name a specific bank or data format.
+
+### The panel itself
 
 | Field | Source |
 |---|---|
-| **Data analyzed** | `coverage.earliest` – `coverage.latest`, from `getDataCoverage(userId)` (see [ANALYTICS_ENGINE.md](./ANALYTICS_ENGINE.md)) |
+| **Data analyzed** | `coverage.earliest` – `coverage.latest`, from `getDataCoverage(userId)` |
 | **Months of history** | `forecast?.basedOnMonths ?? monthCount` |
 | **Transactions** | `coverage.count`, locale-formatted |
-| **Forecast confidence** | `forecast?.confidence` (`low`/`medium`/`high`, colored red/amber/green) |
+| **Forecast period** | `forecast?.forecastPeriod` (the month after the user's last data point) |
 
-Below the grid, free-text notes:
+Below the grid:
 
-- `howBuilt.builtFrom` — summarizes the date range used (`coverage.rangeLabel`, falling back to a transaction count if no range label is available).
+- **Confidence score bar** — visual progress bar showing `Math.round(forecast.confidenceScore * 100)%`, colored green/amber/red by the `confidence` level. Label shows e.g. "High confidence (78%)".
+- **Confidence reasons** — bulleted list of `forecast.confidenceReasons` (the four human-readable factors from `computeConfidence()`).
+- **Recurring expenses** — if `forecast.recurringExpensesTotal > 0`, a callout showing the detected fixed-cost floor: "Recurring expenses detected — {amount}/month used as expense floor."
+- `howBuilt.builtFrom` — summarizes the date range used.
 - `howBuilt.seasonalApplied` — appended only if `forecast?.seasonallyAdjusted`.
 - `howBuilt.weightingNote` — a fixed explanation of the §3 weighting scheme.
-- `howBuilt.seasonalAdjustmentNote` — shown only if `forecast?.seasonallyAdjusted`.
-- `confidenceDescriptions.{low|medium|high}` + `howBuilt.moreHistoryNote` — explains what the current confidence level means and that more history improves it.
 
-All of this text is translated — see [TRANSLATIONS.md](./TRANSLATIONS.md) for the `forecast.howBuilt.*` and `forecast.confidenceDescriptions.*` keys.
+All text is translated — see [TRANSLATIONS.md](./TRANSLATIONS.md) for the `forecast.howBuilt.*` and `forecast.confidenceDescriptions.*` keys.
 
 ---
 
@@ -479,31 +593,39 @@ All of this text is translated — see [TRANSLATIONS.md](./TRANSLATIONS.md) for 
 
 ### Change the weighting scheme (§3)
 
-- `weightedAvg()` is a pure function over `number[]` — easy to unit-test in isolation (see `__tests__/`).
-- If you change the weight tiers (currently 3/6/rest with weights 3/2/1), remember it's applied to **income, expenses, and savings independently** — a change here affects `projectedCashflow` (their difference) too.
-- Keep the "first-match-wins by `fromEnd`" structure — `fromEnd < 3` must be checked before `fromEnd < 9`, otherwise every month would match the loosest branch.
+- `weightedAvg()` is a pure function over `number[]` — easy to unit-test in isolation.
+- It's applied to income, expenses, and savings independently — a change affects `projectedCashflow` (their difference) too.
+- Keep the "first-match-wins by `fromEnd`" structure — `fromEnd < 3` must be checked before `fromEnd < 9`.
 
 ### Change the seasonal adjustment (§4)
 
-- The `>= 24` months gate exists so every calendar month has appeared ≥2 times before its seasonal ratio is trusted. If you lower this threshold, also reconsider the `count >= 2` check inside the per-month branch — they're meant to work together.
-- The 50/50 blend ratio (`× 0.5 + ... × 0.5`) is a damping factor for noisy small samples. If you make it more aggressive (e.g. 70/30 toward the seasonal ratio), test with users who have exactly 24–30 months of history (the noisiest case — only 2 samples per month).
-- If you ever change `nextPeriod()` or `nextMonthNum` to anchor on the user's latest data point instead of `new Date()` (to match the "anchor to the data" principle elsewhere — see [ANALYTICS_ENGINE.md](./ANALYTICS_ENGINE.md)), change **both** — they currently share the same "today" assumption and a mismatch between them would make the seasonal adjustment target a different month than the one named in `forecastPeriod`.
+- The `>= 12` gate and the 30%/50% split work together. If you lower the entry threshold (e.g. to 6 months), also reconsider the 30% blend — with only 6 months, each calendar month has appeared at most once, so 30% may still be too aggressive.
+- The `count >= 2` check inside the per-month branch is a separate guard — it ensures the seasonal ratio for a specific month is based on more than one data point, regardless of the total records count.
+- The recurring floor (`Math.max(recurringFloor, seasonal)`) prevents seasonality from driving expenses unrealistically low. If you adjust how the floor works (§5b), make sure both places where it's applied (before and after the seasonal blend) stay in sync.
+- `nextMonthNum` is anchored to the user's last data point. **Do not change this back to `new Date()`** without also changing `forecastPeriod` — they must target the same month, or the seasonal adjustment will nudge toward a different month than the one labeled in the forecast header.
 
-### Change confidence tiers (§5, §7)
+### Change the confidence system (§5)
 
-- The thresholds (`>=12` high, `>=4` medium) appear in **two places**: `generateForecast()` (using `records.length`) and `getLatestForecast()` (using a fresh `monthlyAnalytics.count()`). Keep them in sync — they're meant to represent the same tiers.
-- `confidence` in the returned `ForecastResult` is **never read from the database** — it's always computed from the current row count. Don't add a stored `confidence` column without updating both functions to keep using the live count (otherwise a user who imports more data won't see their confidence improve until the next forecast regeneration).
+- The four factor weights **must sum to 1.0** (`0.40 + 0.25 + 0.20 + 0.15 = 1.0`). If you add a fifth factor, reduce the others proportionally.
+- The level thresholds (`>= 0.65 → "high"`, `>= 0.40 → "medium"`) appear in **two places**: `computeConfidence()` in `generateForecast()` and the backward-compat logic in `getLatestForecast()`. Keep them in sync.
+- `confidenceReasons` is a `string[]` stored in the JSON blob — if you add a new factor, add a corresponding reason. If you remove a factor, check the "How Built" panel still renders sensibly with an empty entry for that factor.
+- `confidence` in the returned `ForecastResult` is **never read from a raw database column** — it's always derived from `confidenceScore` (either from the JSON blob or the backward-compat default). Don't add a stored `confidence` column without updating both functions.
+
+### Change the recurring expense detection (§5b)
+
+- The thresholds (appearance rate ≥70%, CV ≤0.50) are judgment calls. Lowering the appearance rate (e.g. to 50%) includes more variable costs like monthly ad spend; raising it (e.g. to 85%) restricts to only the most consistent subscriptions. Raising the CV cap would include more variable costs in the floor — test that the floor doesn't become unrealistically high for users who have one very high-variance recurring category.
+- The floor is applied in two places — before the seasonal blend and after it. If you refactor the seasonal logic, make sure the floor is still respected in both.
 
 ### Change the Business Health Score, Cashflow Risk, or Key Drivers (§8–11)
 
-- All of this lives in `src/app/(dashboard)/forecast/page.tsx`, **not** `forecast-engine.ts` — there is nothing to migrate or persist; changes take effect on the next page load.
-- `activeMonths`, `posRatio`, and `incTrend` are computed once near the top of the component and reused by the Health Score, Cashflow Risk, *and* Key Drivers — if you change how any of these three are derived, double check all three consumers still make sense together.
-- Score component maxes (40/25/20/15) sum to exactly 100 by construction. If you add, remove, or reweight a component, update the sum and the `Math.min(100, ...)` is still just a safety clamp, not load-bearing — the real invariant is "components sum to 100."
-- Keep `scoreLevel` (for coloring the score card) and `intel.healthStatus` (the narrative) as **separate** signals — see the callout in §8. Merging them removes a deliberate piece of information ("the foundation is solid, but here's a recent thing to watch").
+- All of this lives in `src/app/(dashboard)/forecast/page.tsx`, **not** `forecast-engine.ts` — changes take effect on the next page load.
+- `activeMonths`, `posRatio`, and `incTrend` are computed once near the top and reused by Health Score, Cashflow Risk, *and* Key Drivers — a change to any of these affects all three.
+- Score component maxes (40/25/20/15) sum to exactly 100 by construction. If you add or reweight a component, the `Math.min(100, ...)` is a safety clamp, not the invariant — update the components to still sum to 100.
+- Keep `scoreLevel` and `intel.healthStatus` as **separate** signals — see the callout in §8.
 
 ### Things to be careful about
 
-- **`forecast-engine.ts` has no UI dependencies** — it can be called from any server context (API routes, page components, scripts). Don't add `next-intl` translation calls or React imports to it; all user-facing text derived from the forecast lives in `forecast/page.tsx` and the `forecast.*` translation namespace.
-- **The `Forecast` table holds exactly one row per user** (after pruning). If you need historical forecasts (e.g. "what did we predict for March, looking back from January?"), you'll need a schema change — don't repurpose the prune logic to "sometimes keep more rows," as `getLatestForecast()` assumes `findFirst` by `generatedAt desc` returns *the* forecast, not *a* forecast.
-- **`projectedSavings` is computed but barely used** on the Forecast page itself — it's part of `ForecastResult` and is fed into `generateDashboardIntelligence()` (see [INTELLIGENCE_ENGINE.md](./INTELLIGENCE_ENGINE.md)), but doesn't appear in the Year-End Projection cards. If you add a "Year-end savings" card, use `forecast.projectedSavings * 12` for consistency with the income/expenses/cashflow cards.
-- **Don't call `generateForecast()` from a loop or batch job without rate-limiting** — each call does a full `MonthlyAnalytics` read plus an upsert and a prune query. For a single user on a single page load this is trivial, but a script that regenerates forecasts for *all* users should batch/paginate.
+- **`forecast-engine.ts` has no UI dependencies** — it can be called from any server context. Don't add `next-intl` calls or React imports to it.
+- **The `Forecast` table holds exactly one row per user** (after pruning). If you need historical forecasts, you'll need a schema change — don't repurpose the prune logic to "sometimes keep more rows."
+- **`projectedSavings` is computed but barely used** on the Forecast page itself — it's fed into `generateDashboardIntelligence()` but doesn't appear in the Year-End cards. If you add a "Year-end savings" card, use `forecast.projectedSavings * 12`.
+- **Don't call `generateForecast()` from a loop or batch job without rate-limiting** — each call does a full `MonthlyAnalytics` read plus an upsert and a prune query. For a single user this is trivial, but a script that regenerates forecasts for *all* users should batch/paginate.

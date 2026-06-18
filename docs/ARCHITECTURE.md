@@ -175,6 +175,9 @@ flowchart LR
 | `RecategorizeAllButton.tsx` | `POST /api/transactions/recategorize-all` | `transactions/recategorize-all` | Re-runs categorization on every transaction |
 | `DeleteAccountSection.tsx` | `DELETE /api/account` | `account` | §8c |
 | `signup/page.tsx` | `POST /api/users/create` | `users/create` | Creates the `User` row right after Supabase Auth signup (client-side `signUp()` can't write to Postgres directly) |
+| `MonthDrawer.tsx` | `GET /api/analytics/month-breakdown?year=&month=` | `analytics/month-breakdown` | Loads expense + income category totals for a clicked month (used by TrendsChart and CashflowChart drill-down drawers) |
+| `MonthDrawer.tsx` | `GET /api/analytics/category-transactions?year=&month=&type=&category=` | `analytics/category-transactions` | Loads individual transactions for a clicked category within a month (also accepts `since=` for all-time category views) |
+| `ExpenseBreakdown.tsx` | `GET /api/analytics/category-transactions?category=&type=&since=` | `analytics/category-transactions` | Loads transactions for a category in the Expense/Income breakdown drawer |
 
 ### 7c. Routes that exist but aren't currently called
 

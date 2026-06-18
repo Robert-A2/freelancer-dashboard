@@ -40,8 +40,9 @@ of a freelance business.
 **Cashflow:** Positive. Increases available liquid cash.
 
 **Forecast:** Use the existing weighted-average algorithm (recent 3 months weight 3×,
-months 4–9 weight 2×, older weight 1×). Apply seasonal adjustment when ≥24 months of
-data exist. This is the most volatile input and the current algorithm handles it correctly.
+months 4–9 weight 2×, older weight 1×). Apply seasonal adjustment when ≥12 months of
+data exist (30% blend at 12–23 months, 50% blend at 24+ months). This is the most
+volatile input and the current algorithm handles it correctly.
 
 **Dashboard:** Primary "Business Revenue" card. Also contributes to "Profit Margin" %.
 
