@@ -132,7 +132,7 @@ export default function TrendsChart({ data, trajectoryInsight, trajectoryDetails
         </ResponsiveContainer>
 
         <p className="text-xs text-[#4A7A9B] text-center mt-2">
-          Tap any month to see the breakdown
+          {t("tapHint")}
         </p>
 
         {trajectoryInsight && (

@@ -596,6 +596,7 @@
       "uploadPrompt": "Upload a CSV to see your financial trends.",
       "label": "Financial Outlook",
       "title": "Income vs Expenses",
+      "tapHint": "Tap any month to see the breakdown",
       "ranges": {
         "3m": "3M",
         "6m": "6M",
@@ -623,7 +624,15 @@
     "recentTransactions": {
       "label": "Recent Activity",
       "empty": "No transactions yet. Upload a CSV to get started.",
-      "viewAll": "View all transactions"
+      "viewAll": "View all transactions",
+      "drawer": {
+        "title": "Transaction Detail",
+        "why": "Why",
+        "confidence": "Confidence",
+        "category": "Category",
+        "needsReview": "Needs review",
+        "viewAllHistory": "View all in History →"
+      }
     },
     "dataCoverage": {
       "years": "{count, plural, one {# year} other {# years}}",
@@ -814,7 +823,22 @@
       "label": "Monthly cashflow",
       "title": "Income minus Expenses"
     },
+    "monthDrawer": {
+      "title": "Monthly Breakdown",
+      "netCashflow": "Net Cashflow",
+      "moneyIn": "Money In",
+      "moneyOut": "Money Out",
+      "total": "Total",
+      "transactionsCount": "Transactions",
+      "loading": "Loading…",
+      "loadingTransactions": "Loading transactions…",
+      "noExpenseData": "No expense data for this month.",
+      "noIncomeData": "No income data for this month.",
+      "noTransactions": "No transactions found.",
+      "viewAllHistory": "View all in History →"
+    },
     "cashflowChart": {
+      "tapHint": "Tap any month to see the breakdown",
       "bestMonth": "Best month",
       "worstMonth": "Worst month",
       "monthlyAverage": "Monthly average",
@@ -945,6 +969,38 @@
       "insightsCount": "{count, plural, one {# insight} other {# insights}}",
       "showLess": "Show less",
       "showFullBreakdown": "Show full breakdown by category"
+    }
+  },
+  "intent": {
+    "labels": {
+      "personal_expense": "Personal",
+      "business_expense": "Business",
+      "subscription": "Subscription",
+      "tax_payment": "Tax",
+      "savings_transfer": "Savings",
+      "family_support": "Family",
+      "investment": "Investment",
+      "loan_repayment": "Loan",
+      "owner_draw": "Owner Draw",
+      "freelance_income": "Freelance",
+      "salary": "Salary",
+      "passive_income": "Passive income",
+      "refund": "Refund"
+    },
+    "why": {
+      "personal_expense": "This is personal spending — money used for everyday life.",
+      "business_expense": "This is a business cost that supports your freelance work.",
+      "subscription": "This is a recurring subscription charged automatically.",
+      "tax_payment": "This is a tax or government payment.",
+      "savings_transfer": "This money was moved into savings.",
+      "family_support": "This was a payment to support family.",
+      "investment": "This money was put into an investment.",
+      "loan_repayment": "This is a loan or debt repayment.",
+      "owner_draw": "This is a transfer to yourself — owner draw from your business.",
+      "freelance_income": "This is income from your freelance work.",
+      "salary": "This is a salary or employment income.",
+      "passive_income": "This is passive income (dividends, rental, interest, etc.).",
+      "refund": "This is a refund or reimbursement."
     }
   },
   "categories": {

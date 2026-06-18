@@ -27,6 +27,14 @@ interface Props {
   notable?: Insight[];
 }
 
+// ── Intent key set (for translation lookup) ───────────────────────────────────
+
+const KNOWN_INTENTS = new Set([
+  "personal_expense","business_expense","subscription","tax_payment",
+  "savings_transfer","family_support","investment","loan_repayment",
+  "owner_draw","freelance_income","salary","passive_income","refund",
+]);
+
 // ── Display helpers ───────────────────────────────────────────────────────────
 
 const TYPE_STYLES: Record<string, string> = {
@@ -47,16 +55,6 @@ const TYPE_BADGE: Record<string, string> = {
   transfer: "bg-[#1A2D40] text-[#6A97B4]",
 };
 
-const INTENT_LABEL: Record<string, string> = {
-  personal_expense: "Personal",     business_expense: "Business",
-  subscription:     "Subscription", tax_payment:      "Tax",
-  savings_transfer: "Savings",      family_support:   "Family",
-  investment:       "Investment",   loan_repayment:   "Loan",
-  owner_draw:       "Owner Draw",   freelance_income: "Freelance",
-  salary:           "Salary",       passive_income:   "Passive income",
-  refund:           "Refund",
-};
-
 const INTENT_COLOR: Record<string, string> = {
   personal_expense: "bg-[#1E3A5F] text-[#7BB8E8]",
   business_expense: "bg-[#1A3D30] text-[#4CC4A4]",
@@ -72,22 +70,6 @@ const INTENT_COLOR: Record<string, string> = {
   refund:           "bg-[#1A2040] text-[#A5B4FC]",
 };
 
-const INTENT_WHY: Record<string, string> = {
-  personal_expense: "This is personal spending — money used for everyday life.",
-  business_expense: "This is a business cost that supports your freelance work.",
-  subscription:     "This is a recurring subscription charged automatically.",
-  tax_payment:      "This is a tax or government payment.",
-  savings_transfer: "This money was moved into savings.",
-  family_support:   "This was a payment to support family.",
-  investment:       "This money was put into an investment.",
-  loan_repayment:   "This is a loan or debt repayment.",
-  owner_draw:       "This is a transfer to yourself — owner draw from your business.",
-  freelance_income: "This is income from your freelance work.",
-  salary:           "This is a salary or employment income.",
-  passive_income:   "This is passive income (dividends, rental, interest, etc.).",
-  refund:           "This is a refund or reimbursement.",
-};
-
 // ── Transaction Drawer ────────────────────────────────────────────────────────
 
 function TransactionDrawer({
@@ -100,6 +82,8 @@ function TransactionDrawer({
   locale: Locale;
 }) {
   const tCategories = useTranslations("categories");
+  const tD          = useTranslations("dashboard.recentTransactions");
+  const tIntent     = useTranslations("intent");
 
   // Scroll lock
   useEffect(() => {
@@ -117,9 +101,14 @@ function TransactionDrawer({
 
   const isOpen = !!tx;
   const amtColor = TYPE_STYLES[tx?.type ?? ""] ?? "text-[#E8F0F8]";
-  const intentLabel = tx?.intent ? (INTENT_LABEL[tx.intent] ?? tx.intent.replace(/_/g, " ")) : null;
-  const intentColor = tx?.intent ? (INTENT_COLOR[tx.intent] ?? "bg-[#1A3048] text-[#7BA8C4]") : "";
-  const intentWhy   = tx?.intent ? (INTENT_WHY[tx.intent] ?? null) : null;
+  const intentKey   = tx?.intent ?? null;
+  const intentLabel = intentKey
+    ? (KNOWN_INTENTS.has(intentKey) ? tIntent(`labels.${intentKey}` as never) : intentKey.replace(/_/g, " "))
+    : null;
+  const intentColor = intentKey ? (INTENT_COLOR[intentKey] ?? "bg-[#1A3048] text-[#7BA8C4]") : "";
+  const intentWhy   = intentKey && KNOWN_INTENTS.has(intentKey)
+    ? tIntent(`why.${intentKey}` as never)
+    : null;
   const categoryName = tx
     ? (tCategories.has(tx.category) ? tCategories(tx.category) : tx.category)
     : "";
@@ -143,7 +132,7 @@ function TransactionDrawer({
         <div className="flex items-start justify-between gap-4 px-6 pt-6 pb-5 border-b border-[#1E3A55]">
           <div>
             <p className="text-xs font-semibold uppercase tracking-widest text-[#4A7A9B] mb-1">
-              Transaction Detail
+              {tD("drawer.title")}
             </p>
             <p className="text-sm text-[#A8C6E0] leading-snug">
               {tx ? new Date(tx.date).toLocaleDateString(INTL_LOCALES[locale], {
@@ -191,7 +180,7 @@ function TransactionDrawer({
               )}
               {tx.needsReview && (
                 <span className="inline-block text-xs font-medium px-2.5 py-1 rounded-full bg-[#3D2800] text-[#D4A254]">
-                  Needs review
+                  {tD("drawer.needsReview")}
                 </span>
               )}
             </div>
@@ -199,12 +188,12 @@ function TransactionDrawer({
             {/* Why section */}
             {intentLabel && (
               <div className="bg-[#0F2840] border border-[#1E3A55] rounded-xl p-4">
-                <p className="text-xs font-semibold uppercase tracking-widest text-[#4A7A9B] mb-2">Why</p>
+                <p className="text-xs font-semibold uppercase tracking-widest text-[#4A7A9B] mb-2">{tD("drawer.why")}</p>
                 <p className="text-sm font-semibold text-[#E8F0F8] mb-1">{intentLabel}</p>
                 {intentWhy && <p className="text-sm text-[#A8C6E0] leading-relaxed">{intentWhy}</p>}
                 {tx.intentConfidence && (
                   <p className="text-xs text-[#4A7A9B] mt-2">
-                    Confidence: <span className="capitalize">{tx.intentConfidence}</span>
+                    {tD("drawer.confidence")}: <span className="capitalize">{tx.intentConfidence}</span>
                   </p>
                 )}
               </div>
@@ -212,7 +201,7 @@ function TransactionDrawer({
 
             {/* Category */}
             <div className="bg-[#0F2840] border border-[#1E3A55] rounded-xl p-4">
-              <p className="text-xs font-semibold uppercase tracking-widest text-[#4A7A9B] mb-2">Category</p>
+              <p className="text-xs font-semibold uppercase tracking-widest text-[#4A7A9B] mb-2">{tD("drawer.category")}</p>
               <p className="text-sm font-semibold text-[#E8F0F8] capitalize">{categoryName}</p>
             </div>
 
@@ -226,7 +215,7 @@ function TransactionDrawer({
             className="block w-full text-center text-sm font-medium text-[#3AB5A0] hover:text-[#4CC4A4]
               bg-[#0F2A3D] hover:bg-[#132F45] border border-[#1E3A55] rounded-xl py-2.5 transition-colors"
           >
-            View all in History →
+            {tD("drawer.viewAllHistory")}
           </Link>
         </div>
       </div>

@@ -244,7 +244,7 @@ export default function CashflowChart({ data, hideHeader = false }: Props) {
       )}
 
       <p className="text-xs text-[#4A7A9B] text-center mt-2">
-        Tap any month to see the breakdown
+        {t("cashflowChart.tapHint")}
       </p>
 
     </div>

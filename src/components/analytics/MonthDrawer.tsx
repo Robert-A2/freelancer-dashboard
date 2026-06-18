@@ -5,6 +5,12 @@ import { useTranslations } from "next-intl";
 import { formatCurrency } from "@/utils/finance";
 import type { Locale } from "@/i18n/locales";
 
+const KNOWN_INTENTS = new Set([
+  "personal_expense","business_expense","subscription","tax_payment",
+  "savings_transfer","family_support","investment","loan_repayment",
+  "owner_draw","freelance_income","salary","passive_income","refund",
+]);
+
 // ── Shared types ──────────────────────────────────────────────────────────────
 
 export type SelectedMonth = { year: number; monthNum: number; label: string };
@@ -35,16 +41,6 @@ type TxData = {
 
 // ── Intent helpers ────────────────────────────────────────────────────────────
 
-const INTENT_LABEL: Record<string, string> = {
-  personal_expense: "Personal",   business_expense: "Business",
-  subscription:     "Subscription", tax_payment:    "Tax",
-  savings_transfer: "Savings",    family_support:   "Family",
-  investment:       "Investment", loan_repayment:   "Loan",
-  owner_draw:       "Owner Draw", freelance_income: "Freelance",
-  salary:           "Salary",     passive_income:   "Passive income",
-  refund:           "Refund",
-};
-
 const INTENT_COLOR: Record<string, string> = {
   personal_expense: "bg-[#1E3A5F] text-[#7BB8E8]",
   business_expense: "bg-[#1A3D30] text-[#4CC4A4]",
@@ -61,8 +57,9 @@ const INTENT_COLOR: Record<string, string> = {
 };
 
 function IntentBadge({ intent }: { intent: string | null }) {
+  const tIntent = useTranslations("intent");
   if (!intent) return <span className="text-xs text-[#4A6B85] italic">—</span>;
-  const label = INTENT_LABEL[intent] ?? intent.replace(/_/g, " ");
+  const label = KNOWN_INTENTS.has(intent) ? tIntent(`labels.${intent}` as never) : intent.replace(/_/g, " ");
   const color = INTENT_COLOR[intent] ?? "bg-[#1A3048] text-[#7BA8C4]";
   return (
     <span className={`inline-block text-xs font-medium px-2 py-0.5 rounded-full ${color}`}>
@@ -89,6 +86,8 @@ export default function MonthDrawer({
   locale: Locale;
 }) {
   const tCategories = useTranslations("categories");
+  const tM          = useTranslations("analytics.monthDrawer");
+  const tMetrics    = useTranslations("metrics");
 
   const [breakdown, setBreakdown] = useState<MonthBreakdown | null>(null);
   const [bLoading,  setBLoading]  = useState(false);
@@ -192,7 +191,7 @@ export default function MonthDrawer({
             <div className="flex items-start justify-between gap-4 px-6 pt-6 pb-5 border-b border-[#1E3A55]">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-widest text-[#4A7A9B] mb-1">
-                  Monthly Breakdown
+                  {tM("title")}
                 </p>
                 <h2 className="text-xl font-bold text-[#E8F0F8]">{month?.label}</h2>
               </div>
@@ -209,17 +208,17 @@ export default function MonthDrawer({
             {breakdown && (
               <div className="flex gap-4 px-6 py-4 bg-[#0A1C2E] border-b border-[#1E3A55]">
                 <div className="flex-1 text-center">
-                  <p className="text-xs text-[#4A7A9B] mb-0.5">Income</p>
+                  <p className="text-xs text-[#4A7A9B] mb-0.5">{tMetrics("income")}</p>
                   <p className="text-lg font-bold text-[#4CC4A4]">{formatCurrency(breakdown.totalIncome, locale)}</p>
                 </div>
                 <div className="w-px bg-[#1E3A55]" />
                 <div className="flex-1 text-center">
-                  <p className="text-xs text-[#4A7A9B] mb-0.5">Expenses</p>
+                  <p className="text-xs text-[#4A7A9B] mb-0.5">{tMetrics("expenses")}</p>
                   <p className="text-lg font-bold text-[#D4A254]">{formatCurrency(breakdown.totalExpenses, locale)}</p>
                 </div>
                 <div className="w-px bg-[#1E3A55]" />
                 <div className="flex-1 text-center">
-                  <p className="text-xs text-[#4A7A9B] mb-0.5">Cashflow</p>
+                  <p className="text-xs text-[#4A7A9B] mb-0.5">{tMetrics("cashflow")}</p>
                   <p className={`text-lg font-bold ${
                     breakdown.totalIncome - breakdown.totalExpenses >= 0 ? "text-[#4CC4A4]" : "text-[#D97070]"
                   }`}>{formatCurrency(breakdown.totalIncome - breakdown.totalExpenses, locale)}</p>
@@ -231,7 +230,7 @@ export default function MonthDrawer({
             {breakdown && (
               <div className="flex border-b border-[#1E3A55]">
                 {(["income", "expense", "cashflow"] as const).map((tab) => {
-                  const labels = { cashflow: "Cashflow", expense: "Expenses", income: "Income" };
+                  const labels = { cashflow: tMetrics("cashflow"), expense: tMetrics("expenses"), income: tMetrics("income") };
                   const colors = {
                     cashflow: "border-[#3AB5A0] text-[#3AB5A0]",
                     expense:  "border-[#D4A254] text-[#D4A254]",
@@ -252,13 +251,13 @@ export default function MonthDrawer({
             {/* Body */}
             <div className="flex-1 overflow-y-auto">
               {bLoading && (
-                <div className="flex items-center justify-center h-40 text-[#4A7A9B] text-sm">Loading…</div>
+                <div className="flex items-center justify-center h-40 text-[#4A7A9B] text-sm">{tM("loading")}</div>
               )}
 
               {/* Expenses / Income tabs */}
               {breakdown && activeTab !== "cashflow" && tabCategories.length === 0 && (
                 <div className="px-6 py-8 text-center text-[#4A7A9B] text-sm">
-                  No {activeTab} data for this month.
+                  {activeTab === "expense" ? tM("noExpenseData") : tM("noIncomeData")}
                 </div>
               )}
               {breakdown && activeTab !== "cashflow" && tabCategories.length > 0 && (
@@ -300,7 +299,7 @@ export default function MonthDrawer({
                       ? "bg-[#0F2A1E] border-[#1A4030]"
                       : "bg-[#2A1010] border-[#40201A]"
                   }`}>
-                    <p className="text-xs text-[#4A7A9B] mb-0.5">Net Cashflow</p>
+                    <p className="text-xs text-[#4A7A9B] mb-0.5">{tM("netCashflow")}</p>
                     <p className={`text-2xl font-bold ${
                       breakdown.totalIncome - breakdown.totalExpenses >= 0 ? "text-[#4CC4A4]" : "text-[#D97070]"
                     }`}>
@@ -312,7 +311,7 @@ export default function MonthDrawer({
                   {/* Money In */}
                   {breakdown.incomeCategories.length > 0 && (
                     <div>
-                      <p className="text-xs font-semibold uppercase tracking-widest text-[#4CC4A4] mb-3">Money In</p>
+                      <p className="text-xs font-semibold uppercase tracking-widest text-[#4CC4A4] mb-3">{tM("moneyIn")}</p>
                       <div className="space-y-3">
                         {breakdown.incomeCategories.map((cat) => {
                           const pct  = cashflowScale > 0 ? Math.round((cat.total / cashflowScale) * 100) : 0;
@@ -345,7 +344,7 @@ export default function MonthDrawer({
                   {/* Money Out */}
                   {breakdown.expenseCategories.length > 0 && (
                     <div>
-                      <p className="text-xs font-semibold uppercase tracking-widest text-[#D4A254] mb-3">Money Out</p>
+                      <p className="text-xs font-semibold uppercase tracking-widest text-[#D4A254] mb-3">{tM("moneyOut")}</p>
                       <div className="space-y-3">
                         {breakdown.expenseCategories.map((cat) => {
                           const pct  = cashflowScale > 0 ? Math.round((cat.total / cashflowScale) * 100) : 0;
@@ -395,7 +394,7 @@ export default function MonthDrawer({
                 </button>
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-widest text-[#4A7A9B] mb-1">
-                    {month?.label} · {selCat?.type === "income" ? "Income" : "Expenses"}
+                    {month?.label} · {selCat?.type === "income" ? tMetrics("income") : tMetrics("expenses")}
                   </p>
                   <h2 className="text-xl font-bold text-[#E8F0F8] capitalize">{displayCat}</h2>
                 </div>
@@ -413,12 +412,12 @@ export default function MonthDrawer({
             {txData && (
               <div className="flex gap-6 px-6 py-4 bg-[#0A1C2E] border-b border-[#1E3A55]">
                 <div>
-                  <p className="text-xs text-[#4A7A9B] mb-0.5">Total</p>
+                  <p className="text-xs text-[#4A7A9B] mb-0.5">{tM("total")}</p>
                   <p className={`text-lg font-bold ${accent.text}`}>{formatCurrency(txData.total, locale)}</p>
                 </div>
                 <div className="w-px bg-[#1E3A55]" />
                 <div>
-                  <p className="text-xs text-[#4A7A9B] mb-0.5">Transactions</p>
+                  <p className="text-xs text-[#4A7A9B] mb-0.5">{tM("transactionsCount")}</p>
                   <p className="text-lg font-bold text-[#E8F0F8]">{txData.count}</p>
                 </div>
               </div>
@@ -428,11 +427,11 @@ export default function MonthDrawer({
             <div className="flex-1 overflow-y-auto">
               {txLoading && (
                 <div className="flex items-center justify-center h-40 text-[#4A7A9B] text-sm">
-                  Loading transactions…
+                  {tM("loadingTransactions")}
                 </div>
               )}
               {txData && txData.transactions.length === 0 && (
-                <div className="px-6 py-8 text-center text-[#4A7A9B] text-sm">No transactions found.</div>
+                <div className="px-6 py-8 text-center text-[#4A7A9B] text-sm">{tM("noTransactions")}</div>
               )}
               {txData && txData.transactions.length > 0 && (
                 <ul className="divide-y divide-[#152D45]">
@@ -459,7 +458,7 @@ export default function MonthDrawer({
               <a href={`/history?category=${encodeURIComponent(selCat?.category ?? "")}&type=${selCat?.type ?? "expense"}`}
                 className="block w-full text-center text-sm font-medium text-[#3AB5A0] hover:text-[#4CC4A4]
                   bg-[#0F2A3D] hover:bg-[#132F45] border border-[#1E3A55] rounded-xl py-2.5 transition-colors">
-                View all in History →
+                {tM("viewAllHistory")}
               </a>
             </div>
           </>

@@ -596,6 +596,7 @@
       "uploadPrompt": "Importez un CSV pour voir vos tendances financières.",
       "label": "Perspectives financières",
       "title": "Revenus vs Dépenses",
+      "tapHint": "Touchez un mois pour voir le détail",
       "ranges": {
         "3m": "3M",
         "6m": "6M",
@@ -623,7 +624,15 @@
     "recentTransactions": {
       "label": "Activité récente",
       "empty": "Aucune transaction pour l'instant. Importez un CSV pour commencer.",
-      "viewAll": "Voir toutes les transactions"
+      "viewAll": "Voir toutes les transactions",
+      "drawer": {
+        "title": "Détail de la transaction",
+        "why": "Pourquoi",
+        "confidence": "Confiance",
+        "category": "Catégorie",
+        "needsReview": "À vérifier",
+        "viewAllHistory": "Voir tout dans l'historique →"
+      }
     },
     "dataCoverage": {
       "years": "{count, plural, one {# an} other {# ans}}",
@@ -814,7 +823,22 @@
       "label": "Trésorerie mensuelle",
       "title": "Revenus moins dépenses"
     },
+    "monthDrawer": {
+      "title": "Détail mensuel",
+      "netCashflow": "Trésorerie nette",
+      "moneyIn": "Entrées",
+      "moneyOut": "Sorties",
+      "total": "Total",
+      "transactionsCount": "Transactions",
+      "loading": "Chargement…",
+      "loadingTransactions": "Chargement des transactions…",
+      "noExpenseData": "Aucune dépense pour ce mois.",
+      "noIncomeData": "Aucun revenu pour ce mois.",
+      "noTransactions": "Aucune transaction trouvée.",
+      "viewAllHistory": "Voir tout dans l'historique →"
+    },
     "cashflowChart": {
+      "tapHint": "Touchez un mois pour voir le détail",
       "bestMonth": "Meilleur mois",
       "worstMonth": "Pire mois",
       "monthlyAverage": "Moyenne mensuelle",
@@ -945,6 +969,38 @@
       "insightsCount": "{count, plural, one {# aperçu} other {# aperçus}}",
       "showLess": "Afficher moins",
       "showFullBreakdown": "Afficher le détail complet par catégorie"
+    }
+  },
+  "intent": {
+    "labels": {
+      "personal_expense": "Personnel",
+      "business_expense": "Professionnel",
+      "subscription": "Abonnement",
+      "tax_payment": "Impôts",
+      "savings_transfer": "Épargne",
+      "family_support": "Famille",
+      "investment": "Investissement",
+      "loan_repayment": "Prêt",
+      "owner_draw": "Retrait gérant",
+      "freelance_income": "Freelance",
+      "salary": "Salaire",
+      "passive_income": "Revenu passif",
+      "refund": "Remboursement"
+    },
+    "why": {
+      "personal_expense": "Il s'agit de dépenses personnelles — de l'argent utilisé pour la vie quotidienne.",
+      "business_expense": "Il s'agit d'un coût professionnel qui soutient votre activité freelance.",
+      "subscription": "Il s'agit d'un abonnement récurrent débité automatiquement.",
+      "tax_payment": "Il s'agit d'un paiement fiscal ou gouvernemental.",
+      "savings_transfer": "Cet argent a été transféré vers l'épargne.",
+      "family_support": "Il s'agissait d'un paiement pour soutenir la famille.",
+      "investment": "Cet argent a été placé dans un investissement.",
+      "loan_repayment": "Il s'agit d'un remboursement de prêt ou de dette.",
+      "owner_draw": "Il s'agit d'un virement à vous-même — retrait du gérant de votre entreprise.",
+      "freelance_income": "Il s'agit de revenus provenant de votre activité freelance.",
+      "salary": "Il s'agit d'un salaire ou d'un revenu d'emploi.",
+      "passive_income": "Il s'agit d'un revenu passif (dividendes, loyer, intérêts, etc.).",
+      "refund": "Il s'agit d'un remboursement ou d'une compensation."
     }
   },
   "categories": {
