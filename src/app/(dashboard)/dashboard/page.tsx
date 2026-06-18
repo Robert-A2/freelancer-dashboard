@@ -87,6 +87,9 @@ export default async function DashboardPage({
     amount: Number(tx.amount),
     type: tx.transactionType,
     category: tx.category,
+    intent: tx.intent,
+    intentConfidence: tx.intentConfidence,
+    needsReview: tx.needsReview,
   }));
 
   const intel = generateDashboardIntelligence(
