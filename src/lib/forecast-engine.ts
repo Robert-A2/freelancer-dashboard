@@ -2,8 +2,9 @@ import { prisma } from "./prisma";
 import { Prisma } from "@prisma/client";
 import { Decimal } from "@prisma/client/runtime/library";
 
+// ── Public result type ────────────────────────────────────────────────────────
+
 export interface ForecastResult {
-  // Existing fields (unchanged — all consumers depend on these)
   projectedIncome:   number;
   projectedExpenses: number;
   projectedSavings:  number;
@@ -11,6 +12,8 @@ export interface ForecastResult {
   forecastPeriod: string;
   basedOnMonths: number;
   confidence: "low" | "medium" | "high";
+  confidenceScore: number;       // 0–1 numeric score
+  confidenceReasons: string[];   // human-readable factors
   seasonallyAdjusted: boolean;
   generatedAt: Date;
 
@@ -21,12 +24,15 @@ export interface ForecastResult {
   projectedPersonalSpend:   number | null;
   projectedDebtService:     number | null;
   projectedTrueNetCashflow: number | null;
-  // True when recent income is anomalously low vs historical — signals a missing bank account CSV
+
+  // Data quality signals
   hasIncompleteDataWarning: boolean;
+  recurringExpensesTotal: number;  // detected recurring cost floor
+  gapFraction: number;             // fraction of months in range with no data
+  classifiedPct: number;           // % of transactions with a category
 }
 
 // ── Intent group constants ────────────────────────────────────────────────────
-// Mirror the groupings in analytics-engine.ts so both produce consistent buckets.
 
 const BUSINESS_REVENUE_INTENTS = new Set(["freelance_income", "salary"]);
 const BUSINESS_COST_INTENTS    = new Set(["business_expense", "tax_payment", "subscription"]);
@@ -34,9 +40,9 @@ const DEBT_SERVICE_INTENTS     = new Set(["loan_repayment"]);
 const PERSONAL_SPEND_INTENTS   = new Set(["personal_expense", "family_support"]);
 const PASSIVE_REFUND_INTENTS   = new Set(["passive_income", "refund"]);
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+// ── Statistical helpers ───────────────────────────────────────────────────────
 
-// Weighted average — most recent 3 months: weight 3, next 6: weight 2, older: weight 1.
+// Weighted average — most recent 3 months weight 3, next 6 weight 2, older weight 1.
 function weightedAvg(values: number[]): number {
   if (values.length === 0) return 0;
   const weights = values.map((_, i) => {
@@ -53,12 +59,23 @@ function simpleAvg(values: number[]): number {
   return values.length ? values.reduce((a, b) => a + b, 0) / values.length : 0;
 }
 
-// Rolling 3-month average — used for stable/fixed series (debt, personal spend).
 function rolling3Avg(series: number[]): number {
   return simpleAvg(series.slice(-3));
 }
 
-// Build a per-month-of-year average from all records
+function stdDev(values: number[]): number {
+  if (values.length < 2) return 0;
+  const mean = simpleAvg(values);
+  const variance = values.reduce((s, v) => s + Math.pow(v - mean, 2), 0) / values.length;
+  return Math.sqrt(variance);
+}
+
+function coefficientOfVariation(values: number[]): number {
+  const mean = simpleAvg(values);
+  if (mean === 0) return 0;
+  return stdDev(values) / mean;
+}
+
 function buildSeasonalMap(
   records: { month: number; value: number }[]
 ): Record<number, { total: number; count: number }> {
@@ -73,16 +90,136 @@ function buildSeasonalMap(
 
 const PERIOD_RE = /^\d{4}-\d{2}$/;
 
-// Locale-independent "YYYY-MM" for the month following `date` — formatted
-// for display via `monthYearLabel()` at render time.
 function nextPeriod(date: Date): string {
   const next = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 1));
   return `${next.getUTCFullYear()}-${String(next.getUTCMonth() + 1).padStart(2, "0")}`;
 }
 
-// ── Stored shape for the intentBreakdown JSON column ─────────────────────────
+// ── Confidence scoring ────────────────────────────────────────────────────────
+// Four factors, each 0–1, combined into a single score.
+// Returns the numeric score, the categorical level, and plain-English reasons.
 
-interface StoredIntentBreakdown {
+function computeConfidence(
+  monthCount: number,
+  incomeValues: number[],
+  expenseValues: number[],
+  gapFraction: number,
+  classifiedPct: number
+): { score: number; level: "low" | "medium" | "high"; reasons: string[] } {
+  const reasons: string[] = [];
+
+  // 1. History depth — 12+ months = full marks
+  const depthScore = Math.min(1, monthCount / 12);
+
+  // 2. Income volatility — stable income → higher score
+  const activeIncomes = incomeValues.filter(v => v > 0);
+  const incCV = activeIncomes.length >= 2 ? coefficientOfVariation(activeIncomes) : 1;
+  const volatilityScore = Math.max(0, 1 - Math.min(incCV, 1.5) / 1.5);
+
+  // 3. Gap score — penalise missing months in the date range
+  const gapScore = Math.max(0, 1 - gapFraction * 2);
+
+  // 4. Classification — % of transactions with a category assigned
+  const classScore = Math.min(classifiedPct, 100) / 100;
+
+  // Weighted composite (must sum to 1.0)
+  const score = depthScore * 0.40 + volatilityScore * 0.25 + gapScore * 0.20 + classScore * 0.15;
+
+  // Human-readable reasons
+  if (monthCount === 1) {
+    reasons.push("Only 1 month of data — forecasts improve significantly with 3+ months.");
+  } else if (monthCount < 4) {
+    reasons.push(`${monthCount} months of history. Upload more data for a higher-confidence forecast.`);
+  } else if (monthCount < 12) {
+    reasons.push(`${monthCount} months of history analyzed. 12+ months unlocks seasonal adjustments.`);
+  } else {
+    reasons.push(`${monthCount} months of history — solid foundation for forecasting.`);
+  }
+
+  if (incCV > 0.8) {
+    reasons.push("Income varies significantly month to month — projections carry more uncertainty.");
+  } else if (incCV > 0.4) {
+    reasons.push("Moderate income variability detected — projections are approximate.");
+  } else if (activeIncomes.length >= 3) {
+    reasons.push("Income is relatively stable — good signal for accurate projections.");
+  }
+
+  if (gapFraction > 0.30) {
+    reasons.push(`${Math.round(gapFraction * 100)}% of months in your date range have no data — consider uploading missing statements.`);
+  } else if (gapFraction > 0.10) {
+    reasons.push("Some months have no transaction data — possible gaps in uploaded history.");
+  }
+
+  if (classifiedPct < 60) {
+    reasons.push(`${Math.round(classifiedPct)}% of transactions are categorized — higher coverage improves accuracy.`);
+  } else if (classifiedPct < 85) {
+    reasons.push(`${Math.round(classifiedPct)}% of transactions categorized.`);
+  } else {
+    reasons.push(`${Math.round(classifiedPct)}% of transactions categorized — excellent data quality.`);
+  }
+
+  const level: "low" | "medium" | "high" =
+    score >= 0.65 ? "high" : score >= 0.40 ? "medium" : "low";
+
+  return { score, level, reasons };
+}
+
+// ── Recurring expense detection ───────────────────────────────────────────────
+// A category is "recurring" when it appears in ≥70% of months AND its
+// coefficient of variation (on non-zero months) is ≤0.50.
+// Returns the total monthly floor across all recurring categories.
+
+async function detectRecurringExpenses(
+  userId: string,
+  records: { year: number; month: number }[]
+): Promise<{ total: number; categories: { category: string; monthlyAvg: number }[] }> {
+  if (records.length < 2) return { total: 0, categories: [] };
+
+  const txns = await prisma.transaction.findMany({
+    where: { userId, transactionType: "expense" },
+    select: { category: true, transactionDate: true, amount: true },
+  });
+
+  // category → month-key → total
+  const catMonth = new Map<string, Map<string, number>>();
+  for (const tx of txns) {
+    const cat = tx.category ?? "uncategorized";
+    const d   = new Date(tx.transactionDate);
+    const key = `${d.getUTCFullYear()}-${d.getUTCMonth() + 1}`;
+    if (!catMonth.has(cat)) catMonth.set(cat, new Map());
+    const m = catMonth.get(cat)!;
+    m.set(key, (m.get(key) ?? 0) + Number(tx.amount));
+  }
+
+  const monthKeys   = records.map(r => `${r.year}-${r.month}`);
+  const monthCount  = monthKeys.length;
+  const recurring: { category: string; monthlyAvg: number }[] = [];
+
+  for (const [category, monthMap] of catMonth) {
+    const values  = monthKeys.map(k => monthMap.get(k) ?? 0);
+    const nonZero = values.filter(v => v > 0);
+    if (nonZero.length < 2) continue;
+
+    const appearanceRate = nonZero.length / monthCount;
+    const cv             = coefficientOfVariation(nonZero);
+
+    if (appearanceRate >= 0.70 && cv <= 0.50) {
+      recurring.push({
+        category,
+        monthlyAvg: simpleAvg(nonZero),
+      });
+    }
+  }
+
+  return {
+    total:      recurring.reduce((s, r) => s + r.monthlyAvg, 0),
+    categories: recurring,
+  };
+}
+
+// ── Stored JSON shape ─────────────────────────────────────────────────────────
+
+interface StoredBreakdown {
   projectedBusinessRevenue: number;
   projectedBusinessCosts:   number;
   projectedBusinessProfit:  number;
@@ -90,108 +227,138 @@ interface StoredIntentBreakdown {
   projectedDebtService:     number;
   projectedTrueNetCashflow: number;
   hasIncompleteDataWarning: boolean;
+  confidenceScore:          number;
+  confidenceReasons:        string[];
+  recurringExpensesTotal:   number;
+  gapFraction:              number;
+  classifiedPct:            number;
 }
+
+// ── generateForecast ──────────────────────────────────────────────────────────
 
 export async function generateForecast(userId: string): Promise<ForecastResult | null> {
   const records = await prisma.monthlyAnalytics.findMany({
-    where: { userId },
+    where:   { userId },
     orderBy: [{ year: "asc" }, { month: "asc" }],
   });
 
   if (records.length === 0) {
-    // No analytics left to forecast from — remove any stale forecast so
-    // dashboards don't show projections for data that no longer exists.
     await prisma.forecast.deleteMany({ where: { userId } });
     return null;
   }
 
-  const incomes   = records.map((r) => Number(r.totalIncome));
-  const expenses  = records.map((r) => Number(r.totalExpenses));
-  const savings   = records.map((r) => Number(r.totalSavings));
+  const incomes  = records.map(r => Number(r.totalIncome));
+  const expenses = records.map(r => Number(r.totalExpenses));
+  const savings  = records.map(r => Number(r.totalSavings));
 
   let projectedIncome   = weightedAvg(incomes);
   let projectedExpenses = weightedAvg(expenses);
   const projectedSavings  = weightedAvg(savings);
   let seasonallyAdjusted  = false;
 
-  // ── Seasonal adjustment ────────────────────────────────────────────────
-  // Requires ≥24 months so each target month has appeared at least twice.
-  // Blends 50% weighted average + 50% seasonally-adjusted value to avoid
-  // over-correcting on limited data.
-  if (records.length >= 24) {
-    const now       = new Date();
-    const nextMonthNum = ((now.getUTCMonth() + 1) % 12) + 1; // 1–12
+  // ── 1. Recurring expense floor ─────────────────────────────────────────────
+  const recurringResult  = await detectRecurringExpenses(userId, records);
+  const recurringFloor   = recurringResult.total;
 
-    const incomeSeasonMap   = buildSeasonalMap(records.map(r => ({ month: r.month, value: Number(r.totalIncome) })));
-    const expenseSeasonMap  = buildSeasonalMap(records.map(r => ({ month: r.month, value: Number(r.totalExpenses) })));
+  // Anchor expense projection so it never drops below stable fixed costs
+  if (records.length >= 3 && recurringFloor > 0) {
+    projectedExpenses = Math.max(recurringFloor, projectedExpenses);
+  }
 
-    const overallAvgIncome   = incomes.reduce((a, b) => a + b, 0) / incomes.length;
-    const overallAvgExpenses = expenses.reduce((a, b) => a + b, 0) / expenses.length;
+  // ── 2. Seasonal adjustment (12+ months, not 24) ───────────────────────────
+  // Blend factor: conservative (30%) at 12–23 months, stronger (50%) at 24+.
+  if (records.length >= 12) {
+    const lastRecord  = records[records.length - 1];
+    const lastDate    = new Date(Date.UTC(lastRecord.year, lastRecord.month - 1, 1));
+    const nextDate    = new Date(Date.UTC(lastDate.getUTCFullYear(), lastDate.getUTCMonth() + 1, 1));
+    const nextMonthNum = nextDate.getUTCMonth() + 1; // 1–12
 
-    const incSeason  = incomeSeasonMap[nextMonthNum];
-    const expSeason  = expenseSeasonMap[nextMonthNum];
+    const incSeasonMap  = buildSeasonalMap(records.map(r => ({ month: r.month, value: Number(r.totalIncome) })));
+    const expSeasonMap  = buildSeasonalMap(records.map(r => ({ month: r.month, value: Number(r.totalExpenses) })));
 
-    if (incSeason && incSeason.count >= 2 && overallAvgIncome > 0) {
-      const ratio = (incSeason.total / incSeason.count) / overallAvgIncome;
-      projectedIncome = projectedIncome * 0.5 + projectedIncome * ratio * 0.5;
+    const avgIncome   = simpleAvg(incomes);
+    const avgExpenses = simpleAvg(expenses);
+    const blend       = records.length >= 24 ? 0.5 : 0.3;
+
+    const incSeason = incSeasonMap[nextMonthNum];
+    const expSeason = expSeasonMap[nextMonthNum];
+
+    if (incSeason && incSeason.count >= 2 && avgIncome > 0) {
+      const ratio = (incSeason.total / incSeason.count) / avgIncome;
+      projectedIncome = projectedIncome * (1 - blend) + projectedIncome * ratio * blend;
       seasonallyAdjusted = true;
     }
 
-    if (expSeason && expSeason.count >= 2 && overallAvgExpenses > 0) {
-      const ratio = (expSeason.total / expSeason.count) / overallAvgExpenses;
-      projectedExpenses = projectedExpenses * 0.5 + projectedExpenses * ratio * 0.5;
+    if (expSeason && expSeason.count >= 2 && avgExpenses > 0) {
+      const ratio = (expSeason.total / expSeason.count) / avgExpenses;
+      const seasonal = projectedExpenses * (1 - blend) + projectedExpenses * ratio * blend;
+      // Don't let seasonality push below the recurring floor
+      projectedExpenses = Math.max(recurringFloor, seasonal);
       seasonallyAdjusted = true;
     }
   }
-  // ── End seasonal adjustment ────────────────────────────────────────────
 
-  // Cashflow = Income − Expenses (same definition as recalculateMonthlyAnalytics'
-  // netCashflow). Savings are projected separately and excluded from cashflow.
   const projectedCashflow = projectedIncome - projectedExpenses;
   const n = records.length;
-  const confidence: "low" | "medium" | "high" =
-    n >= 12 ? "high" : n >= 4 ? "medium" : "low";
 
-  // ── Intent-based projections ───────────────────────────────────────────────
-  // Four forecast patterns, each with different algorithms suited to how
-  // that type of spend/income actually behaves.
-  //
-  // Pattern 1 — Business revenue (freelance_income, salary):
-  //   Weighted average — handles variability and seasonality of client work.
-  // Pattern 2 — Debt service (loan_repayment):
-  //   Rolling 3-month average — fixed commitment, shouldn't vary.
-  // Pattern 3 — Business costs (business_expense, tax_payment, subscription):
-  //   Weighted average — low variability, recency matters more than old spend.
-  // Pattern 4 — Personal spend (personal_expense, family_support):
-  //   Rolling 3-month average — lifestyle-stable, recent behaviour is best predictor.
-  //
-  // All fields are null when intent coverage < 80%.
+  // ── 3. Gap fraction ───────────────────────────────────────────────────────
+  let gapFraction = 0;
+  if (records.length >= 2) {
+    const first = records[0];
+    const last  = records[records.length - 1];
+    const totalMonthsInRange = (last.year - first.year) * 12 + (last.month - first.month) + 1;
+    gapFraction = totalMonthsInRange > records.length
+      ? (totalMonthsInRange - records.length) / totalMonthsInRange
+      : 0;
+  }
 
+  // ── 4. Classification percentage ──────────────────────────────────────────
+  const [totalTxCount, classifiedTxCount] = await Promise.all([
+    prisma.transaction.count({ where: { userId } }),
+    prisma.transaction.count({ where: { userId, category: { not: undefined } } }),
+  ]);
+  const classifiedPct = totalTxCount > 0 ? (classifiedTxCount / totalTxCount) * 100 : 0;
+
+  // ── 5. Confidence score ───────────────────────────────────────────────────
+  const confidenceResult = computeConfidence(n, incomes, expenses, gapFraction, classifiedPct);
+  const confidence = confidenceResult.level;
+
+  // ── 6. Incomplete data warning ────────────────────────────────────────────
+  // Generic: fires when recent income is substantially below historical average.
+  // Does NOT assume a specific bank or data source.
+  let hasIncompleteDataWarning = false;
+  if (incomes.length >= 3) {
+    const recentAvg   = simpleAvg(incomes.slice(-2));
+    const historicAvg = simpleAvg(incomes.slice(0, -2));
+    if (historicAvg > 200 && recentAvg < historicAvg * 0.35) {
+      hasIncompleteDataWarning = true;
+    }
+  }
+  // Single recent zero month after non-zero history
+  if (incomes.length >= 2 && incomes[incomes.length - 1] === 0 && simpleAvg(incomes.slice(0, -1)) > 200) {
+    hasIncompleteDataWarning = true;
+  }
+
+  // ── 7. Intent-based projections ───────────────────────────────────────────
   let projectedBusinessRevenue: number | null = null;
   let projectedBusinessCosts:   number | null = null;
   let projectedBusinessProfit:  number | null = null;
   let projectedPersonalSpend:   number | null = null;
   let projectedDebtService:     number | null = null;
   let projectedTrueNetCashflow: number | null = null;
-  let hasIncompleteDataWarning  = false;
 
   if (records.length >= 3) {
-    const [totalTxCount, classifiedTxCount] = await Promise.all([
-      prisma.transaction.count({ where: { userId } }),
-      prisma.transaction.count({ where: { userId, intent: { not: null } } }),
-    ]);
-    const intentCoveragePct = totalTxCount > 0 ? (classifiedTxCount / totalTxCount) * 100 : 0;
+    const intentCoveragePct = totalTxCount > 0
+      ? ((await prisma.transaction.count({ where: { userId, intent: { not: null } } })) / totalTxCount) * 100
+      : 0;
 
     if (intentCoveragePct >= 80) {
       const txns = await prisma.transaction.findMany({
-        where: { userId, intent: { not: null } },
+        where:  { userId, intent: { not: null } },
         select: { transactionDate: true, amount: true, intent: true },
       });
 
-      // Aggregate per-month intent totals
-      const byMonth = new Map<string, {
-        bRev: number; bCost: number; debt: number; pSpend: number; passive: number;
-      }>();
+      const byMonth = new Map<string, { bRev: number; bCost: number; debt: number; pSpend: number; passive: number }>();
       for (const tx of txns) {
         const d   = new Date(tx.transactionDate);
         const key = `${d.getUTCFullYear()}-${d.getUTCMonth() + 1}`;
@@ -206,118 +373,113 @@ export async function generateForecast(userId: string): Promise<ForecastResult |
         else if (PASSIVE_REFUND_INTENTS.has(intent))   m.passive += amt;
       }
 
-      // Align each series with the MonthlyAnalytics record order so all
-      // algorithms operate over the same time window and month sequence.
       const revSeries     = records.map(r => byMonth.get(`${r.year}-${r.month}`)?.bRev    ?? 0);
       const costSeries    = records.map(r => byMonth.get(`${r.year}-${r.month}`)?.bCost   ?? 0);
       const debtSeries    = records.map(r => byMonth.get(`${r.year}-${r.month}`)?.debt    ?? 0);
       const spendSeries   = records.map(r => byMonth.get(`${r.year}-${r.month}`)?.pSpend  ?? 0);
       const passiveSeries = records.map(r => byMonth.get(`${r.year}-${r.month}`)?.passive ?? 0);
 
-      // Apply the four forecast patterns
-      projectedBusinessRevenue = weightedAvg(revSeries);       // Pattern 1
-      projectedDebtService     = rolling3Avg(debtSeries);      // Pattern 2
-      projectedBusinessCosts   = weightedAvg(costSeries);      // Pattern 3
-      projectedPersonalSpend   = rolling3Avg(spendSeries);     // Pattern 4
+      projectedBusinessRevenue = weightedAvg(revSeries);
+      projectedDebtService     = rolling3Avg(debtSeries);
+      projectedBusinessCosts   = weightedAvg(costSeries);
+      projectedPersonalSpend   = rolling3Avg(spendSeries);
       const projectedPassive   = rolling3Avg(passiveSeries);
 
       projectedBusinessProfit  = projectedBusinessRevenue - projectedBusinessCosts;
       projectedTrueNetCashflow = projectedBusinessRevenue + projectedPassive
-                               - projectedBusinessCosts   - projectedPersonalSpend
+                               - projectedBusinessCosts - projectedPersonalSpend
                                - projectedDebtService;
-
-      // Incomplete data guard: flag when recent business revenue is anomalously
-      // low vs historical average — the primary signal that a bank account CSV
-      // is missing (income is arriving in an account that hasn't been uploaded).
-      if (revSeries.length >= 6) {
-        const recentRevAvg   = simpleAvg(revSeries.slice(-3));
-        const historicRevAvg = simpleAvg(revSeries.slice(0, -3));
-        hasIncompleteDataWarning = historicRevAvg > 0 && recentRevAvg < historicRevAvg * 0.25;
-      }
     }
   }
-  // ── End intent-based projections ───────────────────────────────────────────
 
-  const now = new Date();
-  const forecastPeriod = nextPeriod(now);
+  // ── 8. Persist ────────────────────────────────────────────────────────────
+  // Forecast period = month after the user's last data (not next calendar month).
+  const lastRecord    = records[records.length - 1];
+  const lastDataDate  = new Date(Date.UTC(lastRecord.year, lastRecord.month - 1, 1));
+  const forecastPeriod = nextPeriod(lastDataDate);
 
-  const intentBreakdownJson: StoredIntentBreakdown | null =
-    projectedBusinessRevenue !== null
-      ? {
-          projectedBusinessRevenue,
-          projectedBusinessCosts:   projectedBusinessCosts!,
-          projectedBusinessProfit:  projectedBusinessProfit!,
-          projectedPersonalSpend:   projectedPersonalSpend!,
-          projectedDebtService:     projectedDebtService!,
-          projectedTrueNetCashflow: projectedTrueNetCashflow!,
-          hasIncompleteDataWarning,
-        }
-      : null;
+  const storedBreakdown: StoredBreakdown = {
+    projectedBusinessRevenue: projectedBusinessRevenue ?? 0,
+    projectedBusinessCosts:   projectedBusinessCosts   ?? 0,
+    projectedBusinessProfit:  projectedBusinessProfit  ?? 0,
+    projectedPersonalSpend:   projectedPersonalSpend   ?? 0,
+    projectedDebtService:     projectedDebtService     ?? 0,
+    projectedTrueNetCashflow: projectedTrueNetCashflow ?? 0,
+    hasIncompleteDataWarning,
+    confidenceScore:          confidenceResult.score,
+    confidenceReasons:        confidenceResult.reasons,
+    recurringExpensesTotal:   recurringFloor,
+    gapFraction,
+    classifiedPct,
+  };
 
-  // Upsert the forecast for this period (re-running within the same month
-  // would otherwise hit the (userId, forecastPeriod) unique constraint),
-  // then prune all but the most recent one. This keeps the table from
-  // growing indefinitely without needing a schema migration.
   const forecastValues = {
     projectedIncome:   new Decimal(projectedIncome),
     projectedExpenses: new Decimal(projectedExpenses),
     projectedSavings:  new Decimal(projectedSavings),
     projectedCashflow: new Decimal(projectedCashflow),
-    intentBreakdown:   intentBreakdownJson !== null
-      ? (intentBreakdownJson as unknown as Prisma.InputJsonValue)
-      : Prisma.JsonNull,
-    generatedAt: new Date(),
+    intentBreakdown:   storedBreakdown as unknown as Prisma.InputJsonValue,
+    generatedAt:       new Date(),
   };
+
   await prisma.forecast.upsert({
-    where: { userId_forecastPeriod: { userId, forecastPeriod } },
+    where:  { userId_forecastPeriod: { userId, forecastPeriod } },
     create: { userId, forecastPeriod, ...forecastValues },
     update: forecastValues,
   });
 
+  // Keep only the most recent forecast row
   const stale = await prisma.forecast.findMany({
-    where: { userId },
+    where:   { userId },
     orderBy: { generatedAt: "desc" },
-    skip: 1,
-    select: { id: true },
+    skip:    1,
+    select:  { id: true },
   });
   if (stale.length > 0) {
-    await prisma.forecast.deleteMany({ where: { id: { in: stale.map((f) => f.id) } } });
+    await prisma.forecast.deleteMany({ where: { id: { in: stale.map(f => f.id) } } });
   }
 
   return {
     projectedIncome, projectedExpenses, projectedSavings, projectedCashflow,
     forecastPeriod, basedOnMonths: n, confidence, seasonallyAdjusted,
+    confidenceScore:   confidenceResult.score,
+    confidenceReasons: confidenceResult.reasons,
     generatedAt: new Date(),
-    projectedBusinessRevenue,
-    projectedBusinessCosts,
-    projectedBusinessProfit,
-    projectedPersonalSpend,
-    projectedDebtService,
-    projectedTrueNetCashflow,
+    projectedBusinessRevenue: projectedBusinessRevenue,
+    projectedBusinessCosts:   projectedBusinessCosts,
+    projectedBusinessProfit:  projectedBusinessProfit,
+    projectedPersonalSpend:   projectedPersonalSpend,
+    projectedDebtService:     projectedDebtService,
+    projectedTrueNetCashflow: projectedTrueNetCashflow,
     hasIncompleteDataWarning,
+    recurringExpensesTotal: recurringFloor,
+    gapFraction,
+    classifiedPct,
   };
 }
 
+// ── getLatestForecast ─────────────────────────────────────────────────────────
+
 export async function getLatestForecast(userId: string): Promise<ForecastResult | null> {
   const forecast = await prisma.forecast.findFirst({
-    where: { userId },
+    where:   { userId },
     orderBy: { generatedAt: "desc" },
   });
 
   if (!forecast) return null;
 
   const monthsCount = await prisma.monthlyAnalytics.count({ where: { userId } });
-  const confidence: "low" | "medium" | "high" =
-    monthsCount >= 12 ? "high" : monthsCount >= 4 ? "medium" : "low";
 
-  // Rows written before the "YYYY-MM" format was introduced still hold a
-  // locale-formatted string (e.g. "March 2027") — derive the period from
-  // generatedAt instead until the next generateForecast() overwrites it.
   const forecastPeriod = PERIOD_RE.test(forecast.forecastPeriod)
     ? forecast.forecastPeriod
     : nextPeriod(forecast.generatedAt);
 
-  const ib = forecast.intentBreakdown as StoredIntentBreakdown | null;
+  const ib = forecast.intentBreakdown as StoredBreakdown | null;
+
+  // Backward-compat: if confidence score not stored, derive from month count
+  const storedScore = ib?.confidenceScore ?? (monthsCount >= 12 ? 0.75 : monthsCount >= 4 ? 0.50 : 0.25);
+  const confidence: "low" | "medium" | "high" =
+    storedScore >= 0.65 ? "high" : storedScore >= 0.40 ? "medium" : "low";
 
   return {
     projectedIncome:   Number(forecast.projectedIncome),
@@ -327,7 +489,9 @@ export async function getLatestForecast(userId: string): Promise<ForecastResult 
     forecastPeriod,
     basedOnMonths:     monthsCount,
     confidence,
-    seasonallyAdjusted: monthsCount >= 24,
+    confidenceScore:   storedScore,
+    confidenceReasons: ib?.confidenceReasons ?? [],
+    seasonallyAdjusted: monthsCount >= 12,
     generatedAt: forecast.generatedAt,
     projectedBusinessRevenue: ib?.projectedBusinessRevenue ?? null,
     projectedBusinessCosts:   ib?.projectedBusinessCosts   ?? null,
@@ -336,5 +500,8 @@ export async function getLatestForecast(userId: string): Promise<ForecastResult 
     projectedDebtService:     ib?.projectedDebtService     ?? null,
     projectedTrueNetCashflow: ib?.projectedTrueNetCashflow ?? null,
     hasIncompleteDataWarning: ib?.hasIncompleteDataWarning ?? false,
+    recurringExpensesTotal:   ib?.recurringExpensesTotal   ?? 0,
+    gapFraction:              ib?.gapFraction              ?? 0,
+    classifiedPct:            ib?.classifiedPct            ?? 0,
   };
 }
