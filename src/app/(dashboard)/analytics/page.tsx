@@ -14,6 +14,8 @@ import CashflowChart from "@/components/analytics/CashflowChart";
 import ClientInsights from "@/components/analytics/ClientInsights";
 import FinancialStory from "@/components/analytics/FinancialStory";
 import CollapsibleSection from "@/components/ui/CollapsibleSection";
+import ExpenseBreakdown from "@/components/analytics/ExpenseBreakdown";
+import type { BreakdownItem } from "@/components/analytics/ExpenseBreakdown";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
@@ -253,40 +255,28 @@ export default async function AnalyticsPage() {
                 )}
               </div>
 
-              <div className="card">
-                <p className="label mb-1">{t("breakdownsSection.expenseBreakdown")}</p>
-                <p className="text-xs text-[#6A97B4] mb-4">{t("breakdownsSection.allTime")}</p>
-                {categoryBreakdown.length === 0 ? (
-                  <p className="text-[#7BA8C4] text-sm">{t("breakdownsSection.noExpenseData")}</p>
-                ) : (
-                  <div className="space-y-4">
-                    {categoryBreakdown.map((cat) => {
-                      const amount = Number(cat._sum.amount ?? 0);
-                      const pct = totalExpenses > 0 ? Math.round((amount / totalExpenses) * 100) : 0;
-                      const trend = categoryInsights.topExpenseCategories.find(c => c.category === cat.category);
-                      const arrow = trend?.yearOverYearTrend === "growing" ? "↑" : trend?.yearOverYearTrend === "declining" ? "↓" : "";
-                      const arrowColor = trend?.yearOverYearTrend === "growing" ? "text-[#D97070]" : "text-[#4CC4A4]";
-                      return (
-                        <div key={cat.category}>
-                          <div className="flex justify-between text-sm mb-1">
-                            <div className="flex items-center gap-1.5">
-                              <span className="text-[#A8C6E0]">{tCategories.has(cat.category) ? tCategories(cat.category) : cat.category}</span>
-                              {arrow && <span className={`text-xs font-bold ${arrowColor}`}>{arrow}</span>}
-                            </div>
-                            <div className="flex gap-3">
-                              <span className="text-[#6A97B4]">{pct}%</span>
-                              <span className="font-medium text-[#D4A254]">{formatCurrency(amount, locale)}</span>
-                            </div>
-                          </div>
-                          <div className="h-1.5 bg-[#243F5E] rounded-full overflow-hidden">
-                            <div className="h-full bg-[#D4A254] rounded-full opacity-70" style={{ width: `${pct}%` }} />
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
+              <ExpenseBreakdown
+                breakdown={categoryBreakdown.map((cat): BreakdownItem => {
+                  const amount = Number(cat._sum.amount ?? 0);
+                  const pct = totalExpenses > 0 ? Math.round((amount / totalExpenses) * 100) : 0;
+                  const trend = categoryInsights.topExpenseCategories.find(c => c.category === cat.category);
+                  return {
+                    category: cat.category,
+                    total: amount,
+                    pct,
+                    trend: trend?.yearOverYearTrend === "growing"
+                      ? "growing"
+                      : trend?.yearOverYearTrend === "declining"
+                      ? "declining"
+                      : "stable",
+                  };
+                })}
+                labels={{
+                  title:    t("breakdownsSection.expenseBreakdown"),
+                  subtitle: t("breakdownsSection.allTime"),
+                  empty:    t("breakdownsSection.noExpenseData"),
+                }}
+              />
             </div>
           </CollapsibleSection>
 
