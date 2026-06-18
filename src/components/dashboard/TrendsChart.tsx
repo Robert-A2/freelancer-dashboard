@@ -135,7 +135,7 @@ function MonthDrawer({
   const [selCat,     setSelCat]     = useState<SelectedCat | null>(null);
   const [txData,     setTxData]     = useState<TxData | null>(null);
   const [txLoading,  setTxLoading]  = useState(false);
-  const [activeTab,  setActiveTab]  = useState<"expense" | "income">("expense");
+  const [activeTab,  setActiveTab]  = useState<"expense" | "income" | "cashflow">("expense");
 
   // Fetch month breakdown when month changes
   useEffect(() => {
@@ -203,10 +203,14 @@ function MonthDrawer({
     : { text: "text-[#D4A254]", bar: "bg-[#D4A254]" };
 
   // Compute the total for the active tab's bar widths
-  const tabCategories = breakdown
+  const tabCategories = breakdown && activeTab !== "cashflow"
     ? (activeTab === "expense" ? breakdown.expenseCategories : breakdown.incomeCategories)
     : [];
   const tabTotal = tabCategories.reduce((s, c) => s + c.total, 0);
+  // For cashflow tab: scale bars against the larger of the two sides
+  const cashflowScale = breakdown
+    ? Math.max(breakdown.totalIncome, breakdown.totalExpenses)
+    : 0;
 
   return (
     <>
@@ -298,6 +302,16 @@ function MonthDrawer({
                 >
                   Income
                 </button>
+                <button
+                  onClick={() => setActiveTab("cashflow")}
+                  className={`flex-1 py-3 text-sm font-medium transition-colors border-b-2 ${
+                    activeTab === "cashflow"
+                      ? "border-[#3AB5A0] text-[#3AB5A0]"
+                      : "border-transparent text-[#4A7A9B] hover:text-[#A8C6E0]"
+                  }`}
+                >
+                  Cashflow
+                </button>
               </div>
             )}
 
@@ -308,23 +322,24 @@ function MonthDrawer({
                   Loading…
                 </div>
               )}
-              {breakdown && tabCategories.length === 0 && (
+
+              {/* Expenses / Income tabs */}
+              {breakdown && activeTab !== "cashflow" && tabCategories.length === 0 && (
                 <div className="px-6 py-8 text-center text-[#4A7A9B] text-sm">
                   No {activeTab} data for this month.
                 </div>
               )}
-              {breakdown && tabCategories.length > 0 && (
+              {breakdown && activeTab !== "cashflow" && tabCategories.length > 0 && (
                 <div className="px-6 py-4 space-y-3">
                   {tabCategories.map((cat) => {
                     const pct   = tabTotal > 0 ? Math.round((cat.total / tabTotal) * 100) : 0;
-                    const name  = tCategories.has(cat.category)
-                      ? tCategories(cat.category) : cat.category;
+                    const name  = tCategories.has(cat.category) ? tCategories(cat.category) : cat.category;
                     const barCl = activeTab === "income" ? "bg-[#4CC4A4]" : "bg-[#D4A254]";
                     const txtCl = activeTab === "income" ? "text-[#4CC4A4]" : "text-[#D4A254]";
                     return (
                       <button
                         key={cat.category}
-                        onClick={() => openCategory(cat.category, activeTab)}
+                        onClick={() => openCategory(cat.category, activeTab as "expense" | "income")}
                         className="w-full text-left group"
                       >
                         <div className="flex justify-between items-center text-sm mb-1">
@@ -332,14 +347,10 @@ function MonthDrawer({
                             <span className="text-[#A8C6E0] group-hover:text-[#E8F0F8] transition-colors capitalize truncate">
                               {name}
                             </span>
-                            <span className="text-xs text-[#4A7A9B] flex-shrink-0">
-                              {cat.count} tx
-                            </span>
+                            <span className="text-xs text-[#4A7A9B] flex-shrink-0">{cat.count} tx</span>
                           </div>
                           <div className="flex items-center gap-2 flex-shrink-0 ml-3">
-                            <span className={`font-medium ${txtCl}`}>
-                              {formatCurrency(cat.total, locale)}
-                            </span>
+                            <span className={`font-medium ${txtCl}`}>{formatCurrency(cat.total, locale)}</span>
                             <span className="text-[#2A4F6A] group-hover:text-[#4A7A9B]">›</span>
                           </div>
                         </div>
@@ -352,6 +363,111 @@ function MonthDrawer({
                       </button>
                     );
                   })}
+                </div>
+              )}
+
+              {/* Cashflow tab — income in, expenses out, side by side */}
+              {breakdown && activeTab === "cashflow" && (
+                <div className="px-6 py-4 space-y-5">
+                  {/* Net cashflow callout */}
+                  <div className={`rounded-xl px-4 py-3 border ${
+                    breakdown.totalIncome - breakdown.totalExpenses >= 0
+                      ? "bg-[#0F2A1E] border-[#1A4030]"
+                      : "bg-[#2A1010] border-[#40201A]"
+                  }`}>
+                    <p className="text-xs text-[#4A7A9B] mb-0.5">Net Cashflow</p>
+                    <p className={`text-2xl font-bold ${
+                      breakdown.totalIncome - breakdown.totalExpenses >= 0
+                        ? "text-[#4CC4A4]" : "text-[#D97070]"
+                    }`}>
+                      {breakdown.totalIncome - breakdown.totalExpenses >= 0 ? "+" : ""}
+                      {formatCurrency(breakdown.totalIncome - breakdown.totalExpenses, locale)}
+                    </p>
+                  </div>
+
+                  {/* Income side */}
+                  {breakdown.incomeCategories.length > 0 && (
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-widest text-[#4CC4A4] mb-3">
+                        Money In
+                      </p>
+                      <div className="space-y-3">
+                        {breakdown.incomeCategories.map((cat) => {
+                          const pct  = cashflowScale > 0 ? Math.round((cat.total / cashflowScale) * 100) : 0;
+                          const name = tCategories.has(cat.category) ? tCategories(cat.category) : cat.category;
+                          return (
+                            <button
+                              key={cat.category}
+                              onClick={() => openCategory(cat.category, "income")}
+                              className="w-full text-left group"
+                            >
+                              <div className="flex justify-between items-center text-sm mb-1">
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <span className="text-xs text-[#4CC4A4] font-bold flex-shrink-0">+</span>
+                                  <span className="text-[#A8C6E0] group-hover:text-[#E8F0F8] transition-colors capitalize truncate">
+                                    {name}
+                                  </span>
+                                  <span className="text-xs text-[#4A7A9B] flex-shrink-0">{cat.count} tx</span>
+                                </div>
+                                <div className="flex items-center gap-2 flex-shrink-0 ml-3">
+                                  <span className="font-medium text-[#4CC4A4]">{formatCurrency(cat.total, locale)}</span>
+                                  <span className="text-[#2A4F6A] group-hover:text-[#4A7A9B]">›</span>
+                                </div>
+                              </div>
+                              <div className="h-1.5 bg-[#243F5E] rounded-full overflow-hidden">
+                                <div
+                                  className="h-full bg-[#4CC4A4] rounded-full opacity-60 group-hover:opacity-100 transition-opacity"
+                                  style={{ width: `${pct}%` }}
+                                />
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Expenses side */}
+                  {breakdown.expenseCategories.length > 0 && (
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-widest text-[#D4A254] mb-3">
+                        Money Out
+                      </p>
+                      <div className="space-y-3">
+                        {breakdown.expenseCategories.map((cat) => {
+                          const pct  = cashflowScale > 0 ? Math.round((cat.total / cashflowScale) * 100) : 0;
+                          const name = tCategories.has(cat.category) ? tCategories(cat.category) : cat.category;
+                          return (
+                            <button
+                              key={cat.category}
+                              onClick={() => openCategory(cat.category, "expense")}
+                              className="w-full text-left group"
+                            >
+                              <div className="flex justify-between items-center text-sm mb-1">
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <span className="text-xs text-[#D4A254] font-bold flex-shrink-0">−</span>
+                                  <span className="text-[#A8C6E0] group-hover:text-[#E8F0F8] transition-colors capitalize truncate">
+                                    {name}
+                                  </span>
+                                  <span className="text-xs text-[#4A7A9B] flex-shrink-0">{cat.count} tx</span>
+                                </div>
+                                <div className="flex items-center gap-2 flex-shrink-0 ml-3">
+                                  <span className="font-medium text-[#D4A254]">{formatCurrency(cat.total, locale)}</span>
+                                  <span className="text-[#2A4F6A] group-hover:text-[#4A7A9B]">›</span>
+                                </div>
+                              </div>
+                              <div className="h-1.5 bg-[#243F5E] rounded-full overflow-hidden">
+                                <div
+                                  className="h-full bg-[#D4A254] rounded-full opacity-60 group-hover:opacity-100 transition-opacity"
+                                  style={{ width: `${pct}%` }}
+                                />
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
