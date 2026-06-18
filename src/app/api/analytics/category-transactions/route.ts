@@ -11,15 +11,30 @@ export async function GET(req: Request) {
   const category = searchParams.get("category");
   const type     = searchParams.get("type") ?? "expense";
   const since    = searchParams.get("since");
+  const yearStr  = searchParams.get("year");
+  const monthStr = searchParams.get("month");
 
   if (!category) return NextResponse.json({ error: "category required" }, { status: 400 });
+
+  // year+month takes precedence over since, giving an exact monthly range
+  let dateFilter: { gte: Date; lt?: Date } | { gte: Date } | undefined;
+  if (yearStr && monthStr) {
+    const y = parseInt(yearStr);
+    const m = parseInt(monthStr);
+    dateFilter = {
+      gte: new Date(Date.UTC(y, m - 1, 1)),
+      lt:  new Date(Date.UTC(y, m,     1)),
+    };
+  } else if (since) {
+    dateFilter = { gte: new Date(since) };
+  }
 
   const transactions = await prisma.transaction.findMany({
     where: {
       userId: user.id,
       category,
       transactionType: type,
-      ...(since ? { transactionDate: { gte: new Date(since) } } : {}),
+      ...(dateFilter ? { transactionDate: dateFilter } : {}),
     },
     orderBy: { transactionDate: "desc" },
     select: {
