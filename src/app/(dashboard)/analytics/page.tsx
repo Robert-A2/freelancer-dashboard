@@ -226,34 +226,20 @@ export default async function AnalyticsPage() {
           {/* ── 3. Income sources + Expense breakdown ─────────────────────── */}
           <CollapsibleSection label={t("breakdownsSection.label")} title={t("breakdownsSection.title")}>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 md:gap-6">
-              <div className="card">
-                <p className="label mb-1">{t("breakdownsSection.incomeSources")}</p>
-                <p className="text-xs text-[#6A97B4] mb-4">{t("breakdownsSection.last12Months")}</p>
-                {incomeBySource.length === 0 ? (
-                  <p className="text-[#7BA8C4] text-sm">{t("breakdownsSection.noIncomeData")}</p>
-                ) : (
-                  <div className="space-y-4">
-                    {incomeBySource.map((src) => {
-                      const amount = Number(src._sum.amount ?? 0);
-                      const pct = totalIncSrc > 0 ? Math.round((amount / totalIncSrc) * 100) : 0;
-                      return (
-                        <div key={src.category}>
-                          <div className="flex justify-between text-sm mb-1">
-                            <span className="text-[#A8C6E0]">{tCategories.has(src.category) ? tCategories(src.category) : src.category}</span>
-                            <div className="flex gap-3">
-                              <span className="text-[#6A97B4]">{pct}%</span>
-                              <span className="font-medium text-[#4CC4A4]">{formatCurrency(amount, locale)}</span>
-                            </div>
-                          </div>
-                          <div className="h-1.5 bg-[#243F5E] rounded-full overflow-hidden">
-                            <div className="h-full bg-[#4CC4A4] rounded-full opacity-70" style={{ width: `${pct}%` }} />
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
+              <ExpenseBreakdown
+                type="income"
+                since={incSince.toISOString()}
+                breakdown={incomeBySource.map((src): BreakdownItem => {
+                  const amount = Number(src._sum.amount ?? 0);
+                  const pct = totalIncSrc > 0 ? Math.round((amount / totalIncSrc) * 100) : 0;
+                  return { category: src.category, total: amount, pct, trend: null };
+                })}
+                labels={{
+                  title:    t("breakdownsSection.incomeSources"),
+                  subtitle: t("breakdownsSection.last12Months"),
+                  empty:    t("breakdownsSection.noIncomeData"),
+                }}
+              />
 
               <ExpenseBreakdown
                 breakdown={categoryBreakdown.map((cat): BreakdownItem => {

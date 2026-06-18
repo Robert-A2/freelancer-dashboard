@@ -49,14 +49,18 @@ const INTENT_LABEL: Record<string, string> = {
 };
 
 const INTENT_COLOR: Record<string, string> = {
-  personal_expense: "bg-[#1E3A5F] text-[#7BB8E8]",
-  business_expense: "bg-[#1A3D30] text-[#4CC4A4]",
-  subscription:     "bg-[#2D1F4A] text-[#A78BFA]",
-  tax_payment:      "bg-[#3D2800] text-[#D4A254]",
-  savings_transfer: "bg-[#0F3338] text-[#3EC9BD]",
-  family_support:   "bg-[#3D1A2A] text-[#F09EC0]",
-  investment:       "bg-[#1A3030] text-[#34D399]",
-  loan_repayment:   "bg-[#3D1A1A] text-[#F87171]",
+  personal_expense:  "bg-[#1E3A5F] text-[#7BB8E8]",
+  business_expense:  "bg-[#1A3D30] text-[#4CC4A4]",
+  subscription:      "bg-[#2D1F4A] text-[#A78BFA]",
+  tax_payment:       "bg-[#3D2800] text-[#D4A254]",
+  savings_transfer:  "bg-[#0F3338] text-[#3EC9BD]",
+  family_support:    "bg-[#3D1A2A] text-[#F09EC0]",
+  investment:        "bg-[#1A3030] text-[#34D399]",
+  loan_repayment:    "bg-[#3D1A1A] text-[#F87171]",
+  freelance_income:  "bg-[#0F3028] text-[#4CC4A4]",
+  salary:            "bg-[#1A2D4A] text-[#60A5FA]",
+  passive_income:    "bg-[#2A2810] text-[#FBBF24]",
+  refund:            "bg-[#1A2040] text-[#A5B4FC]",
 };
 
 function IntentBadge({ intent }: { intent: string | null }) {
@@ -82,38 +86,43 @@ function fmtDate(iso: string): string {
 
 function CategoryDrawer({
   category,
+  type,
+  since,
   onClose,
   locale,
+  accent,
 }: {
   category: string | null;
+  type: "expense" | "income";
+  since?: string;
   onClose: () => void;
   locale: Locale;
+  accent: { text: string; bar: string };
 }) {
   const tCategories = useTranslations("categories");
   const [data, setData]       = useState<ApiResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState<string | null>(null);
 
-  // Fetch when category changes
   useEffect(() => {
     if (!category) { setData(null); return; }
     setLoading(true);
     setError(null);
     setData(null);
-    fetch(`/api/analytics/category-transactions?category=${encodeURIComponent(category)}`)
+    const params = new URLSearchParams({ category, type });
+    if (since) params.set("since", since);
+    fetch(`/api/analytics/category-transactions?${params}`)
       .then((r) => r.json())
       .then((d) => { setData(d); setLoading(false); })
       .catch(() => { setError("Failed to load transactions."); setLoading(false); });
-  }, [category]);
+  }, [category, type, since]);
 
-  // Lock body scroll while open
   useEffect(() => {
     if (category) document.body.style.overflow = "hidden";
     else          document.body.style.overflow  = "";
     return () => { document.body.style.overflow = ""; };
   }, [category]);
 
-  // ESC to close
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
     window.addEventListener("keydown", onKey);
@@ -124,6 +133,7 @@ function CategoryDrawer({
   const displayName = category
     ? (tCategories.has(category) ? tCategories(category) : category)
     : "";
+  const drawerLabel = type === "income" ? "Income Source" : "Expense Breakdown";
 
   return (
     <>
@@ -145,7 +155,7 @@ function CategoryDrawer({
         <div className="flex items-start justify-between gap-4 px-6 pt-6 pb-5 border-b border-[#1E3A55]">
           <div>
             <p className="text-xs font-semibold uppercase tracking-widest text-[#4A7A9B] mb-1">
-              Expense Breakdown
+              {drawerLabel}
             </p>
             <h2 className="text-xl font-bold text-[#E8F0F8] capitalize">{displayName}</h2>
           </div>
@@ -166,7 +176,7 @@ function CategoryDrawer({
           <div className="flex gap-6 px-6 py-4 bg-[#0A1C2E] border-b border-[#1E3A55]">
             <div>
               <p className="text-xs text-[#4A7A9B] mb-0.5">Total</p>
-              <p className="text-lg font-bold text-[#D4A254]">{formatCurrency(data.total, locale)}</p>
+              <p className={`text-lg font-bold ${accent.text}`}>{formatCurrency(data.total, locale)}</p>
             </div>
             <div className="w-px bg-[#1E3A55]" />
             <div>
@@ -183,17 +193,14 @@ function CategoryDrawer({
               Loading transactions…
             </div>
           )}
-
           {error && (
             <div className="px-6 py-8 text-center text-[#D97070] text-sm">{error}</div>
           )}
-
           {data && data.transactions.length === 0 && (
             <div className="px-6 py-8 text-center text-[#4A7A9B] text-sm">
               No transactions found for this category.
             </div>
           )}
-
           {data && data.transactions.length > 0 && (
             <ul className="divide-y divide-[#152D45]">
               {data.transactions.map((tx) => (
@@ -206,7 +213,7 @@ function CategoryDrawer({
                         <IntentBadge intent={tx.intent} />
                       </div>
                     </div>
-                    <p className="text-sm font-bold text-[#D4A254] tabular-nums flex-shrink-0 mt-4">
+                    <p className={`text-sm font-bold ${accent.text} tabular-nums flex-shrink-0 mt-4`}>
                       {formatCurrency(tx.amount, locale)}
                     </p>
                   </div>
@@ -219,7 +226,7 @@ function CategoryDrawer({
         {/* Footer */}
         <div className="px-6 py-4 border-t border-[#1E3A55]">
           <a
-            href={`/history?category=${encodeURIComponent(category ?? "")}&type=expense`}
+            href={`/history?category=${encodeURIComponent(category ?? "")}&type=${type}`}
             className="block w-full text-center text-sm font-medium text-[#3AB5A0] hover:text-[#4CC4A4]
               bg-[#0F2A3D] hover:bg-[#132F45] border border-[#1E3A55] rounded-xl py-2.5 transition-colors"
           >
@@ -233,17 +240,26 @@ function CategoryDrawer({
 
 // ── Main exported component ───────────────────────────────────────────────────
 
+const EXPENSE_ACCENT = { text: "text-[#D4A254]", bar: "bg-[#D4A254]" };
+const INCOME_ACCENT  = { text: "text-[#4CC4A4]", bar: "bg-[#4CC4A4]" };
+
 export default function ExpenseBreakdown({
   breakdown,
   labels,
+  type = "expense",
+  since,
 }: {
   breakdown: BreakdownItem[];
   labels: { title: string; subtitle: string; empty: string };
+  type?: "expense" | "income";
+  since?: string;
 }) {
   const locale = useLocale() as Locale;
   const tCategories = useTranslations("categories");
   const [selected, setSelected] = useState<string | null>(null);
   const close = useCallback(() => setSelected(null), []);
+
+  const accent = type === "income" ? INCOME_ACCENT : EXPENSE_ACCENT;
 
   return (
     <>
@@ -282,10 +298,9 @@ export default function ExpenseBreakdown({
                     </div>
                     <div className="flex items-center gap-3">
                       <span className="text-[#6A97B4]">{item.pct}%</span>
-                      <span className="font-medium text-[#D4A254]">
+                      <span className={`font-medium ${accent.text}`}>
                         {formatCurrency(item.total, locale)}
                       </span>
-                      {/* Chevron hint */}
                       <svg
                         width="12" height="12" viewBox="0 0 12 12" fill="none"
                         className="text-[#2A4F6A] group-hover:text-[#4A7A9B] transition-colors flex-shrink-0"
@@ -296,7 +311,7 @@ export default function ExpenseBreakdown({
                   </div>
                   <div className="h-1.5 bg-[#243F5E] rounded-full overflow-hidden">
                     <div
-                      className="h-full bg-[#D4A254] rounded-full opacity-70 group-hover:opacity-100 transition-opacity"
+                      className={`h-full ${accent.bar} rounded-full opacity-70 group-hover:opacity-100 transition-opacity`}
                       style={{ width: `${item.pct}%` }}
                     />
                   </div>
@@ -307,7 +322,14 @@ export default function ExpenseBreakdown({
         )}
       </div>
 
-      <CategoryDrawer category={selected} onClose={close} locale={locale} />
+      <CategoryDrawer
+        category={selected}
+        type={type}
+        since={since}
+        onClose={close}
+        locale={locale}
+        accent={accent}
+      />
     </>
   );
 }

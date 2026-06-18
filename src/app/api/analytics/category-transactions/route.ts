@@ -9,10 +9,18 @@ export async function GET(req: Request) {
 
   const { searchParams } = new URL(req.url);
   const category = searchParams.get("category");
+  const type     = searchParams.get("type") ?? "expense";
+  const since    = searchParams.get("since");
+
   if (!category) return NextResponse.json({ error: "category required" }, { status: 400 });
 
   const transactions = await prisma.transaction.findMany({
-    where: { userId: user.id, category, transactionType: "expense" },
+    where: {
+      userId: user.id,
+      category,
+      transactionType: type,
+      ...(since ? { transactionDate: { gte: new Date(since) } } : {}),
+    },
     orderBy: { transactionDate: "desc" },
     select: {
       id: true,
