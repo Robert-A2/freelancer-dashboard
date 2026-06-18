@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
@@ -8,9 +8,12 @@ import {
 } from "recharts";
 import { formatCurrency } from "@/utils/finance";
 import type { Locale } from "@/i18n/locales";
+import MonthDrawer, { type SelectedMonth } from "@/components/analytics/MonthDrawer";
 
 interface DataPoint {
   month: string;
+  year: number;
+  monthNum: number;
   cashflow: number;
   income: number;
   expenses: number;
@@ -52,7 +55,9 @@ export default function CashflowChart({ data, hideHeader = false }: Props) {
   const tr = useTranslations("dashboard.trendsChart");
   const tm = useTranslations("metrics");
   const locale = useLocale() as Locale;
-  const [range, setRange] = useState(12);
+  const [range,    setRange]    = useState(12);
+  const [selMonth, setSelMonth] = useState<SelectedMonth | null>(null);
+  const closeDrawer = useCallback(() => setSelMonth(null), []);
   const sliced = range === 999 ? data : data.slice(-range);
   const active = sliced.filter(d => d.income > 0 || d.expenses > 0);
 
@@ -125,6 +130,7 @@ export default function CashflowChart({ data, hideHeader = false }: Props) {
   ) : null;
 
   return (
+    <>
     <div className="card">
 
       <div className={`flex items-start justify-between gap-3 flex-wrap ${hideHeader ? "mb-4" : "mb-4"}`}>
@@ -152,7 +158,19 @@ export default function CashflowChart({ data, hideHeader = false }: Props) {
       </div>
 
       <ResponsiveContainer width="100%" height={220}>
-        <BarChart data={sliced} margin={{ top: 5, right: 5, left: 0, bottom: 5 }} barSize={10}>
+        <BarChart
+          data={sliced}
+          margin={{ top: 5, right: 5, left: 0, bottom: 5 }}
+          barSize={10}
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          onClick={(chartData: any) => {
+            const payload = chartData?.activePayload?.[0]?.payload as DataPoint | undefined;
+            if (payload?.year && payload?.monthNum) {
+              setSelMonth({ year: payload.year, monthNum: payload.monthNum, label: payload.month });
+            }
+          }}
+          style={{ cursor: "pointer" }}
+        >
           <CartesianGrid strokeDasharray="3 3" stroke="#243F5E" vertical={false} />
           <XAxis dataKey="month" stroke="#6A97B4" tick={{ fontSize: 12, fill: "#6A97B4" }} />
           <YAxis stroke="#6A97B4" tick={{ fontSize: 12, fill: "#6A97B4" }} tickFormatter={(v) => yFmt(v, locale)} width={52} />
@@ -225,6 +243,13 @@ export default function CashflowChart({ data, hideHeader = false }: Props) {
         </>
       )}
 
+      <p className="text-xs text-[#4A7A9B] text-center mt-2">
+        Tap any month to see the breakdown
+      </p>
+
     </div>
+
+    <MonthDrawer month={selMonth} onClose={closeDrawer} locale={locale} />
+  </>
   );
 }
