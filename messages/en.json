@@ -402,7 +402,7 @@
     },
     "uploading": {
       "title": "Uploading {fileName}",
-      "subtitle": "Going directly to Supabase Storage. No file size limit",
+      "subtitle": "Sending your data securely…",
       "label": "Uploading…"
     },
     "parsing": {
@@ -485,7 +485,7 @@
     },
     "trust": {
       "item1": "Your file never leaves this tab",
-      "item2": "We store insights, not transactions",
+      "item2": "Transaction data stored privately, never your raw file",
       "item3": "Delete everything in one click",
       "item4": "No bank login required"
     },

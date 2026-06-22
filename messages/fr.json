@@ -402,7 +402,7 @@
     },
     "uploading": {
       "title": "Import de {fileName}",
-      "subtitle": "Envoi direct vers Supabase Storage. Aucune limite de taille",
+      "subtitle": "Envoi sécurisé de vos données…",
       "label": "Import en cours…"
     },
     "parsing": {
@@ -485,7 +485,7 @@
     },
     "trust": {
       "item1": "Votre fichier ne quitte pas cet onglet",
-      "item2": "Nous stockons des analyses, pas vos transactions",
+      "item2": "Données de transaction stockées en sécurité, jamais le fichier brut",
       "item3": "Supprimez tout en un clic",
       "item4": "Aucune connexion bancaire requise"
     },

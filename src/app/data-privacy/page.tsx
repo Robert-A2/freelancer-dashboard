@@ -31,7 +31,7 @@ export default function DataPrivacyPage() {
         <div className="card space-y-2">
           <h2 className="text-base font-semibold text-[#E8F0F8]">What we store</h2>
           <p className="text-sm text-[#7BA8C4] leading-relaxed">
-            We store the structured numbers we extract from your CSV — transaction dates, amounts, and categories. We do not store bank account numbers, sort codes, IBANs, full transaction descriptions, or any information that could identify your bank or account.
+            We store the structured rows extracted from your CSV: transaction dates, amounts, merchant or payee descriptions, and the categories we assign. We do not store bank account numbers, sort codes, IBANs, or any credential that could identify or access your bank account.
           </p>
         </div>
 
