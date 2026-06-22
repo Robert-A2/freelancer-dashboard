@@ -13,6 +13,8 @@
       "analyticsMobile": "Analyses",
       "forecast": "Prévisions",
       "forecastMobile": "Prévisions",
+      "clients": "Clients",
+      "clientsMobile": "Clients",
       "settings": "Paramètres"
     },
     "buttons": {
@@ -891,7 +893,8 @@
     "clientSection": {
       "label": "Analyse clients",
       "title": "D'où vient votre chiffre d'affaires",
-      "subtitle": "Concentration des revenus, activité et croissance des clients."
+      "subtitle": "Concentration des revenus, activité et croissance des clients.",
+      "trustCenter": "Voir le centre de confiance & risque"
     },
     "clientInsights": {
       "metrics": {
@@ -969,6 +972,111 @@
       "insightsCount": "{count, plural, one {# aperçu} other {# aperçus}}",
       "showLess": "Afficher moins",
       "showFullBreakdown": "Afficher le détail complet par catégorie"
+    }
+  },
+  "clients": {
+    "label": "Analyse clients",
+    "title": "Centre de confiance & risque client",
+    "subtitle": "Comprenez qui vous paie, avec quelle fiabilité, et quelle action entreprendre.",
+    "intentDataWarning": "La classification des intentions est incomplète. Affichage de toutes les transactions de revenus. Pour de meilleurs résultats, examinez et classifiez vos transactions dans l'Historique.",
+    "emptyState": {
+      "heading": "Aucune donnée client",
+      "body": "Importez un relevé bancaire pour commencer à suivre vos paiements clients.",
+      "cta": "Importer un CSV"
+    },
+    "summary": {
+      "totalClients": "Total clients",
+      "reliable": "Fiables",
+      "watching": "Surveillance",
+      "highRisk": "Risque élevé"
+    },
+    "alerts": {
+      "red": "Aucun paiement depuis {days, plural, one {# jour} other {# jours}} — relance nécessaire",
+      "viewClient": "Voir le client"
+    },
+    "list": {
+      "title": "Tous les clients",
+      "subtitle": "Classés par revenu total · cliquez pour voir le profil complet",
+      "lastPayment": "Dernier paiement : {date}",
+      "ofIncome": "{pct}% des revenus"
+    },
+    "status": {
+      "green": "Fiable",
+      "yellow": "Surveillance",
+      "red": "Risque"
+    },
+    "dependency": {
+      "low": "Risque faible",
+      "medium": "Risque modéré",
+      "high": "Risque élevé"
+    },
+    "trend": {
+      "increasing": "En hausse",
+      "stable": "Stable",
+      "declining": "En baisse"
+    },
+    "detail": {
+      "back": "Tous les clients",
+      "clientSince": "Client depuis {date}",
+      "duration": {
+        "months": "{count, plural, one {# mois} other {# mois}}",
+        "years": "{count, plural, one {# an} other {# ans}}",
+        "yearsAndMonths": "{years}a {months}m"
+      },
+      "overview": {
+        "title": "Aperçu client",
+        "totalRevenue": "Revenu total",
+        "contribution": "Contribution revenus",
+        "paymentCount": "Paiements",
+        "avgPayment": "Paiement moyen",
+        "largestPayment": "Paiement le plus élevé",
+        "duration": "Relation",
+        "firstPayment": "Premier paiement",
+        "lastPayment": "Dernier paiement"
+      },
+      "pattern": {
+        "title": "Modèle de paiement",
+        "avgInterval": "Intervalle moyen",
+        "currentGap": "Écart actuel",
+        "expectedInterval": "Intervalle attendu",
+        "days": "{count, plural, one {# jour} other {# jours}}",
+        "noInterval": "1 seul paiement — pas encore d'intervalle",
+        "insufficientData": "Historique de paiement insuffisant pour analyser le modèle.",
+        "onSchedule": "Ce client paie dans les délais selon son comportement habituel.",
+        "slightlyLate": "Le paiement de ce client est légèrement en retard par rapport à son intervalle habituel.",
+        "significantlyLate": "Le paiement de ce client est significativement en retard. Envisagez une relance."
+      },
+      "revenueTrend": {
+        "title": "Tendance des revenus",
+        "subtitle": "6 derniers mois — comparaison des 3 derniers mois aux 3 mois précédents",
+        "noData": "Aucun paiement de ce client au cours des 6 derniers mois."
+      },
+      "dependencyRisk": {
+        "title": "Risque de dépendance",
+        "subtitle": "Quelle part de vos revenus totaux dépend de ce client.",
+        "pctLabel": "{pct}% de vos revenus totaux proviennent de ce client."
+      },
+      "insights": {
+        "title": "Analyses",
+        "reliable": "Ce client a payé {count, plural, one {# fois} other {# fois}} sur {months, plural, one {# mois} other {# mois}} avec des intervalles de paiement réguliers.",
+        "delayWarning": "Ce client paie habituellement tous les {avgDays, plural, one {# jour} other {# jours}}. L'écart actuel est de {currentGap, plural, one {# jour} other {# jours}}.",
+        "dependency": "{pct}% de vos revenus proviennent de ce client.",
+        "decline": "Les revenus de ce client ont diminué de {pct}% par rapport à la période précédente.",
+        "singlePayment": "Un seul paiement enregistré de ce client jusqu'à présent."
+      },
+      "actions": {
+        "title": "Actions recommandées",
+        "followUp": "Relancer",
+        "followUpReason": "L'écart de paiement actuel dépasse la moyenne historique.",
+        "monitor": "Surveiller",
+        "monitorReason": "Les revenus de ce client sont en baisse.",
+        "noAction": "Aucune action requise",
+        "noActionReason": "Ce client reste régulier. Aucune relance nécessaire."
+      },
+      "history": {
+        "title": "Historique des paiements",
+        "subtitle": "{count, plural, one {# paiement} other {# paiements}} · du plus récent au plus ancien"
+      }
     }
   },
   "intent": {

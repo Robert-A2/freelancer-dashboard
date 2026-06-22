@@ -13,6 +13,8 @@
       "analyticsMobile": "Analytics",
       "forecast": "Forecast",
       "forecastMobile": "Forecast",
+      "clients": "Clients",
+      "clientsMobile": "Clients",
       "settings": "Settings"
     },
     "buttons": {
@@ -891,7 +893,8 @@
     "clientSection": {
       "label": "Client insights",
       "title": "Where your revenue comes from",
-      "subtitle": "Revenue concentration, client activity, and growth."
+      "subtitle": "Revenue concentration, client activity, and growth.",
+      "trustCenter": "View full Trust & Risk Center"
     },
     "clientInsights": {
       "metrics": {
@@ -969,6 +972,111 @@
       "insightsCount": "{count, plural, one {# insight} other {# insights}}",
       "showLess": "Show less",
       "showFullBreakdown": "Show full breakdown by category"
+    }
+  },
+  "clients": {
+    "label": "Client insights",
+    "title": "Client Trust & Risk Center",
+    "subtitle": "Understand who pays you, how reliably, and what action to take.",
+    "intentDataWarning": "Intent classification is incomplete. Showing all income transactions. For best results, review and classify your transactions in History.",
+    "emptyState": {
+      "heading": "No client data yet",
+      "body": "Upload a bank statement to start tracking your client payments.",
+      "cta": "Upload CSV"
+    },
+    "summary": {
+      "totalClients": "Total clients",
+      "reliable": "Reliable",
+      "watching": "Watch",
+      "highRisk": "High risk"
+    },
+    "alerts": {
+      "red": "No payment in {days, plural, one {# day} other {# days}} — follow up needed",
+      "viewClient": "View client"
+    },
+    "list": {
+      "title": "All clients",
+      "subtitle": "Ranked by total revenue · click to view full profile",
+      "lastPayment": "Last payment: {date}",
+      "ofIncome": "{pct}% of income"
+    },
+    "status": {
+      "green": "Reliable",
+      "yellow": "Watch",
+      "red": "Risk"
+    },
+    "dependency": {
+      "low": "Low risk",
+      "medium": "Medium risk",
+      "high": "High risk"
+    },
+    "trend": {
+      "increasing": "Increasing",
+      "stable": "Stable",
+      "declining": "Declining"
+    },
+    "detail": {
+      "back": "All clients",
+      "clientSince": "Client since {date}",
+      "duration": {
+        "months": "{count, plural, one {# month} other {# months}}",
+        "years": "{count, plural, one {# year} other {# years}}",
+        "yearsAndMonths": "{years}y {months}mo"
+      },
+      "overview": {
+        "title": "Client overview",
+        "totalRevenue": "Total revenue",
+        "contribution": "Revenue contribution",
+        "paymentCount": "Payments",
+        "avgPayment": "Avg payment",
+        "largestPayment": "Largest payment",
+        "duration": "Relationship",
+        "firstPayment": "First payment",
+        "lastPayment": "Last payment"
+      },
+      "pattern": {
+        "title": "Payment pattern",
+        "avgInterval": "Avg interval",
+        "currentGap": "Current gap",
+        "expectedInterval": "Expected interval",
+        "days": "{count, plural, one {# day} other {# days}}",
+        "noInterval": "Only 1 payment — no interval yet",
+        "insufficientData": "Not enough payment history to analyse the pattern.",
+        "onSchedule": "This client is paying on schedule based on historical behaviour.",
+        "slightlyLate": "This client's payment is slightly late compared to their usual interval.",
+        "significantlyLate": "This client's payment is significantly overdue. Consider following up."
+      },
+      "revenueTrend": {
+        "title": "Revenue trend",
+        "subtitle": "Last 6 months — comparing most recent 3 months to previous 3 months",
+        "noData": "No payments from this client in the last 6 months."
+      },
+      "dependencyRisk": {
+        "title": "Dependency risk",
+        "subtitle": "How much of your total income relies on this client.",
+        "pctLabel": "{pct}% of your total income comes from this client."
+      },
+      "insights": {
+        "title": "Insights",
+        "reliable": "This client has paid {count, plural, one {# time} other {# times}} over {months, plural, one {# month} other {# months}} with consistent payment intervals.",
+        "delayWarning": "This client usually pays every {avgDays, plural, one {# day} other {# days}}. Current gap is {currentGap, plural, one {# day} other {# days}}.",
+        "dependency": "{pct}% of your income comes from this client.",
+        "decline": "Revenue from this client decreased {pct}% compared to the previous period.",
+        "singlePayment": "Only one payment recorded from this client so far."
+      },
+      "actions": {
+        "title": "Recommended actions",
+        "followUp": "Follow up",
+        "followUpReason": "Current payment gap exceeds the historical average.",
+        "monitor": "Monitor",
+        "monitorReason": "Revenue from this client has been declining.",
+        "noAction": "No action needed",
+        "noActionReason": "This client remains consistent. No follow-up required."
+      },
+      "history": {
+        "title": "Payment history",
+        "subtitle": "{count, plural, one {# payment} other {# payments}} · most recent first"
+      }
     }
   },
   "intent": {

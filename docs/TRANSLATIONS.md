@@ -54,6 +54,7 @@ Two distinct mechanisms work together:
 | `dashboard` | `/dashboard` page, `<SummaryCards>`, `<FirstUploadBanner>`, empty state |
 | `forecast` | `/forecast` page — health score, risk, key drivers, projections |
 | `analytics` | `/analytics` page — YTD summary, cashflow chart, client insights |
+| `clients` | `/clients` (list) and `/clients/[name]` (detail) — Client Trust & Risk Center. Sub-namespaces: `status`, `dependency`, `trend`, `detail.*` (overview, pattern, revenueTrend, dependencyRisk, insights, actions, history) |
 | `categories` | **Category display names** — keyed by the *lowercase category id* (e.g. `"client payment"`, `"software"`, `"taxes"`) → display string (e.g. `"Client payment"`, `"Software"`, `"Taxes"`). Used by `cat()` sentinels (§6) and anywhere a raw category id needs to become user-facing text. |
 | `insightCategories` | Display names for the 5 `InsightCategory` groupings (`growth`, `cashflow`, `spending`, `seasonality`, `clients`) — used to group `<HistoricalInsights>`/`<FinancialStory>` sections. See [INTELLIGENCE_ENGINE.md](./INTELLIGENCE_ENGINE.md). |
 | `insights` | **All ICU MessageFormat templates** for `Insight.key` values — every sentence `buildHistoricalInsights()` and `generateDashboardIntelligence()` can produce. See §6/§7. |

@@ -1,9 +1,35 @@
 # Analytics Engine
 
-- **What it does**: Turns the raw `Transaction` table into everything the Dashboard, Analytics, and Forecast pages display — monthly aggregates, month-over-month comparisons, category trends, client/income concentration, data coverage, and categorization health.
+- **What it does**: Turns the raw `Transaction` table into everything the Dashboard, Analytics, and Forecast pages display — monthly aggregates, month-over-month comparisons, category trends, client/income concentration, data coverage, and categorization health. The companion `client-risk-engine.ts` (see below) adds the Client Trust & Risk Center feature.
 - **Why it exists**: Computing these numbers from scratch on every page load (especially category trends and client insights, which scan *all* of a user's transactions) would be slow and would make the Forecast engine's job harder. This module is the **single source of truth** for "what does this user's financial history look like" — every other engine (forecast, intelligence) builds on top of it rather than querying `Transaction` directly.
-- **Where the code is**: `src/lib/analytics-engine.ts` (697 lines, all exports are `async function`s reading via Prisma).
+- **Where the code is**: `src/lib/analytics-engine.ts` (all exports are `async function`s reading via Prisma). Client risk logic lives in `src/lib/client-risk-engine.ts`.
 - **How to modify it safely**: see [How to modify](#how-to-modify-safely) at the bottom.
+
+---
+
+## Client Trust & Risk Center (`src/lib/client-risk-engine.ts`)
+
+Added 2026-06-22. Powers the `/clients` and `/clients/[name]` pages.
+
+### Data source
+
+Queries `intent IN ['freelance_income', 'salary']` — the intent-classified income transactions only. Falls back to `transactionType = 'income'` if fewer than 3 intent-classified rows exist (and sets `hasIntentData: false` to warn the UI). Never uses savings transfers, internal transfers, refunds, or expenses.
+
+Client names are extracted via `extractClientName()` (now exported from `analytics-engine.ts`) — the same normalisation used by `getClientInsights`.
+
+### Key calculations
+
+| Metric | Formula |
+|---|---|
+| Total revenue | `SUM(amount)` for all payments from this client |
+| Revenue contribution | `clientRevenue / totalRevenue × 100` |
+| Avg interval | Average of (n−1) day-gaps between consecutive sorted payment dates |
+| Current gap | `floor((today - lastPaymentDate) / 86400s)` — uses real today, not data-anchor date |
+| Status | GREEN: gap ≤ avgInterval×1.2 · YELLOW: gap ≤ avgInterval×1.5 · RED: gap > avgInterval×1.5 OR gap ≥ 90 |
+| Dependency risk | LOW: 0–25% · MEDIUM: 25–50% · HIGH: 50%+ |
+| Revenue trend | Last 3-month avg vs prev 3-month avg across a 6-month window ending today · >10% = Increasing · <−10% = Declining |
+
+> **Note on date anchoring**: unlike `analytics-engine.ts` which anchors to the user's last data point, `client-risk-engine.ts` uses `new Date()` (real today) for `currentGapDays` and the 6-month trend window. This is deliberate — the Client Trust feature answers real-world risk questions ("has this client paid recently?"), where anchoring to stale data would give a false sense of safety.
 
 ---
 

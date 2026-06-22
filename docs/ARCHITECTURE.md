@@ -38,6 +38,8 @@ src/
 │   │   ├── layout.tsx
 │   │   ├── dashboard/page.tsx
 │   │   ├── analytics/page.tsx
+│   │   ├── clients/page.tsx          ← Client Trust & Risk Center (list)
+│   │   ├── clients/[name]/page.tsx   ← Client detail (payment pattern, risk, trend)
 │   │   ├── forecast/page.tsx
 │   │   ├── history/page.tsx
 │   │   ├── upload/page.tsx
@@ -59,6 +61,7 @@ src/
 │   └── request.ts                  ← next-intl request config (cookie → locale)
 ├── lib/
 │   ├── analytics-engine.ts         ← see ANALYTICS_ENGINE.md
+│   ├── client-risk-engine.ts       ← Client Trust & Risk Center — payment pattern, status, dependency, trend
 │   ├── forecast-engine.ts          ← see FORECAST_ENGINE.md
 │   ├── intelligence-engine.ts      ← see INTELLIGENCE_ENGINE.md
 │   ├── csv-processor.ts            ← see CSV_IMPORT.md

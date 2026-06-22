@@ -521,7 +521,7 @@ const PAYMENT_PROCESSORS: Record<string, string> = {
   "99designs": "99designs", wise: "Wise",
 };
 
-function extractClientName(description: string, category: string): { name: string; isProcessor: boolean } {
+export function extractClientName(description: string, category: string): { name: string; isProcessor: boolean } {
   const lower = description.toLowerCase();
   // Check category first (most reliable)
   if (PAYMENT_PROCESSORS[category]) return { name: PAYMENT_PROCESSORS[category], isProcessor: true };

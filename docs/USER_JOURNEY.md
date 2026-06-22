@@ -212,11 +212,30 @@ A "stale data" flag (`dataIsStale`, >28 days since the last completed import) is
 Rendered sections (each a `<CollapsibleSection>`):
 - **YTD summary** — anchored to the user's *last data month* (`latestDataRecord`), not wall-clock "today" — consistent with the "anchor to the data" principle (see [ANALYTICS_ENGINE.md](./ANALYTICS_ENGINE.md)).
 - **Cashflow chart** (`<CashflowChart>`, Recharts) — income/expenses/cashflow over time. **Clickable**: tapping a bar opens `<MonthDrawer>` (shared with TrendsChart) with the same 2-level drill-down (month overview with Cashflow/Expenses/Income tabs → category → transactions).
-- **Client insights** (`<ClientInsights>`) — from `getClientInsights()`, income concentration / top clients.
+- **Client insights** (`<ClientInsights>`) — from `getClientInsights()`, income concentration / top clients. The section footer links to the full **Client Trust & Risk Center** at `/clients`.
 - **Financial Story** (`<FinancialStory>`) — renders `rankedInsights` (the same `buildHistoricalInsights()` output used on the Dashboard, see [INTELLIGENCE_ENGINE.md §5](./INTELLIGENCE_ENGINE.md)), grouped by `InsightCategory`.
 - **Data coverage** (`<DataCoverageBar>`) and categorization health stats.
 
 Analytics does **not** call `generateDashboardIntelligence()` — it only uses the historical "Financial Story" insights, not the dashboard narrative fields (snapshot/trajectory/health/risk).
+
+---
+
+## 12b. Client Trust & Risk Center (`/clients`, `/clients/[name]`)
+
+**Files**: `src/app/(dashboard)/clients/page.tsx` (list), `src/app/(dashboard)/clients/[name]/page.tsx` (detail). Both are server components with `force-dynamic`. Data comes entirely from `getClientRiskProfiles(userId)` in `src/lib/client-risk-engine.ts`.
+
+**List page** shows: total clients, reliable / watch / high-risk counts, alert bar for RED-status clients, full ranked client table with status badge, last payment date, revenue contribution bar, and total revenue. Each row links to the detail page via `/clients/[encodeURIComponent(name)]`.
+
+**Detail page** shows (in order):
+1. **Client overview** — total revenue, contribution %, payment count, avg/largest payment, relationship duration, first/last payment dates.
+2. **Payment pattern** — avg interval between payments, current gap (real today, not data anchor), expected interval; status card (GREEN/YELLOW/RED) with description.
+3. **Revenue trend** — 6-month CSS bar chart (no Recharts dependency); trend label (Increasing / Stable / Declining) with percentage change.
+4. **Dependency risk** — progress bar showing 0–25% / 25–50% / 50%+ bands; plain-text explanation.
+5. **Insights** — auto-generated from actual data only: reliable, delay warning, dependency, decline, single-payment.
+6. **Recommended actions** — Follow up / Monitor / No action needed, derived from status + trend.
+7. **Payment history** — full list of all payments, most recent first.
+
+**Date anchoring exception**: `client-risk-engine.ts` uses `new Date()` (real wall-clock today) for `currentGapDays` and the 6-month trend window. Every other analytics engine anchors to the user's last data point — this page is the intentional exception because client risk questions are real-world ("is this client overdue *right now*?"), not historical.
 
 ---
 
