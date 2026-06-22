@@ -88,8 +88,8 @@ export default async function ClientsPage() {
             return (
               <div className="space-y-2">
                 {shown.map(c => (
-                  <div key={c.name} className="flex items-center gap-3 px-4 py-3 bg-[#D9707008] border border-[#D9707025] rounded-xl">
-                    <span className="text-[#D97070] text-base flex-shrink-0">⚠</span>
+                  <div key={c.name} className="flex items-center gap-3 py-2">
+                    <span className="text-[#D97070] text-sm flex-shrink-0">⚠</span>
                     <p className="text-sm text-[#A8C6E0] flex-1">
                       <span className="font-semibold text-[#E8F0F8]">{c.name}</span>
                       {" — "}
