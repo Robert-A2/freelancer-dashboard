@@ -80,27 +80,37 @@ export default async function ClientsPage() {
             ))}
           </div>
 
-          {/* Risk alerts */}
-          {highRiskCount > 0 && (
-            <div className="space-y-2">
-              {clients.filter(c => c.status === "red").map(c => (
-                <div key={c.name} className="flex items-center gap-3 px-4 py-3 bg-[#D9707008] border border-[#D9707025] rounded-xl">
-                  <span className="text-[#D97070] text-base flex-shrink-0">⚠</span>
-                  <p className="text-sm text-[#A8C6E0] flex-1">
-                    <span className="font-semibold text-[#E8F0F8]">{c.name}</span>
-                    {" — "}
-                    {t("alerts.red", { days: c.currentGapDays })}
+          {/* Risk alerts — show top 3 only */}
+          {highRiskCount > 0 && (() => {
+            const redClients = clients.filter(c => c.status === "red");
+            const shown = redClients.slice(0, 3);
+            const rest = redClients.length - 3;
+            return (
+              <div className="space-y-2">
+                {shown.map(c => (
+                  <div key={c.name} className="flex items-center gap-3 px-4 py-3 bg-[#D9707008] border border-[#D9707025] rounded-xl">
+                    <span className="text-[#D97070] text-base flex-shrink-0">⚠</span>
+                    <p className="text-sm text-[#A8C6E0] flex-1">
+                      <span className="font-semibold text-[#E8F0F8]">{c.name}</span>
+                      {" — "}
+                      {t("alerts.red", { days: c.currentGapDays })}
+                    </p>
+                    <Link
+                      href={`/clients/${encodeURIComponent(c.name)}`}
+                      className="text-xs text-[#6A97B4] hover:text-[#3AB5A0] flex-shrink-0 transition-colors"
+                    >
+                      {t("alerts.viewClient")} →
+                    </Link>
+                  </div>
+                ))}
+                {rest > 0 && (
+                  <p className="text-xs text-[#6A97B4] px-1">
+                    {t("alerts.andMore", { count: rest })}
                   </p>
-                  <Link
-                    href={`/clients/${encodeURIComponent(c.name)}`}
-                    className="text-xs text-[#6A97B4] hover:text-[#3AB5A0] flex-shrink-0 transition-colors"
-                  >
-                    {t("alerts.viewClient")} →
-                  </Link>
-                </div>
-              ))}
-            </div>
-          )}
+                )}
+              </div>
+            );
+          })()}
 
           {/* Client list */}
           <div className="card">

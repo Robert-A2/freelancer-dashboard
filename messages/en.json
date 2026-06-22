@@ -992,7 +992,8 @@
     },
     "alerts": {
       "red": "No payment in {days, plural, one {# day} other {# days}} — follow up needed",
-      "viewClient": "View client"
+      "viewClient": "View client",
+      "andMore": "+ {count, plural, one {# more at-risk client} other {# more at-risk clients}} — see full list below"
     },
     "list": {
       "title": "All clients",

@@ -992,7 +992,8 @@
     },
     "alerts": {
       "red": "Aucun paiement depuis {days, plural, one {# jour} other {# jours}} — relance nécessaire",
-      "viewClient": "Voir le client"
+      "viewClient": "Voir le client",
+      "andMore": "+ {count, plural, one {# autre client à risque} other {# autres clients à risque}} — voir la liste complète ci-dessous"
     },
     "list": {
       "title": "Tous les clients",
