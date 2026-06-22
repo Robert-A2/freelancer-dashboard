@@ -81,6 +81,12 @@ export default async function UploadPage() {
           </div>
         </div>
       )}
+
+      <div className="text-center">
+        <a href="/data-privacy" className="text-xs text-[#6A97B4] hover:text-[#E8F0F8] transition-colors">
+          {t("dataPrivacyLink")}
+        </a>
+      </div>
     </div>
   );
 }

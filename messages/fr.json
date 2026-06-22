@@ -397,12 +397,17 @@
     "dropzone": {
       "title": "Déposez votre CSV ici",
       "subtitle": "ou cliquez pour parcourir",
-      "hint": "Toute taille · Toute période · Doublons ignorés automatiquement"
+      "privacy": "Votre fichier est lu en privé dans votre navigateur — nous ne recevons jamais le CSV brut",
+      "hint": "Traité en privé dans votre navigateur · Toute taille · Doublons ignorés"
     },
     "uploading": {
       "title": "Import de {fileName}",
       "subtitle": "Envoi direct vers Supabase Storage. Aucune limite de taille",
       "label": "Import en cours…"
+    },
+    "parsing": {
+      "title": "Lecture de {fileName}...",
+      "subtitle": "Votre fichier est traité en privé dans votre navigateur."
     },
     "processing": {
       "title": "Traitement de {fileName}",
@@ -478,6 +483,13 @@
         ]
       }
     },
+    "trust": {
+      "item1": "Votre fichier ne quitte pas cet onglet",
+      "item2": "Nous stockons des analyses, pas vos transactions",
+      "item3": "Supprimez tout en un clic",
+      "item4": "Aucune connexion bancaire requise"
+    },
+    "dataPrivacyLink": "Comment nous gérons vos données →",
     "deleteImport": {
       "delete": "Supprimer",
       "deleting": "suppression…",

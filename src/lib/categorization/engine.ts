@@ -276,19 +276,19 @@ export function categorizeTransaction(
   // to the Merchant table take effect without any engine changes. When no
   // index is supplied (e.g. existing tests calling this directly), these are
   // just the original static arrays.
-  const transferKw = merchantIndex?.transferKeywords.length
+  const transferKw = merchantIndex?.transferKeywords?.length
     ? [...TRANSFER_KEYWORDS, ...merchantIndex.transferKeywords]
     : TRANSFER_KEYWORDS;
-  const savingsKw = merchantIndex?.savingsKeywords.length
+  const savingsKw = merchantIndex?.savingsKeywords?.length
     ? [...SAVINGS_KEYWORDS, ...merchantIndex.savingsKeywords]
     : SAVINGS_KEYWORDS;
-  const incomePatterns = merchantIndex?.incomePatterns.length
+  const incomePatterns = merchantIndex?.incomePatterns?.length
     ? [...merchantIndex.incomePatterns, ...INCOME_PATTERNS]
     : INCOME_PATTERNS;
-  const highEntries = merchantIndex?.expenseHigh.length
+  const highEntries = merchantIndex?.expenseHigh?.length
     ? [...HIGH_CONFIDENCE_ENTRIES, ...merchantIndex.expenseHigh]
     : HIGH_CONFIDENCE_ENTRIES;
-  const mediumEntries = merchantIndex?.expenseMedium.length
+  const mediumEntries = merchantIndex?.expenseMedium?.length
     ? [...MEDIUM_CONFIDENCE_ENTRIES, ...merchantIndex.expenseMedium]
     : MEDIUM_CONFIDENCE_ENTRIES;
 

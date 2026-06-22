@@ -4,6 +4,17 @@ import { useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
 import { INTL_LOCALES, type Locale } from "@/i18n/locales";
+import { parseCsv } from "@/lib/csv-processor";
+import type { LearnedRules, MerchantIndex } from "@/lib/categorization";
+import type { UserIntentRules } from "@/lib/intent-engine";
+
+const EMPTY_MERCHANT_INDEX: MerchantIndex = {
+  expenseHigh:    [],
+  expenseMedium:  [],
+  incomePatterns: [],
+  savingsKeywords:  [],
+  transferKeywords: [],
+};
 
 interface ImportResult {
   totalRows: number;
@@ -20,7 +31,7 @@ interface ImportResult {
 
 type Stage =
   | { status: "idle" }
-  | { status: "uploading"; progress: number; fileName: string }
+  | { status: "parsing"; fileName: string }
   | { status: "processing"; fileName: string }
   | { status: "done"; result: ImportResult; fileName: string }
   | { status: "error"; message: string };
@@ -40,39 +51,80 @@ export default function CsvUploader() {
         return;
       }
 
-      setStage({ status: "uploading", progress: 0, fileName: file.name });
+      setStage({ status: "parsing", fileName: file.name });
 
-      const presignRes = await fetch(
-        `/api/uploads/presign?filename=${encodeURIComponent(file.name)}`
-      );
-
-      const presignData = await presignRes.json();
-
-      if (!presignRes.ok) {
-        setStage({
-          status: "error",
-          message: presignData.error ?? "prepare-failed",
-        });
+      // Read file entirely in the browser — nothing leaves the device at this point
+      let csvText: string;
+      try {
+        csvText = await file.text();
+      } catch {
+        setStage({ status: "error", message: "parse-failed" });
         return;
       }
 
-      const { signedUrl, storagePath } = presignData;
+      if (!csvText.trim()) {
+        setStage({ status: "error", message: "File is empty" });
+        return;
+      }
 
+      // Fetch only the user's own learned rules (tiny JSON) — not the raw file
+      let learnedRules: LearnedRules = new Map();
+      let userIntentRules: UserIntentRules = new Map();
       try {
-        await uploadWithProgress(signedUrl, file, (pct) => {
-          setStage({ status: "uploading", progress: pct, fileName: file.name });
-        });
+        const rulesRes = await fetch("/api/uploads/rules");
+        if (rulesRes.ok) {
+          const { learnedRules: lrPairs, userIntentRules: irPairs } = await rulesRes.json();
+          learnedRules = new Map(lrPairs);
+          userIntentRules = new Map(irPairs);
+        }
       } catch {
-        setStage({ status: "error", message: "storage-upload-failed" });
+        // Non-fatal: proceed with empty rules; merchant pass runs server-side anyway
+      }
+
+      // Parse CSV entirely in the browser — raw bank statement never leaves this tab
+      let parseResult;
+      try {
+        parseResult = parseCsv(csvText, learnedRules, undefined, EMPTY_MERCHANT_INDEX, userIntentRules);
+      } catch (e) {
+        console.error("[CsvUploader] parseCsv threw:", e);
+        setStage({ status: "error", message: "parse-failed" });
+        return;
+      }
+
+      const {
+        transactions,
+        totalRows,
+        skippedRows,
+        currencies,
+        hasMixedCurrencies,
+        parsedEarliest,
+        parsedLatest,
+      } = parseResult;
+
+      if (transactions.length === 0) {
+        setStage({
+          status: "error",
+          message: "No valid transactions found. Check your CSV format.",
+        });
         return;
       }
 
       setStage({ status: "processing", fileName: file.name });
 
+      // Send only structured parsed rows — the raw CSV stays in the browser
       const processRes = await fetch("/api/uploads/process", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ storagePath, fileName: file.name }),
+        body: JSON.stringify({
+          transactions,
+          fileName: file.name,
+          totalRows,
+          skippedRows,
+          currencies,
+          hasMixedCurrencies,
+          parsedEarliest: parsedEarliest?.toISOString() ?? null,
+          parsedLatest:   parsedLatest?.toISOString()  ?? null,
+        }),
       });
 
       const data = await processRes.json();
@@ -86,16 +138,16 @@ export default function CsvUploader() {
         status: "done",
         fileName: file.name,
         result: {
-          totalRows: data.totalRows,
-          importedRows: data.importedRows,
-          duplicateRows: data.duplicateRows,
-          skippedRows: data.skippedRows,
-          dateRangeFrom: data.dateRangeFrom ?? null,
-          dateRangeTo: data.dateRangeTo ?? null,
+          totalRows:          data.totalRows,
+          importedRows:       data.importedRows,
+          duplicateRows:      data.duplicateRows,
+          skippedRows:        data.skippedRows,
+          dateRangeFrom:      data.dateRangeFrom      ?? null,
+          dateRangeTo:        data.dateRangeTo        ?? null,
           categoriesDetected: data.categoriesDetected ?? 0,
-          currencies: data.currencies ?? [],
+          currencies:         data.currencies         ?? [],
           hasMixedCurrencies: data.hasMixedCurrencies ?? false,
-          typeBreakdown: data.typeBreakdown ?? null,
+          typeBreakdown:      data.typeBreakdown      ?? null,
         },
       });
 
@@ -140,9 +192,8 @@ export default function CsvUploader() {
           <div className="text-4xl mb-3">📂</div>
           <p className="text-[#E8F0F8] font-semibold mb-1">{t("dropzone.title")}</p>
           <p className="text-sm text-[#7BA8C4]">{t("dropzone.subtitle")}</p>
-          <p className="text-xs text-[#6A97B4] mt-3">
-            {t("dropzone.hint")}
-          </p>
+          <p className="text-xs text-[#6A97B4] mt-1">{t("dropzone.privacy")}</p>
+          <p className="text-xs text-[#6A97B4] mt-3">{t("dropzone.hint")}</p>
           <input
             ref={inputRef}
             type="file"
@@ -151,47 +202,38 @@ export default function CsvUploader() {
             onChange={handleFileChange}
           />
         </div>
+        <div className="flex flex-wrap justify-center gap-x-3 gap-y-2 mt-3">
+          {[t("trust.item1"), t("trust.item2"), t("trust.item3"), t("trust.item4")].map((label) => (
+            <span key={label} className="text-xs text-[#6A97B4] bg-[#1A3048] px-2.5 py-1 rounded-full whitespace-nowrap">
+              {label}
+            </span>
+          ))}
+        </div>
       </>
     );
   }
 
-  // ── Uploading ──────────────────────────────────────────────────────────────
-  if (stage.status === "uploading") {
+  // ── Parsing (browser-side) ─────────────────────────────────────────────────
+  if (stage.status === "parsing") {
     return (
-      <div className="card py-10 flex flex-col items-center gap-6">
+      <div className="card py-10 flex flex-col items-center gap-4">
+        <div className="w-10 h-10 border-4 border-[#3AB5A0] border-t-transparent rounded-full animate-spin" />
         <div className="text-center">
-          <p className="font-semibold text-[#E8F0F8]">{t("uploading.title", { fileName: stage.fileName })}</p>
-          <p className="text-sm text-[#7BA8C4] mt-1">
-            {t("uploading.subtitle")}
-          </p>
-        </div>
-
-        <div className="w-full max-w-sm">
-          <div className="flex justify-between text-xs text-[#6A97B4] mb-1.5">
-            <span>{t("uploading.label")}</span>
-            <span>{stage.progress}%</span>
-          </div>
-          <div className="h-2 bg-[#1E3550] rounded-full overflow-hidden">
-            <div
-              className="h-full bg-[#3AB5A0] rounded-full transition-all duration-200"
-              style={{ width: `${stage.progress}%` }}
-            />
-          </div>
+          <p className="font-semibold text-[#E8F0F8]">{t("parsing.title", { fileName: stage.fileName })}</p>
+          <p className="text-sm text-[#7BA8C4] mt-1">{t("parsing.subtitle")}</p>
         </div>
       </div>
     );
   }
 
-  // ── Processing ─────────────────────────────────────────────────────────────
+  // ── Processing (server inserting to DB) ────────────────────────────────────
   if (stage.status === "processing") {
     return (
       <div className="card py-10 flex flex-col items-center gap-4">
         <div className="w-10 h-10 border-4 border-[#3AB5A0] border-t-transparent rounded-full animate-spin" />
         <div className="text-center">
           <p className="font-semibold text-[#E8F0F8]">{t("processing.title", { fileName: stage.fileName })}</p>
-          <p className="text-sm text-[#7BA8C4] mt-1">
-            {t("processing.subtitle")}
-          </p>
+          <p className="text-sm text-[#7BA8C4] mt-1">{t("processing.subtitle")}</p>
         </div>
       </div>
     );
@@ -201,25 +243,23 @@ export default function CsvUploader() {
   if (stage.status === "done") {
     const { result, fileName } = stage;
 
-    // Always use timeZone: "UTC" so dates stored as UTC midnight never
-    // display as the previous day/month in the user's local timezone.
     const fmt = (iso: string | null) =>
       iso
         ? new Date(iso).toLocaleDateString(INTL_LOCALES[locale], { month: "long", year: "numeric", timeZone: "UTC" })
         : null;
 
     const dateFrom = fmt(result.dateRangeFrom);
-    const dateTo = fmt(result.dateRangeTo);
+    const dateTo   = fmt(result.dateRangeTo);
     const dateRangeLabel =
       dateFrom && dateTo && dateFrom !== dateTo
         ? `${dateFrom} – ${dateTo}`
         : dateFrom ?? null;
 
     const stats = [
-      { label: t("done.stats.imported"), value: result.importedRows.toLocaleString(locale), color: "text-[#4CC4A4]" },
+      { label: t("done.stats.imported"),   value: result.importedRows.toLocaleString(locale),  color: "text-[#4CC4A4]" },
       { label: t("done.stats.duplicates"), value: result.duplicateRows.toLocaleString(locale), color: "text-[#6A97B4]" },
-      { label: t("done.stats.total"), value: result.totalRows.toLocaleString(locale), color: "text-[#E8F0F8]" },
-      { label: t("done.stats.invalid"), value: result.skippedRows.toLocaleString(locale), color: "text-[#D4A254]" },
+      { label: t("done.stats.total"),      value: result.totalRows.toLocaleString(locale),     color: "text-[#E8F0F8]" },
+      { label: t("done.stats.invalid"),    value: result.skippedRows.toLocaleString(locale),   color: "text-[#D4A254]" },
     ];
 
     return (
@@ -294,9 +334,7 @@ export default function CsvUploader() {
               )}
             </div>
             {result.typeBreakdown.transfer > 0 && (
-              <p className="text-xs text-[#6A97B4] pt-1">
-                {t("done.transferNote")}
-              </p>
+              <p className="text-xs text-[#6A97B4] pt-1">{t("done.transferNote")}</p>
             )}
             <div className="pt-1">
               <a href="/history" className="text-xs text-[#3AB5A0] hover:underline">
@@ -377,87 +415,44 @@ export default function CsvUploader() {
 function parseUploadError(
   message: string,
   t: ReturnType<typeof useTranslations<"upload">>
-): {
-  heading: string;
-  reason: string;
-  steps: string[];
-} {
+): { heading: string; reason: string; steps: string[] } {
   const lower = message.toLowerCase();
 
   if (lower === "only-csv" || lower.includes("only .csv") || lower.includes("not a csv") || lower.includes(".csv files are supported")) {
     return {
       heading: t("errors.unsupportedFile.heading"),
-      reason: t("errors.unsupportedFile.reason"),
-      steps: t.raw("errors.unsupportedFile.steps") as string[],
+      reason:  t("errors.unsupportedFile.reason"),
+      steps:   t.raw("errors.unsupportedFile.steps") as string[],
     };
   }
 
-  if (lower.includes("no valid transactions") || lower.includes("check your csv")) {
+  if (lower === "parse-failed" || lower.includes("no valid transactions") || lower.includes("check your csv")) {
     return {
       heading: t("errors.noTransactions.heading"),
-      reason: t("errors.noTransactions.reason"),
-      steps: t.raw("errors.noTransactions.steps") as string[],
+      reason:  t("errors.noTransactions.reason"),
+      steps:   t.raw("errors.noTransactions.steps") as string[],
     };
   }
 
   if (lower.includes("empty")) {
     return {
       heading: t("errors.emptyFile.heading"),
-      reason: t("errors.emptyFile.reason"),
-      steps: t.raw("errors.emptyFile.steps") as string[],
+      reason:  t("errors.emptyFile.reason"),
+      steps:   t.raw("errors.emptyFile.steps") as string[],
     };
   }
 
-  if (lower === "prepare-failed" || lower === "storage-upload-failed" || lower.includes("failed to prepare") || lower.includes("storage") || lower.includes("network") || lower.includes("connection")) {
+  if (lower.includes("network") || lower.includes("connection") || lower === "processing-failed") {
     return {
       heading: t("errors.connectionProblem.heading"),
-      reason: t("errors.connectionProblem.reason"),
-      steps: t.raw("errors.connectionProblem.steps") as string[],
+      reason:  t("errors.connectionProblem.reason"),
+      steps:   t.raw("errors.connectionProblem.steps") as string[],
     };
   }
 
   return {
     heading: t("errors.generic.heading"),
-    reason: t("errors.generic.reason"),
-    steps: t.raw("errors.generic.steps") as string[],
+    reason:  t("errors.generic.reason"),
+    steps:   t.raw("errors.generic.steps") as string[],
   };
-}
-
-// ── XHR upload with progress ───────────────────────────────────────────────────
-function uploadWithProgress(
-  signedUrl: string,
-  file: File,
-  onProgress: (pct: number) => void
-): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const xhr = new XMLHttpRequest();
-
-    xhr.upload.addEventListener("progress", (e) => {
-      if (e.lengthComputable) {
-        onProgress(Math.round((e.loaded / e.total) * 100));
-      }
-    });
-
-    xhr.addEventListener("load", () => {
-      if (xhr.status >= 200 && xhr.status < 300) {
-        onProgress(100);
-        resolve();
-      } else {
-        reject(new Error(`Storage upload failed: ${xhr.status} ${xhr.responseText}`));
-      }
-    });
-
-    xhr.addEventListener("error", () =>
-      reject(new Error("Network error during upload"))
-    );
-
-    xhr.addEventListener("abort", () =>
-      reject(new Error("Upload aborted"))
-    );
-
-    xhr.open("PUT", signedUrl);
-    xhr.setRequestHeader("Content-Type", file.type || "text/csv");
-    xhr.setRequestHeader("x-upsert", "true");
-    xhr.send(file);
-  });
 }
