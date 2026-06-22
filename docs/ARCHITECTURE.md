@@ -17,7 +17,7 @@
 | Database | PostgreSQL via Supabase | accessed through Prisma, never directly |
 | ORM | Prisma 5 | `prisma/schema.prisma` is the single source of truth for the schema — see [DATABASE.md](./DATABASE.md) |
 | Auth | Supabase Auth (`@supabase/ssr`) | cookie-based sessions, refreshed in `middleware.ts` |
-| File storage | Supabase Storage | one private bucket, `csv-imports`, for uploaded CSVs (deleted immediately after processing) |
+| File storage | Supabase Storage | one private bucket, `csv-imports`, retained for account-deletion cleanup. CSVs are no longer uploaded here — the browser parses the file locally and sends structured JSON to the server. |
 | i18n | next-intl | `en` / `fr`, see [TRANSLATIONS.md](./TRANSLATIONS.md) |
 | Charts | Recharts | `TrendsChart`, `CashflowChart` |
 | CSV parsing | PapaParse | see [CSV_IMPORT.md](./CSV_IMPORT.md) |
@@ -51,7 +51,7 @@ src/
 │   │   ├── history/route.ts
 │   │   ├── monthly-comparison/route.ts
 │   │   ├── transactions/{recategorize,recategorize-all}/route.ts
-│   │   ├── uploads/{presign,process,[id]}/route.ts
+│   │   ├── uploads/{rules,process,[id]}/route.ts   ← presign removed; rules is new (GET learned category+intent rules for browser-side parse)
 │   │   └── users/create/route.ts
 │   ├── layout.tsx                 ← root layout: <html>, font, NextIntlClientProvider
 │   └── page.tsx                   ← landing page (public)
@@ -115,7 +115,7 @@ flowchart TD
 |---|---|---|---|
 | `src/lib/supabase/client.ts` | `createBrowserClient` | `"use client"` components | Browser-side auth calls — `signUp`, `signInWithPassword`, `signOut`, `resend`, password-reset flows. Reads/writes the session cookie via the browser. |
 | `src/lib/supabase/server.ts` | `createServerClient` | Server Components, Route Handlers (`route.ts`) | Reads the session from request cookies (via `next/headers`'s `cookies()`). Used to get the current `user` for every page and almost every API route. Its `setAll` is wrapped in a `try/catch` because **Server Components cannot set cookies** — only middleware and Route Handlers can; the catch silently no-ops in that case. |
-| `src/lib/supabase/admin.ts` | `createClient` (plain `@supabase/supabase-js`) with the **service-role key** | Route Handlers only (`uploads/process`, `uploads/presign`, `account` DELETE) | Bypasses Row-Level Security. Used for: downloading/deleting files in the `csv-imports` Storage bucket, creating the bucket if missing, and `auth.admin.deleteUser()` during account deletion. **Never expose this client or the `SUPABASE_SERVICE_ROLE_KEY` to the browser.** |
+| `src/lib/supabase/admin.ts` | `createClient` (plain `@supabase/supabase-js`) with the **service-role key** | Route Handlers only (`account` DELETE) | Bypasses Row-Level Security. Used for: cleaning up any residual Storage files under `csv-imports/<userId>/` during account deletion, and `auth.admin.deleteUser()`. **Never expose this client or the `SUPABASE_SERVICE_ROLE_KEY` to the browser.** |
 
 > **Why three clients instead of one**: the browser client only ever acts *as* the logged-in user (subject to Supabase's auth rules). The server client reads that same user's session server-side for SSR. The admin client is a deliberately separate, narrowly-used escape hatch for the handful of operations (storage management, account deletion) that need to act with elevated privileges — keeping it in its own file makes every privileged operation easy to grep for (`createAdminClient`).
 
@@ -173,7 +173,7 @@ flowchart LR
 
 | Component | Calls | Route | What happens |
 |---|---|---|---|
-| `CsvUploader.tsx` | `GET /api/uploads/presign` → upload to Storage → `POST /api/uploads/process` | `uploads/presign`, `uploads/process` | §8a |
+| `CsvUploader.tsx` | `GET /api/uploads/rules` → parse CSV in browser → `POST /api/uploads/process` | `uploads/rules`, `uploads/process` | §8a |
 | `DeleteImportButton.tsx` | `DELETE /api/uploads/[id]` | `uploads/[id]` | Deletes an import's transactions, recalculates analytics + forecast |
 | `RecategorizeButton.tsx` | `PATCH /api/transactions/recategorize` | `transactions/recategorize` | §8b |
 | `RecategorizeAllButton.tsx` | `POST /api/transactions/recategorize-all` | `transactions/recategorize-all` | Re-runs categorization on every transaction |
@@ -195,29 +195,31 @@ flowchart LR
 
 ### 8a. CSV upload pipeline
 
+The raw CSV file is parsed **entirely in the browser** and never sent to the server.
+
 ```mermaid
 flowchart TD
-    A["CsvUploader.tsx\n(user selects/drops file)"] --> B["GET /api/uploads/presign\n→ ensureBucket('csv-imports')\n→ createSignedUploadUrl()"]
-    B --> C["Browser uploads file directly\nto Supabase Storage (signed URL)"]
-    C --> D["POST /api/uploads/process\n{ storagePath, fileName }"]
-    D --> E["Verify storagePath starts with `${user.id}/`"]
-    E --> F["admin.storage.download(storagePath)\n→ csvText"]
-    F --> G["parseCsv(csvText, learnedRules,\nownerName, merchantIndex)\n— see CSV_IMPORT.md +\nCATEGORIZATION_ENGINE.md"]
+    A["CsvUploader.tsx\n(user selects/drops file)"] --> B["file.text()\n— read CSV in-memory\nnothing sent to server yet"]
+    B --> C["GET /api/uploads/rules\n→ load CategoryRule + UserIntentRule\nfor this user (small JSON)"]
+    C --> D["parseCsv(csvText, learnedRules,\nEMPTY_MERCHANT_INDEX, userIntentRules)\n— pure function, client-side\nsee CSV_IMPORT.md + CATEGORIZATION_ENGINE.md"]
+    D --> E["POST /api/uploads/process\n{ transactions[], fileName, totalRows,\nskippedRows, currencies, ... }\n— structured rows only, no raw CSV"]
+    E --> F["loadMerchantIndex()\n— DB-backed merchant directory"]
+    F --> G["Merchant second pass:\ncategorizeTransaction() on each row\n— upgrades keyword/default categories\nif a merchant-db match exists\n— never overrides 'learned' source"]
     G --> H["prisma.csvImport.create()\nstatus: 'processing'"]
     H --> I["prisma.transaction.createMany()\nin batches of 1000,\nskipDuplicates: true"]
     I --> J["prisma.csvImport.update()\nstatus: 'completed'"]
     J --> K["recalculateMonthlyAnalytics(userId)\nsee ANALYTICS_ENGINE.md"]
     K --> L["generateForecast(userId)\nsee FORECAST_ENGINE.md"]
     L --> M["reportUncategorizedMerchants()\n→ UncategorizedMerchantReport"]
-    M --> N["admin.storage.remove(storagePath)\n— file deleted after processing"]
-    N --> O["Return summary:\nimportedRows, duplicateRows, skippedRows,\ndateRange, currencies, typeBreakdown"]
+    M --> N["Return summary:\nimportedRows, duplicateRows, skippedRows,\ndateRange, currencies, typeBreakdown"]
 ```
 
 Key points:
-- The file is uploaded **directly from the browser to Supabase Storage** via a signed URL — it never passes through the Next.js server as a request body (important for large CSVs).
-- `storagePath` is namespaced `${user.id}/...` and the process route **verifies this prefix** before downloading — a user can't trigger processing of another user's file even if they guessed a path.
-- The CSV file is **always deleted from Storage** after processing (success or failure) via `cleanupStorage()` — Storage is a transient staging area, not permanent storage. Transaction data lives in Postgres.
+- **The raw CSV never leaves the browser.** `parseCsv()` runs client-side; the server only receives structured JSON. This is both a privacy guarantee and a scalability property — file size doesn't affect the server request body size, only browser memory.
+- **Two-pass categorization**: the browser pass uses the user's learned rules but an empty merchant index (no DB access). The server's second pass re-runs `categorizeTransaction()` against the full `Merchant`/`MerchantAlias` DB to upgrade any transaction that can be matched to a named merchant. User-learned categories (`categorySource: "learned"`) are skipped in the second pass.
+- **`/api/uploads/rules`** returns only the current user's `CategoryRule` and `UserIntentRule` rows — it does not expose any other user's data or any raw transaction content.
 - `recalculateMonthlyAnalytics` + `generateForecast` run **synchronously, in the request** — for very large imports this makes the request slower but keeps the dashboard always in sync immediately after upload (no background job queue exists in this app).
+- **`/api/uploads/presign`** still exists in the codebase but is no longer called by `CsvUploader.tsx` — it is dead code from the previous Supabase Storage upload flow.
 
 ### 8b. Recategorize flow (`PATCH /api/transactions/recategorize`)
 

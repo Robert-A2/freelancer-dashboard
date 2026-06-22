@@ -48,7 +48,7 @@ Two distinct mechanisms work together:
 | `landing` | The entire `/` marketing page — see [PRODUCT.md](./PRODUCT.md) for how this maps to product messaging |
 | `auth` | Login, signup, reset-password — all 3 auth pages (`auth.login.*`, `auth.signup.*`, `auth.resetPassword.*`), including `errors.*` sub-namespaces for `friendlyError()` mappings ([AUTHENTICATION.md](./AUTHENTICATION.md)) |
 | `settings` | `/settings` page (account, sign out, delete account) |
-| `upload` | `/upload` page + `<CsvUploader>` (all 5 states, error taxonomy) |
+| `upload` | `/upload` page + `<CsvUploader>` (all 4 active states: idle/parsing/processing/done/error). Includes `upload.dropzone.privacy` (the one-line privacy hint in the drop zone), `upload.trust.*` (4 trust chip labels shown below the drop zone), and `upload.dataPrivacyLink` (footer link to `/data-privacy`). |
 | `history` | `/history` page (filters, pagination, recategorize) |
 | `metrics` | Shared metric labels (income, expenses, cashflow, etc.) reused across Dashboard/Analytics/Forecast |
 | `dashboard` | `/dashboard` page, `<SummaryCards>`, `<FirstUploadBanner>`, empty state |

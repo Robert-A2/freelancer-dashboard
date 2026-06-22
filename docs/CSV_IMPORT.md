@@ -9,36 +9,38 @@
 
 ## 1. Where this fits in the upload pipeline
 
+The raw CSV file **never leaves the browser**. `parseCsv()` runs client-side; the server receives only structured JSON rows.
+
 ```mermaid
 sequenceDiagram
     participant Browser
     participant API as Next.js API routes
-    participant Storage as Supabase Storage
     participant DB as Postgres (Prisma)
 
-    Browser->>API: GET /api/uploads/presign?filename=...
-    API->>Storage: createSignedUploadUrl("csv-imports/{userId}/{timestamp}-{name}")
-    API-->>Browser: { signedUrl, token, storagePath }
+    Note over Browser: User selects / drops a .csv file
+    Browser->>Browser: file.text() — read CSV entirely in-memory
 
-    Browser->>Storage: PUT signedUrl (raw CSV bytes)
-    Note over Browser,Storage: File never passes through the app server
+    Browser->>API: GET /api/uploads/rules
+    API->>DB: load CategoryRule + UserIntentRule for this user
+    API-->>Browser: { learnedRules: [...pairs], userIntentRules: [...pairs] }
 
-    Browser->>API: POST /api/uploads/process { storagePath, fileName }
-    API->>DB: load user's CategoryRule rows -> learnedRules
-    API->>DB: loadMerchantIndex() (active Merchant + MerchantAlias)
-    API->>Storage: download(storagePath)
-    API->>API: parseCsv(csvText, learnedRules, ownerName, merchantIndex)
+    Note over Browser: parseCsv(csvText, learnedRules, undefined,<br/>EMPTY_MERCHANT_INDEX, userIntentRules)<br/>— pure function, no network calls
+
+    Browser->>API: POST /api/uploads/process { transactions[], fileName,<br/>totalRows, skippedRows, currencies,<br/>hasMixedCurrencies, parsedEarliest, parsedLatest }
+    API->>DB: loadMerchantIndex() — DB-backed merchant directory
+    Note over API: Merchant second pass: re-run categorizeTransaction()<br/>on each row to upgrade keyword/default categories<br/>to merchant-db where a match exists.<br/>Never overrides user-taught (learned) categories.
     API->>DB: create CsvImport (status: processing)
     API->>DB: createMany Transaction (batches of 1000, skipDuplicates: true)
     API->>DB: update CsvImport (status: completed, importedRows, duplicateRows)
     API->>API: recalculateMonthlyAnalytics(userId)
     API->>API: generateForecast(userId)
     API->>API: reportUncategorizedMerchants(transactions)
-    API->>Storage: delete(storagePath)
-    API-->>Browser: { success, importedRows, duplicateRows, dateRangeFrom/To, ... }
+    API-->>Browser: { success, importedRows, duplicateRows, skippedRows,<br/>dateRangeFrom/To, categoriesDetected, currencies, typeBreakdown }
 ```
 
-`parseCsv()` itself is a **pure function** — it doesn't touch the database or network. Everything database-related (loading learned rules, inserting transactions, recalculating analytics) happens in `/api/uploads/process` (`src/app/api/uploads/process/route.ts`), which calls `parseCsv()` once with the full CSV text. See [ARCHITECTURE.md](./ARCHITECTURE.md) for the full route inventory.
+`parseCsv()` itself is a **pure function** — it doesn't touch the database or network. The browser calls it with the learned rules fetched from `/api/uploads/rules` (a small JSON payload — just the user's `CategoryRule` and `UserIntentRule` rows, not any raw data). The server's role in `/api/uploads/process` is limited to: a merchant-DB second pass to upgrade categories, DB writes, and analytics/forecast recalculation. See [ARCHITECTURE.md](./ARCHITECTURE.md) for the full route inventory.
+
+> **Why two passes?** The browser has no DB access, so the first `parseCsv()` call runs with an empty `merchantIndex`. The server re-runs `categorizeTransaction()` against the full `Merchant`/`MerchantAlias` DB to upgrade any transaction that was keyword/default-categorized but matches a known merchant. User-learned rules (from `/api/uploads/rules`) are applied in the browser pass and are never overridden by the server pass.
 
 ---
 
@@ -265,7 +267,7 @@ A row increments `skippedRows` and is **excluded** from `transactions` if **any*
 3. **Amount resolves to `0`** in any of the three amount paths (e.g. both debit and credit are blank, or the single amount column parses to zero).
 4. **No amount column was found at all** (`!amountCol && !useDebitCreditPair`) — every row is skipped in this case.
 
-There is **no row-count limit** and **no maximum file size enforced in `parseCsv()` itself** — any practical limits would come from the Supabase Storage upload step or serverless function memory/time limits, not from this module.
+There is **no row-count limit** and **no maximum file size enforced in `parseCsv()` itself** — any practical limits would come from browser memory (for very large files, `file.text()` holds the whole CSV in a string) or the Next.js serverless function's request body size limit (for the JSON payload sent to `/api/uploads/process`), not from this module.
 
 ### What happens to valid rows
 

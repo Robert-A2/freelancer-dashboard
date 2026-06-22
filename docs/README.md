@@ -32,6 +32,7 @@ Every doc follows the same shape:
 | Doc | What it covers |
 |---|---|
 | [CATEGORIZATION_ENGINE.md](./CATEGORIZATION_ENGINE.md) | How each transaction's type (income/expense/savings/transfer), category, and confidence are determined — plus merchant recognition and the user-correction learning loop. |
+| [TRANSACTION_UNDERSTANDING.md](./TRANSACTION_UNDERSTANDING.md) | The intent layer — answers "WHY did money move?" (family support vs investment vs owner draw) on top of the existing category system. `intent`, `intentConfidence`, `intentSource`, `needsReview` fields, the `UserIntentRule` learning system, and the Financial Life Intelligence engine. |
 | [ANALYTICS_ENGINE.md](./ANALYTICS_ENGINE.md) | How raw transactions become monthly aggregates, month-over-month comparisons, category trends, client concentration, and data-coverage/health stats. |
 | [FORECAST_ENGINE.md](./FORECAST_ENGINE.md) | The next-month projection formulas, confidence scoring, the 0–100 Business Health Score, cashflow risk levels, and year-end projections. |
 | [INTELLIGENCE_ENGINE.md](./INTELLIGENCE_ENGINE.md) | How raw numbers become plain-language insights — the `Insight {key, values}` pattern, historical insights, and the dashboard's narrative fields (snapshot, trajectory, risk, opportunity). |

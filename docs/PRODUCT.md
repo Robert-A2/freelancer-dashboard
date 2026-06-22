@@ -106,12 +106,14 @@ This directly motivates several engine features that only "activate" with enough
 
 | Commitment | Implementation |
 |---|---|
+| **Raw CSV never leaves the browser** | `parseCsv()` runs client-side; the server receives only structured JSON rows (dates, amounts, merchant descriptions, categories). The raw bank statement is never uploaded anywhere. — [CSV_IMPORT.md §1](./CSV_IMPORT.md), [ARCHITECTURE.md §8a](./ARCHITECTURE.md) |
 | Bank-level encryption, in transit and at rest | Supabase/Postgres + TLS (infrastructure-level, not app code) |
 | Never sold / no advertising | Product policy — no analytics/ad SDKs in the codebase |
 | "You're always in control" — recategorize and everything updates instantly | `PATCH /api/transactions/recategorize` recalculates analytics + forecast synchronously — [ARCHITECTURE.md §8b](./ARCHITECTURE.md) |
 | Delete anytime, permanently, one click | `DELETE /api/account` — [ARCHITECTURE.md §8c](./ARCHITECTURE.md) |
 | No third-party tracking | No third-party scripts in `layout.tsx` |
 | "Early days, real numbers" — categorization won't be perfect, but it learns | `CategoryRule` learning loop — [CATEGORIZATION_ENGINE.md](./CATEGORIZATION_ENGINE.md) |
+| Transparent data policy | `/data-privacy` page explains in plain English exactly what is stored (transaction rows: dates, amounts, merchant descriptions, categories) and what is not (raw CSVs, account numbers, IBANs) — `src/app/data-privacy/page.tsx` |
 
 The last item is worth calling out: the product **does not pretend categorization is perfect**. It's framed as a collaborative, improving system — which is also why the `/history` page foregrounds the `<NeedsReviewBanner>` and `<RecategorizeButton>` rather than hiding low-confidence categorizations.
 

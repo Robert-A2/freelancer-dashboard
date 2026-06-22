@@ -23,7 +23,7 @@ flowchart TD
     G -->|"success, 2s delay"| E
 
     D -->|"Upload your first CSV"| H["/upload"]
-    H -->|"presign → storage upload\n→ /api/uploads/process"| I["Done screen:\nimport stats + category breakdown"]
+    H -->|"browser parses CSV locally\n→ /api/uploads/process (structured JSON)"| I["Done screen:\nimport stats + category breakdown"]
     I -->|"View Dashboard"| J["/dashboard?firstUpload=true\n(FirstUploadBanner + full widgets)"]
 
     J -->|"ongoing visits"| K["/dashboard\n(SummaryCards, TrendsChart,\nForecastWidget, etc.)"]
@@ -139,28 +139,28 @@ None of `SummaryCards`, `TrendsChart`, `ForecastWidget`, `MonthlyComparisonWidge
 
 ## 9. Upload a CSV (`/upload`)
 
-**File**: `src/app/(dashboard)/upload/page.tsx` (87 lines, Server Component) + `src/components/upload/CsvUploader.tsx` (464 lines, `"use client"`).
+**File**: `src/app/(dashboard)/upload/page.tsx` (Server Component) + `src/components/upload/CsvUploader.tsx` (`"use client"`).
 
-The page itself shows: a heading, the `<CsvUploader>` drop zone, an "uploading again?" tip (only if the user has previous imports), an "Expected CSV Format" card (static example with Date/Description/Amount columns), and — if any imports exist — a **Recent Imports** list (last 5, with file name, date, imported/duplicate row counts, and a `<DeleteImportButton>` per row).
+The page shows: a heading and subtitle, the `<CsvUploader>` drop zone (with a privacy line and four trust chips below it), an "uploading again?" tip (only if the user has previous imports), an "Expected CSV Format" card (static Date/Description/Amount example), a **"How we handle your data →"** footer link to `/data-privacy`, and — if any imports exist — a **Recent Imports** list (last 5, with file name, date, imported/duplicate row counts, and a `<DeleteImportButton>` per row).
 
 ### `CsvUploader` state machine
 
 ```mermaid
 stateDiagram-v2
     [*] --> idle
-    idle --> uploading: file selected/dropped\n(must end in .csv)
-    uploading --> processing: PUT to signed URL succeeds
+    idle --> parsing: file selected/dropped\n(must end in .csv)
+    parsing --> processing: parseCsv() succeeds\n(browser-side, no network)
+    parsing --> error: file empty / no valid transactions / parse threw
     processing --> done: POST /api/uploads/process succeeds
     processing --> error: process API returns error
-    uploading --> error: presign or storage PUT fails
     idle --> error: file is not .csv
     done --> idle: "Upload another"
     error --> idle: "Try a different file"
 ```
 
-- **idle**: a dashed drop zone (drag-and-drop or click to browse). Only `.csv` files accepted (checked client-side before anything is sent).
-- **uploading**: `GET /api/uploads/presign?filename=...` gets a signed Supabase Storage upload URL, then `uploadWithProgress()` does a raw `XMLHttpRequest` `PUT` directly to Storage with a live progress bar (0–100%).
-- **processing**: `POST /api/uploads/process` with `{ storagePath, fileName }` — this is where CSV parsing, categorization, DB writes, analytics recalculation, and forecast regeneration all happen. See [ARCHITECTURE.md §8a](./ARCHITECTURE.md) for the full pipeline and [CSV_IMPORT.md](./CSV_IMPORT.md) / [CATEGORIZATION_ENGINE.md](./CATEGORIZATION_ENGINE.md) for the parsing/categorization details.
+- **idle**: a dashed drop zone (drag-and-drop or click to browse). Four trust chips below the zone: "Your file never leaves this tab", "Transaction data stored privately, never your raw file", "Delete everything in one click", "No bank login required". Only `.csv` files accepted (checked immediately before anything else runs).
+- **parsing**: the file is read with `file.text()` entirely in the browser. `GET /api/uploads/rules` fetches the user's learned `CategoryRule` and `UserIntentRule` rows (small JSON, no file content). `parseCsv()` runs client-side with these rules and an empty merchant index. The raw CSV never leaves the browser tab.
+- **processing**: `POST /api/uploads/process` sends the structured parsed rows as JSON (`{ transactions[], fileName, totalRows, skippedRows, currencies, ... }`). The server does a merchant-DB second pass, writes `Transaction` rows, recalculates analytics, and regenerates the forecast. See [ARCHITECTURE.md §8a](./ARCHITECTURE.md) for the full pipeline and [CSV_IMPORT.md](./CSV_IMPORT.md) / [CATEGORIZATION_ENGINE.md](./CATEGORIZATION_ENGINE.md) for parsing/categorization details.
 - **done**: a results card —
   - 4 stat tiles: imported, duplicates, total rows, invalid/skipped rows.
   - An "Analysis range" + "Transactions imported" + "Categories detected" summary (if a date range was found).
@@ -168,6 +168,10 @@ stateDiagram-v2
   - A mixed-currencies warning if `hasMixedCurrencies` (see [CSV_IMPORT.md](./CSV_IMPORT.md) for currency detection).
   - Two buttons: **"Upload another"** (back to idle) and **"View Dashboard"** (`router.push("/dashboard?firstUpload=true")`).
 - **error**: `parseUploadError()` maps the raw error string to one of 5 friendly error cards (`unsupportedFile`, `noTransactions`, `emptyFile`, `connectionProblem`, `generic`), each with a heading, reason, and a bulleted "What to try" list. A **"Try a different file"** button resets to idle; a `mailto:` link offers support contact for persistent issues.
+
+### `/data-privacy` page
+
+**File**: `src/app/data-privacy/page.tsx`. A standalone public page (no dashboard layout, no auth required conceptually — though it's linked from the authenticated upload page). Explains in plain language: what stays in the browser, what the server stores (dates, amounts, merchant descriptions, categories), what is never stored (raw CSV, bank account numbers, IBANs), the "delete everything" flow, who runs the service, and GDPR rights. Linked from the upload page footer via `upload.dataPrivacyLink`.
 
 ---
 
