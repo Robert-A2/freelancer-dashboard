@@ -372,6 +372,12 @@
       "deletedHeading": "Account successfully deleted",
       "deletedBody": "Taking you back to the homepage…",
       "error": "Something went wrong while deleting your account. Please try again."
+    },
+    "digest": {
+      "label": "Weekly digest",
+      "description": "A short Monday email with your key numbers and anything worth your attention. No reports, just a note.",
+      "optIn": "Send me the weekly digest",
+      "saving": "Saving…"
     }
   },
   "upload": {
@@ -684,6 +690,12 @@
       "title": "Historical Insights",
       "monthsOfHistory": "{count, plural, one {# month} other {# months}} of history",
       "viewFull": "View full financial story"
+    },
+    "clientNudge": {
+      "label": "Worth a follow up",
+      "daysSince": "{days, plural, one {# day} other {# days}} since last payment",
+      "cta": "Follow up →",
+      "andMore": "And {count} more →"
     }
   },
   "forecast": {

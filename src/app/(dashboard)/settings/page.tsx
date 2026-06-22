@@ -1,8 +1,10 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
+import { prisma } from "@/lib/prisma";
 import SignOutButton from "@/components/settings/SignOutButton";
 import DeleteAccountSection from "@/components/settings/DeleteAccountSection";
+import DigestOptIn from "@/components/settings/DigestOptIn";
 
 export const dynamic = "force-dynamic";
 
@@ -11,7 +13,13 @@ export default async function SettingsPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const t = await getTranslations("settings");
+  const [t, dbUser] = await Promise.all([
+    getTranslations("settings"),
+    prisma.user.findUnique({
+      where: { id: user.id },
+      select: { weeklyDigestOptIn: true },
+    }),
+  ]);
 
   return (
     <div className="max-w-2xl mx-auto space-y-8 md:space-y-10">
@@ -30,6 +38,8 @@ export default async function SettingsPage() {
           <SignOutButton />
         </div>
       </div>
+
+      <DigestOptIn initialOptIn={dbUser?.weeklyDigestOptIn ?? false} />
 
       <div className="flex items-start gap-3 px-4 py-3 bg-[#3AB5A00A] border border-[#3AB5A018] rounded-xl">
         <span className="text-[#3AB5A0] text-base flex-shrink-0 mt-0.5">🔒</span>

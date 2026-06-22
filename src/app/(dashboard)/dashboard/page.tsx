@@ -13,6 +13,7 @@ import {
 } from "@/lib/analytics-engine";
 import { getLatestForecast } from "@/lib/forecast-engine";
 import { getFinancialLifeIntelligence } from "@/lib/financial-life-engine";
+import { getClientRiskProfiles } from "@/lib/client-risk-engine";
 import { generateDashboardIntelligence, buildHistoricalInsights } from "@/lib/intelligence-engine";
 import { prisma } from "@/lib/prisma";
 import SummaryCards from "@/components/dashboard/SummaryCards";
@@ -42,7 +43,7 @@ export default async function DashboardPage({
 
   const params = await searchParams;
 
-  const [summary, forecast, chartData, comparison, totalTx, coverage, categoryInsights, concentration, dbUser, lastImport, intentBreakdown, financialLife] =
+  const [summary, forecast, chartData, comparison, totalTx, coverage, categoryInsights, concentration, dbUser, lastImport, intentBreakdown, financialLife, clientData] =
     await Promise.all([
       getDashboardSummary(user.id),
       getLatestForecast(user.id),
@@ -62,6 +63,7 @@ export default async function DashboardPage({
       }),
       getIntentBreakdown(user.id),
       getFinancialLifeIntelligence(user.id),
+      getClientRiskProfiles(user.id),
     ]);
 
   const current = summary.current
@@ -154,6 +156,13 @@ export default async function DashboardPage({
   // Fix 3: First-upload detection — show welcome banner on first arrival after upload
   const isFirstUpload = params.firstUpload === "true" && hasData;
 
+  // Clients needing a follow up (RED or overdue YELLOW with a followUp action)
+  const followUpClients = clientData.clients.filter((c) =>
+    c.actions.some((a) => a.type === "followUp")
+  );
+  const nudgeClients  = followUpClients.slice(0, 3);
+  const nudgeExtra    = Math.max(0, followUpClients.length - 3);
+
   const rankedInsights = buildHistoricalInsights(
     chartData,
     categoryInsights.topExpenseCategories,
@@ -245,6 +254,38 @@ export default async function DashboardPage({
             context={intel.snapshotContext}
             periodLabel={comparison.currLabel}
           />
+
+          {nudgeClients.length > 0 && (
+            <div className="card">
+              <p className="label mb-3">{t("clientNudge.label")}</p>
+              <div className="space-y-2.5">
+                {nudgeClients.map((c) => (
+                  <div key={c.name} className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#D4A254] flex-shrink-0" />
+                      <span className="text-sm text-[#C8DCF0] truncate font-medium">{c.name}</span>
+                      <span className="text-xs text-[#6A97B4] flex-shrink-0">
+                        {t("clientNudge.daysSince", { days: c.currentGapDays })}
+                      </span>
+                    </div>
+                    <Link
+                      href={`/clients/${encodeURIComponent(c.name)}`}
+                      className="text-xs font-semibold text-[#3AB5A0] hover:text-[#4CC4A4] transition-colors flex-shrink-0"
+                    >
+                      {t("clientNudge.cta")}
+                    </Link>
+                  </div>
+                ))}
+                {nudgeExtra > 0 && (
+                  <div className="flex justify-end pt-1">
+                    <Link href="/clients" className="text-xs text-[#4A7A9B] hover:text-[#7BA8C4] transition-colors">
+                      {t("clientNudge.andMore", { count: nudgeExtra })}
+                    </Link>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           {intentBreakdown.hasEnoughDataForDisplay ? (
             <BusinessIntelligence

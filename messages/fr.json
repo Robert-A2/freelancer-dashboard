@@ -372,6 +372,12 @@
       "deletedHeading": "Compte supprimé avec succès",
       "deletedBody": "Retour à la page d'accueil…",
       "error": "Une erreur s'est produite lors de la suppression de votre compte. Veuillez réessayer."
+    },
+    "digest": {
+      "label": "Résumé hebdomadaire",
+      "description": "Un court e-mail chaque lundi avec vos chiffres clés et ce qui mérite votre attention. Pas un rapport, juste une note.",
+      "optIn": "Recevoir le résumé hebdomadaire",
+      "saving": "Enregistrement…"
     }
   },
   "upload": {
@@ -684,6 +690,12 @@
       "title": "Analyses historiques",
       "monthsOfHistory": "{count, plural, one {# mois} other {# mois}} d'historique",
       "viewFull": "Voir l'histoire financière complète"
+    },
+    "clientNudge": {
+      "label": "À relancer",
+      "daysSince": "{days, plural, one {# jour} other {# jours}} sans paiement",
+      "cta": "Relancer →",
+      "andMore": "{count} de plus →"
     }
   },
   "forecast": {
