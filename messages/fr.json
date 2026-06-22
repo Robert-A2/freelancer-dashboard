@@ -1242,7 +1242,12 @@
       "analysisCovers": "Cette analyse couvre <b>{months, plural, one {# mois} other {# mois}}</b>, de {fromMonth} à {toMonth}.",
       "incomeInLine": "Vos revenus ce mois-ci sont conformes à votre moyenne sur {months, plural, one {le dernier mois} other {les # derniers mois}} (<b>{avg}</b>).",
       "expensesAboveAvgTopCat": "Les dépenses ce mois-ci, <b>{current}</b>, sont supérieures de <b>{pct} %</b> à votre moyenne — votre principale catégorie est <b>{category}</b> avec <b>{amount}</b>.",
-      "expensesBelowAvg": "Les dépenses ce mois-ci, <b>{current}</b>, sont inférieures de <b>{pct} %</b> à votre moyenne de <b>{avg}</b>."
+      "expensesBelowAvg": "Les dépenses ce mois-ci, <b>{current}</b>, sont inférieures de <b>{pct} %</b> à votre moyenne de <b>{avg}</b>.",
+      "cashflowDrop": "La trésorerie a baissé de <b>{amount}</b> par rapport au mois dernier.",
+      "cashflowDropWithDriver": "La trésorerie a baissé de <b>{amount}</b> par rapport au mois dernier. La hausse des dépenses <b>{category}</b> (+<b>{changeAmt}</b>) en est la principale cause.",
+      "savingsDrop": "L'épargne est passée de <b>{prev}</b> le mois dernier à <b>{curr}</b> ce mois-ci.",
+      "expensesRisingTrend": "Les dépenses sont en hausse depuis 3 mois consécutifs et atteignent désormais une moyenne de <b>{amount}</b> par mois.",
+      "clientConcentrationRising": "<b>{name}</b> a représenté <b>{currentPct}%</b> de vos revenus ce mois-ci, contre <b>{prevPct}%</b> en moyenne. La dépendance client augmente."
     },
     "comparison": {
       "incomeDecline": "{incomeType, select, freelance {Les revenus clients} salary {Votre revenu salarial} mixed {Vos revenus} other {Vos revenus}} {incomeType, select, salary {a chuté} other {ont chuté}} de <b>{pct} %</b> par rapport au mois dernier.",

@@ -607,7 +607,9 @@ export function generateDashboardIntelligence(
     intentCoveragePct: number;
   } | null,
   // Temporal financial life intelligence — savings, spending, business trends
-  financialLife?: FinancialLifeIntelligence | null
+  financialLife?: FinancialLifeIntelligence | null,
+  // Client concentration trend: current month top-client share vs rolling prior months
+  clientConcentrationTrend?: { currentPct: number; rollingAvgPct: number; topClientName: string | null } | null
 ): DashboardIntelligence {
   // Defensive: guard against undefined inputs that can arrive at runtime
   const categories: CategoryTrend[] = _categories ?? [];
@@ -727,6 +729,84 @@ export function generateDashboardIntelligence(
         values: { current: fmtAmt(current.totalExpenses, locale), pct: String(Math.abs(diff)), avg: fmtAmt(avgExpenses, locale) },
       });
     }
+  }
+
+  // ── WHY IS CASHFLOW LOWER? ───────────────────────────────────────────────
+  // Surface an absolute drop amount + expense driver when cashflow falls
+  // month-over-month but is still positive (negative cashflow is already
+  // handled by cashflowDeficitReason on the ForecastWidget).
+  if (previous && previous.netCashflow > 0) {
+    const cfAbsDrop = previous.netCashflow - current.netCashflow;
+    const cfRelDrop = cfAbsDrop / previous.netCashflow;
+    if (cfAbsDrop > 100 && cfRelDrop > 0.15) {
+      const driver = biggestExpIncrease;
+      const driverCoversRatio = driver ? driver.changeAmount / cfAbsDrop : 0;
+      if (driver && driverCoversRatio > 0.3) {
+        snapshotContext.push({
+          key: "insights.context.cashflowDropWithDriver",
+          values: { amount: fmtAmt(cfAbsDrop, locale), category: cat(driver.category), changeAmt: fmtAmt(driver.changeAmount, locale) },
+        });
+      } else {
+        snapshotContext.push({
+          key: "insights.context.cashflowDrop",
+          values: { amount: fmtAmt(cfAbsDrop, locale) },
+        });
+      }
+    }
+  }
+
+  // ── WHY DID SAVINGS DROP? ────────────────────────────────────────────────
+  // Skip when a cashflow drop insight was already added — the two signals
+  // are related (less cashflow → less saved) and showing both is redundant.
+  const hasCfDropInsight = snapshotContext.some(i => i.key.startsWith("insights.context.cashflowDrop"));
+  if (!hasCfDropInsight && previous && previous.totalSavings > 200 && current.totalSavings < previous.totalSavings * 0.5) {
+    snapshotContext.push({
+      key: "insights.context.savingsDrop",
+      values: { prev: fmtAmt(previous.totalSavings, locale), curr: fmtAmt(current.totalSavings, locale) },
+    });
+  }
+
+  // ── AM I SPENDING MORE THAN BEFORE? ─────────────────────────────────────
+  // 3-month consecutive expense rise vs prior 3 months, using raw history
+  // so it works without intent classification. Skip when the expense-above-avg
+  // insight already told the same story.
+  if (active.length >= 6) {
+    const hasExpAboveAvg = snapshotContext.some(i => i.key === "insights.context.expensesAboveAvgTopCat");
+    if (!hasExpAboveAvg && !hasCfDropInsight) {
+      const r3exp = active.slice(-3);
+      const p3exp = active.slice(-6, -3);
+      const rAvgExp = avg(r3exp.map(h => h.expenses));
+      const pAvgExp = avg(p3exp.map(h => h.expenses));
+      const expMom = pct(rAvgExp, pAvgExp);
+      const allRising = r3exp.length === 3 &&
+        r3exp[1].expenses > r3exp[0].expenses &&
+        r3exp[2].expenses > r3exp[1].expenses;
+      if (expMom >= 15 && allRising) {
+        snapshotContext.push({
+          key: "insights.context.expensesRisingTrend",
+          values: { amount: fmtAmt(rAvgExp, locale) },
+        });
+      }
+    }
+  }
+
+  // ── AM I BECOMING DEPENDENT ON ONE CLIENT? ───────────────────────────────
+  // Show when the top client's current-month revenue share is materially
+  // above their rolling average share over the prior months.
+  if (
+    clientConcentrationTrend &&
+    clientConcentrationTrend.currentPct >= 50 &&
+    clientConcentrationTrend.currentPct > clientConcentrationTrend.rollingAvgPct + 15 &&
+    clientConcentrationTrend.topClientName
+  ) {
+    snapshotContext.push({
+      key: "insights.context.clientConcentrationRising",
+      values: {
+        name: clientConcentrationTrend.topClientName,
+        currentPct: String(clientConcentrationTrend.currentPct),
+        prevPct: String(clientConcentrationTrend.rollingAvgPct),
+      },
+    });
   }
 
   // ── COMPARISON INTERPRETATION ────────────────────────────────────────────

@@ -96,6 +96,37 @@ export default async function DashboardPage({
     needsReview: tx.needsReview,
   }));
 
+  // Client concentration trend: compares top client's current-month share
+  // to their average share across the prior 5 months. Surfaced as a context
+  // insight when concentration increased by >15 percentage points.
+  let clientConcentrationTrend: { currentPct: number; rollingAvgPct: number; topClientName: string | null } | null = null;
+  if (clientData.clients.length > 0) {
+    const curIdx = 5; // index 5 = current month in the 6-month window
+    const currentMonthTotal = clientData.clients.reduce(
+      (sum, c) => sum + (c.monthlyRevenue[curIdx]?.amount ?? 0), 0
+    );
+    if (currentMonthTotal > 0) {
+      const topClient = clientData.clients.reduce((max, c) => {
+        const amt = c.monthlyRevenue[curIdx]?.amount ?? 0;
+        const maxAmt = max.monthlyRevenue[curIdx]?.amount ?? 0;
+        return amt > maxAmt ? c : max;
+      });
+      const topCurrentAmt = topClient.monthlyRevenue[curIdx]?.amount ?? 0;
+      const currentPct = Math.round((topCurrentAmt / currentMonthTotal) * 100);
+      const priorData = [0, 1, 2, 3, 4].map(i => ({
+        topAmt: topClient.monthlyRevenue[i]?.amount ?? 0,
+        total: clientData.clients.reduce((sum, c) => sum + (c.monthlyRevenue[i]?.amount ?? 0), 0),
+      })).filter(d => d.total > 0);
+      const rollingAvgPct = priorData.length > 0
+        ? Math.round(
+            (priorData.reduce((s, d) => s + d.topAmt, 0) /
+             priorData.reduce((s, d) => s + d.total, 0)) * 100
+          )
+        : 0;
+      clientConcentrationTrend = { currentPct, rollingAvgPct, topClientName: topClient.name };
+    }
+  }
+
   const intel = generateDashboardIntelligence(
     current,
     previous,
@@ -117,7 +148,8 @@ export default async function DashboardPage({
     concentration,
     locale,
     intentBreakdown.hasEnoughDataForDisplay ? intentBreakdown : null,
-    financialLife
+    financialLife,
+    clientConcentrationTrend
   );
 
   const hasData = totalTx > 0;

@@ -1242,7 +1242,12 @@
       "analysisCovers": "This analysis covers <b>{months, plural, one {# month} other {# months}}</b>, from {fromMonth} to {toMonth}.",
       "incomeInLine": "Your income this month is in line with your average over {months, plural, one {the last month} other {the last # months}} (<b>{avg}</b>).",
       "expensesAboveAvgTopCat": "Expenses this month, <b>{current}</b>, are <b>{pct}%</b> above your average — your largest category is <b>{category}</b> at <b>{amount}</b>.",
-      "expensesBelowAvg": "Expenses this month, <b>{current}</b>, are <b>{pct}%</b> below your average of <b>{avg}</b>."
+      "expensesBelowAvg": "Expenses this month, <b>{current}</b>, are <b>{pct}%</b> below your average of <b>{avg}</b>.",
+      "cashflowDrop": "Cashflow dropped <b>{amount}</b> compared to last month.",
+      "cashflowDropWithDriver": "Cashflow dropped <b>{amount}</b> compared to last month. Higher <b>{category}</b> spending (+<b>{changeAmt}</b>) was the main driver.",
+      "savingsDrop": "Savings dropped from <b>{prev}</b> last month to <b>{curr}</b> this month.",
+      "expensesRisingTrend": "Expenses have been rising for 3 months in a row, now averaging <b>{amount}</b> per month.",
+      "clientConcentrationRising": "<b>{name}</b> brought in <b>{currentPct}%</b> of your income this month, up from <b>{prevPct}%</b> on average. Client dependency is increasing."
     },
     "comparison": {
       "incomeDecline": "{incomeType, select, freelance {Client income} salary {Your salary income} mixed {Your income} other {Your income}} dropped <b>{pct}%</b> compared to last month.",
