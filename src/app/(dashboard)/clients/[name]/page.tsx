@@ -381,11 +381,11 @@ export default async function ClientDetailPage({
         <p className="text-[13px] text-[#6A97B4] mb-5">
           {t("detail.history.subtitle", { count: client.paymentCount })}
         </p>
-        <div>
+        <div className="space-y-1">
           {client.payments.map((p, i) => (
             <div
               key={i}
-              className="flex items-center gap-3 py-3 border-b border-[#1E3550] last:border-0"
+              className="flex items-center gap-3 py-3 rounded-xl"
             >
               <div className="flex-1 min-w-0">
                 <p className="text-sm text-[#A8C6E0] truncate">{p.description}</p>

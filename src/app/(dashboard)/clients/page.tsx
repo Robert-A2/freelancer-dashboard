@@ -107,12 +107,12 @@ export default async function ClientsPage() {
             <p className="label mb-1">{t("list.title")}</p>
             <p className="text-[13px] text-[#6A97B4] mb-5">{t("list.subtitle")}</p>
 
-            <div>
+            <div className="space-y-1">
               {clients.map((c, i) => (
                 <Link
                   key={c.name}
                   href={`/clients/${encodeURIComponent(c.name)}`}
-                  className="flex items-center gap-3 py-4 border-b border-[#1E3550] last:border-0 hover:bg-[#1A3048] -mx-4 px-4 transition-colors group"
+                  className="flex items-center gap-3 py-3 rounded-xl hover:bg-[#1A3048] -mx-2 px-2 transition-colors group"
                 >
                   <span className="text-xs font-bold text-[#6A97B4] w-5 flex-shrink-0 tabular-nums">{i + 1}</span>
 
