@@ -310,6 +310,7 @@ export function generateDashboardIntelligence(
 | `healthStatus` | `"healthy" \| "watch" \| "at-risk"` | §6.5 | Dashboard header badge, Forecast page Health Score `statusScore` (see [FORECAST_ENGINE.md §8](./FORECAST_ENGINE.md)) |
 | `healthStatusExplanation` | `Insight \| null` | §6.5 | Forecast page health narrative banner |
 | `intentInsights` | `Insight[]` | §6.12 | `<BusinessIntelligence />` on the Dashboard (intent KPI bullet list) |
+| `lifeInsights` | `Insight[]` | §6.13 | `<BusinessIntelligence />` on the Dashboard (financial life bullet list, below intent insights) |
 | `businessTrendDirection` | `"improving" \| "stable" \| "weakening"` | §6.7 | Forecast page "Business Direction" card |
 | `biggestRisk` | `Insight \| null` | §6.8 | Forecast page "Biggest Risk" card |
 | `biggestOpportunity` | `Insight \| null` | §6.9 | Forecast page "Biggest Opportunity" card |
@@ -742,6 +743,22 @@ Only populated when `intentBreakdown && intentCoveragePct >= 80`. Returned as `i
 | `insights.intent.incompleteDataWarning` | `active.length >= 6` and last-3-month average income < 25% of prior historical average — signals a missing bank account CSV |
 
 `incompleteDataWarning` is deliberately **not** rendered as a regular bullet — `<BusinessIntelligence />` filters it out of the main list and renders it separately as an amber warning box below the other insights.
+
+### 6.13 Life Insights — `lifeInsights`
+
+Populated from the optional `financialLife?: FinancialLifeIntelligence | null` parameter (from `src/lib/financial-life-engine.ts`). Only generates insights when `financialLife.hasEnoughData === true` (requires ≥5 intent-classified transactions spanning ≥2 months). Rendered by `<BusinessIntelligence />` in a separate section below `intentInsights`, using a `◦` bullet (vs `·` for intent insights) to visually distinguish temporal patterns from all-time metrics.
+
+| Insight key | Condition |
+|---|---|
+| `insights.life.savingsStreak` | `consecutiveSavingsMonths >= 3` — rewards sustained savings habit |
+| `insights.life.savingsWithdrawals` | `withdrawalsInLast6Months >= 3` — liquidity pressure signal |
+| `insights.life.personalSpendUp` | `spending.trend === "increasing" && trendPct !== null` |
+| `insights.life.personalSpendDown` | `spending.trend === "declining" && trendPct !== null` |
+| `insights.life.revenueUp` | `business.revenueTrend === "increasing" && revenueTrendPct !== null` |
+| `insights.life.revenueDown` | `business.revenueTrend === "declining" && revenueTrendPct !== null` |
+| `insights.life.avgIncome12m` | `memory.avgMonthlyIncome12m > 0 && active.length >= 12` |
+
+Trend direction (increasing / stable / declining) uses a ±10% threshold over last-3 vs prev-3 month windows. See `src/lib/financial-life-engine.ts` → `computeTrend()`.
 
 ---
 

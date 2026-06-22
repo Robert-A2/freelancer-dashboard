@@ -38,7 +38,7 @@ src/
 │   │   ├── layout.tsx
 │   │   ├── dashboard/page.tsx
 │   │   ├── analytics/page.tsx
-│   │   ├── clients/page.tsx          ← Client Trust & Risk Center (list)
+│   │   ├── clients/page.tsx          ← Client Trust & Risk Center (list — accessed via Analytics page link, not in Navbar)
 │   │   ├── clients/[name]/page.tsx   ← Client detail (payment pattern, risk, trend)
 │   │   ├── forecast/page.tsx
 │   │   ├── history/page.tsx
@@ -62,6 +62,7 @@ src/
 ├── lib/
 │   ├── analytics-engine.ts         ← see ANALYTICS_ENGINE.md
 │   ├── client-risk-engine.ts       ← Client Trust & Risk Center — payment pattern, status, dependency, trend
+│   ├── financial-life-engine.ts    ← Financial Life Intelligence — temporal intent patterns (savings, spending, revenue trends, memory)
 │   ├── forecast-engine.ts          ← see FORECAST_ENGINE.md
 │   ├── intelligence-engine.ts      ← see INTELLIGENCE_ENGINE.md
 │   ├── csv-processor.ts            ← see CSV_IMPORT.md

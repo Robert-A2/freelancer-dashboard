@@ -50,7 +50,6 @@ const NAV_LINKS = [
   { href: "/upload",    key: "upload",    Icon: IconUpload    },
   { href: "/history",   key: "history",   Icon: IconHistory   },
   { href: "/analytics", key: "analytics", Icon: IconAnalytics },
-  { href: "/clients",   key: "clients",   Icon: IconClients   },
   { href: "/forecast",  key: "forecast",  Icon: IconForecast  },
 ] as const;
 
@@ -65,8 +64,6 @@ export default function Navbar() {
 
   function isActive(href: string) {
     if (pending === href) return true;
-    // Mark /clients active for all sub-routes (/clients/[name])
-    if (href === "/clients") return pathname === href || pathname.startsWith("/clients/");
     return pathname === href;
   }
 

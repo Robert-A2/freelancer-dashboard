@@ -12,6 +12,7 @@ import type {
   MonthPoint,
 } from "./analytics-engine";
 import type { Insight, RankedInsight, InsightValue } from "./insight-types";
+import type { FinancialLifeIntelligence } from "./financial-life-engine";
 import { cat } from "./insight-types";
 import { formatCurrency } from "@/utils/finance";
 import { INTL_LOCALES, type Locale } from "@/i18n/locales";
@@ -43,6 +44,7 @@ export interface DashboardIntelligence {
   healthStatus: "healthy" | "watch" | "at-risk";
   healthStatusExplanation: Insight | null;
   intentInsights: Insight[];
+  lifeInsights: Insight[];
   businessTrendDirection: "improving" | "stable" | "weakening";
   biggestRisk: Insight | null;
   biggestOpportunity: Insight | null;
@@ -603,7 +605,9 @@ export function generateDashboardIntelligence(
     savingsWithdrawal: number;
     trueNetCashflow: number;
     intentCoveragePct: number;
-  } | null
+  } | null,
+  // Temporal financial life intelligence — savings, spending, business trends
+  financialLife?: FinancialLifeIntelligence | null
 ): DashboardIntelligence {
   // Defensive: guard against undefined inputs that can arrive at runtime
   const categories: CategoryTrend[] = _categories ?? [];
@@ -622,6 +626,7 @@ export function generateDashboardIntelligence(
     healthStatus: "watch",
     healthStatusExplanation: null,
     intentInsights: [],
+    lifeInsights: [],
     businessTrendDirection: "stable",
     biggestRisk: null,
     biggestOpportunity: null,
@@ -1294,6 +1299,64 @@ export function generateDashboardIntelligence(
     }
   }
 
+  // ── LIFE INSIGHTS — temporal behavioral patterns from intent data ────────
+
+  const lifeInsights: Insight[] = [];
+
+  if (financialLife?.hasEnoughData) {
+    const { savings, spending, business, memory } = financialLife;
+
+    // Savings streak (only meaningful at 3+ consecutive months)
+    if (savings.consecutiveSavingsMonths >= 3) {
+      lifeInsights.push({
+        key: "insights.life.savingsStreak",
+        values: { count: savings.consecutiveSavingsMonths },
+      });
+    }
+
+    // Frequent savings withdrawals — potential liquidity pressure signal
+    if (savings.withdrawalsInLast6Months >= 3) {
+      lifeInsights.push({
+        key: "insights.life.savingsWithdrawals",
+        values: { count: savings.withdrawalsInLast6Months },
+      });
+    }
+
+    // Personal spending trend
+    if (spending.trend === "increasing" && spending.trendPct !== null) {
+      lifeInsights.push({
+        key: "insights.life.personalSpendUp",
+        values: { pct: String(spending.trendPct) },
+      });
+    } else if (spending.trend === "declining" && spending.trendPct !== null) {
+      lifeInsights.push({
+        key: "insights.life.personalSpendDown",
+        values: { pct: String(spending.trendPct) },
+      });
+    }
+
+    // Revenue trend (only when not already covered by intentInsights profit insight)
+    if (business.revenueTrend === "increasing" && business.revenueTrendPct !== null) {
+      lifeInsights.push({
+        key: "insights.life.revenueUp",
+        values: { pct: String(business.revenueTrendPct) },
+      });
+    } else if (business.revenueTrend === "declining" && business.revenueTrendPct !== null) {
+      lifeInsights.push({
+        key: "insights.life.revenueDown",
+        values: { pct: String(business.revenueTrendPct) },
+      });
+    }
+
+    // Average monthly income benchmark (only with 12m of data)
+    if (memory.avgMonthlyIncome12m > 0 && active.length >= 12) {
+      lifeInsights.push({
+        key: "insights.life.avgIncome12m",
+        values: { amount: fmtAmt(memory.avgMonthlyIncome12m, locale) },
+      });
+    }
+  }
+
   // ── HISTORICAL INSIGHTS — ranked and grouped by theme ────────────────────
   // Generated once via the shared builder so the Dashboard and Analytics
   // pages render identical, consistently-categorised insights.
@@ -1399,6 +1462,7 @@ export function generateDashboardIntelligence(
     healthStatus,
     healthStatusExplanation,
     intentInsights,
+    lifeInsights,
     businessTrendDirection,
     biggestRisk,
     biggestOpportunity,

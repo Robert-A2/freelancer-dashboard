@@ -2,6 +2,7 @@ import { getTranslations, getLocale } from "next-intl/server";
 import { INTL_LOCALES, type Locale } from "@/i18n/locales";
 import type { ClientInsightsData } from "@/lib/analytics-engine";
 import { formatCurrency } from "@/utils/finance";
+import Link from "next/link";
 
 interface Props { data: ClientInsightsData; }
 
@@ -106,7 +107,12 @@ export default async function ClientInsights({ data }: Props) {
                   <span className="text-xs font-bold text-[#6A97B4] w-5 flex-shrink-0">{i + 1}</span>
                   <div className="min-w-0">
                     <div className="flex items-center gap-1.5 flex-wrap">
-                      <p className="text-sm font-medium text-[#E8F0F8] truncate">{c.name}</p>
+                      <Link
+                        href={`/clients/${encodeURIComponent(c.name)}`}
+                        className="text-sm font-medium text-[#E8F0F8] hover:text-[#3AB5A0] transition-colors truncate"
+                      >
+                        {c.name}
+                      </Link>
                       {c.isPaymentProcessor && (
                         <span className="text-xs text-[#6A97B4] bg-[#1A3048] px-1.5 py-0.5 rounded flex-shrink-0">{t("processor")}</span>
                       )}

@@ -3,6 +3,7 @@ import { redirect, notFound } from "next/navigation";
 import { getTranslations, getLocale } from "next-intl/server";
 import { getClientRiskProfiles } from "@/lib/client-risk-engine";
 import type { ClientStatus, DependencyRisk, RevenueTrend, ClientRiskProfile } from "@/lib/client-risk-engine";
+import { getFinancialLifeIntelligence } from "@/lib/financial-life-engine";
 import { formatCurrency } from "@/utils/finance";
 import { INTL_LOCALES, type Locale } from "@/i18n/locales";
 import Link from "next/link";
@@ -101,7 +102,10 @@ export default async function ClientDetailPage({
 
   const t      = await getTranslations("clients");
   const locale = (await getLocale()) as Locale;
-  const data   = await getClientRiskProfiles(user.id);
+  const [data, financialLife] = await Promise.all([
+    getClientRiskProfiles(user.id),
+    getFinancialLifeIntelligence(user.id),
+  ]);
 
   const client = data.clients.find(
     c => c.name.toUpperCase() === clientName.toUpperCase()
@@ -279,6 +283,41 @@ export default async function ClientDetailPage({
           {t("detail.dependencyRisk.pctLabel", { pct: client.revenueContributionPct })}
         </p>
       </div>
+
+      {/* ── 4b. Financial context (from financial life data) ────────────── */}
+      {financialLife.hasEnoughData && (
+        <div className="card">
+          <p className="label mb-3">{t("detail.financialContext.title")}</p>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="bg-[#1A3048] rounded-xl p-3.5">
+              <p className="label mb-1 text-[11px]">{t("detail.financialContext.avgIncome12m")}</p>
+              <p className="text-base font-bold text-[#4CC4A4] tabular-nums">
+                {formatCurrency(financialLife.memory.avgMonthlyIncome12m, locale)}
+              </p>
+            </div>
+            <div className="bg-[#1A3048] rounded-xl p-3.5">
+              <p className="label mb-1 text-[11px]">{t("detail.financialContext.revenueTrend")}</p>
+              <p className={`text-base font-bold ${
+                financialLife.business.revenueTrend === "increasing" ? "text-[#4CC4A4]" :
+                financialLife.business.revenueTrend === "declining"  ? "text-[#D97070]" :
+                "text-[#A8C6E0]"
+              }`}>
+                {financialLife.business.revenueTrend === "increasing"
+                  ? t("detail.financialContext.trendIncreasing", { pct: financialLife.business.revenueTrendPct ?? 0 })
+                  : financialLife.business.revenueTrend === "declining"
+                  ? t("detail.financialContext.trendDeclining", { pct: financialLife.business.revenueTrendPct ?? 0 })
+                  : t("detail.financialContext.trendStable")}
+              </p>
+            </div>
+          </div>
+          {client.dependencyRisk === "high" && financialLife.business.revenueTrend === "declining" && (
+            <div className="flex items-start gap-3 mt-3 px-4 py-3 bg-[#D9707010] border border-[#D9707030] rounded-xl">
+              <span className="text-[#D97070] font-semibold flex-shrink-0">⚠</span>
+              <p className="text-sm text-[#D97070]">{t("detail.financialContext.doubleRisk")}</p>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ── 5. Insights ────────────────────────────────────────────────── */}
       {client.insights.length > 0 && (

@@ -1056,6 +1056,15 @@
         "subtitle": "Quelle part de vos revenus totaux dépend de ce client.",
         "pctLabel": "{pct}% de vos revenus totaux proviennent de ce client."
       },
+      "financialContext": {
+        "title": "Contexte financier",
+        "avgIncome12m": "Revenu mensuel moyen (12 mois)",
+        "revenueTrend": "Tendance des revenus",
+        "trendIncreasing": "↑ +{pct}%",
+        "trendStable": "→ Stable",
+        "trendDeclining": "↓ -{pct}%",
+        "doubleRisk": "Forte dépendance à ce client combinée à une baisse globale des revenus — diversifier les sources de revenus est une priorité."
+      },
       "insights": {
         "title": "Analyses",
         "reliable": "Ce client a payé {count, plural, one {# fois} other {# fois}} sur {months, plural, one {# mois} other {# mois}} avec des intervalles de paiement réguliers.",
@@ -1292,6 +1301,15 @@
       "largestExpense": "Dépense la plus importante : <b>{description}</b> — <b>{amount}</b>.",
       "recurringCharges": "<b>{count, plural, one {# prélèvement récurrent} other {# prélèvements récurrents}}</b> pour un total de <b>{amount}</b>.",
       "highValueExpense": "Dépense notable : <b>{description}</b> — <b>{amount}</b>."
+    },
+    "life": {
+      "savingsStreak": "Épargne active depuis <b>{count, plural, one {# mois consécutif} other {# mois consécutifs}}</b>.",
+      "savingsWithdrawals": "<b>{count} des 6 derniers mois</b> ont eu des retraits d'épargne — surveiller la liquidité.",
+      "personalSpendUp": "Dépenses personnelles en <b>hausse de {pct}%</b> par rapport aux 3 mois précédents.",
+      "personalSpendDown": "Dépenses personnelles en <b>baisse de {pct}%</b> par rapport aux 3 mois précédents.",
+      "revenueUp": "Chiffre d'affaires en <b>hausse de {pct}%</b> par rapport aux 3 mois précédents.",
+      "revenueDown": "Chiffre d'affaires en <b>baisse de {pct}%</b> par rapport aux 3 mois précédents.",
+      "avgIncome12m": "Revenu mensuel moyen sur les 12 derniers mois : <b>{amount}</b>."
     }
   }
 }

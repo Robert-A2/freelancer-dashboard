@@ -1056,6 +1056,15 @@
         "subtitle": "How much of your total income relies on this client.",
         "pctLabel": "{pct}% of your total income comes from this client."
       },
+      "financialContext": {
+        "title": "Business context",
+        "avgIncome12m": "12-month avg. monthly income",
+        "revenueTrend": "Revenue trend",
+        "trendIncreasing": "↑ Up {pct}%",
+        "trendStable": "→ Stable",
+        "trendDeclining": "↓ Down {pct}%",
+        "doubleRisk": "High dependency on this client combined with declining overall revenue — income diversification is a priority."
+      },
       "insights": {
         "title": "Insights",
         "reliable": "This client has paid {count, plural, one {# time} other {# times}} over {months, plural, one {# month} other {# months}} with consistent payment intervals.",
@@ -1292,6 +1301,15 @@
       "largestExpense": "Largest expense: <b>{description}</b> — <b>{amount}</b>.",
       "recurringCharges": "<b>{count, plural, one {# recurring charge} other {# recurring charges}}</b> totalling <b>{amount}</b>.",
       "highValueExpense": "Notable expense: <b>{description}</b> — <b>{amount}</b>."
+    },
+    "life": {
+      "savingsStreak": "Savings active for <b>{count, plural, one {# consecutive month} other {# consecutive months}}</b>.",
+      "savingsWithdrawals": "<b>{count} of the last 6 months</b> had savings withdrawals — monitor liquidity.",
+      "personalSpendUp": "Personal spending <b>up {pct}%</b> vs the previous 3-month period.",
+      "personalSpendDown": "Personal spending <b>down {pct}%</b> vs the previous 3-month period.",
+      "revenueUp": "Business revenue <b>up {pct}%</b> vs the previous 3-month period.",
+      "revenueDown": "Business revenue <b>down {pct}%</b> vs the previous 3-month period.",
+      "avgIncome12m": "Average monthly income over the last 12 months: <b>{amount}</b>."
     }
   }
 }

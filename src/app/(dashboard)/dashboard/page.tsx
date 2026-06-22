@@ -12,6 +12,7 @@ import {
   getIntentBreakdown,
 } from "@/lib/analytics-engine";
 import { getLatestForecast } from "@/lib/forecast-engine";
+import { getFinancialLifeIntelligence } from "@/lib/financial-life-engine";
 import { generateDashboardIntelligence, buildHistoricalInsights } from "@/lib/intelligence-engine";
 import { prisma } from "@/lib/prisma";
 import SummaryCards from "@/components/dashboard/SummaryCards";
@@ -41,7 +42,7 @@ export default async function DashboardPage({
 
   const params = await searchParams;
 
-  const [summary, forecast, chartData, comparison, totalTx, coverage, categoryInsights, concentration, dbUser, lastImport, intentBreakdown] =
+  const [summary, forecast, chartData, comparison, totalTx, coverage, categoryInsights, concentration, dbUser, lastImport, intentBreakdown, financialLife] =
     await Promise.all([
       getDashboardSummary(user.id),
       getLatestForecast(user.id),
@@ -60,6 +61,7 @@ export default async function DashboardPage({
         select: { importedAt: true },
       }),
       getIntentBreakdown(user.id),
+      getFinancialLifeIntelligence(user.id),
     ]);
 
   const current = summary.current
@@ -112,7 +114,8 @@ export default async function DashboardPage({
     categoryInsights.seasonality,
     concentration,
     locale,
-    intentBreakdown.hasEnoughDataForDisplay ? intentBreakdown : null
+    intentBreakdown.hasEnoughDataForDisplay ? intentBreakdown : null,
+    financialLife
   );
 
   const hasData = totalTx > 0;
@@ -250,6 +253,7 @@ export default async function DashboardPage({
               personalSpend={intentBreakdown.personalSpend}
               trueNetCashflow={intentBreakdown.trueNetCashflow}
               intentInsights={intel.intentInsights}
+              lifeInsights={intel.lifeInsights}
             />
           )}
 
