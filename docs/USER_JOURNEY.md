@@ -231,13 +231,14 @@ Analytics does **not** call `generateDashboardIntelligence()` — it only uses t
 **List page** shows: total clients, reliable / watch / high-risk counts, alert bar for RED-status clients, full ranked client table with status badge, last payment date, revenue contribution bar, and total revenue. Each row links to the detail page via `/clients/[encodeURIComponent(name)]`.
 
 **Detail page** shows (in order):
-1. **Client overview** — total revenue, contribution %, payment count, avg/largest payment, relationship duration, first/last payment dates.
-2. **Payment pattern** — avg interval between payments, current gap (real today, not data anchor), expected interval; status card (GREEN/YELLOW/RED) with description.
-3. **Revenue trend** — 6-month CSS bar chart (no Recharts dependency); trend label (Increasing / Stable / Declining) with percentage change.
-4. **Dependency risk** — progress bar showing 0–25% / 25–50% / 50%+ bands; plain-text explanation.
-5. **Insights** — auto-generated from actual data only: reliable, delay warning, dependency, decline, single-payment.
-6. **Recommended actions** — Follow up / Monitor / No action needed, derived from status + trend.
-7. **Payment history** — full list of all payments, most recent first.
+1. **Header** — client name, status badge, client rank (e.g. "Your #1 client by total revenue"), client-since date.
+2. **Relationship Health** — narrative paragraph ("You have worked with X for 14 months. 11 payments totalling €42,000. Average €3,818 per payment."), plus 4 metric tiles (first payment, last payment, relationship duration, payment count).
+3. **Reliability Assessment** — Excellent / Good / Watch / Risk label derived purely from payment history (status, payment count, months active, revenue trend — no AI scoring), plus a plain-text description, avg interval, current gap, and avg payment size.
+4. **Revenue Story** — all-time total, % of income contribution, 6-month mini bar chart, and a period-comparison section (recent 3-month avg vs prior 3-month avg).
+5. **Client Momentum** — Growing / Stable / Shrinking / New label with a visual side-by-side bar comparing prior-period average to recent-period average (using `recentMonthlyAvg` and `priorMonthlyAvg` from the engine).
+6. **Dependency Simulator** — "If this client stopped paying": monthly loss, annual loss, % of income, impact level (Manageable / Significant / Major / Critical), an income share bar, and a plain-text consequence statement. Impact thresholds: <15% Manageable · 15–29% Significant · 30–49% Major · 50%+ Critical.
+7. **Payment Timeline** — chronological list (oldest first, capped at 24 most recent), with gap labels between each payment, unusual-gap flagging (>1.5× average interval and >30 days), proportional amount bars, and "First", "Largest", and "Most recent" badges.
+8. **Insights and Recommended Actions** — auto-generated from actual data (reliable, delay warning, dependency, decline, single-payment) and actions (Follow up / Monitor / No action needed).
 
 **Date anchoring exception**: `client-risk-engine.ts` uses `new Date()` (real wall-clock today) for `currentGapDays` and the 6-month trend window. Every other analytics engine anchors to the user's last data point — this page is the intentional exception because client risk questions are real-world ("is this client overdue *right now*?"), not historical.
 

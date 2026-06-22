@@ -17,6 +17,20 @@ Queries `intent IN ['freelance_income', 'salary']` — the intent-classified inc
 
 Client names are extracted via `extractClientName()` (now exported from `analytics-engine.ts`) — the same normalisation used by `getClientInsights`.
 
+### Types
+
+```ts
+export type ReliabilityScore = "excellent" | "good" | "watch" | "risk";
+```
+
+Added to `ClientRiskProfile` alongside the existing fields:
+
+| New field | Type | Meaning |
+|---|---|---|
+| `reliabilityScore` | `ReliabilityScore` | Deterministic rating from payment history — no AI scoring |
+| `recentMonthlyAvg` | `number` | Average monthly revenue across indices 3–5 of the 6-month window (most recent 3 months) |
+| `priorMonthlyAvg` | `number` | Average monthly revenue across indices 0–2 of the 6-month window (prior 3 months) |
+
 ### Key calculations
 
 | Metric | Formula |
@@ -28,6 +42,8 @@ Client names are extracted via `extractClientName()` (now exported from `analyti
 | Status | GREEN: gap ≤ avgInterval×1.2 · YELLOW: gap ≤ avgInterval×1.5 · RED: gap > avgInterval×1.5 OR gap ≥ 90 |
 | Dependency risk | LOW: 0–25% · MEDIUM: 25–50% · HIGH: 50%+ |
 | Revenue trend | Last 3-month avg vs prev 3-month avg across a 6-month window ending today · >10% = Increasing · <−10% = Declining |
+| Reliability score | `red status → "risk"` · `yellow → "watch"` · `green + ≥6 payments + ≥4 months active + not declining → "excellent"` · `green + ≥3 payments → "good"` · else `"watch"` |
+| Recent/prior monthly avg | `recentMonthlyAvg = avg(monthlyRevenue[3..5])` · `priorMonthlyAvg = avg(monthlyRevenue[0..2])` — used on the detail page for momentum comparison |
 
 > **Note on date anchoring**: unlike `analytics-engine.ts` which anchors to the user's last data point, `client-risk-engine.ts` uses `new Date()` (real today) for `currentGapDays` and the 6-month trend window. This is deliberate — the Client Trust feature answers real-world risk questions ("has this client paid recently?"), where anchoring to stale data would give a false sense of safety.
 

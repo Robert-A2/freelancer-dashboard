@@ -291,6 +291,12 @@ export function generateDashboardIntelligence(
     savingsWithdrawal: number;
     trueNetCashflow: number;
     intentCoveragePct: number;
+  } | null,
+  financialLife?: FinancialLifeIntelligence | null,
+  clientConcentrationTrend?: {   // Computed in dashboard/page.tsx from clientData.clients[].monthlyRevenue[]
+    currentPct: number;           // Top client's % of income this month
+    rollingAvgPct: number;        // Top client's avg % across the prior 5 months
+    topClientName: string | null;
   } | null
 ): DashboardIntelligence
 ```
@@ -385,6 +391,15 @@ Up to 3 entries, pushed in order:
    - `diff > 10 && topCat` (top category exists) → `insights.context.expensesAboveAvgTopCat` (names `categories[0]` and its `currentMonthTotal`)
    - `diff < -10` → `insights.context.expensesBelowAvg`
    - else → nothing pushed (only "notably" above/below average is worth mentioning here)
+
+After the 3 main entries above, 4 additional financial-life context insights are appended (each only fires if the relevant condition is met and earlier overlapping insights haven't already been shown):
+
+4. **Cashflow drop** — if `previous.netCashflow > 0` and this month's cashflow fell by both >€100 and >15%:
+   - If a single expense category (`biggestExpIncrease`) accounts for >30% of the drop → `insights.context.cashflowDropWithDriver` (names the category and its increase amount)
+   - Otherwise → `insights.context.cashflowDrop` (shows the amount)
+5. **Savings drop** — skipped if a cashflow-drop insight was already pushed. Fires if `previous.totalSavings > 200` and current savings dropped below 50% of last month's → `insights.context.savingsDrop`.
+6. **Expenses rising trend** — skipped if an expense or cashflow insight was already pushed. Fires if the last 3 consecutive active months each had higher expenses than the one before, and the month-over-month rise is ≥15% → `insights.context.expensesRisingTrend`.
+7. **Client concentration rising** — if `clientConcentrationTrend` is provided and the top client's share this month is ≥50% *and* is ≥15 percentage points above their rolling average → `insights.context.clientConcentrationRising`. `clientConcentrationTrend` is computed in `dashboard/page.tsx` from `clientData.clients[].monthlyRevenue[]` (already fetched for the client center) and passed as the last argument to this function.
 
 ---
 
