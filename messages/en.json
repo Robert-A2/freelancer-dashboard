@@ -1135,6 +1135,68 @@
       "history": {
         "title": "Payment history",
         "subtitle": "{count, plural, one {# payment} other {# payments}} · most recent first"
+      },
+      "relationshipHealth": {
+        "title": "Relationship Health",
+        "summary": "You have worked with {name} for {duration}.",
+        "paymentsTotal": "{count, plural, one {# payment} other {# payments}} totalling {total}.",
+        "avgPayment": "Average {avg} per payment.",
+        "rank": "Your #{rank} client by total revenue."
+      },
+      "reliability": {
+        "title": "Reliability Assessment",
+        "excellent": "Excellent",
+        "good": "Good",
+        "watch": "Watch",
+        "risk": "Risk",
+        "excellentDesc": "Long track record with consistent on-time payments. No action needed.",
+        "goodDesc": "Regular payment history. Currently on schedule.",
+        "watchDesc": "Limited history or payment running slightly late. Worth monitoring.",
+        "riskDesc": "Payment is significantly overdue. Follow up needed now."
+      },
+      "revenueStory": {
+        "title": "Revenue Story",
+        "allTime": "All time",
+        "ofIncome": "of your income",
+        "periodComparison": "Period comparison",
+        "recent3mo": "Last 3 months avg",
+        "prior3mo": "Prior 3 months avg",
+        "noActivity": "No activity in the last 6 months."
+      },
+      "momentum": {
+        "title": "Client Momentum",
+        "growing": "Growing",
+        "stable": "Stable",
+        "shrinking": "Shrinking",
+        "new": "New client",
+        "recentAvg": "Recent monthly avg",
+        "priorAvg": "Prior monthly avg",
+        "noHistory": "Not enough history to calculate momentum."
+      },
+      "simulator": {
+        "title": "If {name} Stopped Paying",
+        "monthlyLoss": "Monthly income impact",
+        "annualLoss": "Annual income impact",
+        "incomePct": "Share of income",
+        "healthImpact": "Financial health impact",
+        "manageable": "Manageable",
+        "significant": "Significant",
+        "major": "Major",
+        "critical": "Critical",
+        "manageableDesc": "You have solid income diversification. This loss would be felt but you could adapt.",
+        "significantDesc": "You would feel this loss. Replacing this income should be a near-term priority.",
+        "majorDesc": "This would cause major disruption. Start diversifying your client base now.",
+        "criticalDesc": "This client is the backbone of your income. Losing them would be financially critical."
+      },
+      "timeline": {
+        "title": "Payment Timeline",
+        "gapDays": "{days, plural, one {# day} other {# days}}",
+        "unusualGap": "Unusual gap",
+        "largestPayment": "Largest",
+        "firstPayment": "First",
+        "latestPayment": "Most recent",
+        "showingRecent": "Showing most recent {count, plural, one {# payment} other {# payments}}",
+        "gap": "Gap"
       }
     }
   },

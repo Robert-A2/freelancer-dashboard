@@ -1135,6 +1135,68 @@
       "history": {
         "title": "Historique des paiements",
         "subtitle": "{count, plural, one {# paiement} other {# paiements}} · du plus récent au plus ancien"
+      },
+      "relationshipHealth": {
+        "title": "Santé de la relation",
+        "summary": "Vous travaillez avec {name} depuis {duration}.",
+        "paymentsTotal": "{count, plural, one {# paiement} other {# paiements}} pour un total de {total}.",
+        "avgPayment": "Moyenne de {avg} par paiement.",
+        "rank": "Votre #{rank}e client par revenu total."
+      },
+      "reliability": {
+        "title": "Évaluation de la fiabilité",
+        "excellent": "Excellent",
+        "good": "Bon",
+        "watch": "À surveiller",
+        "risk": "À risque",
+        "excellentDesc": "Longue relation avec des paiements réguliers et dans les délais. Aucune action requise.",
+        "goodDesc": "Historique de paiements régulier. Actuellement dans les délais.",
+        "watchDesc": "Historique limité ou paiement légèrement en retard. À surveiller.",
+        "riskDesc": "Paiement significativement en retard. Relance nécessaire maintenant."
+      },
+      "revenueStory": {
+        "title": "Historique des revenus",
+        "allTime": "Total historique",
+        "ofIncome": "de vos revenus",
+        "periodComparison": "Comparaison par période",
+        "recent3mo": "Moy. 3 derniers mois",
+        "prior3mo": "Moy. 3 mois précédents",
+        "noActivity": "Aucune activité au cours des 6 derniers mois."
+      },
+      "momentum": {
+        "title": "Dynamique client",
+        "growing": "En croissance",
+        "stable": "Stable",
+        "shrinking": "En déclin",
+        "new": "Nouveau client",
+        "recentAvg": "Moy. mensuelle récente",
+        "priorAvg": "Moy. mensuelle antérieure",
+        "noHistory": "Historique insuffisant pour calculer la dynamique."
+      },
+      "simulator": {
+        "title": "Si {name} arrêtait de payer",
+        "monthlyLoss": "Impact mensuel sur les revenus",
+        "annualLoss": "Impact annuel sur les revenus",
+        "incomePct": "Part des revenus",
+        "healthImpact": "Impact sur la santé financière",
+        "manageable": "Gérable",
+        "significant": "Significatif",
+        "major": "Majeur",
+        "critical": "Critique",
+        "manageableDesc": "Votre diversification des revenus est solide. Cette perte serait ressentie mais gérable.",
+        "significantDesc": "Vous ressentiriez cette perte. Remplacer ces revenus devrait être une priorité à court terme.",
+        "majorDesc": "Cela causerait une disruption majeure. Diversifiez votre base de clients dès maintenant.",
+        "criticalDesc": "Ce client est le pilier de vos revenus. Le perdre serait financièrement critique."
+      },
+      "timeline": {
+        "title": "Chronologie des paiements",
+        "gapDays": "{days, plural, one {# jour} other {# jours}}",
+        "unusualGap": "Écart inhabituel",
+        "largestPayment": "Le plus grand",
+        "firstPayment": "Premier",
+        "latestPayment": "Le plus récent",
+        "showingRecent": "{count, plural, one {Affichage du dernier paiement} other {Affichage des # derniers paiements}}",
+        "gap": "Écart"
       }
     }
   },

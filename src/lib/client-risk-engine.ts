@@ -6,6 +6,7 @@ import { INTL_LOCALES, type Locale } from "@/i18n/locales";
 export type ClientStatus = "green" | "yellow" | "red";
 export type DependencyRisk = "low" | "medium" | "high";
 export type RevenueTrend = "increasing" | "stable" | "declining";
+export type ReliabilityScore = "excellent" | "good" | "watch" | "risk";
 
 export interface MonthlyRevenue {
   year: number;
@@ -49,6 +50,9 @@ export interface ClientRiskProfile {
   insights: ClientInsight[];
   actions: ClientAction[];
   payments: ClientPayment[];
+  reliabilityScore: ReliabilityScore;
+  recentMonthlyAvg: number;
+  priorMonthlyAvg: number;
 }
 
 export interface ClientRiskCenterData {
@@ -140,6 +144,15 @@ function buildActions(p: PartialProfile): ClientAction[] {
   return actions;
 }
 
+function computeReliabilityScore(p: PartialProfile): ReliabilityScore {
+  if (p.status === "red") return "risk";
+  if (p.status === "yellow") return "watch";
+  // Green status: assess by longevity, payment count, and revenue direction
+  if (p.paymentCount >= 6 && p.monthsActive >= 4 && p.revenueTrend !== "declining") return "excellent";
+  if (p.paymentCount >= 3) return "good";
+  return "watch"; // 1-2 payments: not enough history to fully trust
+}
+
 export async function getClientRiskProfiles(userId: string): Promise<ClientRiskCenterData> {
   // Primary: intent-classified income only
   let txs = await prisma.transaction.findMany({
@@ -219,6 +232,9 @@ export async function getClientRiskProfiles(userId: string): Promise<ClientRiskC
     const status = computeStatus(avgIntervalDays, currentGapDays);
     const dependencyRisk = computeDependencyRisk(revenueContributionPct);
 
+    const recentMonthlyAvg = ((monthlyRevenue[3]?.amount ?? 0) + (monthlyRevenue[4]?.amount ?? 0) + (monthlyRevenue[5]?.amount ?? 0)) / 3;
+    const priorMonthlyAvg  = ((monthlyRevenue[0]?.amount ?? 0) + (monthlyRevenue[1]?.amount ?? 0) + (monthlyRevenue[2]?.amount ?? 0)) / 3;
+
     const partial: PartialProfile = {
       name: c.name,
       totalRevenue: totalRev,
@@ -237,9 +253,13 @@ export async function getClientRiskProfiles(userId: string): Promise<ClientRiskC
       revenueTrend: trend,
       revenueTrendPct: trendPct,
       payments: sorted.map(t => ({ date: t.date.toISOString(), amount: t.amount, description: t.description })).reverse(),
+      reliabilityScore: "good", // placeholder, overwritten below
+      recentMonthlyAvg,
+      priorMonthlyAvg,
     };
 
-    return { ...partial, insights: buildInsights(partial), actions: buildActions(partial) };
+    const reliabilityScore = computeReliabilityScore(partial);
+    return { ...partial, reliabilityScore, insights: buildInsights(partial), actions: buildActions(partial) };
   });
 
   profiles.sort((a, b) => b.totalRevenue - a.totalRevenue);
