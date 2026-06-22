@@ -299,9 +299,9 @@ export default async function ForecastPage() {
             </div>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
               {[
-                { key: "income",   label: t("yearEndProjection.items.income"),   value: formatCurrency(annualIncome, locale),   sub: forecast ? t("yearEndProjection.perMonthAvg", { amount: formatCurrency(forecast.projectedIncome, locale) }) : null,   color: "text-[#4CC4A4]",  border: "border-[#4CC4A415]" },
-                { key: "expenses", label: t("yearEndProjection.items.expenses"), value: formatCurrency(annualExpenses, locale),  sub: forecast ? t("yearEndProjection.perMonthAvg", { amount: formatCurrency(forecast.projectedExpenses, locale) }) : null,  color: "text-[#D4A254]",  border: "border-[#D4A25415]" },
-                { key: "cashflow", label: t("yearEndProjection.items.cashflow"), value: formatCurrency(annualCashflow, locale),  sub: forecast ? t("yearEndProjection.perMonthAvg", { amount: formatCurrency(forecast.projectedCashflow, locale) }) : null, color: annualCashflow >= 0 ? "text-[#3AB5A0]" : "text-[#D97070]", border: "border-[#243F5E]" },
+                { key: "income",   label: t("yearEndProjection.items.income"),   value: `~${formatCurrency(annualIncome, locale)}`,   sub: forecast ? t("yearEndProjection.perMonthAvg", { amount: formatCurrency(forecast.projectedIncome, locale) }) : null,   color: "text-[#4CC4A4]",  border: "border-[#4CC4A415]" },
+                { key: "expenses", label: t("yearEndProjection.items.expenses"), value: `~${formatCurrency(annualExpenses, locale)}`,  sub: forecast ? t("yearEndProjection.perMonthAvg", { amount: formatCurrency(forecast.projectedExpenses, locale) }) : null,  color: "text-[#D4A254]",  border: "border-[#D4A25415]" },
+                { key: "cashflow", label: t("yearEndProjection.items.cashflow"), value: `~${formatCurrency(annualCashflow, locale)}`,  sub: forecast ? t("yearEndProjection.perMonthAvg", { amount: formatCurrency(forecast.projectedCashflow, locale) }) : null, color: annualCashflow >= 0 ? "text-[#3AB5A0]" : "text-[#D97070]", border: "border-[#243F5E]" },
                 {
                   key: "margin",
                   label: t("yearEndProjection.items.margin"),
@@ -320,7 +320,104 @@ export default async function ForecastPage() {
             </div>
           </div>
 
-          {/* ── 3. Key Drivers ────────────────────────────────────────────── */}
+          {/* ── 3. How This Forecast Was Built ────────────────────────── */}
+          <div className="card">
+            <p className="label mb-4">{t("howBuilt.label")}</p>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+              {[
+                {
+                  key: "dataAnalyzed",
+                  label: t("howBuilt.dataAnalyzed"),
+                  value: coverage.earliest && coverage.latest
+                    ? `${fmtDate(coverage.earliest)} – ${fmtDate(coverage.latest)}`
+                    : t("howBuilt.noValue"),
+                },
+                {
+                  key: "monthsOfHistory",
+                  label: t("howBuilt.monthsOfHistory"),
+                  value: t("howBuilt.monthsValue", { count: forecast?.basedOnMonths ?? monthCount }),
+                },
+                {
+                  key: "transactions",
+                  label: t("howBuilt.transactions"),
+                  value: coverage.count.toLocaleString(INTL_LOCALES[locale]),
+                },
+                {
+                  key: "forecastConfidence",
+                  label: t("howBuilt.forecastConfidence"),
+                  value: forecast?.confidence
+                    ? t(`confidenceLevels.${forecast.confidence}`)
+                    : t("howBuilt.noValue"),
+                  color: forecast?.confidence === "high" ? "text-[#4CC4A4]" :
+                         forecast?.confidence === "medium" ? "text-[#D4A254]" : "text-[#D97070]",
+                },
+              ].map((item) => (
+                <div key={item.key} className="bg-[#1A3048] rounded-xl p-4">
+                  <p className="label mb-2">{item.label}</p>
+                  <p className={`text-sm font-semibold ${item.color ?? "text-[#A8C6E0]"}`}>{item.value}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Confidence score bar */}
+            {forecast?.confidenceScore !== undefined && (
+              <div className="mb-5">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="label">{t("howBuilt.confidenceScore")}</p>
+                  <span className={`text-xs font-bold tabular-nums ${
+                    forecast.confidence === "high" ? "text-[#4CC4A4]" :
+                    forecast.confidence === "medium" ? "text-[#D4A254]" : "text-[#D97070]"
+                  }`}>{Math.round(forecast.confidenceScore * 100)}%</span>
+                </div>
+                <div className="h-2 bg-[#1A3048] rounded-full overflow-hidden mb-3">
+                  <div
+                    className={`h-full rounded-full ${
+                      forecast.confidence === "high" ? "bg-[#4CC4A4]" :
+                      forecast.confidence === "medium" ? "bg-[#D4A254]" : "bg-[#D97070]"
+                    }`}
+                    style={{ width: `${Math.round(forecast.confidenceScore * 100)}%` }}
+                  />
+                </div>
+                {forecast.confidenceReasons.length > 0 && (
+                  <ul className="space-y-1">
+                    {forecast.confidenceReasons.map((r, i) => (
+                      <li key={i} className="flex items-start gap-2 text-xs text-[#6A97B4]">
+                        <span className="text-[#3AB5A0] flex-shrink-0 mt-0.5">·</span>
+                        <span>{r}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
+
+            {/* Recurring expenses detected */}
+            {forecast?.recurringExpensesTotal != null && forecast.recurringExpensesTotal > 0 && (
+              <div className="mb-5 bg-[#0F2840] border border-[#1E3A55] rounded-xl px-4 py-3">
+                <p className="label mb-1">{t("howBuilt.recurringExpensesLabel")}</p>
+                <p className="text-sm text-[#A8C6E0]">
+                  {t("howBuilt.recurringExpensesBody", { amount: `${formatCurrency(forecast.recurringExpensesTotal, locale)}/month` })}
+                </p>
+              </div>
+            )}
+
+            <div className="flex items-center gap-2 mb-3 px-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#4CC4A4] flex-shrink-0" />
+              <p className="text-xs text-[#6A97B4]">
+                {t("howBuilt.builtFrom", { range: coverage.rangeLabel ?? t("howBuilt.transactionsFallback", { count: coverage.count }) })}
+                {forecast?.seasonallyAdjusted && t("howBuilt.seasonalApplied")}
+              </p>
+            </div>
+            <div className="text-xs text-[#6A97B4] space-y-2 pt-4 leading-relaxed">
+              <p>· {t("howBuilt.weightingNote")}</p>
+              {forecast?.seasonallyAdjusted && (
+                <p>· {t("howBuilt.seasonalAdjustmentNote")}</p>
+              )}
+              <p>· {t(`confidenceDescriptions.${forecast?.confidence ?? "low"}`)}. {t("howBuilt.moreHistoryNote")}</p>
+            </div>
+          </div>
+
+          {/* ── 4. Key Drivers ────────────────────────────────────────────── */}
           {keyDrivers.length > 0 && (
             <div className="card">
               <p className="label mb-1">{t("keyDrivers.label")}</p>
@@ -412,115 +509,19 @@ export default async function ForecastPage() {
               <div className="flex items-start gap-3">
                 <span className="text-[#D4A254] text-lg flex-shrink-0 mt-0.5">⚠</span>
                 <div>
-                  <p className="text-sm font-semibold text-[#D4A254] mb-1">Recent income appears lower than usual</p>
+                  <p className="text-sm font-semibold text-[#D4A254] mb-1">
+                    {t("incompleteDataWarning.title")}
+                  </p>
                   <p className="text-sm text-[#A8C6E0] leading-relaxed">
-                    Your most recent months show significantly less income than your historical average.
-                    This could mean transaction data is missing for those months — check that all relevant
-                    bank statements have been uploaded. Projections below are based on your full history,
-                    not just the most recent months.
+                    {t("incompleteDataWarning.body", {
+                      recentAvg: formatCurrency(avgLast6, locale),
+                      historicAvg: formatCurrency(avgPrev6, locale),
+                    })}
                   </p>
                 </div>
               </div>
             </div>
           )}
-
-          {/* ── 7. How This Forecast Was Built ────────────────────────────── */}
-          <div className="card">
-            <p className="label mb-4">{t("howBuilt.label")}</p>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-              {[
-                {
-                  key: "dataAnalyzed",
-                  label: t("howBuilt.dataAnalyzed"),
-                  value: coverage.earliest && coverage.latest
-                    ? `${fmtDate(coverage.earliest)} – ${fmtDate(coverage.latest)}`
-                    : t("howBuilt.noValue"),
-                },
-                {
-                  key: "monthsOfHistory",
-                  label: t("howBuilt.monthsOfHistory"),
-                  value: t("howBuilt.monthsValue", { count: forecast?.basedOnMonths ?? monthCount }),
-                },
-                {
-                  key: "transactions",
-                  label: t("howBuilt.transactions"),
-                  value: coverage.count.toLocaleString(INTL_LOCALES[locale]),
-                },
-                {
-                  key: "forecastConfidence",
-                  label: t("howBuilt.forecastConfidence"),
-                  value: forecast?.confidence
-                    ? t(`confidenceLevels.${forecast.confidence}`)
-                    : t("howBuilt.noValue"),
-                  color: forecast?.confidence === "high" ? "text-[#4CC4A4]" :
-                         forecast?.confidence === "medium" ? "text-[#D4A254]" : "text-[#D97070]",
-                },
-              ].map((item) => (
-                <div key={item.key} className="bg-[#1A3048] rounded-xl p-4">
-                  <p className="label mb-2">{item.label}</p>
-                  <p className={`text-sm font-semibold ${item.color ?? "text-[#A8C6E0]"}`}>{item.value}</p>
-                </div>
-              ))}
-            </div>
-
-            {/* Confidence score bar */}
-            {forecast?.confidenceScore !== undefined && (
-              <div className="mb-5">
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-xs font-semibold text-[#4A7A9B] uppercase tracking-widest">Confidence Score</p>
-                  <span className={`text-xs font-bold tabular-nums ${
-                    forecast.confidence === "high" ? "text-[#4CC4A4]" :
-                    forecast.confidence === "medium" ? "text-[#D4A254]" : "text-[#D97070]"
-                  }`}>{Math.round(forecast.confidenceScore * 100)}%</span>
-                </div>
-                <div className="h-2 bg-[#1A3048] rounded-full overflow-hidden mb-3">
-                  <div
-                    className={`h-full rounded-full ${
-                      forecast.confidence === "high" ? "bg-[#4CC4A4]" :
-                      forecast.confidence === "medium" ? "bg-[#D4A254]" : "bg-[#D97070]"
-                    }`}
-                    style={{ width: `${Math.round(forecast.confidenceScore * 100)}%` }}
-                  />
-                </div>
-                {forecast.confidenceReasons.length > 0 && (
-                  <ul className="space-y-1">
-                    {forecast.confidenceReasons.map((r, i) => (
-                      <li key={i} className="flex items-start gap-2 text-xs text-[#6A97B4]">
-                        <span className="text-[#3AB5A0] flex-shrink-0 mt-0.5">·</span>
-                        <span>{r}</span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            )}
-
-            {/* Recurring expenses detected */}
-            {forecast?.recurringExpensesTotal != null && forecast.recurringExpensesTotal > 0 && (
-              <div className="mb-5 bg-[#0F2840] border border-[#1E3A55] rounded-xl px-4 py-3">
-                <p className="text-xs font-semibold text-[#4A7A9B] uppercase tracking-widest mb-1">Recurring Expenses Detected</p>
-                <p className="text-sm text-[#A8C6E0]">
-                  <span className="font-semibold text-[#E8F0F8]">{formatCurrency(forecast.recurringExpensesTotal, locale)}/month</span>
-                  {" "}in stable, recurring costs identified. The expense projection will not drop below this floor.
-                </p>
-              </div>
-            )}
-
-            <div className="flex items-center gap-2 mb-3 px-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#4CC4A4] flex-shrink-0" />
-              <p className="text-xs text-[#6A97B4]">
-                {t("howBuilt.builtFrom", { range: coverage.rangeLabel ?? t("howBuilt.transactionsFallback", { count: coverage.count }) })}
-                {forecast?.seasonallyAdjusted && t("howBuilt.seasonalApplied")}
-              </p>
-            </div>
-            <div className="text-xs text-[#6A97B4] space-y-2 pt-4 leading-relaxed">
-              <p>· {t("howBuilt.weightingNote")}</p>
-              {forecast?.seasonallyAdjusted && (
-                <p>· {t("howBuilt.seasonalAdjustmentNote")}</p>
-              )}
-              <p>· {t(`confidenceDescriptions.${forecast?.confidence ?? "low"}`)}. {t("howBuilt.moreHistoryNote")}</p>
-            </div>
-          </div>
 
           <TrendsChart data={chartData} />
         </>

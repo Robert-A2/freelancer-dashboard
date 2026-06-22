@@ -216,8 +216,8 @@ export default function CsvUploader() {
   // ── Parsing (browser-side) ─────────────────────────────────────────────────
   if (stage.status === "parsing") {
     return (
-      <div className="card py-10 flex flex-col items-center gap-4">
-        <div className="w-10 h-10 border-4 border-[#3AB5A0] border-t-transparent rounded-full animate-spin" />
+      <div role="status" aria-live="polite" className="card py-10 flex flex-col items-center gap-4">
+        <div className="w-10 h-10 border-4 border-[#3AB5A0] border-t-transparent rounded-full animate-spin" aria-hidden="true" />
         <div className="text-center">
           <p className="font-semibold text-[#E8F0F8]">{t("parsing.title", { fileName: stage.fileName })}</p>
           <p className="text-sm text-[#7BA8C4] mt-1">{t("parsing.subtitle")}</p>
@@ -229,8 +229,8 @@ export default function CsvUploader() {
   // ── Processing (server inserting to DB) ────────────────────────────────────
   if (stage.status === "processing") {
     return (
-      <div className="card py-10 flex flex-col items-center gap-4">
-        <div className="w-10 h-10 border-4 border-[#3AB5A0] border-t-transparent rounded-full animate-spin" />
+      <div role="status" aria-live="polite" className="card py-10 flex flex-col items-center gap-4">
+        <div className="w-10 h-10 border-4 border-[#3AB5A0] border-t-transparent rounded-full animate-spin" aria-hidden="true" />
         <div className="text-center">
           <p className="font-semibold text-[#E8F0F8]">{t("processing.title", { fileName: stage.fileName })}</p>
           <p className="text-sm text-[#7BA8C4] mt-1">{t("processing.subtitle")}</p>
@@ -242,6 +242,34 @@ export default function CsvUploader() {
   // ── Done ───────────────────────────────────────────────────────────────────
   if (stage.status === "done") {
     const { result, fileName } = stage;
+
+    // All rows were duplicates — show a specific warning instead of generic success
+    if (result.importedRows === 0 && result.duplicateRows > 0) {
+      return (
+        <div className="card space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-[#D4A25420] rounded-full flex items-center justify-center text-[#D4A254] font-bold text-lg flex-shrink-0">
+              ⚠
+            </div>
+            <div>
+              <p className="font-semibold text-[#D4A254]">{t("done.allDuplicates.title")}</p>
+              <p className="text-sm text-[#7BA8C4]">{fileName}</p>
+            </div>
+          </div>
+          <p className="text-sm text-[#A8C6E0] leading-relaxed">
+            {t("done.allDuplicates.body", { count: result.duplicateRows })}
+          </p>
+          <div className="flex gap-3">
+            <button onClick={reset} className="btn-secondary flex-1">
+              {t("done.uploadAnother")}
+            </button>
+            <a href="/dashboard" className="btn-primary flex-1 text-center">
+              {t("done.viewDashboard")}
+            </a>
+          </div>
+        </div>
+      );
+    }
 
     const fmt = (iso: string | null) =>
       iso

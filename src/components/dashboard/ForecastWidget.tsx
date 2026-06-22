@@ -69,6 +69,7 @@ export default function ForecastWidget({ forecast, reasons, improvements, defici
               ? <InsightText insight={reasons[0]} />
               : t("basedOnHistory", { months: forecast.basedOnMonths })}
           </p>
+          <p className="text-[11px] text-[#6A97B450] mt-0.5">{t("weightedNote")}</p>
         </div>
         <span className={`text-xs font-semibold uppercase flex-shrink-0 ${CONFIDENCE_COLORS[confidence]}`}>
           {tf("confidenceLabel", { level: confidence })}
@@ -92,7 +93,7 @@ export default function ForecastWidget({ forecast, reasons, improvements, defici
         ].map((item) => (
           <div key={item.label} className="bg-[#1A3048] rounded-xl p-3">
             <p className="label mb-1">{item.label}</p>
-            <p className={`text-base font-bold tabular-nums ${item.color}`}>{item.value}</p>
+            <p className={`text-lg font-bold tabular-nums ${item.color}`}>{item.value}</p>
           </div>
         ))}
       </div>

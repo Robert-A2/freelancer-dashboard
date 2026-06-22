@@ -77,6 +77,7 @@ export default async function ClientInsights({ data }: Props) {
             {t.rich("concentrationRisk", {
               pct: String(topClientShare),
               client: topClient.name,
+              threshold: "50",
               processorNote: topClient.isPaymentProcessor ? t("processorNote") : "",
               warn: (chunks) => <span className="text-[#D97070] font-semibold">{chunks}</span>,
               b: (chunks) => <span className="text-[#E8F0F8] font-medium">{chunks}</span>,

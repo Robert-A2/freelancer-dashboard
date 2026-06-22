@@ -198,7 +198,7 @@ export default async function DashboardPage({
 
       {/* Data freshness prompt */}
       {dataIsStale && (
-        <div className="flex items-center justify-between gap-4 px-4 py-3 bg-[#D4A2540A] border border-[#D4A25425] rounded-xl">
+        <div className="flex items-center justify-between gap-4 px-4 py-3 bg-[#D4A25412] border border-[#D4A25432] rounded-xl">
           <p className="text-sm text-[#D4A254]">
             {t("staleData.message", { days: daysSinceImport ?? 0 })}
           </p>
@@ -209,7 +209,7 @@ export default async function DashboardPage({
       )}
 
       {/* Data coverage banner */}
-      {hasData && <DataCoverageBar coverage={coverage} />}
+      {hasData && <DataCoverageBar coverage={coverage} lastImportedAt={lastImport?.importedAt ?? null} />}
 
       {/* Fix 3: First-upload welcome banner — shown once after a user's first CSV import */}
       {isFirstUpload && (
@@ -246,7 +246,7 @@ export default async function DashboardPage({
             periodLabel={comparison.currLabel}
           />
 
-          {intentBreakdown.hasEnoughDataForDisplay && (
+          {intentBreakdown.hasEnoughDataForDisplay ? (
             <BusinessIntelligence
               businessProfit={intentBreakdown.businessProfit}
               profitMarginPct={intentBreakdown.profitMarginPct}
@@ -255,6 +255,21 @@ export default async function DashboardPage({
               intentInsights={intel.intentInsights}
               lifeInsights={intel.lifeInsights}
             />
+          ) : intentBreakdown.totalTransactions > 0 && (
+            <div className="flex items-start gap-4 px-5 py-4 bg-[#1A3048] border border-[#243F5E] rounded-2xl">
+              <span className="text-[#6A97B4] text-xl flex-shrink-0 mt-0.5">◎</span>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-[#A8C6E0] mb-1">
+                  {t("businessIntelligence.coverageGate.title")}
+                </p>
+                <p className="text-sm text-[#6A97B4] leading-relaxed">
+                  {t("businessIntelligence.coverageGate.body", { pct: Math.round(intentBreakdown.intentCoveragePct) })}
+                </p>
+                <Link href="/history" className="inline-block mt-2 text-xs font-semibold text-[#3AB5A0] hover:text-[#4CC4A4] transition-colors">
+                  {t("businessIntelligence.coverageGate.cta")}
+                </Link>
+              </div>
+            </div>
           )}
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">

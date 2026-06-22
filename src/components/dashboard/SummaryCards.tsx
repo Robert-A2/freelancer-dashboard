@@ -5,6 +5,7 @@ import { formatCurrency } from "@/utils/finance";
 import type { Locale } from "@/i18n/locales";
 import type { Insight } from "@/lib/insight-types";
 import InsightText from "@/components/ui/InsightText";
+import Link from "next/link";
 
 interface MonthData {
   totalIncome: number;
@@ -79,7 +80,7 @@ export default function SummaryCards({
           <span className="text-xs font-semibold text-[#A8C6E0] bg-[#1A3048] px-2 py-0.5 rounded">{periodLabel}</span>
         </div>
       )}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 md:gap-5">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 md:gap-5 items-stretch">
 
         {/* Income */}
         <div className="card-sm flex flex-col gap-3">
@@ -89,7 +90,7 @@ export default function SummaryCards({
           </p>
           <div className="flex items-center gap-2 flex-wrap">
             <p className="text-[13px] text-[#6A97B4]">{t("totalThisMonth")}</p>
-            {previous && <Chip value={changePct(c.totalIncome, p.totalIncome)} />}
+            {previous && p.totalIncome > 0 && <Chip value={changePct(c.totalIncome, p.totalIncome)} />}
           </div>
         </div>
 
@@ -101,7 +102,7 @@ export default function SummaryCards({
           </p>
           <div className="flex items-center gap-2 flex-wrap">
             <p className="text-[13px] text-[#6A97B4]">{t("totalThisMonth")}</p>
-            {previous && <Chip value={changePct(c.totalExpenses, p.totalExpenses)} invert />}
+            {previous && p.totalExpenses > 0 && <Chip value={changePct(c.totalExpenses, p.totalExpenses)} invert />}
           </div>
         </div>
 
@@ -115,8 +116,9 @@ export default function SummaryCards({
             <p className="text-[13px] text-[#6A97B4]">
               {currCashflow >= 0 ? t("incomeAboveExpenses") : t("expensesExceedIncome")}
             </p>
-            {previous && <Chip value={changePct(currCashflow, prevCashflow)} />}
+            {previous && prevCashflow !== 0 && <Chip value={changePct(currCashflow, prevCashflow)} />}
           </div>
+          <p className="text-xs text-[#6A97B4]/60">{t("cashflowSavingsNote")}</p>
         </div>
 
         {/* Margin */}
@@ -127,14 +129,14 @@ export default function SummaryCards({
           </p>
           <div className="flex items-center gap-2 flex-wrap">
             <p className="text-[13px] text-[#6A97B4]">{t("ofIncomeKept")}</p>
-            {previous && margin !== null && prevMargin !== null && (
+            {previous && margin !== null && prevMargin !== null && prevMargin > 0 && (
               <Chip value={margin - prevMargin} />
             )}
           </div>
         </div>
 
-        {/* Risk */}
-        <div className="card-sm flex flex-col gap-3">
+        {/* Risk — col-span-2 on mobile so it fills the row cleanly */}
+        <div className="card-sm flex flex-col gap-3 col-span-2 md:col-span-1">
           <p className="label">{t("risk")}</p>
           <p className={`text-2xl md:text-3xl font-bold leading-none ${riskColor}`}>
             {t(`riskLevels.${riskLevel}`)}
@@ -144,6 +146,12 @@ export default function SummaryCards({
               ? t("monthsPositive", { positive: riskPositiveMonths, total: riskTotalMonths })
               : t("noHistory")}
           </p>
+          <Link
+            href="/forecast"
+            className="text-xs font-semibold text-[#3AB5A0] hover:text-[#4CC4A4] transition-colors mt-auto"
+          >
+            {t("riskSeeBreakdown")}
+          </Link>
         </div>
 
       </div>

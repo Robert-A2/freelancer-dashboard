@@ -414,6 +414,10 @@
       "subtitle": "Parsing · Deduplicating · Categorising · Updating analytics…"
     },
     "done": {
+      "allDuplicates": {
+        "title": "Already uploaded",
+        "body": "All {count, plural, one {# row} other {# rows}} in this file already exist in your account — nothing new was added. If you expected new transactions, export a newer date range from your bank."
+      },
       "title": "Import complete",
       "stats": {
         "imported": "Transactions imported",
@@ -583,6 +587,11 @@
     "businessIntelligence": {
       "title": "Business Intelligence",
       "allTime": "All-time totals",
+      "coverageGate": {
+        "title": "Business Intelligence",
+        "body": "Intent analysis activates at 80% coverage — you're at {pct}%. Reviewing flagged transactions unlocks profit tracking, true cashflow, and personal burn rate.",
+        "cta": "Review transactions →"
+      },
       "businessProfit": "Business Profit",
       "margin": "{margin}% margin",
       "trueNetCashflow": "True Net Cashflow",
@@ -604,7 +613,9 @@
         "critical": "Critical"
       },
       "monthsPositive": "{positive} of {total, plural, one {# month} other {# months}} positive",
-      "noHistory": "No history yet"
+      "noHistory": "No history yet",
+      "cashflowSavingsNote": "Savings transfers not included",
+      "riskSeeBreakdown": "See full breakdown →"
     },
     "trendsChart": {
       "uploadPrompt": "Upload a CSV to see your financial trends.",
@@ -624,7 +635,8 @@
       "basedOnHistory": "{months, plural, one {Based on # month of history.} other {Based on # months of history.}}",
       "deficitWarning": "Projected deficit. Expenses are likely to exceed income next month.",
       "whyNegative": "Why cashflow is negative",
-      "whatToDoNext": "What to do next"
+      "whatToDoNext": "What to do next",
+      "weightedNote": "Recent 3 months weighted 3× more than older history"
     },
     "monthlyComparison": {
       "label": "Monthly Comparison",
@@ -653,7 +665,9 @@
       "yearsAndMonths": "{years}y {months}m",
       "months": "{count, plural, one {# month} other {# months}}",
       "summary": "{span} of history · {count, plural, one {# transaction} other {# transactions}}",
-      "analysisRange": "Analysis range: {range}"
+      "analysisRange": "Analysis range: {range}",
+      "lastUpdatedToday": "Updated today",
+      "lastUpdated": "Updated {days, plural, one {# day} other {# days}} ago"
     },
     "firstUpload": {
       "ready": "Your financial picture is ready",
@@ -796,6 +810,10 @@
     "seasonalPatterns": {
       "label": "Seasonal Patterns"
     },
+    "incompleteDataWarning": {
+      "title": "Recent income appears lower than usual",
+      "body": "Your recent 3-month average ({recentAvg}/month) is significantly below your historical average ({historicAvg}/month). Some bank statements may be missing — check that all accounts have been uploaded. The projections above are based on your full history."
+    },
     "howBuilt": {
       "label": "How This Forecast Was Built",
       "dataAnalyzed": "Data analyzed",
@@ -809,7 +827,10 @@
       "seasonalApplied": " Seasonal patterns from 24+ months applied.",
       "weightingNote": "Recent months are weighted 3× more heavily than older months when calculating averages.",
       "seasonalAdjustmentNote": "Seasonal adjustment applied: months that are historically stronger or weaker are accounted for.",
-      "moreHistoryNote": "More history produces a more reliable forecast."
+      "moreHistoryNote": "More history produces a more reliable forecast.",
+      "confidenceScore": "Confidence Score",
+      "recurringExpensesLabel": "Recurring Expenses Detected",
+      "recurringExpensesBody": "{amount} in stable, recurring costs identified. The expense projection will not drop below this floor."
     }
   },
   "analytics": {
@@ -922,7 +943,7 @@
       },
       "firstYear": "First year",
       "yoyChange": "{arrow} {pct}%",
-      "concentrationRisk": "<warn>Revenue concentration risk: </warn>{pct}% of income came from <b>{client}</b>{processorNote}. Losing this source would significantly impact your business.",
+      "concentrationRisk": "<warn>Revenue concentration risk:</warn> <b>{pct}%</b> of income from <b>{client}</b>{processorNote} — above the {threshold}% threshold. Losing this source would significantly impact your business.",
       "processorNote": " (payment processor, may represent multiple clients)",
       "topClients": {
         "title": "Top clients by revenue",
@@ -975,6 +996,16 @@
         "months": "{count, plural, one {# month ago} other {# months ago}}",
         "years": "{count, plural, one {# year ago} other {# years ago}}"
       }
+    },
+    "categoryDrawer": {
+      "incomeSource": "Income Source",
+      "expenseBreakdown": "Expense Breakdown",
+      "total": "Total",
+      "transactions": "Transactions",
+      "loading": "Loading transactions…",
+      "failed": "Failed to load transactions.",
+      "empty": "No transactions found for this category.",
+      "viewAll": "View all in History →"
     },
     "storySection": {
       "label": "Your financial story",
@@ -1102,6 +1133,7 @@
     }
   },
   "intent": {
+    "noIntent": "No intent",
     "labels": {
       "personal_expense": "Personal",
       "business_expense": "Business",

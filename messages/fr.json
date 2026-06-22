@@ -414,6 +414,10 @@
       "subtitle": "Analyse · Déduplication · Catégorisation · Mise à jour des analyses…"
     },
     "done": {
+      "allDuplicates": {
+        "title": "Déjà importé",
+        "body": "Toutes les {count, plural, one {# ligne} other {# lignes}} de ce fichier existent déjà dans votre compte — rien de nouveau n'a été ajouté. Si vous attendiez de nouvelles transactions, exportez une période plus récente depuis votre banque."
+      },
       "title": "Import terminé",
       "stats": {
         "imported": "Transactions importées",
@@ -583,6 +587,11 @@
     "businessIntelligence": {
       "title": "Intelligence Financière",
       "allTime": "Totaux cumulés",
+      "coverageGate": {
+        "title": "Intelligence Financière",
+        "body": "L'analyse des intentions s'active à 80 % de couverture — vous êtes à {pct} %. Vérifier les transactions signalées débloque le suivi des bénéfices, la trésorerie nette et le burn rate personnel.",
+        "cta": "Vérifier les transactions →"
+      },
       "businessProfit": "Bénéfice d'activité",
       "margin": "{margin}% de marge",
       "trueNetCashflow": "Flux de trésorerie net réel",
@@ -604,7 +613,9 @@
         "critical": "Critique"
       },
       "monthsPositive": "{positive} mois positifs sur {total}",
-      "noHistory": "Pas encore d'historique"
+      "noHistory": "Pas encore d'historique",
+      "cashflowSavingsNote": "Virements épargne non inclus",
+      "riskSeeBreakdown": "Voir le détail complet →"
     },
     "trendsChart": {
       "uploadPrompt": "Importez un CSV pour voir vos tendances financières.",
@@ -624,7 +635,8 @@
       "basedOnHistory": "{months, plural, one {Basé sur # mois d'historique.} other {Basé sur # mois d'historique.}}",
       "deficitWarning": "Déficit prévu. Les dépenses devraient dépasser les revenus le mois prochain.",
       "whyNegative": "Pourquoi la trésorerie est négative",
-      "whatToDoNext": "Que faire ensuite"
+      "whatToDoNext": "Que faire ensuite",
+      "weightedNote": "Les 3 derniers mois sont pondérés 3× plus que l'historique ancien"
     },
     "monthlyComparison": {
       "label": "Comparaison mensuelle",
@@ -653,7 +665,9 @@
       "yearsAndMonths": "{years, plural, one {# an} other {# ans}} {months, plural, one {# mois} other {# mois}}",
       "months": "{count, plural, one {# mois} other {# mois}}",
       "summary": "{span} d'historique · {count, plural, one {# transaction} other {# transactions}}",
-      "analysisRange": "Période analysée : {range}"
+      "analysisRange": "Période analysée : {range}",
+      "lastUpdatedToday": "Mis à jour aujourd'hui",
+      "lastUpdated": "Mis à jour il y a {days, plural, one {# jour} other {# jours}}"
     },
     "firstUpload": {
       "ready": "Votre situation financière est prête",
@@ -796,6 +810,10 @@
     "seasonalPatterns": {
       "label": "Tendances saisonnières"
     },
+    "incompleteDataWarning": {
+      "title": "Les revenus récents semblent inférieurs à la normale",
+      "body": "Votre moyenne des 3 derniers mois ({recentAvg}/mois) est nettement inférieure à votre moyenne historique ({historicAvg}/mois). Il est possible que des relevés bancaires manquent — vérifiez que tous vos comptes ont été importés. Les projections ci-dessus sont basées sur l'intégralité de votre historique."
+    },
     "howBuilt": {
       "label": "Comment cette prévision a été établie",
       "dataAnalyzed": "Données analysées",
@@ -809,7 +827,10 @@
       "seasonalApplied": " Les tendances saisonnières des 24 derniers mois ou plus ont été appliquées.",
       "weightingNote": "Les mois récents sont pondérés 3× plus que les mois plus anciens dans le calcul des moyennes.",
       "seasonalAdjustmentNote": "Ajustement saisonnier appliqué : les mois historiquement plus forts ou plus faibles sont pris en compte.",
-      "moreHistoryNote": "Plus d'historique permet une prévision plus fiable."
+      "moreHistoryNote": "Plus d'historique permet une prévision plus fiable.",
+      "confidenceScore": "Score de confiance",
+      "recurringExpensesLabel": "Dépenses récurrentes détectées",
+      "recurringExpensesBody": "{amount} en coûts récurrents stables identifiés. La projection des dépenses ne tombera pas en dessous de ce plancher."
     }
   },
   "analytics": {
@@ -888,6 +909,16 @@
       "allTime": "Depuis le début, part des dépenses totales",
       "noExpenseData": "Aucune donnée de dépenses"
     },
+    "categoryDrawer": {
+      "incomeSource": "Source de revenus",
+      "expenseBreakdown": "Détail des dépenses",
+      "total": "Total",
+      "transactions": "Transactions",
+      "loading": "Chargement des transactions…",
+      "failed": "Impossible de charger les transactions.",
+      "empty": "Aucune transaction trouvée pour cette catégorie.",
+      "viewAll": "Voir tout dans l'historique →"
+    },
     "categorizationSection": {
       "label": "Fiabilité de la catégorisation",
       "title": "À quel point nous comprenons vos transactions",
@@ -922,7 +953,7 @@
       },
       "firstYear": "Première année",
       "yoyChange": "{arrow} {pct} %",
-      "concentrationRisk": "<warn>Risque de concentration des revenus : </warn>{pct} % des revenus proviennent de <b>{client}</b>{processorNote}. La perte de cette source affecterait significativement votre activité.",
+      "concentrationRisk": "<warn>Risque de concentration :</warn> <b>{pct} %</b> des revenus proviennent de <b>{client}</b>{processorNote} — au-dessus du seuil de {threshold} %. La perte de cette source affecterait significativement votre activité.",
       "processorNote": " (processeur de paiement, peut représenter plusieurs clients)",
       "topClients": {
         "title": "Meilleurs clients par revenu",
@@ -1102,6 +1133,7 @@
     }
   },
   "intent": {
+    "noIntent": "Aucune intention",
     "labels": {
       "personal_expense": "Personnel",
       "business_expense": "Professionnel",

@@ -1,12 +1,19 @@
 import { getTranslations } from "next-intl/server";
 import type { DataCoverage } from "@/lib/analytics-engine";
 
-interface Props { coverage: DataCoverage; }
+interface Props {
+  coverage: DataCoverage;
+  lastImportedAt?: Date | null;
+}
 
-export default async function DataCoverage({ coverage }: Props) {
+export default async function DataCoverage({ coverage, lastImportedAt }: Props) {
   if (coverage.count === 0) return null;
 
   const t = await getTranslations("dashboard.dataCoverage");
+
+  const daysSinceImport = lastImportedAt
+    ? Math.floor((Date.now() - new Date(lastImportedAt).getTime()) / 86_400_000)
+    : null;
 
   let span: string;
   if (coverage.years >= 1) {
@@ -19,7 +26,7 @@ export default async function DataCoverage({ coverage }: Props) {
   }
 
   return (
-    <div className="flex items-start gap-3 px-4 py-3 bg-[#4CC4A40A] border border-[#4CC4A420] rounded-xl">
+    <div className="flex items-start gap-3 px-4 py-3 bg-[#4CC4A412] border border-[#4CC4A428] rounded-xl">
       <div className="w-5 h-5 rounded-full bg-[#4CC4A4] flex items-center justify-center flex-shrink-0 mt-0.5">
         <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
@@ -31,6 +38,13 @@ export default async function DataCoverage({ coverage }: Props) {
         </span>
         {coverage.rangeLabel && (
           <span className="text-xs text-[#6A97B4]">{t("analysisRange", { range: coverage.rangeLabel })}</span>
+        )}
+        {daysSinceImport !== null && (
+          <span className="text-xs text-[#6A97B4]/75">
+            {daysSinceImport === 0
+              ? t("lastUpdatedToday")
+              : t("lastUpdated", { days: daysSinceImport })}
+          </span>
         )}
       </div>
     </div>

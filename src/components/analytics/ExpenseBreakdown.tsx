@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import { formatCurrency } from "@/utils/finance";
-import type { Locale } from "@/i18n/locales";
+import { INTL_LOCALES, type Locale } from "@/i18n/locales";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -32,22 +32,6 @@ type ApiResponse = {
 
 // ── Intent display helpers ────────────────────────────────────────────────────
 
-const INTENT_LABEL: Record<string, string> = {
-  personal_expense:  "Personal",
-  business_expense:  "Business",
-  subscription:      "Subscription",
-  tax_payment:       "Tax",
-  savings_transfer:  "Savings",
-  family_support:    "Family",
-  investment:        "Investment",
-  loan_repayment:    "Loan",
-  owner_draw:        "Owner Draw",
-  freelance_income:  "Freelance",
-  salary:            "Salary",
-  passive_income:    "Passive income",
-  refund:            "Refund",
-};
-
 const INTENT_COLOR: Record<string, string> = {
   personal_expense:  "bg-[#1E3A5F] text-[#7BB8E8]",
   business_expense:  "bg-[#1A3D30] text-[#4CC4A4]",
@@ -63,9 +47,9 @@ const INTENT_COLOR: Record<string, string> = {
   refund:            "bg-[#1A2040] text-[#A5B4FC]",
 };
 
-function IntentBadge({ intent }: { intent: string | null }) {
-  if (!intent) return <span className="text-xs text-[#4A6B85] italic">No intent</span>;
-  const label = INTENT_LABEL[intent] ?? intent.replace(/_/g, " ");
+function IntentBadge({ intent, tIntent, noIntentLabel }: { intent: string | null; tIntent: ReturnType<typeof useTranslations>; noIntentLabel: string }) {
+  if (!intent) return <span className="text-xs text-[#4A6B85] italic">{noIntentLabel}</span>;
+  const label = tIntent.has(intent) ? tIntent(intent) : intent.replace(/_/g, " ");
   const color = INTENT_COLOR[intent] ?? "bg-[#1A3048] text-[#7BA8C4]";
   return (
     <span className={`inline-block text-xs font-medium px-2 py-0.5 rounded-full ${color}`}>
@@ -76,8 +60,8 @@ function IntentBadge({ intent }: { intent: string | null }) {
 
 // ── Date formatter ────────────────────────────────────────────────────────────
 
-function fmtDate(iso: string): string {
-  return new Date(iso).toLocaleDateString("en-GB", {
+function fmtDate(iso: string, locale: Locale): string {
+  return new Date(iso).toLocaleDateString(INTL_LOCALES[locale], {
     day: "numeric", month: "short", year: "numeric", timeZone: "UTC",
   });
 }
@@ -100,22 +84,36 @@ function CategoryDrawer({
   accent: { text: string; bar: string };
 }) {
   const tCategories = useTranslations("categories");
+  const tDrawer = useTranslations("analytics.categoryDrawer");
+  const tIntent = useTranslations("intent.labels");
+  const tIntentRoot = useTranslations("intent");
+  const tCommon = useTranslations("common");
+  const noIntentLabel = tIntentRoot("noIntent");
+  const closeBtnLabel = tCommon("buttons.close");
+  const closeBtnRef = useRef<HTMLButtonElement>(null);
+
   const [data, setData]       = useState<ApiResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState<string | null>(null);
+
+  // Focus close button when drawer opens for keyboard/screen-reader users
+  useEffect(() => {
+    if (category) closeBtnRef.current?.focus();
+  }, [category]);
 
   useEffect(() => {
     if (!category) { setData(null); return; }
     setLoading(true);
     setError(null);
     setData(null);
+    const failedMsg = tDrawer("failed");
     const params = new URLSearchParams({ category, type });
     if (since) params.set("since", since);
     fetch(`/api/analytics/category-transactions?${params}`)
       .then((r) => r.json())
       .then((d) => { setData(d); setLoading(false); })
-      .catch(() => { setError("Failed to load transactions."); setLoading(false); });
-  }, [category, type, since]);
+      .catch(() => { setError(failedMsg); setLoading(false); });
+  }, [category, type, since]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (category) document.body.style.overflow = "hidden";
@@ -133,7 +131,7 @@ function CategoryDrawer({
   const displayName = category
     ? (tCategories.has(category) ? tCategories(category) : category)
     : "";
-  const drawerLabel = type === "income" ? "Income Source" : "Expense Breakdown";
+  const drawerLabel = type === "income" ? tDrawer("incomeSource") : tDrawer("expenseBreakdown");
 
   return (
     <>
@@ -147,6 +145,9 @@ function CategoryDrawer({
 
       {/* Panel */}
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={drawerLabel}
         className={`fixed top-0 right-0 z-50 h-full w-full sm:w-[480px] bg-[#0D2137] border-l border-[#1E3A55] shadow-2xl
           flex flex-col transition-transform duration-300 ease-out
           ${isOpen ? "translate-x-0" : "translate-x-full"}`}
@@ -154,16 +155,15 @@ function CategoryDrawer({
         {/* Header */}
         <div className="flex items-start justify-between gap-4 px-6 pt-6 pb-5 border-b border-[#1E3A55]">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-widest text-[#4A7A9B] mb-1">
-              {drawerLabel}
-            </p>
-            <h2 className="text-xl font-bold text-[#E8F0F8] capitalize">{displayName}</h2>
+            <p className="label mb-1">{drawerLabel}</p>
+            <h2 className="text-xl font-bold text-[#E8F0F8]">{displayName}</h2>
           </div>
           <button
+            ref={closeBtnRef}
             onClick={onClose}
             className="mt-0.5 flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg
               text-[#4A7A9B] hover:text-[#E8F0F8] hover:bg-[#1A3048] transition-colors"
-            aria-label="Close"
+            aria-label={closeBtnLabel}
           >
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
               <path d="M2 2l12 12M14 2L2 14" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
@@ -175,22 +175,22 @@ function CategoryDrawer({
         {data && (
           <div className="flex gap-6 px-6 py-4 bg-[#0A1C2E] border-b border-[#1E3A55]">
             <div>
-              <p className="text-xs text-[#4A7A9B] mb-0.5">Total</p>
+              <p className="text-xs text-[#4A7A9B] mb-0.5">{tDrawer("total")}</p>
               <p className={`text-lg font-bold ${accent.text}`}>{formatCurrency(data.total, locale)}</p>
             </div>
             <div className="w-px bg-[#1E3A55]" />
             <div>
-              <p className="text-xs text-[#4A7A9B] mb-0.5">Transactions</p>
+              <p className="text-xs text-[#4A7A9B] mb-0.5">{tDrawer("transactions")}</p>
               <p className="text-lg font-bold text-[#E8F0F8]">{data.count}</p>
             </div>
           </div>
         )}
 
         {/* Body */}
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto" role="status" aria-live="polite">
           {loading && (
             <div className="flex items-center justify-center h-40 text-[#4A7A9B] text-sm">
-              Loading transactions…
+              {tDrawer("loading")}
             </div>
           )}
           {error && (
@@ -198,7 +198,7 @@ function CategoryDrawer({
           )}
           {data && data.transactions.length === 0 && (
             <div className="px-6 py-8 text-center text-[#4A7A9B] text-sm">
-              No transactions found for this category.
+              {tDrawer("empty")}
             </div>
           )}
           {data && data.transactions.length > 0 && (
@@ -207,10 +207,10 @@ function CategoryDrawer({
                 <li key={tx.id} className="px-6 py-4 hover:bg-[#0F2840] transition-colors">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs text-[#4A7A9B] mb-0.5">{fmtDate(tx.transactionDate)}</p>
+                      <p className="text-xs text-[#4A7A9B] mb-0.5">{fmtDate(tx.transactionDate, locale)}</p>
                       <p className="text-sm font-medium text-[#C8DCF0] truncate">{tx.description}</p>
                       <div className="mt-1.5">
-                        <IntentBadge intent={tx.intent} />
+                        <IntentBadge intent={tx.intent} tIntent={tIntent} noIntentLabel={noIntentLabel} />
                       </div>
                     </div>
                     <p className={`text-sm font-bold ${accent.text} tabular-nums flex-shrink-0 mt-4`}>
@@ -230,7 +230,7 @@ function CategoryDrawer({
             className="block w-full text-center text-sm font-medium text-[#3AB5A0] hover:text-[#4CC4A4]
               bg-[#0F2A3D] hover:bg-[#132F45] border border-[#1E3A55] rounded-xl py-2.5 transition-colors"
           >
-            View all in History →
+            {tDrawer("viewAll")}
           </a>
         </div>
       </div>
@@ -289,7 +289,7 @@ export default function ExpenseBreakdown({
                 >
                   <div className="flex justify-between text-sm mb-1">
                     <div className="flex items-center gap-1.5">
-                      <span className="text-[#A8C6E0] group-hover:text-[#E8F0F8] transition-colors capitalize">
+                      <span className="text-[#A8C6E0] group-hover:text-[#E8F0F8] transition-colors">
                         {displayName}
                       </span>
                       {arrow && (
