@@ -41,13 +41,6 @@ export default async function ClientInsights({ data }: Props) {
     );
   }
 
-  function revenueBar(share: number) {
-    return (
-      <div className="w-full h-1 bg-[#1E3550] rounded-full overflow-hidden mt-1">
-        <div className="h-full bg-[#3AB5A0] rounded-full opacity-70" style={{ width: `${Math.min(share, 100)}%` }} />
-      </div>
-    );
-  }
 
   const diversificationConfig = {
     concentrated: { label: t("diversification.concentrated"), color: "text-[#D97070]" },
@@ -131,7 +124,6 @@ export default async function ClientInsights({ data }: Props) {
                   <p className="text-xs text-[#6A97B4]">{t("topClients.ofIncome", { pct: String(c.revenueShare) })}</p>
                 </div>
               </div>
-              {revenueBar(c.revenueShare)}
             </div>
           ))}
         </div>

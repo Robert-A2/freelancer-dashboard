@@ -22,9 +22,9 @@ export default function ClientsLoading() {
       {/* Client list */}
       <SkCard>
         <Sk h="h-3" w="w-24" className="mb-5" />
-        <div className="space-y-0">
+        <div className="space-y-1">
           {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="flex items-center gap-3 py-4 border-b border-[#1E3550] last:border-0">
+            <div key={i} className="flex items-center gap-3 py-3">
               <Sk h="h-3" w="w-4" />
               <div className="flex-1 space-y-1.5">
                 <div className="flex items-center gap-2">
@@ -32,7 +32,6 @@ export default function ClientsLoading() {
                   <Sk h="h-5" w="w-14" rounded="rounded-full" />
                 </div>
                 <Sk h="h-3" w="w-24" />
-                <Sk h="h-0.5" rounded="rounded-full" />
               </div>
               <div className="space-y-1.5 text-right">
                 <Sk h="h-4" w="w-20" />

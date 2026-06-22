@@ -121,16 +121,13 @@ export default async function ClientsPage() {
                       <p className="text-sm font-medium text-[#E8F0F8] truncate">{c.name}</p>
                       <StatusBadge status={c.status} label={t(`status.${c.status}`)} />
                     </div>
-                    <p className="text-xs text-[#6A97B4] mb-1.5">
+                    <p className="text-xs text-[#6A97B4]">
                       {t("list.lastPayment", {
                         date: new Date(c.lastPayment).toLocaleDateString(INTL_LOCALES[locale], {
                           day: "numeric", month: "short", year: "numeric", timeZone: "UTC",
                         }),
                       })}
                     </p>
-                    <div className="w-full h-0.5 bg-[#1E3550] rounded-full overflow-hidden">
-                      <div className="h-full bg-[#3AB5A0] rounded-full opacity-60" style={{ width: `${Math.min(c.revenueContributionPct, 100)}%` }} />
-                    </div>
                   </div>
 
                   <div className="text-right flex-shrink-0">
