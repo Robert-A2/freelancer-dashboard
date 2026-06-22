@@ -38,7 +38,7 @@ src/
 │   │   ├── layout.tsx
 │   │   ├── dashboard/page.tsx
 │   │   ├── analytics/page.tsx
-│   │   ├── clients/page.tsx          ← Client Trust & Risk Center (list — accessed via Analytics page link, not in Navbar)
+│   │   ├── clients/page.tsx          ← Client Trust & Risk Center (list — in desktop Navbar and mobile bottom nav via MOBILE_NAV_LINKS)
 │   │   ├── clients/[name]/page.tsx   ← Client detail (payment pattern, risk, trend)
 │   │   ├── forecast/page.tsx
 │   │   ├── history/page.tsx
@@ -269,7 +269,7 @@ If the `User` row is already missing (Prisma error `P2025`), deletion continues 
 
 1. Create `src/app/(dashboard)/<name>/page.tsx` as an `async` Server Component. Copy the auth-check boilerplate from an existing page (`createClient()` → `getUser()` → `redirect("/login")`) and set `export const dynamic = "force-dynamic"`.
 2. It will automatically get the `(dashboard)` layout's `<Navbar />` + container — no extra wiring needed.
-3. Add a nav entry in `src/components/ui/Navbar.tsx` and the corresponding translation keys.
+3. Add an entry to `NAV_LINKS` in `src/components/ui/Navbar.tsx` for the desktop top bar. `MOBILE_NAV_LINKS` is derived from `NAV_LINKS` with a filter (currently excludes `history` to keep the mobile bar at 5 items). If the new page should appear on mobile too, update that filter. Add `common.nav.<key>` (full label) and `common.nav.<key>Mobile` (short label for the bottom tab) translation keys to both `messages/en.json` and `messages/fr.json`.
 
 ### Adding a new API route
 

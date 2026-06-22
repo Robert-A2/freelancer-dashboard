@@ -3,7 +3,7 @@
 - **What it does**: Explains where every piece of user-facing text lives, how the app picks English vs. French, and the conventions for adding or editing translated content — including the `Insight {key, values}` pattern used by the analytics/forecast/intelligence engines.
 - **Why it exists**: All UI copy is centralized in two JSON files (`messages/en.json`, `messages/fr.json`) via [next-intl](https://next-intl.dev/). Nothing should ever be hardcoded in English inside a component — this doc explains the conventions that keep that true, and how to extend them.
 - **Where the code is**:
-  - `messages/en.json`, `messages/fr.json` — **all** translatable strings (1,110 lines each, kept in parallel)
+  - `messages/en.json`, `messages/fr.json` — **all** translatable strings (kept structurally in parallel)
   - `src/i18n/locales.ts` — supported locales, labels, `Intl` locale tags
   - `src/i18n/request.ts` — resolves which locale to load for a request
   - `src/lib/locale-actions.ts` — server action to persist a locale choice
@@ -40,7 +40,7 @@ Two distinct mechanisms work together:
 
 ## 2. The message files
 
-`messages/en.json` and `messages/fr.json` are flat-ish nested JSON objects, each exactly **1,110 lines**, with the same top-level namespaces in the same order:
+`messages/en.json` and `messages/fr.json` are flat-ish nested JSON objects with the same top-level namespaces in the same order (both files must stay structurally identical — see "Things to be careful about"):
 
 | Namespace | Covers |
 |---|---|
@@ -51,9 +51,10 @@ Two distinct mechanisms work together:
 | `upload` | `/upload` page + `<CsvUploader>` (all 4 active states: idle/parsing/processing/done/error). Includes `upload.dropzone.privacy` (the one-line privacy hint in the drop zone), `upload.trust.*` (4 trust chip labels shown below the drop zone), and `upload.dataPrivacyLink` (footer link to `/data-privacy`). |
 | `history` | `/history` page (filters, pagination, recategorize) |
 | `metrics` | Shared metric labels (income, expenses, cashflow, etc.) reused across Dashboard/Analytics/Forecast |
-| `dashboard` | `/dashboard` page, `<SummaryCards>`, `<FirstUploadBanner>`, empty state |
-| `forecast` | `/forecast` page — health score, risk, key drivers, projections |
-| `analytics` | `/analytics` page — YTD summary, cashflow chart, client insights |
+| `dashboard` | `/dashboard` page, `<SummaryCards>`, `<FirstUploadBanner>`, empty state. Sub-key `summaryCards.riskSeeBreakdown` is the "See full breakdown →" link on the risk card. |
+| `forecast` | `/forecast` page — health score, risk, key drivers, projections. `howBuilt.confidenceScore`, `howBuilt.recurringExpensesLabel`, `howBuilt.recurringExpensesBody` drive the "How This Forecast Was Built" methodology panel (now shown directly after Year-End Projection). |
+| `analytics` | `/analytics` page — YTD summary, cashflow chart, client insights. `analytics.categoryDrawer` (8 keys: `incomeSource`, `expenseBreakdown`, `total`, `transactions`, `loading`, `failed`, `empty`, `viewAll`) drives the `<CategoryDrawer>` slide-in panel in `<ExpenseBreakdown>`. |
+| `intent` | Transaction intent labels for badges and the history/analytics drawers. `intent.labels.*` maps intent codes to display names; `intent.noIntent` is the fallback label when no intent is set. |
 | `clients` | `/clients` (list) and `/clients/[name]` (detail) — Client Trust & Risk Center. Sub-namespaces: `status`, `dependency`, `trend`, `detail.*` (overview, pattern, revenueTrend, dependencyRisk, financialContext, insights, actions, history) |
 | `categories` | **Category display names** — keyed by the *lowercase category id* (e.g. `"client payment"`, `"software"`, `"taxes"`) → display string (e.g. `"Client payment"`, `"Software"`, `"Taxes"`). Used by `cat()` sentinels (§6) and anywhere a raw category id needs to become user-facing text. |
 | `insightCategories` | Display names for the 5 `InsightCategory` groupings (`growth`, `cashflow`, `spending`, `seasonality`, `clients`) — used to group `<HistoricalInsights>`/`<FinancialStory>` sections. See [INTELLIGENCE_ENGINE.md](./INTELLIGENCE_ENGINE.md). |

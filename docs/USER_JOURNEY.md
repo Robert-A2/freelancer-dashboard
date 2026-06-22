@@ -117,9 +117,9 @@ Every request — including all of the above — passes through `src/middleware.
 
 ## 7. `(dashboard)` layout — shared chrome
 
-**File**: `src/app/(dashboard)/layout.tsx`. Every page from here on (`/dashboard`, `/upload`, `/history`, `/analytics`, `/forecast`, `/settings`) is wrapped in:
+**File**: `src/app/(dashboard)/layout.tsx`. Every page from here on (`/dashboard`, `/upload`, `/history`, `/clients`, `/analytics`, `/forecast`, `/settings`) is wrapped in:
 
-- `<Navbar />` (`src/components/ui/Navbar.tsx`) — a sticky top bar (desktop) with the 5 main nav links (Dashboard, Upload, History, Analytics, Forecast), a language switcher, a feedback button, a settings icon, and sign-out; plus a fixed bottom tab bar (mobile) with the same 5 links. `usePathname()` highlights the active link; a `pending` state highlights the link being navigated *to* before the route transition completes.
+- `<Navbar />` (`src/components/ui/Navbar.tsx`) — a sticky top bar (desktop) with **6 nav links** (Dashboard, Upload, History, Clients, Analytics, Forecast) via `NAV_LINKS`, plus a language switcher, a feedback button, a settings icon, and sign-out; plus a fixed **bottom tab bar (mobile) with 5 links** — `MOBILE_NAV_LINKS` filters out History (accessible via the dashboard's "View all transactions" link) so the bar fits cleanly at 320 px. `usePathname()` highlights the active link; a `pending` state highlights the link being navigated *to* before the route transition completes.
 - A centered `<main>` container (`max-w-5xl`), with extra bottom padding on mobile (`pb-28`) to clear the fixed bottom nav.
 
 ---
@@ -216,7 +216,7 @@ A "stale data" flag (`dataIsStale`, >28 days since the last completed import) is
 Rendered sections (each a `<CollapsibleSection>`):
 - **YTD summary** — anchored to the user's *last data month* (`latestDataRecord`), not wall-clock "today" — consistent with the "anchor to the data" principle (see [ANALYTICS_ENGINE.md](./ANALYTICS_ENGINE.md)).
 - **Cashflow chart** (`<CashflowChart>`, Recharts) — income/expenses/cashflow over time. **Clickable**: tapping a bar opens `<MonthDrawer>` (shared with TrendsChart) with the same 2-level drill-down (month overview with Cashflow/Expenses/Income tabs → category → transactions).
-- **Client insights** (`<ClientInsights>`) — from `getClientInsights()`, income concentration / top clients. The section footer links to the full **Client Trust & Risk Center** at `/clients`.
+- **Client insights** (`<ClientInsights>`) — from `getClientInsights()`, income concentration / top clients. The section footer links to `/clients` (also directly reachable via the top Navbar and mobile bottom tab since Clients was added to `NAV_LINKS`).
 - **Financial Story** (`<FinancialStory>`) — renders `rankedInsights` (the same `buildHistoricalInsights()` output used on the Dashboard, see [INTELLIGENCE_ENGINE.md §5](./INTELLIGENCE_ENGINE.md)), grouped by `InsightCategory`.
 - **Data coverage** (`<DataCoverageBar>`) and categorization health stats.
 
@@ -247,15 +247,15 @@ Analytics does **not** call `generateDashboardIntelligence()` — it only uses t
 
 **File**: `src/app/(dashboard)/forecast/page.tsx` (466 lines). Calls `generateForecast(userId)` (regenerates on every page load — see [FORECAST_ENGINE.md §2](./FORECAST_ENGINE.md) for why this is cheap and idempotent) plus the same analytics-engine calls as the Dashboard, then `generateDashboardIntelligence()`.
 
-Rendered sections:
-- **Business Health Score** (0–100) — see [FORECAST_ENGINE.md §8](./FORECAST_ENGINE.md).
-- **Cashflow Risk** badge — see [FORECAST_ENGINE.md §9](./FORECAST_ENGINE.md).
-- **Business Direction** card — `intel.businessTrendDirection` + `intel.trajectoryInsight`.
-- **Biggest Risk** / **Biggest Opportunity** cards — `intel.biggestRisk` / `intel.biggestOpportunity`.
-- **Key Drivers** — see [FORECAST_ENGINE.md §10](./FORECAST_ENGINE.md).
-- **Year-End Projection** — see [FORECAST_ENGINE.md §11](./FORECAST_ENGINE.md).
-- **Seasonal Insights** — `intel.seasonalInsights`.
-- **"How This Forecast Was Built"** panel — see [FORECAST_ENGINE.md §12](./FORECAST_ENGINE.md).
+Rendered sections (in page order):
+1. **Health overview row** — a 3-column grid: **Business Health Score** (0–100, see [FORECAST_ENGINE.md §8](./FORECAST_ENGINE.md)) + **Cashflow Risk** badge (see [FORECAST_ENGINE.md §9](./FORECAST_ENGINE.md)) + **Business Direction** card (`intel.businessTrendDirection` + `intel.trajectoryInsight`). Followed by an optional health-status narrative banner.
+2. **Year-End Projection** — four tiles (Income, Expenses, Cashflow, Margin) for the next 12 months — see [FORECAST_ENGINE.md §11](./FORECAST_ENGINE.md). Values are prefixed with `~` (e.g. `~€24,000`) to signal they are estimates, not certainties.
+3. **"How This Forecast Was Built"** panel — data range, months of history, transaction count, confidence level, a confidence-score progress bar with reasons, and a recurring-expenses floor callout. Positioned here (before Key Drivers) so methodology is visible before conclusions. See [FORECAST_ENGINE.md §12](./FORECAST_ENGINE.md).
+4. **Key Drivers** — see [FORECAST_ENGINE.md §10](./FORECAST_ENGINE.md).
+5. **Biggest Risk** / **Biggest Opportunity** cards — `intel.biggestRisk` / `intel.biggestOpportunity`.
+6. **Recommended Actions** — `intel.forecastImprovements` (up to 4 items).
+7. **Seasonal Insights** — `intel.seasonalInsights`.
+8. **Trends Chart** — the same `<TrendsChart>` as the Dashboard, at the bottom for historical context.
 
 ---
 
@@ -297,7 +297,7 @@ Rendered sections:
 ### Adding a new `(dashboard)` page
 
 - Follow the pattern in any existing page: `createClient()` → `getUser()` → `redirect("/login")` if absent, `export const dynamic = "force-dynamic"`, fetch via `Promise.all([...lib calls])`. It automatically gets `<Navbar />` from the layout.
-- Add an entry to `NAV_LINKS` in `src/components/ui/Navbar.tsx` (both the desktop list and — since it's the same array — the mobile bottom bar), plus `common.nav.<key>` and `common.nav.<key>Mobile` translation keys.
+- Add an entry to `NAV_LINKS` in `src/components/ui/Navbar.tsx` (the 6-item desktop array). The mobile bottom bar uses `MOBILE_NAV_LINKS`, which is `NAV_LINKS` filtered to 5 items (currently excludes `history`). Decide whether the new page should appear on mobile and update that filter accordingly. Add `common.nav.<key>` (full label) and `common.nav.<key>Mobile` (short label) translation keys to both `messages/en.json` and `messages/fr.json`.
 
 ### Things to be careful about
 
