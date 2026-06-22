@@ -298,7 +298,7 @@ export default function CsvUploader() {
                 {t("done.transferNote")}
               </p>
             )}
-            <div className="pt-1 border-t border-[#1E3550]">
+            <div className="pt-1">
               <a href="/history" className="text-xs text-[#3AB5A0] hover:underline">
                 {t("done.reviewCategorisation")}
               </a>

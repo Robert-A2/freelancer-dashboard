@@ -38,7 +38,7 @@ export default function HistoryLoading() {
           ))}
         </div>
         {/* Pagination */}
-        <div className="flex justify-between items-center mt-4 pt-4 border-t border-[#1E3550]">
+        <div className="flex justify-between items-center mt-4 pt-4">
           <Sk h="h-4" w="w-32" />
           <div className="flex gap-2">
             <Sk h="h-8" w="w-16" rounded="rounded-lg" />

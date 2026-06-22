@@ -230,7 +230,7 @@ export default async function ForecastPage() {
                 <div className={`h-full rounded-full ${scoreColor.bar}`} style={{ width: `${healthScore}%` }} />
               </div>
               <p className={`text-xs font-semibold mb-3 ${health.text}`}>{health.label}</p>
-              <div className="space-y-1.5 border-t border-[#1E3550] pt-3">
+              <div className="space-y-1.5 pt-3">
                 <p className="text-xs text-[#6A97B4] font-semibold uppercase tracking-wide mb-2">{t("healthScore.howCalculated")}</p>
                 {[
                   { key: "cashflowConsistency", label: t("healthScore.rows.cashflowConsistency"), score: cashflowScore, max: 40, detail: t("monthsPositive", { positive: positiveCount, total: activeMonths.length }) },
@@ -513,7 +513,7 @@ export default async function ForecastPage() {
                 {forecast?.seasonallyAdjusted && t("howBuilt.seasonalApplied")}
               </p>
             </div>
-            <div className="text-xs text-[#6A97B4] space-y-2 border-t border-[#1E3550] pt-4 leading-relaxed">
+            <div className="text-xs text-[#6A97B4] space-y-2 pt-4 leading-relaxed">
               <p>· {t("howBuilt.weightingNote")}</p>
               {forecast?.seasonallyAdjusted && (
                 <p>· {t("howBuilt.seasonalAdjustmentNote")}</p>

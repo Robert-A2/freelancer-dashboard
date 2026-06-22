@@ -210,7 +210,7 @@ export default async function ClientInsights({ data }: Props) {
                   <p className="text-sm font-semibold text-[#4CC4A4] flex-shrink-0">{formatCurrency(c.totalRevenue, locale)}</p>
                 </div>
               ))}
-              <div className="pt-2 border-t border-[#1E3550]">
+              <div className="pt-2">
                 <p className="text-xs text-[#6A97B4]">
                   {t.rich("newClients.summary", {
                     count: newClientsThisYear.length,
