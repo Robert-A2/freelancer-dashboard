@@ -97,15 +97,15 @@ export default function BusinessIntelligence({
       )}
 
       {lifeInsights.length > 0 && (
-        <ul className="space-y-2 pt-2 border-t border-[#1E3550]">
+        <ul className="space-y-2">
           {lifeInsights.map((insight, i) => (
             <li
               key={i}
               className="text-sm text-[#A8C6E0] flex items-start gap-2.5 leading-relaxed"
             >
-              <span className="text-[#6A97B4] opacity-70 mt-[3px] flex-shrink-0 select-none">◦</span>
+              <span className="text-[#4CC4A4] opacity-50 mt-[3px] flex-shrink-0 select-none">·</span>
               <span>
-                <InsightText insight={insight} accent="#3AB5A0" />
+                <InsightText insight={insight} accent="#4CC4A4" />
               </span>
             </li>
           ))}

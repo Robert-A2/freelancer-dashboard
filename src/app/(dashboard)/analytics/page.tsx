@@ -337,7 +337,7 @@ export default async function AnalyticsPage() {
               subtitle={t("clientSection.subtitle")}
             >
               <ClientInsights data={clientInsights} />
-              <div className="mt-4 pt-4 border-t border-[#1E3550]">
+              <div className="mt-4">
                 <Link href="/clients" className="inline-flex items-center gap-1.5 text-sm text-[#3AB5A0] hover:text-[#4CC4A4] font-medium transition-colors">
                   {t("clientSection.trustCenter")}
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
