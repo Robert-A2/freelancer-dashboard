@@ -372,12 +372,6 @@
       "deletedHeading": "Account successfully deleted",
       "deletedBody": "Taking you back to the homepage…",
       "error": "Something went wrong while deleting your account. Please try again."
-    },
-    "digest": {
-      "label": "Weekly digest",
-      "description": "A short Monday email with your key numbers and anything worth your attention. No reports, just a note.",
-      "optIn": "Send me the weekly digest",
-      "saving": "Saving…"
     }
   },
   "upload": {
