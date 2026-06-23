@@ -10,9 +10,10 @@ import Link from "next/link";
 export const dynamic = "force-dynamic";
 
 const STATUS_STYLES: Record<ClientStatus, { dot: string; text: string; bg: string }> = {
-  green:  { dot: "bg-[#4CC4A4]", text: "text-[#4CC4A4]", bg: "bg-[#4CC4A415]"  },
-  yellow: { dot: "bg-[#D4A254]", text: "text-[#D4A254]", bg: "bg-[#D4A25415]"  },
-  red:    { dot: "bg-[#D97070]", text: "text-[#D97070]", bg: "bg-[#D9707015]"  },
+  green:    { dot: "bg-[#4CC4A4]", text: "text-[#4CC4A4]", bg: "bg-[#4CC4A415]" },
+  yellow:   { dot: "bg-[#D4A254]", text: "text-[#D4A254]", bg: "bg-[#D4A25415]" },
+  red:      { dot: "bg-[#D97070]", text: "text-[#D97070]", bg: "bg-[#D9707015]" },
+  previous: { dot: "bg-[#4A7A9B]", text: "text-[#6A97B4]", bg: "bg-[#1A304880]" },
 };
 
 function StatusBadge({ status, label }: { status: ClientStatus; label: string }) {
@@ -33,7 +34,7 @@ export default async function ClientsPage() {
   const t      = await getTranslations("clients");
   const locale = (await getLocale()) as Locale;
   const data   = await getClientRiskProfiles(user.id);
-  const { clients, highRiskCount, watchCount, reliableCount, hasIntentData } = data;
+  const { clients, currentCount, followUpCount, previousCount, hasIntentData } = data;
 
   return (
     <div className="space-y-8">
@@ -69,9 +70,9 @@ export default async function ClientsPage() {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {[
               { label: t("summary.totalClients"), value: clients.length, color: "text-[#E8F0F8]" },
-              { label: t("summary.reliable"),     value: reliableCount,  color: "text-[#4CC4A4]" },
-              { label: t("summary.watching"),     value: watchCount,     color: "text-[#D4A254]" },
-              { label: t("summary.highRisk"),     value: highRiskCount,  color: "text-[#D97070]" },
+              { label: t("summary.current"),      value: currentCount,   color: "text-[#4CC4A4]" },
+              { label: t("summary.followUp"),     value: followUpCount,  color: "text-[#D4A254]" },
+              { label: t("summary.previous"),     value: previousCount,  color: "text-[#6A97B4]" },
             ].map(m => (
               <div key={m.label} className="bg-[#1A3048] rounded-xl p-4">
                 <p className="label mb-1">{m.label}</p>
@@ -80,20 +81,21 @@ export default async function ClientsPage() {
             ))}
           </div>
 
-          {/* Risk alerts — show top 3 only */}
-          {highRiskCount > 0 && (() => {
-            const redClients = clients.filter(c => c.status === "red");
-            const shown = redClients.slice(0, 3);
-            const rest = redClients.length - 3;
+          {/* Follow-up alerts — only for genuinely late active clients (red), never for previous */}
+          {followUpCount > 0 && (() => {
+            const lateClients = clients.filter(c => c.status === "red");
+            if (lateClients.length === 0) return null;
+            const shown = lateClients.slice(0, 3);
+            const rest = lateClients.length - 3;
             return (
               <div className="space-y-2">
                 {shown.map(c => (
                   <div key={c.name} className="flex items-center gap-3 py-2">
-                    <span className="text-[#D97070] text-sm flex-shrink-0">⚠</span>
+                    <span className="text-[#D4A254] text-sm flex-shrink-0">⚠</span>
                     <p className="text-sm text-[#A8C6E0] flex-1">
                       <span className="font-semibold text-[#E8F0F8]">{c.name}</span>
                       {" — "}
-                      {t("alerts.red", { days: c.currentGapDays })}
+                      {t("alerts.late", { days: c.currentGapDays })}
                     </p>
                     <Link
                       href={`/clients/${encodeURIComponent(c.name)}`}

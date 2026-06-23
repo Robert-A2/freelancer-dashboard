@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect, notFound } from "next/navigation";
 import { getTranslations, getLocale } from "next-intl/server";
 import { getClientRiskProfiles } from "@/lib/client-risk-engine";
-import type { ClientStatus, ReliabilityScore } from "@/lib/client-risk-engine";
+import type { ClientStatus, ClientLifecycle, ReliabilityScore } from "@/lib/client-risk-engine";
 import { getFinancialLifeIntelligence } from "@/lib/financial-life-engine";
 import { formatCurrency } from "@/utils/finance";
 import { INTL_LOCALES, type Locale } from "@/i18n/locales";
@@ -13,9 +13,10 @@ export const dynamic = "force-dynamic";
 // ── Style maps ───────────────────────────────────────────────────────────────
 
 const STATUS_STYLES: Record<ClientStatus, { dot: string; text: string; bg: string; border: string }> = {
-  green:  { dot: "bg-[#4CC4A4]", text: "text-[#4CC4A4]", bg: "bg-[#4CC4A415]",  border: "border-[#4CC4A425]"  },
-  yellow: { dot: "bg-[#D4A254]", text: "text-[#D4A254]", bg: "bg-[#D4A25415]",  border: "border-[#D4A25425]"  },
-  red:    { dot: "bg-[#D97070]", text: "text-[#D97070]", bg: "bg-[#D9707015]",  border: "border-[#D9707025]"  },
+  green:    { dot: "bg-[#4CC4A4]", text: "text-[#4CC4A4]", bg: "bg-[#4CC4A415]", border: "border-[#4CC4A425]" },
+  yellow:   { dot: "bg-[#D4A254]", text: "text-[#D4A254]", bg: "bg-[#D4A25415]", border: "border-[#D4A25425]" },
+  red:      { dot: "bg-[#D97070]", text: "text-[#D97070]", bg: "bg-[#D9707015]", border: "border-[#D9707025]" },
+  previous: { dot: "bg-[#4A7A9B]", text: "text-[#6A97B4]", bg: "bg-[#132537]",   border: "border-[#243F5E]"   },
 };
 
 const RELIABILITY_STYLES: Record<ReliabilityScore, { text: string; bg: string; border: string }> = {
@@ -23,6 +24,7 @@ const RELIABILITY_STYLES: Record<ReliabilityScore, { text: string; bg: string; b
   good:      { text: "text-[#3AB5A0]", bg: "bg-[#3AB5A010]", border: "border-[#3AB5A025]" },
   watch:     { text: "text-[#D4A254]", bg: "bg-[#D4A25410]", border: "border-[#D4A25430]" },
   risk:      { text: "text-[#D97070]", bg: "bg-[#D9707010]", border: "border-[#D9707030]" },
+  previous:  { text: "text-[#6A97B4]", bg: "bg-[#132537]",   border: "border-[#243F5E]"   },
 };
 
 const IMPACT_STYLES = {
@@ -419,8 +421,9 @@ export default async function ClientDetailPage({
         )}
       </div>
 
-      {/* ── 5. Dependency Simulator ──────────────────────────────────────────── */}
-      <div className={`card border ${impactStyle.border}`}>
+      {/* ── 5. Dependency Simulator — only shown for active clients ─────────── */}
+      {/* For previous clients this section makes no sense: they have already stopped paying. */}
+      {client.lifecycle === "current" && <div className={`card border ${impactStyle.border}`}>
         <p className="label mb-1">{t("detail.simulator.title", { name: client.name })}</p>
         <p className="text-[13px] text-[#6A97B4] mb-5">{t("detail.dependencyRisk.subtitle")}</p>
 
@@ -483,7 +486,7 @@ export default async function ClientDetailPage({
             {t(`detail.simulator.${impact}Desc`)}
           </p>
         </div>
-      </div>
+      </div>}
 
       {/* ── 6. Payment Timeline ─────────────────────────────────────────────── */}
       <div className="card">
@@ -597,24 +600,35 @@ export default async function ClientDetailPage({
         </div>
       )}
 
-      {/* ── 8. Recommended actions ──────────────────────────────────────────── */}
-      <div>
-        <p className="label mb-3">{t("detail.actions.title")}</p>
-        <div className="space-y-2">
-          {client.actions.map((action, i) => {
-            const s = ACTION_STYLES[action.type];
-            return (
-              <div key={i} className={`flex items-start gap-3 px-4 py-3 ${s.bg} border ${s.border} rounded-xl`}>
-                <span className="text-base flex-shrink-0">{s.icon}</span>
-                <div>
-                  <p className={`text-sm font-semibold ${s.label}`}>{t(`detail.actions.${action.type}`)}</p>
-                  <p className="text-xs text-[#7BA8C4] mt-0.5">{t(`detail.actions.${action.type}Reason`)}</p>
-                </div>
-              </div>
-            );
-          })}
+      {/* ── 8. Actions / Previous client note ──────────────────────────────── */}
+      {client.lifecycle === "previous" ? (
+        <div className="px-5 py-4 bg-[#132537] rounded-2xl border border-[#243F5E]">
+          <p className="text-xs text-[#6A97B4] font-semibold uppercase tracking-wide mb-2">
+            {t("detail.previousClient.label")}
+          </p>
+          <p className="text-sm text-[#7BA8C4] leading-relaxed">
+            {t("detail.previousClient.note")}
+          </p>
         </div>
-      </div>
+      ) : (
+        <div>
+          <p className="label mb-3">{t("detail.actions.title")}</p>
+          <div className="space-y-2">
+            {client.actions.map((action, i) => {
+              const s = ACTION_STYLES[action.type];
+              return (
+                <div key={i} className={`flex items-start gap-3 px-4 py-3 ${s.bg} border ${s.border} rounded-xl`}>
+                  <span className="text-base flex-shrink-0">{s.icon}</span>
+                  <div>
+                    <p className={`text-sm font-semibold ${s.label}`}>{t(`detail.actions.${action.type}`)}</p>
+                    <p className="text-xs text-[#7BA8C4] mt-0.5">{t(`detail.actions.${action.type}Reason`)}</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
     </div>
   );

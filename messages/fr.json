@@ -969,7 +969,7 @@
       "label": "Analyse clients",
       "title": "D'où vient votre chiffre d'affaires",
       "subtitle": "Concentration des revenus, activité et croissance des clients.",
-      "trustCenter": "Voir le centre de confiance & risque"
+      "trustCenter": "Voir le centre de suivi client complet"
     },
     "clientInsights": {
       "metrics": {
@@ -1051,8 +1051,8 @@
   },
   "clients": {
     "label": "Analyse clients",
-    "title": "Centre de confiance & risque client",
-    "subtitle": "Comprenez qui vous paie, avec quelle fiabilité, et quelle action entreprendre.",
+    "title": "Centre de suivi client",
+    "subtitle": "Comprenez qui est actif, qui nécessite un suivi, et qui fait partie de votre historique client.",
     "intentDataWarning": "La classification des intentions est incomplète. Affichage de toutes les transactions de revenus. Pour de meilleurs résultats, examinez et classifiez vos transactions dans l'Historique.",
     "emptyState": {
       "heading": "Aucune donnée client",
@@ -1061,14 +1061,14 @@
     },
     "summary": {
       "totalClients": "Total clients",
-      "reliable": "Fiables",
-      "watching": "Surveillance",
-      "highRisk": "Risque élevé"
+      "current": "Actifs",
+      "followUp": "À relancer",
+      "previous": "Anciens"
     },
     "alerts": {
-      "red": "Aucun paiement depuis {days, plural, one {# jour} other {# jours}} — relance nécessaire",
+      "late": "Paiement en retard de {days, plural, one {# jour} other {# jours}} par rapport à l'intervalle habituel",
       "viewClient": "Voir le client",
-      "andMore": "+ {count, plural, one {# autre client à risque} other {# autres clients à risque}} — voir la liste complète ci-dessous"
+      "andMore": "+ {count, plural, one {# autre client à relancer} other {# autres clients à relancer}} — voir la liste complète ci-dessous"
     },
     "list": {
       "title": "Tous les clients",
@@ -1078,8 +1078,9 @@
     },
     "status": {
       "green": "Fiable",
-      "yellow": "Surveillance",
-      "red": "Risque"
+      "yellow": "À relancer",
+      "red": "En retard",
+      "previous": "Ancien client"
     },
     "dependency": {
       "low": "Risque faible",
@@ -1173,12 +1174,14 @@
         "title": "Évaluation de la fiabilité",
         "excellent": "Excellent",
         "good": "Bon",
-        "watch": "À surveiller",
-        "risk": "À risque",
+        "watch": "À relancer",
+        "risk": "En retard",
+        "previous": "Ancien client",
         "excellentDesc": "Longue relation avec des paiements réguliers et dans les délais. Aucune action requise.",
         "goodDesc": "Historique de paiements régulier. Actuellement dans les délais.",
-        "watchDesc": "Historique limité ou paiement légèrement en retard. À surveiller.",
-        "riskDesc": "Paiement significativement en retard. Relance nécessaire maintenant."
+        "watchDesc": "Paiement légèrement au-delà de l'intervalle habituel. Un contact peut être utile.",
+        "riskDesc": "Paiement significativement au-delà de l'intervalle habituel. Envisagez de prendre contact.",
+        "previousDesc": "Ce client n'a aucune activité récente. La relation semble avoir pris fin naturellement. L'historique complet des paiements est visible dans la chronologie ci-dessous."
       },
       "revenueStory": {
         "title": "Historique des revenus",
@@ -1223,6 +1226,10 @@
         "latestPayment": "Le plus récent",
         "showingRecent": "{count, plural, one {Affichage du dernier paiement} other {Affichage des # derniers paiements}}",
         "gap": "Écart"
+      },
+      "previousClient": {
+        "label": "Ancien client",
+        "note": "Ce client n'a aucune activité de paiement récente. La relation semble avoir pris fin naturellement. Si la collaboration était bonne et que vous souhaitez retravailler ensemble, vous pouvez le contacter — mais il n'y a aucun paiement en attente à relancer."
       }
     }
   },

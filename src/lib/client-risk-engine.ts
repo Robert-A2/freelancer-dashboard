@@ -3,10 +3,11 @@ import { extractClientName } from "./analytics-engine";
 import { getLocale } from "next-intl/server";
 import { INTL_LOCALES, type Locale } from "@/i18n/locales";
 
-export type ClientStatus = "green" | "yellow" | "red";
+export type ClientStatus = "green" | "yellow" | "red" | "previous";
+export type ClientLifecycle = "current" | "previous";
 export type DependencyRisk = "low" | "medium" | "high";
 export type RevenueTrend = "increasing" | "stable" | "declining";
-export type ReliabilityScore = "excellent" | "good" | "watch" | "risk";
+export type ReliabilityScore = "excellent" | "good" | "watch" | "risk" | "previous";
 
 export interface MonthlyRevenue {
   year: number;
@@ -43,6 +44,7 @@ export interface ClientRiskProfile {
   avgIntervalDays: number | null;
   currentGapDays: number;
   status: ClientStatus;
+  lifecycle: ClientLifecycle;
   dependencyRisk: DependencyRisk;
   monthlyRevenue: MonthlyRevenue[];
   revenueTrend: RevenueTrend | null;
@@ -58,17 +60,28 @@ export interface ClientRiskProfile {
 export interface ClientRiskCenterData {
   clients: ClientRiskProfile[];
   totalRevenue: number;
-  highRiskCount: number;
-  watchCount: number;
-  reliableCount: number;
+  currentCount: number;    // active relationships (green + yellow + red)
+  followUpCount: number;   // active clients who are late (yellow + red)
+  previousCount: number;   // concluded/previous client relationships
   hasIntentData: boolean;
 }
 
 function computeStatus(avgIntervalDays: number | null, currentGapDays: number): ClientStatus {
-  if (avgIntervalDays === null || avgIntervalDays === 0) {
-    return currentGapDays >= 90 ? "red" : "green";
-  }
-  if (currentGapDays >= 90 || currentGapDays > avgIntervalDays * 1.5) return "red";
+  // A "previous" client is one whose relationship has clearly concluded —
+  // the gap far exceeds their own payment pattern, not just a late payment.
+  //
+  // Threshold: 3× their usual interval, minimum 6 months, maximum 18 months.
+  // This correctly handles monthly payers (6 months), quarterly (9 months),
+  // and annual payers (18 months cap) without over-triggering on genuine delays.
+  const previousThreshold = avgIntervalDays && avgIntervalDays > 0
+    ? Math.min(Math.max(avgIntervalDays * 3, 180), 548)
+    : 180;
+
+  if (currentGapDays >= previousThreshold) return "previous";
+
+  // Active client — evaluate payment timeliness against their own pattern
+  if (avgIntervalDays === null || avgIntervalDays === 0) return "green";
+  if (currentGapDays > avgIntervalDays * 1.5) return "red";
   if (currentGapDays > avgIntervalDays * 1.2) return "yellow";
   return "green";
 }
@@ -101,20 +114,24 @@ type PartialProfile = Omit<ClientRiskProfile, "insights" | "actions">;
 
 function buildInsights(p: PartialProfile): ClientInsight[] {
   const insights: ClientInsight[] = [];
+  const isPrevious = p.status === "previous";
 
-  if (p.status === "green" && p.paymentCount >= 5 && p.monthsActive >= 3) {
-    insights.push({ type: "reliable", params: { count: p.paymentCount, months: p.monthsActive } });
-  }
-
-  if ((p.status === "yellow" || p.status === "red") && p.avgIntervalDays !== null && p.avgIntervalDays > 0) {
-    insights.push({ type: "delayWarning", params: { avgDays: Math.round(p.avgIntervalDays), currentGap: p.currentGapDays } });
+  // Delay warnings are only meaningful for active clients — a previous client
+  // has simply concluded their engagement, not failed to pay.
+  if (!isPrevious) {
+    if (p.status === "green" && p.paymentCount >= 5 && p.monthsActive >= 3) {
+      insights.push({ type: "reliable", params: { count: p.paymentCount, months: p.monthsActive } });
+    }
+    if ((p.status === "yellow" || p.status === "red") && p.avgIntervalDays !== null && p.avgIntervalDays > 0) {
+      insights.push({ type: "delayWarning", params: { avgDays: Math.round(p.avgIntervalDays), currentGap: p.currentGapDays } });
+    }
   }
 
   if (p.revenueContributionPct >= 25) {
     insights.push({ type: "dependency", params: { pct: p.revenueContributionPct } });
   }
 
-  if (p.revenueTrend === "declining" && p.revenueTrendPct !== null) {
+  if (!isPrevious && p.revenueTrend === "declining" && p.revenueTrendPct !== null) {
     insights.push({ type: "decline", params: { pct: p.revenueTrendPct } });
   }
 
@@ -129,12 +146,14 @@ function buildActions(p: PartialProfile): ClientAction[] {
   const actions: ClientAction[] = [];
   const isOverdue = p.avgIntervalDays !== null && p.currentGapDays > p.avgIntervalDays * 1.2;
 
-  if (p.status === "red" || (p.status === "yellow" && isOverdue)) {
-    actions.push({ type: "followUp" });
-  }
-
-  if (p.revenueTrend === "declining") {
-    actions.push({ type: "monitor" });
+  // Previous clients are not owed a payment — no follow-up action needed.
+  if (p.status !== "previous") {
+    if (p.status === "red" || (p.status === "yellow" && isOverdue)) {
+      actions.push({ type: "followUp" });
+    }
+    if (p.revenueTrend === "declining") {
+      actions.push({ type: "monitor" });
+    }
   }
 
   if (actions.length === 0) {
@@ -145,12 +164,12 @@ function buildActions(p: PartialProfile): ClientAction[] {
 }
 
 function computeReliabilityScore(p: PartialProfile): ReliabilityScore {
+  if (p.status === "previous") return "previous";
   if (p.status === "red") return "risk";
   if (p.status === "yellow") return "watch";
-  // Green status: assess by longevity, payment count, and revenue direction
   if (p.paymentCount >= 6 && p.monthsActive >= 4 && p.revenueTrend !== "declining") return "excellent";
   if (p.paymentCount >= 3) return "good";
-  return "watch"; // 1-2 payments: not enough history to fully trust
+  return "watch";
 }
 
 export async function getClientRiskProfiles(userId: string): Promise<ClientRiskCenterData> {
@@ -173,7 +192,7 @@ export async function getClientRiskProfiles(userId: string): Promise<ClientRiskC
   }
 
   if (txs.length === 0) {
-    return { clients: [], totalRevenue: 0, highRiskCount: 0, watchCount: 0, reliableCount: 0, hasIntentData: false };
+    return { clients: [], totalRevenue: 0, currentCount: 0, followUpCount: 0, previousCount: 0, hasIntentData: false };
   }
 
   const locale = (await getLocale()) as Locale;
@@ -230,6 +249,7 @@ export async function getClientRiskProfiles(userId: string): Promise<ClientRiskC
 
     const { trend, trendPct } = computeTrend(monthlyRevenue);
     const status = computeStatus(avgIntervalDays, currentGapDays);
+    const lifecycle: ClientLifecycle = status === "previous" ? "previous" : "current";
     const dependencyRisk = computeDependencyRisk(revenueContributionPct);
 
     const recentMonthlyAvg = ((monthlyRevenue[3]?.amount ?? 0) + (monthlyRevenue[4]?.amount ?? 0) + (monthlyRevenue[5]?.amount ?? 0)) / 3;
@@ -248,6 +268,7 @@ export async function getClientRiskProfiles(userId: string): Promise<ClientRiskC
       avgIntervalDays,
       currentGapDays,
       status,
+      lifecycle,
       dependencyRisk,
       monthlyRevenue,
       revenueTrend: trend,
@@ -265,11 +286,11 @@ export async function getClientRiskProfiles(userId: string): Promise<ClientRiskC
   profiles.sort((a, b) => b.totalRevenue - a.totalRevenue);
 
   return {
-    clients:       profiles,
+    clients:      profiles,
     totalRevenue,
-    highRiskCount: profiles.filter(p => p.status === "red").length,
-    watchCount:    profiles.filter(p => p.status === "yellow").length,
-    reliableCount: profiles.filter(p => p.status === "green").length,
+    currentCount:  profiles.filter(p => p.lifecycle === "current").length,
+    followUpCount: profiles.filter(p => p.status === "yellow" || p.status === "red").length,
+    previousCount: profiles.filter(p => p.lifecycle === "previous").length,
     hasIntentData,
   };
 }

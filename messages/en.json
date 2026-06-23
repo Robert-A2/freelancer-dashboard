@@ -959,7 +959,7 @@
       "label": "Client insights",
       "title": "Where your revenue comes from",
       "subtitle": "Revenue concentration, client activity, and growth.",
-      "trustCenter": "View full Trust & Risk Center"
+      "trustCenter": "View full Client Lifecycle Center"
     },
     "clientInsights": {
       "metrics": {
@@ -1051,8 +1051,8 @@
   },
   "clients": {
     "label": "Client insights",
-    "title": "Client Trust & Risk Center",
-    "subtitle": "Understand who pays you, how reliably, and what action to take.",
+    "title": "Client Lifecycle Center",
+    "subtitle": "Understand who is active, who needs attention, and who belongs to your business history.",
     "intentDataWarning": "Intent classification is incomplete. Showing all income transactions. For best results, review and classify your transactions in History.",
     "emptyState": {
       "heading": "No client data yet",
@@ -1061,14 +1061,14 @@
     },
     "summary": {
       "totalClients": "Total clients",
-      "reliable": "Reliable",
-      "watching": "Watch",
-      "highRisk": "High risk"
+      "current": "Active",
+      "followUp": "Follow up",
+      "previous": "Previous"
     },
     "alerts": {
-      "red": "No payment in {days, plural, one {# day} other {# days}} — follow up needed",
+      "late": "Payment is {days, plural, one {# day} other {# days}} past their usual interval",
       "viewClient": "View client",
-      "andMore": "+ {count, plural, one {# more at-risk client} other {# more at-risk clients}} — see full list below"
+      "andMore": "+ {count, plural, one {# more client needs follow-up} other {# more clients need follow-up}} — see full list below"
     },
     "list": {
       "title": "All clients",
@@ -1078,8 +1078,9 @@
     },
     "status": {
       "green": "Reliable",
-      "yellow": "Watch",
-      "red": "Risk"
+      "yellow": "Follow Up",
+      "red": "Late",
+      "previous": "Previous Client"
     },
     "dependency": {
       "low": "Low risk",
@@ -1173,12 +1174,14 @@
         "title": "Reliability Assessment",
         "excellent": "Excellent",
         "good": "Good",
-        "watch": "Watch",
-        "risk": "Risk",
+        "watch": "Follow Up",
+        "risk": "Late",
+        "previous": "Previous Client",
         "excellentDesc": "Long track record with consistent on-time payments. No action needed.",
         "goodDesc": "Regular payment history. Currently on schedule.",
-        "watchDesc": "Limited history or payment running slightly late. Worth monitoring.",
-        "riskDesc": "Payment is significantly overdue. Follow up needed now."
+        "watchDesc": "Payment is slightly past their usual interval. Worth checking in.",
+        "riskDesc": "Payment is significantly past their usual interval. Consider reaching out.",
+        "previousDesc": "This client has no recent activity. Their engagement appears to have concluded naturally. Their full payment history is visible in the timeline below."
       },
       "revenueStory": {
         "title": "Revenue Story",
@@ -1223,6 +1226,10 @@
         "latestPayment": "Most recent",
         "showingRecent": "Showing most recent {count, plural, one {# payment} other {# payments}}",
         "gap": "Gap"
+      },
+      "previousClient": {
+        "label": "Previous Client",
+        "note": "This client has no recent payment activity. Their engagement appears to have concluded. If the work was good and you'd like to collaborate again, consider reaching out — but there is no outstanding payment to follow up on."
       }
     }
   },
