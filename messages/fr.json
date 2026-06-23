@@ -1165,7 +1165,7 @@
       },
       "relationshipHealth": {
         "title": "Santé de la relation",
-        "summary": "Vous travaillez avec {name} depuis {duration}.",
+        "summary": "Vous avez reçu des paiements de {name} pendant {duration}.",
         "paymentsTotal": "{count, plural, one {# paiement} other {# paiements}} pour un total de {total}.",
         "avgPayment": "Moyenne de {avg} par paiement.",
         "rank": "Votre #{rank}e client par revenu total."

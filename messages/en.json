@@ -1165,7 +1165,7 @@
       },
       "relationshipHealth": {
         "title": "Relationship Health",
-        "summary": "You have worked with {name} for {duration}.",
+        "summary": "You received money from {name} for {duration}.",
         "paymentsTotal": "{count, plural, one {# payment} other {# payments}} totalling {total}.",
         "avgPayment": "Average {avg} per payment.",
         "rank": "Your #{rank} client by total revenue."
