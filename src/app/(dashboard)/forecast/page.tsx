@@ -111,13 +111,13 @@ export default async function ForecastPage() {
   const keyDrivers: { label: string; detail: React.ReactNode; positive: boolean }[] = [];
 
   if (avgPrev6 > 0) {
-    if (incPct > 3)
+    if (incPct > 5)
       keyDrivers.push({
         label: t("keyDrivers.incomeGrowing.label"),
         detail: t.rich("keyDrivers.incomeGrowing.detail", { pct: String(incPct), avgLast6: formatCurrency(avgLast6, locale), avgPrev6: formatCurrency(avgPrev6, locale), b: bold }),
         positive: true,
       });
-    else if (incPct < -3)
+    else if (incPct < -5)
       keyDrivers.push({
         label: t("keyDrivers.incomeDeclining.label"),
         detail: t.rich("keyDrivers.incomeDeclining.detail", { pct: String(Math.abs(incPct)), avgLast6: formatCurrency(avgLast6, locale), avgPrev6: formatCurrency(avgPrev6, locale), b: bold }),
@@ -156,10 +156,14 @@ export default async function ForecastPage() {
     });
   }
 
-  if (forecast?.seasonallyAdjusted) {
+  if (forecast?.seasonallyAdjusted && forecast.incomeSeasonalFactor != null) {
+    const seasonalPct = Math.round(Math.abs(forecast.incomeSeasonalFactor - 1) * 100);
     keyDrivers.push({
       label: t("keyDrivers.seasonalAdjustment.label"),
-      detail: t("keyDrivers.seasonalAdjustment.detail"),
+      detail: t("keyDrivers.seasonalAdjustment.detail", {
+        pct: String(seasonalPct),
+        aboveBelow: forecast.incomeSeasonalFactor >= 1 ? "above" : "below",
+      }),
       positive: true,
     });
   }
@@ -305,9 +309,22 @@ export default async function ForecastPage() {
                 {
                   key: "margin",
                   label: t("yearEndProjection.items.margin"),
-                  value: projMarginPct !== null ? t("yearEndProjection.marginValue", { pct: String(projMarginPct) }) : t("yearEndProjection.noValue"),
-                  sub: t("yearEndProjection.ofIncomeKept"),
-                  color: projMarginPct === null ? "text-[#6A97B4]" : projMarginPct >= 30 ? "text-[#4CC4A4]" : projMarginPct >= 10 ? "text-[#D4A254]" : "text-[#D97070]",
+                  // At high confidence: color-coded clean %. At medium/low: show with ~ prefix
+                  // in neutral blue — the margin is doubly uncertain (income estimate ÷ expense
+                  // estimate) and color-coding it at low confidence creates false precision.
+                  value: projMarginPct !== null
+                    ? forecast?.confidence === "high"
+                      ? t("yearEndProjection.marginValue", { pct: String(projMarginPct) })
+                      : t("yearEndProjection.marginApprox", { pct: String(projMarginPct) })
+                    : t("yearEndProjection.noValue"),
+                  sub: projMarginPct !== null && forecast?.confidence !== "high"
+                    ? t("yearEndProjection.ofIncomeKeptApprox")
+                    : t("yearEndProjection.ofIncomeKept"),
+                  color: projMarginPct === null ? "text-[#6A97B4]"
+                    : forecast?.confidence !== "high" ? "text-[#7BA8C4]"
+                    : projMarginPct >= 30 ? "text-[#4CC4A4]"
+                    : projMarginPct >= 10 ? "text-[#D4A254]"
+                    : "text-[#D97070]",
                   border: "border-[#243F5E]",
                 },
               ].map((item) => (
@@ -318,6 +335,9 @@ export default async function ForecastPage() {
                 </div>
               ))}
             </div>
+            <p className="text-xs text-[#475569] mt-3 leading-relaxed">
+              {t("yearEndProjection.extrapolationNote")}
+            </p>
           </div>
 
           {/* ── 3. How This Forecast Was Built ────────────────────────── */}
@@ -391,13 +411,52 @@ export default async function ForecastPage() {
               </div>
             )}
 
-            {/* Recurring expenses detected */}
+            {/* Income projection weight breakdown — shows exactly which months
+                contributed what, at what weight, so the user can verify the number */}
+            {forecast && forecast.last3Count > 0 && (
+              <div className="mb-5 bg-[#0F2840] border border-[#1E3A55] rounded-xl px-4 py-3">
+                <p className="label mb-2">{t("howBuilt.weightBreakdownTitle")}</p>
+                <div className="space-y-1.5">
+                  <div className="flex justify-between text-xs text-[#7BA8C4]">
+                    <span>{t("howBuilt.weightLast3", { count: forecast.last3Count, avg: formatCurrency(forecast.last3Avg, locale) })}</span>
+                  </div>
+                  {forecast.mid6Count > 0 && (
+                    <div className="flex justify-between text-xs text-[#7BA8C4]">
+                      <span>{t("howBuilt.weightMid6", { count: forecast.mid6Count, avg: formatCurrency(forecast.mid6Avg, locale) })}</span>
+                    </div>
+                  )}
+                  {forecast.olderCount > 0 && (
+                    <div className="flex justify-between text-xs text-[#7BA8C4]">
+                      <span>{t("howBuilt.weightOlder", { count: forecast.olderCount, avg: formatCurrency(forecast.olderAvg, locale) })}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between text-xs text-[#A8C6E0] font-semibold border-t border-[#1E3A55] pt-1.5 mt-1">
+                    <span>{t("howBuilt.weightResult", { avg: formatCurrency(forecast.projectedIncome, locale) })}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Recurring expense floor — expanded to list the categories */}
             {forecast?.recurringExpensesTotal != null && forecast.recurringExpensesTotal > 0 && (
               <div className="mb-5 bg-[#0F2840] border border-[#1E3A55] rounded-xl px-4 py-3">
                 <p className="label mb-1">{t("howBuilt.recurringExpensesLabel")}</p>
-                <p className="text-sm text-[#A8C6E0]">
-                  {t("howBuilt.recurringExpensesBody", { amount: `${formatCurrency(forecast.recurringExpensesTotal, locale)}/month` })}
+                <p className="text-sm text-[#A8C6E0] mb-2">
+                  {t("howBuilt.recurringExpensesBody", { amount: formatCurrency(forecast.recurringExpensesTotal, locale) })}
                 </p>
+                {forecast.recurringExpenseCategories.length > 0 && (
+                  <>
+                    <p className="text-xs text-[#6A97B4] font-semibold mb-1">{t("howBuilt.recurringCategoriesTitle")}</p>
+                    <div className="space-y-0.5">
+                      {forecast.recurringExpenseCategories.map((cat) => (
+                        <div key={cat.category} className="flex justify-between text-xs text-[#7BA8C4]">
+                          <span className="capitalize">{cat.category}</span>
+                          <span className="tabular-nums">{formatCurrency(cat.monthlyAvg, locale)}/mo</span>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
               </div>
             )}
 
@@ -410,8 +469,12 @@ export default async function ForecastPage() {
             </div>
             <div className="text-xs text-[#6A97B4] space-y-2 pt-4 leading-relaxed">
               <p>· {t("howBuilt.weightingNote")}</p>
-              {forecast?.seasonallyAdjusted && (
-                <p>· {t("howBuilt.seasonalAdjustmentNote")}</p>
+              {forecast?.seasonallyAdjusted && forecast.incomeSeasonalFactor != null && (
+                <p>· {t("howBuilt.seasonalFactorNote", {
+                  pct: String(Math.round(Math.abs(forecast.incomeSeasonalFactor - 1) * 100)),
+                  aboveBelow: forecast.incomeSeasonalFactor >= 1 ? "above" : "below",
+                  blend: String(Math.round((forecast.seasonalBlend ?? 0) * 100)),
+                })}</p>
               )}
               <p>· {t(`confidenceDescriptions.${forecast?.confidence ?? "low"}`)}. {t("howBuilt.moreHistoryNote")}</p>
             </div>
@@ -514,8 +577,10 @@ export default async function ForecastPage() {
                   </p>
                   <p className="text-sm text-[#A8C6E0] leading-relaxed">
                     {t("incompleteDataWarning.body", {
-                      recentAvg: formatCurrency(avgLast6, locale),
-                      historicAvg: formatCurrency(avgPrev6, locale),
+                      recentMonths:   forecast.incompleteDataRecentMonths   ?? 2,
+                      recentAvg:      formatCurrency(forecast.incompleteDataRecentAvg   ?? avgLast6, locale),
+                      historicMonths: forecast.incompleteDataHistoricMonths ?? (activeMonths.length - 2),
+                      historicAvg:    formatCurrency(forecast.incompleteDataHistoricAvg ?? avgPrev6, locale),
                     })}
                   </p>
                 </div>

@@ -766,7 +766,10 @@
       },
       "perMonthAvg": "{amount}/mo avg",
       "marginValue": "{pct}%",
+      "marginApprox": "~{pct}%",
       "ofIncomeKept": "of income kept after expenses",
+      "ofIncomeKeptApprox": "approximate — limited data",
+      "extrapolationNote": "Extrapolated from projected monthly average. Assumes a consistent run-rate through the year — actual results will vary.",
       "noValue": "—"
     },
     "keyDrivers": {
@@ -798,7 +801,7 @@
       },
       "seasonalAdjustment": {
         "label": "Seasonal adjustment applied",
-        "detail": "With 24+ months of data, the forecast adjusts for months that are historically stronger or weaker based on your own patterns."
+        "detail": "This month historically runs {pct}% {aboveBelow, select, above {above} below {below} other {near}} your average income based on your own prior data. The income projection has been adjusted to reflect this pattern."
       }
     },
     "biggestRisk": {
@@ -818,7 +821,7 @@
     },
     "incompleteDataWarning": {
       "title": "Recent income appears lower than usual",
-      "body": "Your recent 3-month average ({recentAvg}/month) is significantly below your historical average ({historicAvg}/month). Some bank statements may be missing — check that all accounts have been uploaded. The projections above are based on your full history."
+      "body": "Your last {recentMonths, plural, one {# month} other {# months}} averaged {recentAvg}/month in income — well below your prior {historicMonths}-month average of {historicAvg}/month. Some bank statements may be missing. The projections above are based on your full history and may overstate future income."
     },
     "howBuilt": {
       "label": "How This Forecast Was Built",
@@ -830,13 +833,21 @@
       "noValue": "—",
       "builtFrom": "Forecast built from data spanning {range}.",
       "transactionsFallback": "{count, number} transactions",
-      "seasonalApplied": " Seasonal patterns from 24+ months applied.",
+      "seasonalApplied": " Historical seasonal patterns applied.",
       "weightingNote": "Recent months are weighted 3× more heavily than older months when calculating averages.",
+      "weightBreakdownTitle": "How the income projection was calculated",
+      "weightLast3": "Last {count, plural, one {# month} other {# months}} (weighted 3×): {avg}/mo",
+      "weightMid6": "Months 4–9 from latest (weighted 2×): {avg}/mo",
+      "weightOlder": "Older than 9 months (weighted 1×): {avg}/mo",
+      "weightResult": "→ Weighted projection: {avg}/month",
       "seasonalAdjustmentNote": "Seasonal adjustment applied: months that are historically stronger or weaker are accounted for.",
+      "seasonalFactorNote": "Seasonal note: this month historically runs {pct}% {aboveBelow, select, above {above} below {below} other {near}} your average, based on your own prior data. Applied at {blend}% blend.",
       "moreHistoryNote": "More history produces a more reliable forecast.",
       "confidenceScore": "Confidence Score",
       "recurringExpensesLabel": "Recurring Expenses Detected",
-      "recurringExpensesBody": "{amount} in stable, recurring costs identified. The expense projection will not drop below this floor."
+      "recurringExpensesBody": "{amount}/month in stable, recurring costs identified. The expense projection will not drop below this floor.",
+      "recurringCategoriesTitle": "Fixed costs contributing to this floor:",
+      "floorOverrideNote": "Your weighted average ({avg}/mo) was raised to the floor ({floor}/mo) to stay above stable recurring costs."
     }
   },
   "analytics": {

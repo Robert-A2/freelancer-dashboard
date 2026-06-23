@@ -177,7 +177,7 @@ function computeConfidence(
 | **History depth** | 40% | `Math.min(1, monthCount / 12)` | Months of data. Full marks at ≥12 months, proportional below. |
 | **Income volatility** | 25% | `Math.max(0, 1 − clamp(CV, 0, 1.5) / 1.5)` | Coefficient of Variation (CV = stdDev/mean) on non-zero income months. Stable income → score near 1; CV ≥1.5 → score 0. |
 | **Gap fraction** | 20% | `Math.max(0, 1 − gapFraction × 2)` | Fraction of calendar months in the data range with no `MonthlyAnalytics` row. Each 10% gap subtracts 20% from this factor (so ≥50% gaps → 0). |
-| **Classification %** | 15% | `classifiedPct / 100` (capped at 1) | Percentage of transactions with a category assigned. Higher categorization → better intent and expense-floor signals. |
+| **Classification %** | 15% | `classifiedPct / 100` (capped at 1) | Percentage of transactions with a real category (not the `"uncategorized"` fallback). Higher meaningful categorization → better intent and expense-floor signals. |
 
 **Composite**:
 ```
@@ -212,12 +212,12 @@ If the user uploaded one CSV covering January–December 2024 but has no data fo
 ```ts
 const [totalTxCount, classifiedTxCount] = await Promise.all([
   prisma.transaction.count({ where: { userId } }),
-  prisma.transaction.count({ where: { userId, category: { not: undefined } } }),
+  prisma.transaction.count({ where: { userId, category: { not: "uncategorized" } } }),
 ]);
 const classifiedPct = totalTxCount > 0 ? (classifiedTxCount / totalTxCount) * 100 : 0;
 ```
 
-> **`not: undefined` vs `not: null`**: Prisma's type for the `not` filter in `StringFilter` doesn't accept literal `null` — it must be `undefined`, which Prisma interprets as "the field exists and has any value" (i.e. is not null in the database).
+`category: { not: "uncategorized" }` counts transactions that have been classified into a real category (income subcategory, expense category, etc.) as opposed to the `"uncategorized"` fallback that every unrecognised expense receives. The original `{ not: undefined }` was a Prisma no-op that always returned `totalTxCount`, making `classifiedPct` permanently 100% regardless of actual categorization quality — that bug was corrected here.
 
 ---
 
@@ -286,7 +286,7 @@ export interface ForecastResult {
   confidence:        "low" | "medium" | "high";
   confidenceScore:   number;        // 0–1 numeric composite (see §5)
   confidenceReasons: string[];      // human-readable per-factor notes (see §5)
-  seasonallyAdjusted: boolean;
+  seasonallyAdjusted: boolean;      // persisted — true only when adjustment actually fired
   generatedAt: Date;
 
   // Intent-aware projections (null when intent coverage < 80% or < 3 months)
@@ -298,12 +298,31 @@ export interface ForecastResult {
   projectedTrueNetCashflow: number | null;
 
   // Data quality signals
-  hasIncompleteDataWarning: boolean;  // recent income substantially below historical average
-  recurringExpensesTotal:   number;   // monthly floor from detected recurring costs (§5b)
-  gapFraction:              number;   // fraction of months in date range with no data (§5)
-  classifiedPct:            number;   // % of transactions with a category (§5)
+  hasIncompleteDataWarning:       boolean;   // recent income substantially below historical avg
+  recurringExpensesTotal:         number;    // monthly floor from detected recurring costs (§5b)
+  recurringExpenseCategories:     { category: string; monthlyAvg: number }[];  // the breakdown
+  gapFraction:                    number;    // fraction of months in date range with no data (§5)
+  classifiedPct:                  number;    // % of transactions with a real (non-"uncategorized") category
+
+  // Seasonal adjustment detail — null when seasonallyAdjusted is false
+  incomeSeasonalFactor:  number | null;      // raw ratio (1.18 = +18%, 0.85 = −15%)
+  expenseSeasonalFactor: number | null;
+  seasonalBlend:         number | null;      // 0.30 or 0.50 depending on history depth
+
+  // Weighted-average breakdown for income — so the UI can show how the number was built
+  last3Avg: number; last3Count: number;      // most recent 3 months (3× weight)
+  mid6Avg:  number; mid6Count:  number;      // months 4–9 from end (2× weight)
+  olderAvg: number; olderCount: number;      // all older months (1× weight)
+
+  // Incomplete-data trigger numbers — the exact values that caused (or didn't cause) the warning
+  incompleteDataRecentAvg:      number | null;   // avg income of last 2 months
+  incompleteDataHistoricAvg:    number | null;   // avg income of all prior months
+  incompleteDataRecentMonths:   number | null;
+  incompleteDataHistoricMonths: number | null;
 }
 ```
+
+All of the new fields above are **persisted in the `Forecast.intentBreakdown` JSON column** so that `getLatestForecast()` (used by the dashboard) returns the same values without recomputation. `seasonallyAdjusted` is now stored in this blob rather than derived from `monthsCount >= 12`, which was the root cause of the false "Seasonally Adjusted" badge on the dashboard.
 
 The intent fields are stored in the `Forecast` table as a single `intentBreakdown Json?` column (see §5d) and read back by `getLatestForecast()` into the typed fields above.
 

@@ -84,10 +84,17 @@ export default function ForecastWidget({ forecast, reasons, improvements, defici
           { label: tm("cashflow"), value: formatCurrency(projectedCashflow, locale), color: cashflowNegative ? "text-[#D97070]" : "text-[#3AB5A0]" },
           {
             label: tm("margin"),
-            value: projectedMargin !== null ? `${projectedMargin}%` : "—",
+            // At high confidence the margin is color-coded. At medium/low it is
+            // derived from two already-uncertain estimates, so we prefix with ~
+            // and use neutral text to avoid false precision.
+            value: projectedMargin !== null
+              ? confidence === "high" ? `${projectedMargin}%` : `~${projectedMargin}%`
+              : "—",
             color: projectedMargin === null ? "text-[#6A97B4]"
-              : projectedMargin >= 30 ? "text-[#4CC4A4]"
-              : projectedMargin >= 10 ? "text-[#D4A254]"
+              : confidence === "low"    ? "text-[#6A97B4]"
+              : confidence === "medium" ? "text-[#7BA8C4]"
+              : projectedMargin >= 30   ? "text-[#4CC4A4]"
+              : projectedMargin >= 10   ? "text-[#D4A254]"
               : "text-[#D97070]",
           },
         ].map((item) => (

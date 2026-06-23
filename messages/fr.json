@@ -766,7 +766,10 @@
       },
       "perMonthAvg": "{amount}/mois en moy.",
       "marginValue": "{pct} %",
+      "marginApprox": "~{pct} %",
       "ofIncomeKept": "des revenus conservés après dépenses",
+      "ofIncomeKeptApprox": "approximatif — données limitées",
+      "extrapolationNote": "Extrapolé à partir de la moyenne mensuelle projetée. Suppose un rythme constant sur l'année — les résultats réels varieront.",
       "noValue": "—"
     },
     "keyDrivers": {
@@ -798,7 +801,7 @@
       },
       "seasonalAdjustment": {
         "label": "Ajustement saisonnier appliqué",
-        "detail": "Avec plus de 24 mois de données, la prévision s'ajuste en fonction des mois historiquement plus forts ou plus faibles selon vos propres tendances."
+        "detail": "Ce mois est historiquement {pct} % {aboveBelow, select, above {au-dessus} below {en dessous} other {proche}} de votre revenu moyen selon vos propres données passées. La projection de revenus a été ajustée pour refléter ce schéma."
       }
     },
     "biggestRisk": {
@@ -818,7 +821,7 @@
     },
     "incompleteDataWarning": {
       "title": "Les revenus récents semblent inférieurs à la normale",
-      "body": "Votre moyenne des 3 derniers mois ({recentAvg}/mois) est nettement inférieure à votre moyenne historique ({historicAvg}/mois). Il est possible que des relevés bancaires manquent — vérifiez que tous vos comptes ont été importés. Les projections ci-dessus sont basées sur l'intégralité de votre historique."
+      "body": "Vos {recentMonths, plural, one {# dernier mois} other {# derniers mois}} ont généré en moyenne {recentAvg}/mois en revenus — bien en dessous de votre moyenne sur {historicMonths} mois de {historicAvg}/mois. Des relevés bancaires sont peut-être manquants. Les projections ci-dessus sont basées sur l'intégralité de votre historique et peuvent surestimer les revenus futurs."
     },
     "howBuilt": {
       "label": "Comment cette prévision a été établie",
@@ -830,13 +833,21 @@
       "noValue": "—",
       "builtFrom": "Prévision établie à partir de données couvrant {range}.",
       "transactionsFallback": "{count, number} transactions",
-      "seasonalApplied": " Les tendances saisonnières des 24 derniers mois ou plus ont été appliquées.",
+      "seasonalApplied": " Tendances saisonnières historiques appliquées.",
       "weightingNote": "Les mois récents sont pondérés 3× plus que les mois plus anciens dans le calcul des moyennes.",
+      "weightBreakdownTitle": "Comment la projection de revenus a été calculée",
+      "weightLast3": "{count, plural, one {Dernier # mois} other {# derniers mois}} (pondéré 3×) : {avg}/mois",
+      "weightMid6": "Mois 4–9 depuis le plus récent (pondéré 2×) : {avg}/mois",
+      "weightOlder": "Plus de 9 mois en arrière (pondéré 1×) : {avg}/mois",
+      "weightResult": "→ Projection pondérée : {avg}/mois",
       "seasonalAdjustmentNote": "Ajustement saisonnier appliqué : les mois historiquement plus forts ou plus faibles sont pris en compte.",
+      "seasonalFactorNote": "Note saisonnière : ce mois est historiquement {pct} % {aboveBelow, select, above {au-dessus} below {en dessous} other {proche}} de votre moyenne, selon vos propres données. Appliqué à {blend} % de pondération.",
       "moreHistoryNote": "Plus d'historique permet une prévision plus fiable.",
       "confidenceScore": "Score de confiance",
       "recurringExpensesLabel": "Dépenses récurrentes détectées",
-      "recurringExpensesBody": "{amount} en coûts récurrents stables identifiés. La projection des dépenses ne tombera pas en dessous de ce plancher."
+      "recurringExpensesBody": "{amount}/mois en coûts récurrents stables identifiés. La projection des dépenses ne tombera pas en dessous de ce plancher.",
+      "recurringCategoriesTitle": "Coûts fixes contribuant à ce plancher :",
+      "floorOverrideNote": "Votre moyenne pondérée ({avg}/mois) a été relevée au plancher ({floor}/mois) pour couvrir les coûts fixes stables."
     }
   },
   "analytics": {
