@@ -36,6 +36,7 @@ export interface DashboardIntelligence {
   snapshotSummary: Insight | null;
   snapshotContext: Insight[];
   comparisonInterpretation: Insight | null;
+  comparisonSuggestion: Insight | null;
   trajectoryInsight: Insight | null;
   trajectoryDetails: Insight[];
   forecastReasons: Insight[];
@@ -620,6 +621,7 @@ export function generateDashboardIntelligence(
     snapshotSummary: { key: "insights.snapshot.uploadPrompt" },
     snapshotContext: [],
     comparisonInterpretation: null,
+    comparisonSuggestion: null,
     trajectoryInsight: null,
     trajectoryDetails: [],
     forecastReasons: [],
@@ -809,9 +811,12 @@ export function generateDashboardIntelligence(
     });
   }
 
-  // ── COMPARISON INTERPRETATION ────────────────────────────────────────────
+  // ── COMPARISON INTERPRETATION + SUGGESTION ───────────────────────────────
+  // interpretation = what happened (proof from data)
+  // suggestion     = what to do next ("And so?")
 
   let comparisonInterpretation: Insight | null = null;
+  let comparisonSuggestion: Insight | null = null;
 
   if (changes && previous) {
     const { income: ic, expenses: ec } = changes;
@@ -825,6 +830,7 @@ export function generateDashboardIntelligence(
       return values;
     };
 
+    // What happened
     if (ic > 5 && ec < 0) {
       comparisonInterpretation = { key: "insights.comparison.incomeUpExpensesDown", values: driverValues(driversDown, true) };
     } else if (ic > 5 && ec > 5) {
@@ -847,6 +853,34 @@ export function generateDashboardIntelligence(
       comparisonInterpretation = { key: "insights.comparison.cashflowImprovedMeaningfully" };
     } else {
       comparisonInterpretation = { key: "insights.comparison.stable" };
+    }
+
+    // What to do next — answers "And so?"
+    const d1 = driversUp[0];
+    if (ic > 5 && ec < 0) {
+      comparisonSuggestion = { key: "insights.comparison.suggestSaveExtra" };
+    } else if (ic > 5 && ec > 5) {
+      if (ic > ec) {
+        comparisonSuggestion = d1
+          ? { key: "insights.comparison.suggestWatchDriver", values: { cat1: cat(d1.category), amt1: fmtAmt(d1.changeAmount, locale) } }
+          : { key: "insights.comparison.suggestExpenseCeiling" };
+      } else {
+        comparisonSuggestion = d1
+          ? { key: "insights.comparison.suggestExpenseReview", values: { cat1: cat(d1.category) } }
+          : { key: "insights.comparison.suggestExpenseReviewGeneric" };
+      }
+    } else if (ic < -5 && ec > 5) {
+      comparisonSuggestion = d1
+        ? { key: "insights.comparison.suggestDoublePressure", values: { cat1: cat(d1.category) } }
+        : { key: "insights.comparison.suggestDoublePressureGeneric" };
+    } else if (ic < -5) {
+      comparisonSuggestion = { key: "insights.comparison.suggestIncomeDecline", values: { incomeType } };
+    } else if (ec > 10 && driversUp.length) {
+      comparisonSuggestion = { key: "insights.comparison.suggestExpenseBudget", values: { cat1: cat(driversUp[0].category) } };
+    } else if (changes.cashflow > 10) {
+      comparisonSuggestion = { key: "insights.comparison.suggestBuildRunway" };
+    } else {
+      comparisonSuggestion = { key: "insights.comparison.suggestStability" };
     }
   }
 
@@ -1534,6 +1568,7 @@ export function generateDashboardIntelligence(
     snapshotSummary,
     snapshotContext,
     comparisonInterpretation,
+    comparisonSuggestion,
     trajectoryInsight,
     trajectoryDetails,
     forecastReasons,

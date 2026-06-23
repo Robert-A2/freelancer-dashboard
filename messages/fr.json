@@ -645,7 +645,8 @@
       "uploadAnotherMonth": "Importer un autre mois",
       "toStartComparing": "pour commencer à comparer les périodes et voir ce qui a changé.",
       "whatChanged": "Qu'est-ce qui a changé ?",
-      "whatThisMeans": "Ce que cela signifie : "
+      "whatHappened": "Ce qui s'est passé",
+      "yourNextMove": "Votre prochain geste"
     },
     "recentTransactions": {
       "label": "Activité récente",
@@ -1354,7 +1355,18 @@
       "incomeDownExpensesUp": "Les revenus ont diminué de <b>{icPct} %</b> tandis que les dépenses ont augmenté de <b>{ecPct} %</b>{driverCount, select, 0 {.} 1 { — surtout à cause de <b>{cat1}</b> (<b>{amt1}</b> de plus).} other { — surtout à cause de <b>{cat1}</b> (<b>{amt1}</b> de plus) et <b>{cat2}</b> (<b>{amt2}</b> de plus).}}",
       "expensesJumped": "Les dépenses ont bondi de <b>{ecPct} %</b> ce mois-ci{driverCount, select, 1 { — principalement à cause de <b>{cat1}</b> (<b>{amt1}</b> de plus).} other { — principalement à cause de <b>{cat1}</b> (<b>{amt1}</b> de plus) et <b>{cat2}</b> (<b>{amt2}</b> de plus).}}",
       "cashflowImprovedMeaningfully": "La trésorerie s'est nettement améliorée par rapport au mois dernier.",
-      "stable": "Les revenus et les dépenses sont restés globalement stables par rapport au mois dernier."
+      "stable": "Les revenus et les dépenses sont restés globalement stables par rapport au mois dernier.",
+      "suggestSaveExtra": "Revenus en hausse, dépenses en baisse — la meilleure combinaison. Mettez cette marge à profit : renforcez votre épargne de précaution ou transférez-la en épargne.",
+      "suggestWatchDriver": "Continuez sur cette lancée, mais surveillez vos dépenses de <b>{cat1}</b> — elles ont augmenté de <b>{amt1}</b> ce mois-ci. Si cette tendance se poursuit, elle réduira vos gains.",
+      "suggestExpenseCeiling": "Gardez cet élan. Envisagez de fixer un plafond mensuel de dépenses pour que les coûts ne dépassent pas silencieusement vos revenus.",
+      "suggestExpenseReview": "Vos dépenses de <b>{cat1}</b> augmentent plus vite que vos revenus. Fixez une limite pour cette catégorie et suivez-la le mois prochain.",
+      "suggestExpenseReviewGeneric": "Les dépenses augmentent plus vite que les revenus. Identifiez votre poste de dépense principal et voyez s'il peut être réduit ou différé.",
+      "suggestDoublePressure": "Deux points nécessitent votre attention : vérifiez si des factures clients sont impayées, et examinez pourquoi les dépenses de <b>{cat1}</b> ont augmenté ce mois-ci.",
+      "suggestDoublePressureGeneric": "Deux points nécessitent votre attention : vérifiez si des factures sont impayées et identifiez ce qui a fait augmenter les dépenses.",
+      "suggestIncomeDecline": "{incomeType, select, freelance {Vérifiez si des factures clients sont impayées — un seul paiement encaissé peut changer le bilan de ce mois.} salary {Vérifiez votre calendrier de paie et assurez-vous qu'aucune retenue inattendue n'a changé.} other {Vérifiez si une source de revenus attendue a été interrompue ce mois-ci et si des factures sont en attente.}}",
+      "suggestExpenseBudget": "Cette dépense de <b>{cat1}</b> était-elle prévue ? Si non, envisagez de fixer un plafond mensuel pour cette catégorie.",
+      "suggestBuildRunway": "Profitez de cette bonne dynamique — mettez de côté une partie de ce flux positif comme réserve pour un mois plus calme.",
+      "suggestStability": "La stabilité est une force. Utilisez cette période pour renforcer votre épargne de précaution ou revoir votre objectif d'épargne."
     },
     "snapshot": {
       "uploadPrompt": "Importez votre relevé bancaire pour obtenir des analyses personnalisées de vos finances.",

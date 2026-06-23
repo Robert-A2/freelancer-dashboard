@@ -367,6 +367,7 @@ export default async function DashboardPage({
               previous={comparison.previous ?? null}
               changes={comparison.changes ?? null}
               interpretation={intel.comparisonInterpretation}
+              suggestion={intel.comparisonSuggestion}
               currLabel={comparison.currLabel}
               prevLabel={comparison.prevLabel}
             />

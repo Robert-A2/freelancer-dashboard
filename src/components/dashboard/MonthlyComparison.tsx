@@ -19,12 +19,13 @@ interface Props {
   previous: MonthData | null;
   changes: { income: number; expenses: number; savings: number; cashflow: number } | null;
   interpretation?: Insight | null;
+  suggestion?: Insight | null;
   currLabel?: string;
   prevLabel?: string;
 }
 
 export default function MonthlyComparison({
-  current, previous, changes, interpretation, currLabel: currLabelProp, prevLabel: prevLabelProp,
+  current, previous, changes, interpretation, suggestion, currLabel: currLabelProp, prevLabel: prevLabelProp,
 }: Props) {
   const t = useTranslations("dashboard.monthlyComparison");
   const tm = useTranslations("metrics");
@@ -160,12 +161,28 @@ export default function MonthlyComparison({
         })}
       </div>
 
-      {interpretation && (
-        <div className="mt-4 px-3 py-2.5 bg-[#1A3048] rounded-xl">
-          <p className="text-sm text-[#A8C6E0] leading-relaxed">
-            <span className="text-[#3AB5A0] font-semibold">{t("whatThisMeans")}</span>
-            <InsightText insight={interpretation} />
-          </p>
+      {(interpretation || suggestion) && (
+        <div className="mt-4 space-y-2">
+          {interpretation && (
+            <div className="px-4 py-3 bg-[#1A3048] rounded-xl">
+              <p className="text-[11px] font-semibold text-[#3AB5A0] uppercase tracking-wide mb-1.5">
+                {t("whatHappened")}
+              </p>
+              <p className="text-sm text-[#A8C6E0] leading-relaxed">
+                <InsightText insight={interpretation} accent="#3AB5A0" />
+              </p>
+            </div>
+          )}
+          {suggestion && (
+            <div className="px-4 py-3 bg-[#0D1B2B] border border-[#D4A25428] rounded-xl">
+              <p className="text-[11px] font-semibold text-[#D4A254] uppercase tracking-wide mb-1.5">
+                {t("yourNextMove")}
+              </p>
+              <p className="text-sm text-[#A8C6E0] leading-relaxed">
+                <InsightText insight={suggestion} accent="#D4A254" />
+              </p>
+            </div>
+          )}
         </div>
       )}
     </div>

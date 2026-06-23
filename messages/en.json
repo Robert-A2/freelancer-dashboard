@@ -645,7 +645,8 @@
       "uploadAnotherMonth": "Upload another month",
       "toStartComparing": "to start comparing periods and see what changed.",
       "whatChanged": "What changed?",
-      "whatThisMeans": "What this means: "
+      "whatHappened": "What happened",
+      "yourNextMove": "Your next move"
     },
     "recentTransactions": {
       "label": "Recent Activity",
@@ -1354,7 +1355,18 @@
       "incomeDownExpensesUp": "Income fell <b>{icPct}%</b> while expenses rose <b>{ecPct}%</b>{driverCount, select, 0 {.} 1 { — driven by <b>{cat1}</b> (<b>{amt1}</b> more).} other { — driven by <b>{cat1}</b> (<b>{amt1}</b> more) and <b>{cat2}</b> (<b>{amt2}</b> more).}}",
       "expensesJumped": "Expenses jumped <b>{ecPct}%</b> this month{driverCount, select, 1 { — mainly driven by <b>{cat1}</b> (<b>{amt1}</b> more).} other { — mainly driven by <b>{cat1}</b> (<b>{amt1}</b> more) and <b>{cat2}</b> (<b>{amt2}</b> more).}}",
       "cashflowImprovedMeaningfully": "Cashflow improved meaningfully compared to last month.",
-      "stable": "Income and expenses were broadly stable compared to last month."
+      "stable": "Income and expenses were broadly stable compared to last month.",
+      "suggestSaveExtra": "Income up, costs down — the best combination. Put the extra margin to work: top up your emergency reserve or move it into savings.",
+      "suggestWatchDriver": "Keep the income going, but watch your <b>{cat1}</b> costs — they rose by <b>{amt1}</b> this month. If this keeps growing, it will eat into your gains.",
+      "suggestExpenseCeiling": "Keep the income momentum. Consider setting a monthly spending ceiling so costs don't quietly outpace your earnings.",
+      "suggestExpenseReview": "Your <b>{cat1}</b> spending is growing faster than income. Set a limit for this category and track it next month.",
+      "suggestExpenseReviewGeneric": "Spending is outpacing income growth. Identify your biggest expense category and see if it can be reduced or deferred.",
+      "suggestDoublePressure": "Two things need your attention: check whether any client invoices are unpaid, and review why <b>{cat1}</b> costs went up this month.",
+      "suggestDoublePressureGeneric": "Two things need your attention: check whether any invoices are unpaid, and identify what drove the expense increase.",
+      "suggestIncomeDecline": "{incomeType, select, freelance {Check whether any client invoices are unpaid — one collected payment can change this month's picture.} salary {Verify your pay schedule and check that no deductions changed unexpectedly.} other {Review whether any expected income source paused this month, and check if any invoices are outstanding.}}",
+      "suggestExpenseBudget": "Ask yourself: was the <b>{cat1}</b> spend this month planned? If not, set a monthly limit for this category to avoid a repeat.",
+      "suggestBuildRunway": "Use this positive run — set aside part of the extra cashflow as financial runway for a quieter month ahead.",
+      "suggestStability": "Stability is a strength. Use this steady period to build your emergency reserve or revisit your savings goal."
     },
     "snapshot": {
       "uploadPrompt": "Upload your bank statement to get personalised insights about your finances.",
