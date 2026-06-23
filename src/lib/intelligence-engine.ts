@@ -856,27 +856,40 @@ export function generateDashboardIntelligence(
     }
 
     // What to do next — answers "And so?"
-    const d1 = driversUp[0];
+    // d1: the category whose spending INCREASED most this month (most specific)
+    // topExpCat: the category with the HIGHEST spending this month (always available fallback)
+    // We always name a real category — no "identify your biggest expense" when we already know it.
+    const d1 = driversUp[0] ?? null;
+    const topExpCat = categories
+      .filter(c => c.currentMonthTotal > 0)
+      .sort((a, b) => b.currentMonthTotal - a.currentMonthTotal)[0] ?? null;
+
     if (ic > 5 && ec < 0) {
       comparisonSuggestion = { key: "insights.comparison.suggestSaveExtra" };
     } else if (ic > 5 && ec > 5) {
       if (ic > ec) {
-        comparisonSuggestion = d1
-          ? { key: "insights.comparison.suggestWatchDriver", values: { cat1: cat(d1.category), amt1: fmtAmt(d1.changeAmount, locale) } }
+        // Income outpaces expenses — name what's rising or what costs most
+        const ref = d1 ?? topExpCat;
+        comparisonSuggestion = ref
+          ? { key: "insights.comparison.suggestWatchDriver", values: { cat1: cat(ref.category), amt1: fmtAmt(d1 ? d1.changeAmount : ref.currentMonthTotal, locale) } }
           : { key: "insights.comparison.suggestExpenseCeiling" };
       } else {
-        comparisonSuggestion = d1
-          ? { key: "insights.comparison.suggestExpenseReview", values: { cat1: cat(d1.category) } }
-          : { key: "insights.comparison.suggestExpenseReviewGeneric" };
+        // Expenses outpace income — name what's driving it or what costs most
+        const ref = d1 ?? topExpCat;
+        comparisonSuggestion = ref
+          ? { key: "insights.comparison.suggestExpenseReview", values: { cat1: cat(ref.category), amt1: fmtAmt(ref.currentMonthTotal, locale) } }
+          : { key: "insights.comparison.suggestExpenseCeiling" };
       }
     } else if (ic < -5 && ec > 5) {
-      comparisonSuggestion = d1
-        ? { key: "insights.comparison.suggestDoublePressure", values: { cat1: cat(d1.category) } }
+      const ref = d1 ?? topExpCat;
+      comparisonSuggestion = ref
+        ? { key: "insights.comparison.suggestDoublePressure", values: { cat1: cat(ref.category), amt1: fmtAmt(ref.currentMonthTotal, locale) } }
         : { key: "insights.comparison.suggestDoublePressureGeneric" };
     } else if (ic < -5) {
       comparisonSuggestion = { key: "insights.comparison.suggestIncomeDecline", values: { incomeType } };
     } else if (ec > 10 && driversUp.length) {
-      comparisonSuggestion = { key: "insights.comparison.suggestExpenseBudget", values: { cat1: cat(driversUp[0].category) } };
+      const ref = driversUp[0];
+      comparisonSuggestion = { key: "insights.comparison.suggestExpenseBudget", values: { cat1: cat(ref.category), amt1: fmtAmt(ref.changeAmount, locale) } };
     } else if (changes.cashflow > 10) {
       comparisonSuggestion = { key: "insights.comparison.suggestBuildRunway" };
     } else {
