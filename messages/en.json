@@ -646,7 +646,7 @@
       "toStartComparing": "to start comparing periods and see what changed.",
       "whatChanged": "What changed?",
       "whatHappened": "What happened",
-      "yourNextMove": "Your next move"
+      "yourNextMove": "To review"
     },
     "recentTransactions": {
       "label": "Recent Activity",
@@ -1357,13 +1357,13 @@
       "cashflowImprovedMeaningfully": "Cashflow improved meaningfully compared to last month.",
       "stable": "Income and expenses were broadly stable compared to last month.",
       "suggestSaveExtra": "Income up, costs down — the best combination. Put the extra margin to work: top up your emergency reserve or move it into savings.",
-      "suggestWatchDriver": "Keep the income going. Your <b>{cat1}</b> spending rose by <b>{amt1}</b> this month — if it keeps climbing it will eat into your gains. Review it now.",
-      "suggestExpenseCeiling": "Keep the income momentum. Set a monthly spending limit so costs don't quietly outpace your earnings.",
-      "suggestExpenseReview": "Your <b>{cat1}</b> spending (<b>{amt1}</b> this month) is growing faster than income. That is where to look for savings first.",
-      "suggestDoublePressure": "Two things need your attention: check whether any client invoices are unpaid, and look at your <b>{cat1}</b> spending (<b>{amt1}</b> this month) — that is where costs are concentrated.",
-      "suggestDoublePressureGeneric": "Two things need your attention: check whether any invoices are unpaid, and review your largest expense category this month.",
-      "suggestIncomeDecline": "{incomeType, select, freelance {Check whether any client invoices are unpaid — one collected payment can change this month's picture.} salary {Verify your pay schedule and check that no deductions changed unexpectedly.} other {Review whether any expected income source paused this month, and check if any invoices are outstanding.}}",
-      "suggestExpenseBudget": "Your <b>{cat1}</b> spending jumped by <b>{amt1}</b> this month. Was this planned? If not, set a monthly limit for this category.",
+      "suggestWatchDriver": "<b>{cat1}</b> was the largest expense movement this month, up <b>{amt1}</b>. Review whether this reflects a one-time cost, a recurring change, or normal business activity.",
+      "suggestExpenseCeiling": "Income grew faster than expenses this month. No single category stands out as the main expense change.",
+      "suggestExpenseReview": "<b>{cat1}</b> was the largest expense contributor this month at <b>{amt1}</b>. Review whether this is a one-time cost, a recurring pattern, or client-related activity.",
+      "suggestDoublePressure": "<b>{cat1}</b> was the largest expense change this month (<b>{amt1}</b>). On the income side, review whether any client payments are still outstanding.",
+      "suggestDoublePressureGeneric": "Income fell while expenses rose this month. Review which expense categories increased, and check whether any client payments are still outstanding.",
+      "suggestIncomeDecline": "{incomeType, select, freelance {Review whether any client payments are still outstanding — one collected invoice can change this month's picture.} salary {Verify your pay schedule and check whether any deductions changed unexpectedly.} other {Review whether any expected income source paused this month, and check whether any invoices are still outstanding.}}",
+      "suggestExpenseBudget": "<b>{cat1}</b> was the largest expense increase this month, up <b>{amt1}</b>. Review whether this is a one-time cost, a recurring change, or client-related activity.",
       "suggestBuildRunway": "Use this positive run — set aside part of the extra cashflow as financial runway for a quieter month ahead.",
       "suggestStability": "Stability is a strength. Use this steady period to build your emergency reserve or revisit your savings goal."
     },

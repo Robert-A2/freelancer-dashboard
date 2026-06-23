@@ -646,7 +646,7 @@
       "toStartComparing": "pour commencer à comparer les périodes et voir ce qui a changé.",
       "whatChanged": "Qu'est-ce qui a changé ?",
       "whatHappened": "Ce qui s'est passé",
-      "yourNextMove": "Votre prochain geste"
+      "yourNextMove": "À examiner"
     },
     "recentTransactions": {
       "label": "Activité récente",
@@ -1357,13 +1357,13 @@
       "cashflowImprovedMeaningfully": "La trésorerie s'est nettement améliorée par rapport au mois dernier.",
       "stable": "Les revenus et les dépenses sont restés globalement stables par rapport au mois dernier.",
       "suggestSaveExtra": "Revenus en hausse, dépenses en baisse — la meilleure combinaison. Mettez cette marge à profit : renforcez votre épargne de précaution ou transférez-la en épargne.",
-      "suggestWatchDriver": "Continuez sur cette lancée. Vos dépenses de <b>{cat1}</b> ont augmenté de <b>{amt1}</b> ce mois-ci — si elles continuent à progresser, elles réduiront vos gains. Vérifiez-les maintenant.",
-      "suggestExpenseCeiling": "Gardez cet élan. Fixez un plafond mensuel de dépenses pour que les coûts ne dépassent pas silencieusement vos revenus.",
-      "suggestExpenseReview": "Vos dépenses de <b>{cat1}</b> (<b>{amt1}</b> ce mois-ci) augmentent plus vite que vos revenus. C'est là que se trouvent les premières économies à faire.",
-      "suggestDoublePressure": "Deux points nécessitent votre attention : vérifiez si des factures clients sont impayées, et regardez vos dépenses de <b>{cat1}</b> (<b>{amt1}</b> ce mois-ci) — c'est là que les coûts sont concentrés.",
-      "suggestDoublePressureGeneric": "Deux points nécessitent votre attention : vérifiez si des factures sont impayées et examinez votre principale catégorie de dépenses ce mois-ci.",
-      "suggestIncomeDecline": "{incomeType, select, freelance {Vérifiez si des factures clients sont impayées — un seul paiement encaissé peut changer le bilan de ce mois.} salary {Vérifiez votre calendrier de paie et assurez-vous qu'aucune retenue inattendue n'a changé.} other {Vérifiez si une source de revenus attendue a été interrompue ce mois-ci et si des factures sont en attente.}}",
-      "suggestExpenseBudget": "Vos dépenses de <b>{cat1}</b> ont bondi de <b>{amt1}</b> ce mois-ci. Était-ce prévu ? Si non, fixez un plafond mensuel pour cette catégorie.",
+      "suggestWatchDriver": "<b>{cat1}</b> représente le mouvement de dépenses le plus important ce mois-ci, en hausse de <b>{amt1}</b>. Examinez si cela reflète un coût ponctuel, un changement récurrent ou une activité normale.",
+      "suggestExpenseCeiling": "Les revenus ont progressé plus vite que les dépenses ce mois-ci. Aucune catégorie ne se distingue comme principal changement de dépenses.",
+      "suggestExpenseReview": "<b>{cat1}</b> était le principal poste de dépenses ce mois-ci à <b>{amt1}</b>. Examinez s'il s'agit d'un coût ponctuel, d'un schéma récurrent ou d'une activité liée à un client.",
+      "suggestDoublePressure": "<b>{cat1}</b> représente la plus grande variation de dépenses ce mois-ci (<b>{amt1}</b>). Côté revenus, vérifiez si des paiements clients sont encore en attente.",
+      "suggestDoublePressureGeneric": "Les revenus ont baissé tandis que les dépenses ont augmenté ce mois-ci. Examinez quelles catégories de dépenses ont progressé et vérifiez si des paiements clients sont encore en attente.",
+      "suggestIncomeDecline": "{incomeType, select, freelance {Vérifiez si des paiements clients sont encore en attente — une seule facture encaissée peut changer le bilan de ce mois.} salary {Vérifiez votre calendrier de paie et contrôlez si des retenues ont changé de façon inattendue.} other {Vérifiez si une source de revenus attendue a été interrompue ce mois-ci et si des factures sont encore en attente.}}",
+      "suggestExpenseBudget": "<b>{cat1}</b> représente la plus forte hausse de dépenses ce mois-ci, en hausse de <b>{amt1}</b>. Examinez s'il s'agit d'un coût ponctuel, d'un changement récurrent ou d'une activité liée à un client.",
       "suggestBuildRunway": "Profitez de cette bonne dynamique — mettez de côté une partie de ce flux positif comme réserve pour un mois plus calme.",
       "suggestStability": "La stabilité est une force. Utilisez cette période pour renforcer votre épargne de précaution ou revoir votre objectif d'épargne."
     },
