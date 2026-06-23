@@ -4,6 +4,11 @@ import { Decimal } from "@prisma/client/runtime/library";
 
 // ── Public result type ────────────────────────────────────────────────────────
 
+export interface ConfidenceReason {
+  key: string;
+  params?: Record<string, string | number>;
+}
+
 export interface ForecastResult {
   projectedIncome:   number;
   projectedExpenses: number;
@@ -12,8 +17,8 @@ export interface ForecastResult {
   forecastPeriod: string;
   basedOnMonths: number;
   confidence: "low" | "medium" | "high";
-  confidenceScore: number;       // 0–1 numeric score
-  confidenceReasons: string[];   // human-readable factors
+  confidenceScore: number;
+  confidenceReasons: ConfidenceReason[];
   seasonallyAdjusted: boolean;
   generatedAt: Date;
 
@@ -143,8 +148,8 @@ function computeConfidence(
   expenseValues: number[],
   gapFraction: number,
   classifiedPct: number
-): { score: number; level: "low" | "medium" | "high"; reasons: string[] } {
-  const reasons: string[] = [];
+): { score: number; level: "low" | "medium" | "high"; reasons: ConfidenceReason[] } {
+  const reasons: ConfidenceReason[] = [];
 
   // 1. History depth — 12+ months = full marks
   const depthScore = Math.min(1, monthCount / 12);
@@ -163,37 +168,37 @@ function computeConfidence(
   // Weighted composite (must sum to 1.0)
   const score = depthScore * 0.40 + volatilityScore * 0.25 + gapScore * 0.20 + classScore * 0.15;
 
-  // Human-readable reasons
+  // Structured reason keys — translated at render time in the page
   if (monthCount === 1) {
-    reasons.push("Only 1 month of data — forecasts improve significantly with 3+ months.");
+    reasons.push({ key: "howBuilt.confidence.depth1" });
   } else if (monthCount < 4) {
-    reasons.push(`${monthCount} months of history. Upload more data for a higher-confidence forecast.`);
+    reasons.push({ key: "howBuilt.confidence.depthFew", params: { count: monthCount } });
   } else if (monthCount < 12) {
-    reasons.push(`${monthCount} months of history analyzed. 12+ months unlocks seasonal adjustments.`);
+    reasons.push({ key: "howBuilt.confidence.depthGrowing", params: { count: monthCount } });
   } else {
-    reasons.push(`${monthCount} months of history — solid foundation for forecasting.`);
+    reasons.push({ key: "howBuilt.confidence.depthSolid", params: { count: monthCount } });
   }
 
   if (incCV > 0.8) {
-    reasons.push("Income varies significantly month to month — projections carry more uncertainty.");
+    reasons.push({ key: "howBuilt.confidence.volatilityHigh" });
   } else if (incCV > 0.4) {
-    reasons.push("Moderate income variability detected — projections are approximate.");
+    reasons.push({ key: "howBuilt.confidence.volatilityMedium" });
   } else if (activeIncomes.length >= 3) {
-    reasons.push("Income is relatively stable — good signal for accurate projections.");
+    reasons.push({ key: "howBuilt.confidence.volatilityLow" });
   }
 
   if (gapFraction > 0.30) {
-    reasons.push(`${Math.round(gapFraction * 100)}% of months in your date range have no data — consider uploading missing statements.`);
+    reasons.push({ key: "howBuilt.confidence.gapHigh", params: { pct: Math.round(gapFraction * 100) } });
   } else if (gapFraction > 0.10) {
-    reasons.push("Some months have no transaction data — possible gaps in uploaded history.");
+    reasons.push({ key: "howBuilt.confidence.gapMedium" });
   }
 
   if (classifiedPct < 60) {
-    reasons.push(`${Math.round(classifiedPct)}% of transactions are categorized — higher coverage improves accuracy.`);
+    reasons.push({ key: "howBuilt.confidence.classLow",  params: { pct: Math.round(classifiedPct) } });
   } else if (classifiedPct < 85) {
-    reasons.push(`${Math.round(classifiedPct)}% of transactions categorized.`);
+    reasons.push({ key: "howBuilt.confidence.classMedium", params: { pct: Math.round(classifiedPct) } });
   } else {
-    reasons.push(`${Math.round(classifiedPct)}% of transactions categorized — excellent data quality.`);
+    reasons.push({ key: "howBuilt.confidence.classHigh", params: { pct: Math.round(classifiedPct) } });
   }
 
   const level: "low" | "medium" | "high" =
@@ -266,7 +271,7 @@ interface StoredBreakdown {
   projectedTrueNetCashflow: number;
   hasIncompleteDataWarning: boolean;
   confidenceScore:          number;
-  confidenceReasons:        string[];
+  confidenceReasons:        ConfidenceReason[];
   recurringExpensesTotal:   number;
   gapFraction:              number;
   classifiedPct:            number;

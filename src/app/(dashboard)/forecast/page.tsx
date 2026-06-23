@@ -403,7 +403,7 @@ export default async function ForecastPage() {
                     {forecast.confidenceReasons.map((r, i) => (
                       <li key={i} className="flex items-start gap-2 text-xs text-[#6A97B4]">
                         <span className="text-[#3AB5A0] flex-shrink-0 mt-0.5">·</span>
-                        <span>{r}</span>
+                        <span>{typeof r === "string" ? r : t(r.key as Parameters<typeof t>[0], r.params)}</span>
                       </li>
                     ))}
                   </ul>
@@ -451,7 +451,7 @@ export default async function ForecastPage() {
                       {forecast.recurringExpenseCategories.map((cat) => (
                         <div key={cat.category} className="flex justify-between text-xs text-[#7BA8C4]">
                           <span className="capitalize">{cat.category}</span>
-                          <span className="tabular-nums">{formatCurrency(cat.monthlyAvg, locale)}/mo</span>
+                          <span className="tabular-nums">{t("howBuilt.perMonth", { amount: formatCurrency(cat.monthlyAvg, locale) })}</span>
                         </div>
                       ))}
                     </div>

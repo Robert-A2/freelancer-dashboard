@@ -847,7 +847,22 @@
       "recurringExpensesLabel": "Recurring Expenses Detected",
       "recurringExpensesBody": "{amount}/month in stable, recurring costs identified. The expense projection will not drop below this floor.",
       "recurringCategoriesTitle": "Fixed costs contributing to this floor:",
-      "floorOverrideNote": "Your weighted average ({avg}/mo) was raised to the floor ({floor}/mo) to stay above stable recurring costs."
+      "floorOverrideNote": "Your weighted average ({avg}/mo) was raised to the floor ({floor}/mo) to stay above stable recurring costs.",
+      "perMonth": "{amount}/mo",
+      "confidence": {
+        "depth1": "Only 1 month of data — forecasts improve significantly with 3+ months.",
+        "depthFew": "{count} months of history. Upload more data for a higher-confidence forecast.",
+        "depthGrowing": "{count} months of history analyzed. 12+ months unlocks seasonal adjustments.",
+        "depthSolid": "{count} months of history — solid foundation for forecasting.",
+        "volatilityHigh": "Income varies significantly month to month — projections carry more uncertainty.",
+        "volatilityMedium": "Moderate income variability detected — projections are approximate.",
+        "volatilityLow": "Income is relatively stable — good signal for accurate projections.",
+        "gapHigh": "{pct}% of months in your date range have no data — consider uploading missing statements.",
+        "gapMedium": "Some months have no transaction data — possible gaps in uploaded history.",
+        "classLow": "{pct}% of transactions are categorized — higher coverage improves accuracy.",
+        "classMedium": "{pct}% of transactions categorized.",
+        "classHigh": "{pct}% of transactions categorized — excellent data quality."
+      }
     }
   },
   "analytics": {

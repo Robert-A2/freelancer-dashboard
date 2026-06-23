@@ -847,7 +847,22 @@
       "recurringExpensesLabel": "Dépenses récurrentes détectées",
       "recurringExpensesBody": "{amount}/mois en coûts récurrents stables identifiés. La projection des dépenses ne tombera pas en dessous de ce plancher.",
       "recurringCategoriesTitle": "Coûts fixes contribuant à ce plancher :",
-      "floorOverrideNote": "Votre moyenne pondérée ({avg}/mois) a été relevée au plancher ({floor}/mois) pour couvrir les coûts fixes stables."
+      "floorOverrideNote": "Votre moyenne pondérée ({avg}/mois) a été relevée au plancher ({floor}/mois) pour couvrir les coûts fixes stables.",
+      "perMonth": "{amount}/mois",
+      "confidence": {
+        "depth1": "Un seul mois de données — les prévisions s'améliorent nettement avec 3 mois ou plus.",
+        "depthFew": "{count} mois d'historique. Importez plus de données pour une prévision plus fiable.",
+        "depthGrowing": "{count} mois d'historique analysés. 12 mois ou plus débloque les ajustements saisonniers.",
+        "depthSolid": "{count} mois d'historique — base solide pour les prévisions.",
+        "volatilityHigh": "Les revenus varient significativement d'un mois à l'autre — les projections sont moins précises.",
+        "volatilityMedium": "Variabilité modérée des revenus détectée — les projections sont approximatives.",
+        "volatilityLow": "Les revenus sont relativement stables — bon signal pour des projections précises.",
+        "gapHigh": "{pct} % des mois de votre période n'ont aucune donnée — envisagez d'importer les relevés manquants.",
+        "gapMedium": "Certains mois n'ont aucune transaction — des lacunes possibles dans l'historique importé.",
+        "classLow": "{pct} % des transactions sont catégorisées — une couverture plus élevée améliore la précision.",
+        "classMedium": "{pct} % des transactions catégorisées.",
+        "classHigh": "{pct} % des transactions catégorisées — excellente qualité des données."
+      }
     }
   },
   "analytics": {
