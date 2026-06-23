@@ -1063,8 +1063,8 @@
     "summary": {
       "totalClients": "Total clients",
       "current": "Active",
-      "followUp": "Follow up",
-      "previous": "Previous"
+      "followUp": "Needs attention",
+      "inactive": "Inactive"
     },
     "alerts": {
       "late": "Payment is {days, plural, one {# day} other {# days}} past their usual interval",
@@ -1078,10 +1078,11 @@
       "ofIncome": "{pct}% of income"
     },
     "status": {
-      "green": "Reliable",
-      "yellow": "Follow Up",
-      "red": "Late",
-      "previous": "Previous Client"
+      "current": "Active",
+      "watch": "Follow Up",
+      "risk": "Late",
+      "inactive": "Inactive",
+      "unidentified": "Identity not verified"
     },
     "dependency": {
       "low": "Low risk",
@@ -1152,13 +1153,13 @@
         "singlePayment": "Only one payment recorded from this client so far."
       },
       "actions": {
-        "title": "Recommended actions",
-        "followUp": "Follow up",
-        "followUpReason": "Current payment gap exceeds the historical average.",
-        "monitor": "Monitor",
-        "monitorReason": "Revenue from this client has been declining.",
-        "noAction": "No action needed",
-        "noActionReason": "This client remains consistent. No follow-up required."
+        "title": "Payment Signals",
+        "followUp": "Payment gap detected",
+        "followUpReason": "Current gap exceeds this client's historical payment interval.",
+        "monitor": "Declining revenue",
+        "monitorReason": "Revenue from this client has decreased compared to the prior period.",
+        "noAction": "On schedule",
+        "noActionReason": "This client is paying consistently within their historical pattern."
       },
       "history": {
         "title": "Payment history",
@@ -1172,17 +1173,17 @@
         "rank": "Your #{rank} client by total revenue."
       },
       "reliability": {
-        "title": "Reliability Assessment",
+        "title": "Payment Reliability",
         "excellent": "Excellent",
         "good": "Good",
-        "watch": "Follow Up",
+        "watch": "Needs attention",
         "risk": "Late",
-        "previous": "Previous Client",
-        "excellentDesc": "Long track record with consistent on-time payments. No action needed.",
-        "goodDesc": "Regular payment history. Currently on schedule.",
-        "watchDesc": "Payment is slightly past their usual interval. Worth checking in.",
+        "inactive": "Inactive",
+        "excellentDesc": "Long track record with consistent on-time payments.",
+        "goodDesc": "Regular payment history — currently on schedule.",
+        "watchDesc": "Payment is slightly past their usual interval.",
         "riskDesc": "Payment is significantly past their usual interval.",
-        "previousDesc": "This client has no recent activity. Their engagement appears to have concluded naturally. Their full payment history is visible in the timeline below."
+        "inactiveDesc": "No recent payment activity recorded. Their full payment history is visible in the timeline below."
       },
       "revenueStory": {
         "title": "Revenue Story",
@@ -1228,10 +1229,14 @@
         "showingRecent": "Showing most recent {count, plural, one {# payment} other {# payments}}",
         "gap": "Gap"
       },
-      "previousClient": {
-        "label": "Previous Client",
-        "note": "This client has no recent payment activity. Their engagement appears to have concluded. If the work was good and you'd like to collaborate again, consider reaching out — but there is no outstanding payment to follow up on."
-      }
+      "inactiveClient": {
+        "label": "Inactive Client",
+        "note": "No recent payment activity recorded from this client. Their full payment history is available in the timeline below."
+      },
+      "identityUnknown": "Client identity could not be determined",
+      "identityUnknownTitle": "Unidentified Income Source",
+      "identityUnknownNote": "One or more income transactions could not be matched to a specific client. The bank description did not contain enough information to extract a reliable name. The payment data and timeline below are accurate.",
+      "identityTimelineNote": "These transactions are grouped because their bank descriptions share a common pattern — but the source cannot be identified with confidence."
     }
   },
   "intent": {

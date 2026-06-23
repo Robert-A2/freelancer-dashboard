@@ -3,6 +3,7 @@ import { redirect, notFound } from "next/navigation";
 import { getTranslations, getLocale } from "next-intl/server";
 import { getClientRiskProfiles } from "@/lib/client-risk-engine";
 import type { ClientStatus, ClientLifecycle, ReliabilityScore } from "@/lib/client-risk-engine";
+import { UNIDENTIFIED_SOURCE } from "@/lib/client-identity";
 import { getFinancialLifeIntelligence } from "@/lib/financial-life-engine";
 import { formatCurrency } from "@/utils/finance";
 import { INTL_LOCALES, type Locale } from "@/i18n/locales";
@@ -13,10 +14,10 @@ export const dynamic = "force-dynamic";
 // ── Style maps ───────────────────────────────────────────────────────────────
 
 const STATUS_STYLES: Record<ClientStatus, { dot: string; text: string; bg: string; border: string }> = {
-  green:    { dot: "bg-[#4CC4A4]", text: "text-[#4CC4A4]", bg: "bg-[#4CC4A415]", border: "border-[#4CC4A425]" },
-  yellow:   { dot: "bg-[#D4A254]", text: "text-[#D4A254]", bg: "bg-[#D4A25415]", border: "border-[#D4A25425]" },
-  red:      { dot: "bg-[#D97070]", text: "text-[#D97070]", bg: "bg-[#D9707015]", border: "border-[#D9707025]" },
-  previous: { dot: "bg-[#4A7A9B]", text: "text-[#6A97B4]", bg: "bg-[#132537]",   border: "border-[#243F5E]"   },
+  current:  { dot: "bg-[#4CC4A4]", text: "text-[#4CC4A4]", bg: "bg-[#4CC4A415]", border: "border-[#4CC4A425]" },
+  watch:    { dot: "bg-[#D4A254]", text: "text-[#D4A254]", bg: "bg-[#D4A25415]", border: "border-[#D4A25425]" },
+  risk:     { dot: "bg-[#D97070]", text: "text-[#D97070]", bg: "bg-[#D9707015]", border: "border-[#D9707025]" },
+  inactive: { dot: "bg-[#4A7A9B]", text: "text-[#6A97B4]", bg: "bg-[#132537]",   border: "border-[#243F5E]"   },
 };
 
 const RELIABILITY_STYLES: Record<ReliabilityScore, { text: string; bg: string; border: string }> = {
@@ -24,7 +25,7 @@ const RELIABILITY_STYLES: Record<ReliabilityScore, { text: string; bg: string; b
   good:      { text: "text-[#3AB5A0]", bg: "bg-[#3AB5A010]", border: "border-[#3AB5A025]" },
   watch:     { text: "text-[#D4A254]", bg: "bg-[#D4A25410]", border: "border-[#D4A25430]" },
   risk:      { text: "text-[#D97070]", bg: "bg-[#D9707010]", border: "border-[#D9707030]" },
-  previous:  { text: "text-[#6A97B4]", bg: "bg-[#132537]",   border: "border-[#243F5E]"   },
+  inactive:  { text: "text-[#6A97B4]", bg: "bg-[#132537]",   border: "border-[#243F5E]"   },
 };
 
 const IMPACT_STYLES = {
@@ -103,7 +104,8 @@ export default async function ClientDetailPage({
   const client = data.clients[clientIdx];
   const clientRank = clientIdx + 1;
 
-  const statusStyle      = STATUS_STYLES[client.status];
+  const isUnidentified = client.name === UNIDENTIFIED_SOURCE;
+  const statusStyle      = STATUS_STYLES[isUnidentified ? "inactive" : client.status];
   const reliabilityStyle = RELIABILITY_STYLES[client.reliabilityScore];
   const impact           = impactLevel(client.revenueContributionPct);
   const impactStyle      = IMPACT_STYLES[impact];
@@ -137,7 +139,6 @@ export default async function ClientDetailPage({
   const monthlyClientContrib = Math.round(client.totalRevenue / Math.max(client.monthsActive, 1));
   const annualClientContrib  = monthlyClientContrib * 12;
 
-  // Use 12m avg income when available, otherwise estimate from contribution share
   const baselineMonthlyIncome =
     financialLife.hasEnoughData && financialLife.memory.avgMonthlyIncome12m > 0
       ? financialLife.memory.avgMonthlyIncome12m
@@ -151,7 +152,6 @@ export default async function ClientDetailPage({
   const maxPaymentAmt  = Math.max(...chronoPayments.map(p => p.amount), 1);
   const largestAmt     = Math.max(...chronoPayments.map(p => p.amount));
 
-  // Show most recent 24 payments in the visual timeline
   const TIMELINE_LIMIT = 24;
   const timelinePayments = chronoPayments.slice(-TIMELINE_LIMIT);
   const timelineOffset   = chronoPayments.length - timelinePayments.length;
@@ -190,7 +190,6 @@ export default async function ClientDetailPage({
     };
   });
 
-  // ── Action badge styles ───────────────────────────────────────────────────
   const ACTION_STYLES = {
     followUp: { icon: "📬", bg: "bg-[#D9707010]", border: "border-[#D9707030]", label: "text-[#D97070]" },
     monitor:  { icon: "👁",  bg: "bg-[#D4A25410]", border: "border-[#D4A25430]", label: "text-[#D4A254]" },
@@ -212,48 +211,86 @@ export default async function ClientDetailPage({
       <div className="flex items-start gap-4 flex-wrap">
         <div className="flex-1 min-w-0">
           <p className="label mb-1">{t("label")}</p>
-          <h1 className="text-2xl font-bold text-[#E8F0F8] break-words">{client.name}</h1>
-          <p className="text-xs text-[#6A97B4] mt-1">
-            {t("detail.clientSince", { date: fmtDate(client.firstPayment) })}
-          </p>
+          <h1 className={`text-2xl font-bold break-words ${isUnidentified ? "text-[#6A97B4] italic" : "text-[#E8F0F8]"}`}>
+            {client.name}
+          </h1>
+          {isUnidentified ? (
+            <p className="text-xs text-[#4A7A9B] mt-1">{t("detail.identityUnknown")}</p>
+          ) : (
+            <p className="text-xs text-[#6A97B4] mt-1">
+              {t("detail.clientSince", { date: fmtDate(client.firstPayment) })}
+            </p>
+          )}
         </div>
-        <div className="flex flex-col items-end gap-2 flex-shrink-0">
-          <span className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-semibold ${statusStyle.bg} ${statusStyle.text} border ${statusStyle.border}`}>
-            <span className={`w-2 h-2 rounded-full ${statusStyle.dot}`} />
-            {t(`status.${client.status}`)}
-          </span>
-          <span className="text-xs text-[#6A97B4]">
-            {t("detail.relationshipHealth.rank", { rank: clientRank })}
-          </span>
-        </div>
+        {!isUnidentified && (
+          <div className="flex flex-col items-end gap-2 flex-shrink-0">
+            <span className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-semibold ${statusStyle.bg} ${statusStyle.text} border ${statusStyle.border}`}>
+              <span className={`w-2 h-2 rounded-full ${statusStyle.dot}`} />
+              {t(`status.${client.status}`)}
+            </span>
+            <span className="text-xs text-[#6A97B4]">
+              {t("detail.relationshipHealth.rank", { rank: clientRank })}
+            </span>
+          </div>
+        )}
       </div>
 
-      {/* ── 1. Relationship Health ──────────────────────────────────────────── */}
-      <div>
-        <p className="label mb-3">{t("detail.relationshipHealth.title")}</p>
-        <div className={`px-5 py-4 rounded-2xl border ${statusStyle.border} bg-[#1A3048] space-y-1 mb-4`}>
-          <p className="text-sm text-[#E8F0F8] leading-relaxed">
-            {t("detail.relationshipHealth.summary", {
-              name: client.name,
-              duration: durationLabel(client.monthsActive, t),
-            })}
-            {" "}
-            {t("detail.relationshipHealth.paymentsTotal", {
-              count: client.paymentCount,
-              total: formatCurrency(client.totalRevenue, locale),
-            })}
-            {" "}
-            {t("detail.relationshipHealth.avgPayment", {
-              avg: formatCurrency(client.avgPayment, locale),
-            })}
-          </p>
+      {/* ── Identity note for unidentified sources ──────────────────────────── */}
+      {isUnidentified && (
+        <div className="flex items-start gap-3 px-4 py-4 bg-[#1A3048] border border-[#243F5E] rounded-xl">
+          <span className="text-[#6A97B4] text-base flex-shrink-0 mt-0.5">ℹ</span>
+          <div>
+            <p className="text-sm font-semibold text-[#A8C6E0] mb-1">{t("detail.identityUnknownTitle")}</p>
+            <p className="text-sm text-[#7BA8C4] leading-relaxed">{t("detail.identityUnknownNote")}</p>
+          </div>
         </div>
+      )}
+
+      {/* ── 1. Relationship Health ──────────────────────────────────────────── */}
+      {!isUnidentified && (
+        <div>
+          <p className="label mb-3">{t("detail.relationshipHealth.title")}</p>
+          <div className={`px-5 py-4 rounded-2xl border ${statusStyle.border} bg-[#1A3048] space-y-1 mb-4`}>
+            <p className="text-sm text-[#E8F0F8] leading-relaxed">
+              {t("detail.relationshipHealth.summary", {
+                name: client.name,
+                duration: durationLabel(client.monthsActive, t),
+              })}
+              {" "}
+              {t("detail.relationshipHealth.paymentsTotal", {
+                count: client.paymentCount,
+                total: formatCurrency(client.totalRevenue, locale),
+              })}
+              {" "}
+              {t("detail.relationshipHealth.avgPayment", {
+                avg: formatCurrency(client.avgPayment, locale),
+              })}
+            </p>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {[
+              { label: t("detail.overview.firstPayment"),  value: fmtDate(client.firstPayment),  color: "text-[#A8C6E0]" },
+              { label: t("detail.overview.lastPayment"),   value: fmtDate(client.lastPayment),   color: "text-[#A8C6E0]" },
+              { label: t("detail.overview.duration"),      value: durationLabel(client.monthsActive, t), color: "text-[#6A97B4]" },
+              { label: t("detail.overview.paymentCount"),  value: String(client.paymentCount),   color: "text-[#E8F0F8]" },
+            ].map(m => (
+              <div key={m.label} className="bg-[#1A3048] rounded-xl p-3.5">
+                <p className="label mb-1 text-[11px]">{m.label}</p>
+                <p className={`text-sm font-bold tabular-nums ${m.color}`}>{m.value}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Minimal overview for unidentified sources */}
+      {isUnidentified && (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
-            { label: t("detail.overview.firstPayment"),  value: fmtDate(client.firstPayment),  color: "text-[#A8C6E0]" },
-            { label: t("detail.overview.lastPayment"),   value: fmtDate(client.lastPayment),   color: "text-[#A8C6E0]" },
-            { label: t("detail.overview.duration"),      value: durationLabel(client.monthsActive, t), color: "text-[#6A97B4]" },
-            { label: t("detail.overview.paymentCount"),  value: String(client.paymentCount),   color: "text-[#E8F0F8]" },
+            { label: t("detail.overview.paymentCount"), value: String(client.paymentCount),       color: "text-[#E8F0F8]" },
+            { label: t("detail.overview.firstPayment"), value: fmtDate(client.firstPayment),      color: "text-[#A8C6E0]" },
+            { label: t("detail.overview.lastPayment"),  value: fmtDate(client.lastPayment),       color: "text-[#A8C6E0]" },
+            { label: t("detail.overview.avgPayment"),   value: formatCurrency(client.avgPayment, locale), color: "text-[#A8C6E0]" },
           ].map(m => (
             <div key={m.label} className="bg-[#1A3048] rounded-xl p-3.5">
               <p className="label mb-1 text-[11px]">{m.label}</p>
@@ -261,44 +298,46 @@ export default async function ClientDetailPage({
             </div>
           ))}
         </div>
-      </div>
+      )}
 
-      {/* ── 2. Reliability Assessment ───────────────────────────────────────── */}
-      <div className={`card border ${reliabilityStyle.border}`}>
-        <div className="flex items-start justify-between gap-4 mb-3">
-          <p className="label">{t("detail.reliability.title")}</p>
-          <span className={`text-base font-bold ${reliabilityStyle.text}`}>
-            {t(`detail.reliability.${client.reliabilityScore}`)}
-          </span>
-        </div>
-        <p className="text-sm text-[#A8C6E0] leading-relaxed mb-4">
-          {t(`detail.reliability.${client.reliabilityScore}Desc`)}
-        </p>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          <div className="bg-[#132537] rounded-xl p-3.5">
-            <p className="label mb-1 text-[11px]">{t("detail.pattern.avgInterval")}</p>
-            {client.avgIntervalDays !== null ? (
-              <p className="text-sm font-bold text-[#A8C6E0] tabular-nums">
-                {t("detail.pattern.days", { count: client.avgIntervalDays })}
+      {/* ── 2. Reliability Assessment — only for identified clients ─────────── */}
+      {!isUnidentified && (
+        <div className={`card border ${reliabilityStyle.border}`}>
+          <div className="flex items-start justify-between gap-4 mb-3">
+            <p className="label">{t("detail.reliability.title")}</p>
+            <span className={`text-base font-bold ${reliabilityStyle.text}`}>
+              {t(`detail.reliability.${client.reliabilityScore}`)}
+            </span>
+          </div>
+          <p className="text-sm text-[#A8C6E0] leading-relaxed mb-4">
+            {t(`detail.reliability.${client.reliabilityScore}Desc`)}
+          </p>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <div className="bg-[#132537] rounded-xl p-3.5">
+              <p className="label mb-1 text-[11px]">{t("detail.pattern.avgInterval")}</p>
+              {client.avgIntervalDays !== null ? (
+                <p className="text-sm font-bold text-[#A8C6E0] tabular-nums">
+                  {t("detail.pattern.days", { count: client.avgIntervalDays })}
+                </p>
+              ) : (
+                <p className="text-xs text-[#6A97B4]">{t("detail.pattern.noInterval")}</p>
+              )}
+            </div>
+            <div className="bg-[#132537] rounded-xl p-3.5">
+              <p className="label mb-1 text-[11px]">{t("detail.pattern.currentGap")}</p>
+              <p className={`text-sm font-bold tabular-nums ${statusStyle.text}`}>
+                {t("detail.pattern.days", { count: client.currentGapDays })}
               </p>
-            ) : (
-              <p className="text-xs text-[#6A97B4]">{t("detail.pattern.noInterval")}</p>
-            )}
-          </div>
-          <div className="bg-[#132537] rounded-xl p-3.5">
-            <p className="label mb-1 text-[11px]">{t("detail.pattern.currentGap")}</p>
-            <p className={`text-sm font-bold tabular-nums ${statusStyle.text}`}>
-              {t("detail.pattern.days", { count: client.currentGapDays })}
-            </p>
-          </div>
-          <div className="bg-[#132537] rounded-xl p-3.5 col-span-2 sm:col-span-1">
-            <p className="label mb-1 text-[11px]">{t("detail.overview.avgPayment")}</p>
-            <p className="text-sm font-bold text-[#A8C6E0] tabular-nums">
-              {formatCurrency(client.avgPayment, locale)}
-            </p>
+            </div>
+            <div className="bg-[#132537] rounded-xl p-3.5 col-span-2 sm:col-span-1">
+              <p className="label mb-1 text-[11px]">{t("detail.overview.avgPayment")}</p>
+              <p className="text-sm font-bold text-[#A8C6E0] tabular-nums">
+                {formatCurrency(client.avgPayment, locale)}
+              </p>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* ── 3. Revenue Story ────────────────────────────────────────────────── */}
       <div className="card">
@@ -343,7 +382,6 @@ export default async function ClientDetailPage({
               ))}
             </div>
 
-            {/* Period comparison */}
             <div className="mt-5 pt-4 border-t border-[#243F5E]">
               <p className="label mb-3 text-[11px]">{t("detail.revenueStory.periodComparison")}</p>
               <div className="grid grid-cols-2 gap-3">
@@ -369,124 +407,125 @@ export default async function ClientDetailPage({
         )}
       </div>
 
-      {/* ── 4. Client Momentum ──────────────────────────────────────────────── */}
-      <div className="card">
-        <div className="flex items-center justify-between gap-3 mb-3">
-          <p className="label">{t("detail.momentum.title")}</p>
-          <span className={`text-sm font-bold ${momentumColor}`}>
-            {momentumIcon} {t(`detail.momentum.${momentumDir}`)}
-            {client.revenueTrendPct !== null && ` ${client.revenueTrendPct}%`}
-          </span>
-        </div>
+      {/* ── 4. Client Momentum — only for identified clients ────────────────── */}
+      {!isUnidentified && (
+        <div className="card">
+          <div className="flex items-center justify-between gap-3 mb-3">
+            <p className="label">{t("detail.momentum.title")}</p>
+            <span className={`text-sm font-bold ${momentumColor}`}>
+              {momentumIcon} {t(`detail.momentum.${momentumDir}`)}
+              {client.revenueTrendPct !== null && ` ${client.revenueTrendPct}%`}
+            </span>
+          </div>
 
-        {hasPriorActivity && hasRecentActivity ? (
-          <div className="space-y-3">
-            {/* Visual momentum bar */}
-            <div className="flex items-stretch gap-3">
-              <div className="flex-1 bg-[#1A3048] rounded-xl p-3.5">
-                <p className="text-[10px] text-[#6A97B4] mb-1">{t("detail.momentum.priorAvg")}</p>
-                <p className="text-lg font-bold text-[#A8C6E0] tabular-nums">
-                  {formatCurrency(client.priorMonthlyAvg, locale)}
-                </p>
-                <div className="mt-2 h-1.5 bg-[#243F5E] rounded-full">
-                  <div
-                    className="h-full bg-[#4A7A9B] rounded-full"
-                    style={{
-                      width: `${Math.round((client.priorMonthlyAvg / Math.max(client.priorMonthlyAvg, client.recentMonthlyAvg, 1)) * 100)}%`
-                    }}
-                  />
+          {hasPriorActivity && hasRecentActivity ? (
+            <div className="space-y-3">
+              <div className="flex items-stretch gap-3">
+                <div className="flex-1 bg-[#1A3048] rounded-xl p-3.5">
+                  <p className="text-[10px] text-[#6A97B4] mb-1">{t("detail.momentum.priorAvg")}</p>
+                  <p className="text-lg font-bold text-[#A8C6E0] tabular-nums">
+                    {formatCurrency(client.priorMonthlyAvg, locale)}
+                  </p>
+                  <div className="mt-2 h-1.5 bg-[#243F5E] rounded-full">
+                    <div
+                      className="h-full bg-[#4A7A9B] rounded-full"
+                      style={{
+                        width: `${Math.round((client.priorMonthlyAvg / Math.max(client.priorMonthlyAvg, client.recentMonthlyAvg, 1)) * 100)}%`
+                      }}
+                    />
+                  </div>
                 </div>
-              </div>
-              <div className="flex items-center text-lg text-[#6A97B4] font-light flex-shrink-0">
-                {momentumIcon}
-              </div>
-              <div className="flex-1 bg-[#1A3048] rounded-xl p-3.5">
-                <p className="text-[10px] text-[#6A97B4] mb-1">{t("detail.momentum.recentAvg")}</p>
-                <p className={`text-lg font-bold tabular-nums ${momentumColor}`}>
-                  {formatCurrency(client.recentMonthlyAvg, locale)}
-                </p>
-                <div className="mt-2 h-1.5 bg-[#243F5E] rounded-full">
-                  <div
-                    className={`h-full rounded-full ${momentumDir === "shrinking" ? "bg-[#D97070]" : "bg-[#4CC4A4]"}`}
-                    style={{
-                      width: `${Math.round((client.recentMonthlyAvg / Math.max(client.priorMonthlyAvg, client.recentMonthlyAvg, 1)) * 100)}%`
-                    }}
-                  />
+                <div className="flex items-center text-lg text-[#6A97B4] font-light flex-shrink-0">
+                  {momentumIcon}
+                </div>
+                <div className="flex-1 bg-[#1A3048] rounded-xl p-3.5">
+                  <p className="text-[10px] text-[#6A97B4] mb-1">{t("detail.momentum.recentAvg")}</p>
+                  <p className={`text-lg font-bold tabular-nums ${momentumColor}`}>
+                    {formatCurrency(client.recentMonthlyAvg, locale)}
+                  </p>
+                  <div className="mt-2 h-1.5 bg-[#243F5E] rounded-full">
+                    <div
+                      className={`h-full rounded-full ${momentumDir === "shrinking" ? "bg-[#D97070]" : "bg-[#4CC4A4]"}`}
+                      style={{
+                        width: `${Math.round((client.recentMonthlyAvg / Math.max(client.priorMonthlyAvg, client.recentMonthlyAvg, 1)) * 100)}%`
+                      }}
+                    />
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        ) : (
-          <p className="text-sm text-[#6A97B4]">{t("detail.momentum.noHistory")}</p>
-        )}
-      </div>
-
-      {/* ── 5. Dependency Simulator — only shown for active clients ─────────── */}
-      {/* For previous clients this section makes no sense: they have already stopped paying. */}
-      {client.lifecycle === "current" && <div className={`card border ${impactStyle.border}`}>
-        <p className="label mb-1">{t("detail.simulator.title", { name: client.name })}</p>
-        <p className="text-[13px] text-[#6A97B4] mb-5">{t("detail.dependencyRisk.subtitle")}</p>
-
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
-          <div className="bg-[#132537] rounded-xl p-3.5">
-            <p className="label mb-1 text-[11px]">{t("detail.simulator.monthlyLoss")}</p>
-            <p className="text-base font-bold text-[#D97070] tabular-nums">
-              {formatCurrency(monthlyClientContrib, locale)}
-            </p>
-          </div>
-          <div className="bg-[#132537] rounded-xl p-3.5">
-            <p className="label mb-1 text-[11px]">{t("detail.simulator.annualLoss")}</p>
-            <p className="text-base font-bold text-[#D97070] tabular-nums">
-              {formatCurrency(annualClientContrib, locale)}
-            </p>
-          </div>
-          <div className="bg-[#132537] rounded-xl p-3.5">
-            <p className="label mb-1 text-[11px]">{t("detail.simulator.incomePct")}</p>
-            <p className={`text-base font-bold tabular-nums ${impactStyle.text}`}>
-              {client.revenueContributionPct}%
-            </p>
-          </div>
-          <div className="bg-[#132537] rounded-xl p-3.5">
-            <p className="label mb-1 text-[11px]">{t("detail.simulator.healthImpact")}</p>
-            <p className={`text-sm font-bold ${impactStyle.text}`}>
-              {t(`detail.simulator.${impact}`)}
-            </p>
-          </div>
-        </div>
-
-        {/* Income bar showing what this client represents */}
-        <div className="space-y-1.5 mb-4">
-          <div className="flex items-center justify-between text-xs text-[#6A97B4]">
-            <span>{client.name}</span>
-            <span>{client.revenueContributionPct}%</span>
-          </div>
-          <div className="w-full h-2.5 bg-[#1E3550] rounded-full overflow-hidden">
-            <div
-              className={`h-full rounded-full ${
-                client.revenueContributionPct >= 50 ? "bg-[#D97070]" :
-                client.revenueContributionPct >= 30 ? "bg-[#D4A254]" :
-                "bg-[#4CC4A4]"
-              } opacity-80`}
-              style={{ width: `${client.revenueContributionPct}%` }}
-            />
-          </div>
-          {annualBaselineIncome > 0 && (
-            <div className="flex items-center justify-between text-xs text-[#4A7A9B]">
-              <span>{t("detail.dependencyRisk.subtitle")}</span>
-              <span>{formatCurrency(annualBaselineIncome, locale)}/yr baseline</span>
-            </div>
+          ) : (
+            <p className="text-sm text-[#6A97B4]">{t("detail.momentum.noHistory")}</p>
           )}
         </div>
+      )}
 
-        <div className={`flex items-start gap-3 px-4 py-3 ${impactStyle.bg} border ${impactStyle.border} rounded-xl`}>
-          <span className={`${impactStyle.text} font-semibold flex-shrink-0 mt-0.5`}>
-            {impact === "manageable" ? "✓" : impact === "critical" ? "⚠" : "ℹ"}
-          </span>
-          <p className={`text-sm leading-relaxed ${impactStyle.text}`}>
-            {t(`detail.simulator.${impact}Desc`)}
-          </p>
+      {/* ── 5. Dependency Simulator — only for identified active clients ─────── */}
+      {!isUnidentified && client.lifecycle === "current" && (
+        <div className={`card border ${impactStyle.border}`}>
+          <p className="label mb-1">{t("detail.simulator.title", { name: client.name })}</p>
+          <p className="text-[13px] text-[#6A97B4] mb-5">{t("detail.dependencyRisk.subtitle")}</p>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+            <div className="bg-[#132537] rounded-xl p-3.5">
+              <p className="label mb-1 text-[11px]">{t("detail.simulator.monthlyLoss")}</p>
+              <p className="text-base font-bold text-[#D97070] tabular-nums">
+                {formatCurrency(monthlyClientContrib, locale)}
+              </p>
+            </div>
+            <div className="bg-[#132537] rounded-xl p-3.5">
+              <p className="label mb-1 text-[11px]">{t("detail.simulator.annualLoss")}</p>
+              <p className="text-base font-bold text-[#D97070] tabular-nums">
+                {formatCurrency(annualClientContrib, locale)}
+              </p>
+            </div>
+            <div className="bg-[#132537] rounded-xl p-3.5">
+              <p className="label mb-1 text-[11px]">{t("detail.simulator.incomePct")}</p>
+              <p className={`text-base font-bold tabular-nums ${impactStyle.text}`}>
+                {client.revenueContributionPct}%
+              </p>
+            </div>
+            <div className="bg-[#132537] rounded-xl p-3.5">
+              <p className="label mb-1 text-[11px]">{t("detail.simulator.healthImpact")}</p>
+              <p className={`text-sm font-bold ${impactStyle.text}`}>
+                {t(`detail.simulator.${impact}`)}
+              </p>
+            </div>
+          </div>
+
+          <div className="space-y-1.5 mb-4">
+            <div className="flex items-center justify-between text-xs text-[#6A97B4]">
+              <span>{client.name}</span>
+              <span>{client.revenueContributionPct}%</span>
+            </div>
+            <div className="w-full h-2.5 bg-[#1E3550] rounded-full overflow-hidden">
+              <div
+                className={`h-full rounded-full ${
+                  client.revenueContributionPct >= 50 ? "bg-[#D97070]" :
+                  client.revenueContributionPct >= 30 ? "bg-[#D4A254]" :
+                  "bg-[#4CC4A4]"
+                } opacity-80`}
+                style={{ width: `${client.revenueContributionPct}%` }}
+              />
+            </div>
+            {annualBaselineIncome > 0 && (
+              <div className="flex items-center justify-between text-xs text-[#4A7A9B]">
+                <span>{t("detail.dependencyRisk.subtitle")}</span>
+                <span>{formatCurrency(annualBaselineIncome, locale)}/yr baseline</span>
+              </div>
+            )}
+          </div>
+
+          <div className={`flex items-start gap-3 px-4 py-3 ${impactStyle.bg} border ${impactStyle.border} rounded-xl`}>
+            <span className={`${impactStyle.text} font-semibold flex-shrink-0 mt-0.5`}>
+              {impact === "manageable" ? "✓" : impact === "critical" ? "⚠" : "ℹ"}
+            </span>
+            <p className={`text-sm leading-relaxed ${impactStyle.text}`}>
+              {t(`detail.simulator.${impact}Desc`)}
+            </p>
+          </div>
         </div>
-      </div>}
+      )}
 
       {/* ── 6. Payment Timeline ─────────────────────────────────────────────── */}
       <div className="card">
@@ -504,10 +543,13 @@ export default async function ClientDetailPage({
           {fmtDate(chronoPayments[chronoPayments.length - 1]?.date ?? client.lastPayment)}
         </p>
 
+        {isUnidentified && (
+          <p className="text-xs text-[#4A7A9B] mb-4 leading-relaxed">{t("detail.identityTimelineNote")}</p>
+        )}
+
         <div className="space-y-0">
           {timelineData.map((p, i) => (
             <div key={i}>
-              {/* Gap indicator between payments */}
               {p.gapDays !== null && (
                 <div className="flex items-center gap-2.5 py-2 pl-3">
                   <div className="w-px h-5 bg-[#243F5E] ml-1 flex-shrink-0" />
@@ -522,9 +564,7 @@ export default async function ClientDetailPage({
                 </div>
               )}
 
-              {/* Payment row */}
               <div className="flex items-start gap-3 py-1.5">
-                {/* Timeline dot */}
                 <div className="flex flex-col items-center flex-shrink-0 mt-1">
                   <div className={`w-2.5 h-2.5 rounded-full ${
                     p.isLargest ? "bg-[#4CC4A4]" :
@@ -533,7 +573,6 @@ export default async function ClientDetailPage({
                   }`} />
                 </div>
 
-                {/* Payment details */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-3 mb-1">
                     <div className="flex items-center gap-2 flex-wrap min-w-0">
@@ -548,7 +587,6 @@ export default async function ClientDetailPage({
                       {formatCurrency(p.amount, locale)}
                     </span>
                   </div>
-                  {/* Amount bar */}
                   <div className="w-full h-1 bg-[#1E3550] rounded-full mb-1">
                     <div
                       className={`h-full rounded-full ${p.isLargest ? "bg-[#4CC4A4]" : "bg-[#3AB5A0] opacity-60"}`}
@@ -564,7 +602,7 @@ export default async function ClientDetailPage({
       </div>
 
       {/* ── 7. Insights ────────────────────────────────────────────────────── */}
-      {client.insights.length > 0 && (
+      {!isUnidentified && client.insights.length > 0 && (
         <div>
           <p className="label mb-3">{t("detail.insights.title")}</p>
           <div className="space-y-2">
@@ -600,34 +638,36 @@ export default async function ClientDetailPage({
         </div>
       )}
 
-      {/* ── 8. Actions / Previous client note ──────────────────────────────── */}
-      {client.lifecycle === "previous" ? (
-        <div className="px-5 py-4 bg-[#132537] rounded-2xl border border-[#243F5E]">
-          <p className="text-xs text-[#6A97B4] font-semibold uppercase tracking-wide mb-2">
-            {t("detail.previousClient.label")}
-          </p>
-          <p className="text-sm text-[#7BA8C4] leading-relaxed">
-            {t("detail.previousClient.note")}
-          </p>
-        </div>
-      ) : (
-        <div>
-          <p className="label mb-3">{t("detail.actions.title")}</p>
-          <div className="space-y-2">
-            {client.actions.map((action, i) => {
-              const s = ACTION_STYLES[action.type];
-              return (
-                <div key={i} className={`flex items-start gap-3 px-4 py-3 ${s.bg} border ${s.border} rounded-xl`}>
-                  <span className="text-base flex-shrink-0">{s.icon}</span>
-                  <div>
-                    <p className={`text-sm font-semibold ${s.label}`}>{t(`detail.actions.${action.type}`)}</p>
-                    <p className="text-xs text-[#7BA8C4] mt-0.5">{t(`detail.actions.${action.type}Reason`)}</p>
-                  </div>
-                </div>
-              );
-            })}
+      {/* ── 8. Actions / Inactive client note ──────────────────────────────── */}
+      {!isUnidentified && (
+        client.lifecycle === "inactive" ? (
+          <div className="px-5 py-4 bg-[#132537] rounded-2xl border border-[#243F5E]">
+            <p className="text-xs text-[#6A97B4] font-semibold uppercase tracking-wide mb-2">
+              {t("detail.inactiveClient.label")}
+            </p>
+            <p className="text-sm text-[#7BA8C4] leading-relaxed">
+              {t("detail.inactiveClient.note")}
+            </p>
           </div>
-        </div>
+        ) : (
+          <div>
+            <p className="label mb-3">{t("detail.actions.title")}</p>
+            <div className="space-y-2">
+              {client.actions.map((action, i) => {
+                const s = ACTION_STYLES[action.type];
+                return (
+                  <div key={i} className={`flex items-start gap-3 px-4 py-3 ${s.bg} border ${s.border} rounded-xl`}>
+                    <span className="text-base flex-shrink-0">{s.icon}</span>
+                    <div>
+                      <p className={`text-sm font-semibold ${s.label}`}>{t(`detail.actions.${action.type}`)}</p>
+                      <p className="text-xs text-[#7BA8C4] mt-0.5">{t(`detail.actions.${action.type}Reason`)}</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )
       )}
 
     </div>

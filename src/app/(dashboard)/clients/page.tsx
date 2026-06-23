@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { getTranslations, getLocale } from "next-intl/server";
 import { getClientRiskProfiles } from "@/lib/client-risk-engine";
 import type { ClientStatus } from "@/lib/client-risk-engine";
+import { UNIDENTIFIED_SOURCE } from "@/lib/client-identity";
 import { formatCurrency } from "@/utils/finance";
 import { INTL_LOCALES, type Locale } from "@/i18n/locales";
 import Link from "next/link";
@@ -10,10 +11,10 @@ import Link from "next/link";
 export const dynamic = "force-dynamic";
 
 const STATUS_STYLES: Record<ClientStatus, { dot: string; text: string; bg: string }> = {
-  green:    { dot: "bg-[#4CC4A4]", text: "text-[#4CC4A4]", bg: "bg-[#4CC4A415]" },
-  yellow:   { dot: "bg-[#D4A254]", text: "text-[#D4A254]", bg: "bg-[#D4A25415]" },
-  red:      { dot: "bg-[#D97070]", text: "text-[#D97070]", bg: "bg-[#D9707015]" },
-  previous: { dot: "bg-[#4A7A9B]", text: "text-[#6A97B4]", bg: "bg-[#1A304880]" },
+  current:  { dot: "bg-[#4CC4A4]", text: "text-[#4CC4A4]", bg: "bg-[#4CC4A415]" },
+  watch:    { dot: "bg-[#D4A254]", text: "text-[#D4A254]", bg: "bg-[#D4A25415]" },
+  risk:     { dot: "bg-[#D97070]", text: "text-[#D97070]", bg: "bg-[#D9707015]" },
+  inactive: { dot: "bg-[#4A7A9B]", text: "text-[#6A97B4]", bg: "bg-[#1A304880]" },
 };
 
 function StatusBadge({ status, label }: { status: ClientStatus; label: string }) {
@@ -34,7 +35,7 @@ export default async function ClientsPage() {
   const t      = await getTranslations("clients");
   const locale = (await getLocale()) as Locale;
   const data   = await getClientRiskProfiles(user.id);
-  const { clients, currentCount, followUpCount, previousCount, hasIntentData } = data;
+  const { clients, currentCount, followUpCount, inactiveCount, hasIntentData } = data;
 
   return (
     <div className="space-y-8">
@@ -72,7 +73,7 @@ export default async function ClientsPage() {
               { label: t("summary.totalClients"), value: clients.length, color: "text-[#E8F0F8]" },
               { label: t("summary.current"),      value: currentCount,   color: "text-[#4CC4A4]" },
               { label: t("summary.followUp"),     value: followUpCount,  color: "text-[#D4A254]" },
-              { label: t("summary.previous"),     value: previousCount,  color: "text-[#6A97B4]" },
+              { label: t("summary.inactive"),     value: inactiveCount,  color: "text-[#6A97B4]" },
             ].map(m => (
               <div key={m.label} className="bg-[#1A3048] rounded-xl p-4">
                 <p className="label mb-1">{m.label}</p>
@@ -81,12 +82,12 @@ export default async function ClientsPage() {
             ))}
           </div>
 
-          {/* Follow-up alerts — only for genuinely late active clients (red), never for previous */}
+          {/* Follow-up alerts — only for genuinely overdue active clients */}
           {followUpCount > 0 && (() => {
-            const lateClients = clients.filter(c => c.status === "red");
-            if (lateClients.length === 0) return null;
-            const shown = lateClients.slice(0, 3);
-            const rest = lateClients.length - 3;
+            const overdueClients = clients.filter(c => c.status === "risk");
+            if (overdueClients.length === 0) return null;
+            const shown = overdueClients.slice(0, 3);
+            const rest = overdueClients.length - 3;
             return (
               <div className="space-y-2">
                 {shown.map(c => (
@@ -120,38 +121,50 @@ export default async function ClientsPage() {
             <p className="text-[13px] text-[#6A97B4] mb-5">{t("list.subtitle")}</p>
 
             <div className="space-y-1">
-              {clients.map((c, i) => (
-                <Link
-                  key={c.name}
-                  href={`/clients/${encodeURIComponent(c.name)}`}
-                  className="flex items-center gap-3 py-3 rounded-xl hover:bg-[#1A3048] -mx-2 px-2 transition-colors group"
-                >
-                  <span className="text-xs font-bold text-[#6A97B4] w-5 flex-shrink-0 tabular-nums">{i + 1}</span>
+              {clients.map((c, i) => {
+                const isUnidentified = c.name === UNIDENTIFIED_SOURCE;
+                return (
+                  <Link
+                    key={c.name}
+                    href={`/clients/${encodeURIComponent(c.name)}`}
+                    className="flex items-center gap-3 py-3 rounded-xl hover:bg-[#1A3048] -mx-2 px-2 transition-colors group"
+                  >
+                    <span className="text-xs font-bold text-[#6A97B4] w-5 flex-shrink-0 tabular-nums">{i + 1}</span>
 
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap mb-1">
-                      <p className="text-sm font-medium text-[#E8F0F8] truncate">{c.name}</p>
-                      <StatusBadge status={c.status} label={t(`status.${c.status}`)} />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap mb-1">
+                        <p className={`text-sm font-medium truncate ${isUnidentified ? "text-[#6A97B4] italic" : "text-[#E8F0F8]"}`}>
+                          {c.name}
+                        </p>
+                        {!isUnidentified && (
+                          <StatusBadge status={c.status} label={t(`status.${c.status}`)} />
+                        )}
+                        {isUnidentified && (
+                          <span className="text-[11px] text-[#4A7A9B] bg-[#1A304880] px-1.5 py-0.5 rounded">
+                            {t("status.unidentified")}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-[#6A97B4]">
+                        {t("list.lastPayment", {
+                          date: new Date(c.lastPayment).toLocaleDateString(INTL_LOCALES[locale], {
+                            day: "numeric", month: "short", year: "numeric", timeZone: "UTC",
+                          }),
+                        })}
+                      </p>
                     </div>
-                    <p className="text-xs text-[#6A97B4]">
-                      {t("list.lastPayment", {
-                        date: new Date(c.lastPayment).toLocaleDateString(INTL_LOCALES[locale], {
-                          day: "numeric", month: "short", year: "numeric", timeZone: "UTC",
-                        }),
-                      })}
-                    </p>
-                  </div>
 
-                  <div className="text-right flex-shrink-0">
-                    <p className="text-sm font-bold text-[#4CC4A4] tabular-nums">{formatCurrency(c.totalRevenue, locale)}</p>
-                    <p className="text-xs text-[#6A97B4]">{t("list.ofIncome", { pct: c.revenueContributionPct })}</p>
-                  </div>
+                    <div className="text-right flex-shrink-0">
+                      <p className="text-sm font-bold text-[#4CC4A4] tabular-nums">{formatCurrency(c.totalRevenue, locale)}</p>
+                      <p className="text-xs text-[#6A97B4]">{t("list.ofIncome", { pct: c.revenueContributionPct })}</p>
+                    </div>
 
-                  <svg className="w-4 h-4 text-[#6A97B4] group-hover:text-[#3AB5A0] flex-shrink-0 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                  </svg>
-                </Link>
-              ))}
+                    <svg className="w-4 h-4 text-[#6A97B4] group-hover:text-[#3AB5A0] flex-shrink-0 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                    </svg>
+                  </Link>
+                );
+              })}
             </div>
           </div>
         </>

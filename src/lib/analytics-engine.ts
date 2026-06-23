@@ -2,6 +2,8 @@ import { prisma } from "./prisma";
 import { Decimal } from "@prisma/client/runtime/library";
 import { getLocale } from "next-intl/server";
 import { INTL_LOCALES, type Locale } from "@/i18n/locales";
+import { extractClientName as _extractClientName } from "./client-identity";
+export { extractClientName } from "./client-identity";
 
 export async function recalculateMonthlyAnalytics(userId: string): Promise<void> {
   const transactions = await prisma.transaction.findMany({
@@ -512,43 +514,6 @@ export interface ClientInsightsData {
   diversification: "concentrated" | "moderate" | "diversified";
 }
 
-// Known payment processors — marked so the UI can explain they may represent
-// multiple underlying clients the bank statement can't see through.
-const PAYMENT_PROCESSORS: Record<string, string> = {
-  stripe: "Stripe", paypal: "PayPal", upwork: "Upwork",
-  fiverr: "Fiverr", toptal: "Toptal", malt: "Malt",
-  "peopleperhour": "PeoplePerHour", "freelancer.com": "Freelancer.com",
-  "99designs": "99designs", wise: "Wise",
-};
-
-export function extractClientName(description: string, category: string): { name: string; isProcessor: boolean } {
-  const lower = description.toLowerCase();
-  // Check category first (most reliable)
-  if (PAYMENT_PROCESSORS[category]) return { name: PAYMENT_PROCESSORS[category], isProcessor: true };
-  // Then description keywords
-  for (const [kw, label] of Object.entries(PAYMENT_PROCESSORS)) {
-    if (lower.includes(kw)) return { name: label, isProcessor: true };
-  }
-
-  // Strip bank boilerplate, then title-case the remainder
-  const cleaned = description
-    .replace(/\b(faster payment|bank transfer|bacs|sepa credit|chaps|ach|wire transfer|direct credit|standing order|fps|payment from|transfer from|payment ref|ref|invoice|inv)\b/gi, " ")
-    .replace(/\b\d{4,}\b/g, " ")   // remove long reference numbers
-    .replace(/[^A-Z a-z]/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-
-  const titleCased = cleaned
-    .split(" ")
-    .filter(w => w.length > 1)
-    .map(w => w[0].toUpperCase() + w.slice(1).toLowerCase())
-    .join(" ")
-    .slice(0, 35)
-    .trim();
-
-  return { name: titleCased || description.slice(0, 25).trim(), isProcessor: false };
-}
-
 export async function getClientInsights(userId: string): Promise<ClientInsightsData | null> {
   // Primary: intent-classified income only (most accurate client signal).
   // Fall back to filtered income when the user has fewer than 3 classified transactions.
@@ -588,7 +553,7 @@ export async function getClientInsights(userId: string): Promise<ClientInsightsD
   const map: Record<string, { name: string; isProcessor: boolean; txs: { amount: number; date: Date }[] }> = {};
 
   for (const tx of allTxs) {
-    const { name, isProcessor } = extractClientName(tx.description, tx.category);
+    const { name, isProcessor } = _extractClientName(tx.description, tx.category);
     const key = name.toUpperCase();
     if (!map[key]) map[key] = { name, isProcessor, txs: [] };
     map[key].txs.push({ amount: Number(tx.amount), date: new Date(tx.transactionDate) });
@@ -645,7 +610,7 @@ export async function getClientInsights(userId: string): Promise<ClientInsightsD
   for (const tx of allTxs) {
     const d = new Date(tx.transactionDate);
     const mk = `${d.getUTCFullYear()}-${d.getUTCMonth()}`;
-    const { name } = extractClientName(tx.description, tx.category);
+    const { name } = _extractClientName(tx.description, tx.category);
     if (!monthPayerMap[mk]) monthPayerMap[mk] = new Set();
     monthPayerMap[mk].add(name.toUpperCase());
   }

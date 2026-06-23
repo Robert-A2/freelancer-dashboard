@@ -1,13 +1,19 @@
 import { prisma } from "./prisma";
-import { extractClientName } from "./analytics-engine";
+import { extractClientName, normalizeForAlias, UNIDENTIFIED_SOURCE } from "./client-identity";
+import type { ClientConfidence } from "./client-identity";
 import { getLocale } from "next-intl/server";
 import { INTL_LOCALES, type Locale } from "@/i18n/locales";
 
-export type ClientStatus = "green" | "yellow" | "red" | "previous";
-export type ClientLifecycle = "current" | "previous";
+// ── Status terminology ────────────────────────────────────────────────────────
+// "current"  — active client, paying on time
+// "watch"    — active client, payment timing becoming unusual
+// "risk"     — active client, significantly overdue vs. historical pattern
+// "inactive" — relationship has concluded; no outstanding payment expected
+export type ClientStatus = "current" | "watch" | "risk" | "inactive";
+export type ClientLifecycle = "current" | "inactive";
 export type DependencyRisk = "low" | "medium" | "high";
 export type RevenueTrend = "increasing" | "stable" | "declining";
-export type ReliabilityScore = "excellent" | "good" | "watch" | "risk" | "previous";
+export type ReliabilityScore = "excellent" | "good" | "watch" | "risk" | "inactive";
 
 export interface MonthlyRevenue {
   year: number;
@@ -33,6 +39,8 @@ export interface ClientPayment {
 
 export interface ClientRiskProfile {
   name: string;
+  confidence: ClientConfidence;    // how certain we are this is a real client identity
+  isProcessor: boolean;
   totalRevenue: number;
   revenueContributionPct: number;
   paymentCount: number;
@@ -55,35 +63,35 @@ export interface ClientRiskProfile {
   reliabilityScore: ReliabilityScore;
   recentMonthlyAvg: number;
   priorMonthlyAvg: number;
+  rawDescriptions: string[]; // kept for the payment timeline — ground truth
 }
 
 export interface ClientRiskCenterData {
   clients: ClientRiskProfile[];
   totalRevenue: number;
-  currentCount: number;    // active relationships (green + yellow + red)
-  followUpCount: number;   // active clients who are late (yellow + red)
-  previousCount: number;   // concluded/previous client relationships
+  currentCount: number;    // active relationships (current + watch + risk)
+  followUpCount: number;   // active clients with unusual payment timing (watch + risk)
+  inactiveCount: number;   // concluded relationships
   hasIntentData: boolean;
 }
 
+// ── Status computation ────────────────────────────────────────────────────────
+
 function computeStatus(avgIntervalDays: number | null, currentGapDays: number): ClientStatus {
-  // A "previous" client is one whose relationship has clearly concluded —
-  // the gap far exceeds their own payment pattern, not just a late payment.
-  //
-  // Threshold: 3× their usual interval, minimum 6 months, maximum 18 months.
-  // This correctly handles monthly payers (6 months), quarterly (9 months),
-  // and annual payers (18 months cap) without over-triggering on genuine delays.
-  const previousThreshold = avgIntervalDays && avgIntervalDays > 0
+  // "inactive" = relationship has concluded.
+  // Threshold: 3× their usual interval, min 6 months, max 18 months.
+  // This avoids false alarms for quarterly or annual payers.
+  const inactiveThreshold = avgIntervalDays && avgIntervalDays > 0
     ? Math.min(Math.max(avgIntervalDays * 3, 180), 548)
     : 180;
 
-  if (currentGapDays >= previousThreshold) return "previous";
+  if (currentGapDays >= inactiveThreshold) return "inactive";
 
-  // Active client — evaluate payment timeliness against their own pattern
-  if (avgIntervalDays === null || avgIntervalDays === 0) return "green";
-  if (currentGapDays > avgIntervalDays * 1.5) return "red";
-  if (currentGapDays > avgIntervalDays * 1.2) return "yellow";
-  return "green";
+  // Active client — evaluate timeliness against their own historical pattern
+  if (avgIntervalDays === null || avgIntervalDays === 0) return "current";
+  if (currentGapDays > avgIntervalDays * 1.5) return "risk";
+  if (currentGapDays > avgIntervalDays * 1.2) return "watch";
+  return "current";
 }
 
 function computeDependencyRisk(pct: number): DependencyRisk {
@@ -110,19 +118,19 @@ function computeTrend(monthly: MonthlyRevenue[]): TrendResult {
   return { trend: "stable", trendPct: pct };
 }
 
+// ── Insights & actions ────────────────────────────────────────────────────────
+
 type PartialProfile = Omit<ClientRiskProfile, "insights" | "actions">;
 
 function buildInsights(p: PartialProfile): ClientInsight[] {
   const insights: ClientInsight[] = [];
-  const isPrevious = p.status === "previous";
+  const isInactive = p.status === "inactive";
 
-  // Delay warnings are only meaningful for active clients — a previous client
-  // has simply concluded their engagement, not failed to pay.
-  if (!isPrevious) {
-    if (p.status === "green" && p.paymentCount >= 5 && p.monthsActive >= 3) {
+  if (!isInactive) {
+    if (p.status === "current" && p.paymentCount >= 5 && p.monthsActive >= 3) {
       insights.push({ type: "reliable", params: { count: p.paymentCount, months: p.monthsActive } });
     }
-    if ((p.status === "yellow" || p.status === "red") && p.avgIntervalDays !== null && p.avgIntervalDays > 0) {
+    if ((p.status === "watch" || p.status === "risk") && p.avgIntervalDays !== null && p.avgIntervalDays > 0) {
       insights.push({ type: "delayWarning", params: { avgDays: Math.round(p.avgIntervalDays), currentGap: p.currentGapDays } });
     }
   }
@@ -131,7 +139,7 @@ function buildInsights(p: PartialProfile): ClientInsight[] {
     insights.push({ type: "dependency", params: { pct: p.revenueContributionPct } });
   }
 
-  if (!isPrevious && p.revenueTrend === "declining" && p.revenueTrendPct !== null) {
+  if (!isInactive && p.revenueTrend === "declining" && p.revenueTrendPct !== null) {
     insights.push({ type: "decline", params: { pct: p.revenueTrendPct } });
   }
 
@@ -146,9 +154,9 @@ function buildActions(p: PartialProfile): ClientAction[] {
   const actions: ClientAction[] = [];
   const isOverdue = p.avgIntervalDays !== null && p.currentGapDays > p.avgIntervalDays * 1.2;
 
-  // Previous clients are not owed a payment — no follow-up action needed.
-  if (p.status !== "previous") {
-    if (p.status === "red" || (p.status === "yellow" && isOverdue)) {
+  // Inactive clients have no outstanding payment — no follow-up needed
+  if (p.status !== "inactive") {
+    if (p.status === "risk" || (p.status === "watch" && isOverdue)) {
       actions.push({ type: "followUp" });
     }
     if (p.revenueTrend === "declining") {
@@ -164,16 +172,18 @@ function buildActions(p: PartialProfile): ClientAction[] {
 }
 
 function computeReliabilityScore(p: PartialProfile): ReliabilityScore {
-  if (p.status === "previous") return "previous";
-  if (p.status === "red") return "risk";
-  if (p.status === "yellow") return "watch";
+  if (p.status === "inactive") return "inactive";
+  if (p.status === "risk")     return "risk";
+  if (p.status === "watch")    return "watch";
   if (p.paymentCount >= 6 && p.monthsActive >= 4 && p.revenueTrend !== "declining") return "excellent";
-  if (p.paymentCount >= 3) return "good";
+  if (p.paymentCount >= 3)     return "good";
   return "watch";
 }
 
+// ── Main export ───────────────────────────────────────────────────────────────
+
 export async function getClientRiskProfiles(userId: string): Promise<ClientRiskCenterData> {
-  // Primary: intent-classified income only
+  // Primary: intent-classified income (most accurate signal for real client payments)
   let txs = await prisma.transaction.findMany({
     where: { userId, intent: { in: ["freelance_income", "salary"] } },
     select: { description: true, amount: true, transactionDate: true, category: true },
@@ -183,9 +193,7 @@ export async function getClientRiskProfiles(userId: string): Promise<ClientRiskC
   const hasIntentData = txs.length >= 3;
 
   // Fallback: income filtered to likely client receipts.
-  // Refunds (category "refund") are reversed user purchases, never a client payment.
-  // The minimum amount (5) eliminates bank interest credits, cashback rounding,
-  // and other micro-transactions that would otherwise appear as bogus client names.
+  // Excludes refunds (reversed user purchases) and micro-amounts (bank interest, cashback).
   if (!hasIntentData) {
     txs = await prisma.transaction.findMany({
       where: {
@@ -200,7 +208,7 @@ export async function getClientRiskProfiles(userId: string): Promise<ClientRiskC
   }
 
   if (txs.length === 0) {
-    return { clients: [], totalRevenue: 0, currentCount: 0, followUpCount: 0, previousCount: 0, hasIntentData: false };
+    return { clients: [], totalRevenue: 0, currentCount: 0, followUpCount: 0, inactiveCount: 0, hasIntentData: false };
   }
 
   const locale = (await getLocale()) as Locale;
@@ -219,13 +227,79 @@ export async function getClientRiskProfiles(userId: string): Promise<ClientRiskC
 
   const totalRevenue = txs.reduce((s, t) => s + Number(t.amount), 0);
 
-  const map: Record<string, { name: string; txs: { amount: number; date: Date; description: string }[] }> = {};
+  // ── Phase 1: Extract and group by alias-normalized key ───────────────────────
+  // Two-level grouping:
+  //   aliasKey → canonicalName → { txs[], confidence, isProcessor }
+  //
+  // aliasKey strips legal suffixes so "ACME LTD" and "ACME LIMITED" map to the
+  // same key. The canonical name is the one that appears most often.
+
+  const aliasGroups: Record<string, {
+    names: Record<string, { count: number; confidence: ClientConfidence; isProcessor: boolean }>;
+    txs: { amount: number; date: Date; description: string }[];
+  }> = {};
+
   for (const tx of txs) {
-    const { name } = extractClientName(tx.description, tx.category);
-    const key = name.toUpperCase();
-    if (!map[key]) map[key] = { name, txs: [] };
-    map[key].txs.push({ amount: Number(tx.amount), date: new Date(tx.transactionDate), description: tx.description });
+    const result = extractClientName(tx.description, tx.category);
+
+    // Low or unknown confidence → merge into the unidentified bucket
+    const effectiveName =
+      result.confidence === "unknown" || result.confidence === "low"
+        ? UNIDENTIFIED_SOURCE
+        : result.name;
+
+    const aliasKey = normalizeForAlias(effectiveName);
+
+    if (!aliasGroups[aliasKey]) {
+      aliasGroups[aliasKey] = { names: {}, txs: [] };
+    }
+
+    const nameKey = effectiveName.toUpperCase();
+    if (!aliasGroups[aliasKey].names[nameKey]) {
+      aliasGroups[aliasKey].names[nameKey] = { count: 0, confidence: result.confidence, isProcessor: result.isProcessor };
+    }
+    aliasGroups[aliasKey].names[nameKey].count += 1;
+
+    aliasGroups[aliasKey].txs.push({
+      amount: Number(tx.amount),
+      date: new Date(tx.transactionDate),
+      description: tx.description,
+    });
   }
+
+  // ── Phase 2: Pick canonical name per group ────────────────────────────────────
+  // Canonical = the name variant with the highest payment count.
+  // Confidence = that of the most-used variant.
+
+  const map: Record<string, {
+    name: string;
+    confidence: ClientConfidence;
+    isProcessor: boolean;
+    txs: { amount: number; date: Date; description: string }[];
+  }> = {};
+
+  for (const [aliasKey, group] of Object.entries(aliasGroups)) {
+    const canonical = Object.entries(group.names)
+      .sort((a, b) => b[1].count - a[1].count)[0];
+
+    // Use the correctly-cased name from the first transaction that produced it
+    // (extractClientName already title-cases), not the uppercased map key.
+    // We need to re-extract for the canonical key — take the most common name's
+    // display form directly from what extractClientName already returned.
+    // Since we stored it title-cased as effectiveName above, recover from the key:
+    const displayName = canonical[0] === UNIDENTIFIED_SOURCE.toUpperCase()
+      ? UNIDENTIFIED_SOURCE
+      : canonical[0].split(" ").map(w => w[0] + w.slice(1).toLowerCase()).join(" ");
+
+    map[aliasKey] = {
+      name: displayName,
+      confidence: canonical[1].confidence,
+      isProcessor: canonical[1].isProcessor,
+      txs: group.txs,
+    };
+  }
+
+  // ── Phase 3: Build risk profiles ─────────────────────────────────────────────
 
   const profiles: ClientRiskProfile[] = Object.values(map).map(c => {
     const sorted = [...c.txs].sort((a, b) => a.date.getTime() - b.date.getTime());
@@ -233,7 +307,8 @@ export async function getClientRiskProfiles(userId: string): Promise<ClientRiskC
     const first     = sorted[0].date;
     const last      = sorted[sorted.length - 1].date;
     const currentGapDays = Math.max(0, Math.floor((today.getTime() - last.getTime()) / 86_400_000));
-    const monthsActive = (last.getUTCFullYear() - first.getUTCFullYear()) * 12 + (last.getUTCMonth() - first.getUTCMonth()) + 1;
+    const monthsActive = (last.getUTCFullYear() - first.getUTCFullYear()) * 12
+                       + (last.getUTCMonth() - first.getUTCMonth()) + 1;
 
     let avgIntervalDays: number | null = null;
     if (sorted.length >= 2) {
@@ -245,7 +320,7 @@ export async function getClientRiskProfiles(userId: string): Promise<ClientRiskC
     }
 
     const revenueContributionPct = totalRevenue > 0 ? Math.round((totalRev / totalRevenue) * 100) : 0;
-    const avgPayment   = Math.round(totalRev / sorted.length);
+    const avgPayment    = Math.round(totalRev / sorted.length);
     const largestPayment = Math.max(...sorted.map(t => t.amount));
 
     const monthlyRevenue: MonthlyRevenue[] = months6.map(m => ({
@@ -257,7 +332,7 @@ export async function getClientRiskProfiles(userId: string): Promise<ClientRiskC
 
     const { trend, trendPct } = computeTrend(monthlyRevenue);
     const status = computeStatus(avgIntervalDays, currentGapDays);
-    const lifecycle: ClientLifecycle = status === "previous" ? "previous" : "current";
+    const lifecycle: ClientLifecycle = status === "inactive" ? "inactive" : "current";
     const dependencyRisk = computeDependencyRisk(revenueContributionPct);
 
     const recentMonthlyAvg = ((monthlyRevenue[3]?.amount ?? 0) + (monthlyRevenue[4]?.amount ?? 0) + (monthlyRevenue[5]?.amount ?? 0)) / 3;
@@ -265,6 +340,8 @@ export async function getClientRiskProfiles(userId: string): Promise<ClientRiskC
 
     const partial: PartialProfile = {
       name: c.name,
+      confidence: c.confidence,
+      isProcessor: c.isProcessor,
       totalRevenue: totalRev,
       revenueContributionPct,
       paymentCount: sorted.length,
@@ -285,20 +362,26 @@ export async function getClientRiskProfiles(userId: string): Promise<ClientRiskC
       reliabilityScore: "good", // placeholder, overwritten below
       recentMonthlyAvg,
       priorMonthlyAvg,
+      rawDescriptions: [...new Set(sorted.map(t => t.description))],
     };
 
     const reliabilityScore = computeReliabilityScore(partial);
     return { ...partial, reliabilityScore, insights: buildInsights(partial), actions: buildActions(partial) };
   });
 
-  profiles.sort((a, b) => b.totalRevenue - a.totalRevenue);
+  // Sort: identified clients by revenue, unidentified last
+  profiles.sort((a, b) => {
+    if (a.name === UNIDENTIFIED_SOURCE && b.name !== UNIDENTIFIED_SOURCE) return 1;
+    if (b.name === UNIDENTIFIED_SOURCE && a.name !== UNIDENTIFIED_SOURCE) return -1;
+    return b.totalRevenue - a.totalRevenue;
+  });
 
   return {
-    clients:      profiles,
+    clients:       profiles,
     totalRevenue,
     currentCount:  profiles.filter(p => p.lifecycle === "current").length,
-    followUpCount: profiles.filter(p => p.status === "yellow" || p.status === "red").length,
-    previousCount: profiles.filter(p => p.lifecycle === "previous").length,
+    followUpCount: profiles.filter(p => p.status === "watch" || p.status === "risk").length,
+    inactiveCount: profiles.filter(p => p.lifecycle === "inactive").length,
     hasIntentData,
   };
 }

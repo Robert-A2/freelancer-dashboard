@@ -1063,8 +1063,8 @@
     "summary": {
       "totalClients": "Total clients",
       "current": "Actifs",
-      "followUp": "À relancer",
-      "previous": "Anciens"
+      "followUp": "À surveiller",
+      "inactive": "Inactifs"
     },
     "alerts": {
       "late": "Paiement en retard de {days, plural, one {# jour} other {# jours}} par rapport à l'intervalle habituel",
@@ -1078,10 +1078,11 @@
       "ofIncome": "{pct}% des revenus"
     },
     "status": {
-      "green": "Fiable",
-      "yellow": "À relancer",
-      "red": "En retard",
-      "previous": "Ancien client"
+      "current": "Actif",
+      "watch": "À suivre",
+      "risk": "En retard",
+      "inactive": "Inactif",
+      "unidentified": "Identité non vérifiée"
     },
     "dependency": {
       "low": "Risque faible",
@@ -1152,13 +1153,13 @@
         "singlePayment": "Un seul paiement enregistré de ce client jusqu'à présent."
       },
       "actions": {
-        "title": "Actions recommandées",
-        "followUp": "Relancer",
-        "followUpReason": "L'écart de paiement actuel dépasse la moyenne historique.",
-        "monitor": "Surveiller",
-        "monitorReason": "Les revenus de ce client sont en baisse.",
-        "noAction": "Aucune action requise",
-        "noActionReason": "Ce client reste régulier. Aucune relance nécessaire."
+        "title": "Signaux de paiement",
+        "followUp": "Écart de paiement détecté",
+        "followUpReason": "L'écart actuel dépasse l'intervalle habituel de ce client.",
+        "monitor": "Revenus en baisse",
+        "monitorReason": "Les revenus de ce client ont diminué par rapport à la période précédente.",
+        "noAction": "Dans les délais",
+        "noActionReason": "Ce client paie régulièrement dans son intervalle habituel."
       },
       "history": {
         "title": "Historique des paiements",
@@ -1172,17 +1173,17 @@
         "rank": "Votre #{rank}e client par revenu total."
       },
       "reliability": {
-        "title": "Évaluation de la fiabilité",
+        "title": "Fiabilité des paiements",
         "excellent": "Excellent",
         "good": "Bon",
-        "watch": "À relancer",
+        "watch": "À surveiller",
         "risk": "En retard",
-        "previous": "Ancien client",
-        "excellentDesc": "Longue relation avec des paiements réguliers et dans les délais. Aucune action requise.",
-        "goodDesc": "Historique de paiements régulier. Actuellement dans les délais.",
-        "watchDesc": "Paiement légèrement au-delà de l'intervalle habituel. Un contact peut être utile.",
+        "inactive": "Inactif",
+        "excellentDesc": "Longue relation avec des paiements réguliers et dans les délais.",
+        "goodDesc": "Historique de paiements régulier — actuellement dans les délais.",
+        "watchDesc": "Paiement légèrement au-delà de l'intervalle habituel.",
         "riskDesc": "Paiement significativement au-delà de l'intervalle habituel.",
-        "previousDesc": "Ce client n'a aucune activité récente. La relation semble avoir pris fin naturellement. L'historique complet des paiements est visible dans la chronologie ci-dessous."
+        "inactiveDesc": "Aucune activité de paiement récente enregistrée. L'historique complet est visible dans la chronologie ci-dessous."
       },
       "revenueStory": {
         "title": "Historique des revenus",
@@ -1228,10 +1229,14 @@
         "showingRecent": "{count, plural, one {Affichage du dernier paiement} other {Affichage des # derniers paiements}}",
         "gap": "Écart"
       },
-      "previousClient": {
-        "label": "Ancien client",
-        "note": "Ce client n'a aucune activité de paiement récente. La relation semble avoir pris fin naturellement. Si la collaboration était bonne et que vous souhaitez retravailler ensemble, vous pouvez le contacter — mais il n'y a aucun paiement en attente à relancer."
-      }
+      "inactiveClient": {
+        "label": "Client inactif",
+        "note": "Aucune activité de paiement récente enregistrée pour ce client. L'historique complet des paiements est disponible dans la chronologie ci-dessous."
+      },
+      "identityUnknown": "Identité du client non déterminée",
+      "identityUnknownTitle": "Source de revenus non identifiée",
+      "identityUnknownNote": "Une ou plusieurs transactions de revenus n'ont pas pu être associées à un client spécifique. La description bancaire ne contenait pas suffisamment d'informations pour extraire un nom fiable. Les données de paiement et la chronologie ci-dessous sont exactes.",
+      "identityTimelineNote": "Ces transactions sont regroupées car leurs descriptions bancaires partagent un schéma commun — mais la source ne peut pas être identifiée avec certitude."
     }
   },
   "intent": {
