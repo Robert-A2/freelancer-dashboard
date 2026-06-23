@@ -550,11 +550,28 @@ export function extractClientName(description: string, category: string): { name
 }
 
 export async function getClientInsights(userId: string): Promise<ClientInsightsData | null> {
-  const allTxs = await prisma.transaction.findMany({
-    where: { userId, transactionType: "income" },
+  // Primary: intent-classified income only (most accurate client signal).
+  // Fall back to filtered income when the user has fewer than 3 classified transactions.
+  let allTxs = await prisma.transaction.findMany({
+    where: { userId, intent: { in: ["freelance_income", "salary"] } },
     select: { description: true, amount: true, transactionDate: true, category: true },
     orderBy: { transactionDate: "asc" },
   });
+
+  if (allTxs.length < 3) {
+    // Fallback: exclude refunds (reversed purchases, not client income) and
+    // amounts below €5 (bank interest, cashback rounding, micro-credits).
+    allTxs = await prisma.transaction.findMany({
+      where: {
+        userId,
+        transactionType: "income",
+        amount: { gte: 5 },
+        NOT: { category: { in: ["refund"] } },
+      },
+      select: { description: true, amount: true, transactionDate: true, category: true },
+      orderBy: { transactionDate: "asc" },
+    });
+  }
 
   if (allTxs.length < 3) return null;
 

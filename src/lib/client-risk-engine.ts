@@ -182,10 +182,18 @@ export async function getClientRiskProfiles(userId: string): Promise<ClientRiskC
 
   const hasIntentData = txs.length >= 3;
 
-  // Fallback: all income transactions when intent data is insufficient
+  // Fallback: income filtered to likely client receipts.
+  // Refunds (category "refund") are reversed user purchases, never a client payment.
+  // The minimum amount (5) eliminates bank interest credits, cashback rounding,
+  // and other micro-transactions that would otherwise appear as bogus client names.
   if (!hasIntentData) {
     txs = await prisma.transaction.findMany({
-      where: { userId, transactionType: "income" },
+      where: {
+        userId,
+        transactionType: "income",
+        amount: { gte: 5 },
+        NOT: { category: { in: ["refund"] } },
+      },
       select: { description: true, amount: true, transactionDate: true, category: true },
       orderBy: { transactionDate: "asc" },
     });

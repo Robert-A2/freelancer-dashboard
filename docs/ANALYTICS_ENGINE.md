@@ -13,7 +13,11 @@ Added 2026-06-22. Powers the `/clients` and `/clients/[name]` pages.
 
 ### Data source
 
-Queries `intent IN ['freelance_income', 'salary']` — the intent-classified income transactions only. Falls back to `transactionType = 'income'` if fewer than 3 intent-classified rows exist (and sets `hasIntentData: false` to warn the UI). Never uses savings transfers, internal transfers, refunds, or expenses.
+Queries `intent IN ['freelance_income', 'salary']` — the intent-classified income transactions only. Falls back to a **filtered** income query if fewer than 3 intent-classified rows exist (and sets `hasIntentData: false` to warn the UI). The fallback excludes:
+- `category = 'refund'` — reversed purchases (Amazon refund, bank cashback) are never client payments
+- `amount < 5` — eliminates bank interest credits, cashback rounding, and other micro-transactions that would otherwise create bogus client names
+
+Never uses savings transfers or internal transfers.
 
 Client names are extracted via `extractClientName()` (now exported from `analytics-engine.ts`) — the same normalisation used by `getClientInsights`.
 
@@ -268,7 +272,9 @@ Feeds the intelligence engine's `clientConcentration` / `incomeReasonablyDiversi
 
 ## 9. `getClientInsights(userId)` — full client/revenue breakdown
 
-The most involved function in this file. Returns `null` if the user has fewer than **3** income transactions total (not enough data to build meaningful client profiles).
+The most involved function in this file. Returns `null` if fewer than **3** qualifying transactions exist.
+
+**Data source (mirroring `client-risk-engine.ts`):** Prefers `intent IN ['freelance_income', 'salary']` transactions. Falls back to filtered income (`transactionType = 'income'`, `amount >= 5`, `category ≠ 'refund'`) when fewer than 3 intent-classified rows exist. This ensures only real client receipts feed client profiles — refunds, bank interest, and cashback noise are excluded.
 
 ### Step 1 — `extractClientName(description, category)`
 
