@@ -915,18 +915,18 @@
       "monthsCount": "{positive} sur {total} mois",
       "whatHappened": "Que s'est-il passé ?",
       "whyHappened": "Pourquoi ?",
-      "whatNext": "Que faire ensuite ?",
+      "whatNext": "Ce que cela montre",
       "narrative": {
         "summary": "<b>{positive}</b> mois sur <b>{total}</b> ont eu un flux de trésorerie positif (<b>{pct} %</b>).",
         "noNegativeMonths": "Aucun mois négatif enregistré.",
         "negativeMonthsCount": "{count, plural, one {<b>#</b> mois a eu} other {<b>#</b> mois ont eu}} des dépenses supérieures aux revenus.",
         "whyBothNeg": "Des baisses de revenus et des dépenses supérieures à la moyenne sont survenues en même temps {count, plural, one {sur <b>#</b> mois} other {sur <b>#</b> mois}}. Lorsque les deux se combinent, la trésorerie devient rapidement négative.",
-        "whyLowIncome": "Les revenus sont passés sous votre moyenne mensuelle dans <b>{lowCount}</b> des {count, plural, one {<b>#</b> mois négatif} other {<b>#</b> mois négatifs}}. Les dépenses étaient globalement normales — le problème venait des revenus.",
-        "whyHighExpenses": "Les dépenses ont dépassé votre niveau habituel dans <b>{highCount}</b> des {count, plural, one {<b>#</b> mois négatif} other {<b>#</b> mois négatifs}}. Les revenus sont restés stables — le problème venait des dépenses.",
-        "actionBuildReserve": "Constituez une réserve équivalente à 2 mois de revenus. Une marge de sécurité absorbe l'impact lorsque les revenus et les dépenses évoluent défavorablement en même temps.",
-        "actionStabiliseClients": "Stabilisez votre portefeuille de clients. Des accords de rétention, une facturation plus rapide ou une réserve de paiement de 60 jours réduisent tous l'impact des mois à faibles revenus.",
-        "actionExpenseCeiling": "Fixez un plafond de dépenses mensuel avant le début de chaque mois. Passez en revue vos coûts récurrents chaque trimestre.",
-        "actionAutomateSurplus": "Tous les mois sont positifs. Envisagez d'automatiser un virement mensuel fixe pour sécuriser l'excédent avant qu'il ne soit dépensé.",
+        "whyLowIncome": "Les revenus sont passés sous votre moyenne mensuelle dans <b>{lowCount}</b> des {count, plural, one {<b>#</b> mois négatif} other {<b>#</b> mois négatifs}}. Les dépenses étaient globalement normales durant ces mois.",
+        "whyHighExpenses": "Les dépenses ont dépassé votre niveau habituel dans <b>{highCount}</b> des {count, plural, one {<b>#</b> mois négatif} other {<b>#</b> mois négatifs}}. Les revenus sont restés stables durant ces mois.",
+        "actionBuildReserve": "{count, plural, one {# mois a enregistré} other {# mois ont enregistré}} une baisse simultanée des revenus et une hausse des dépenses — un schéma à examiner.",
+        "actionStabiliseClients": "Des revenus faibles ont été le principal facteur des {count, plural, one {# mois négatif} other {# mois négatifs}}. Vérifiez si des factures en attente ou des paiements retardés ont pu contribuer.",
+        "actionExpenseCeiling": "Des dépenses supérieures à la moyenne ont été à l'origine des {count, plural, one {# mois négatif} other {# mois négatifs}}. Examinez si cela reflète des coûts ponctuels, des changements récurrents ou une activité professionnelle.",
+        "actionAutomateSurplus": "Tous les mois enregistrés ont affiché un flux de trésorerie positif — les revenus ont constamment dépassé les dépenses sur toute cette période.",
         "stabilityImproving": "Moins de mois négatifs ont été détectés dans la seconde moitié de cette période que dans la première. La trésorerie devient plus stable.",
         "stabilityWeakening": "Davantage de mois négatifs sont survenus dans la seconde moitié que dans la première. La stabilité de la trésorerie se dégrade.",
         "stabilityUnchanged": "Le nombre de mois négatifs est resté stable. La stabilité de la trésorerie n'a pas changé."
@@ -1141,7 +1141,7 @@
         "trendIncreasing": "↑ +{pct}%",
         "trendStable": "→ Stable",
         "trendDeclining": "↓ -{pct}%",
-        "doubleRisk": "Forte dépendance à ce client combinée à une baisse globale des revenus — diversifier les sources de revenus est une priorité."
+        "doubleRisk": "Forte dépendance à ce client combinée à une baisse globale des revenus — deux schémas qui se produisent simultanément."
       },
       "insights": {
         "title": "Analyses",
@@ -1181,7 +1181,7 @@
         "excellentDesc": "Longue relation avec des paiements réguliers et dans les délais. Aucune action requise.",
         "goodDesc": "Historique de paiements régulier. Actuellement dans les délais.",
         "watchDesc": "Paiement légèrement au-delà de l'intervalle habituel. Un contact peut être utile.",
-        "riskDesc": "Paiement significativement au-delà de l'intervalle habituel. Envisagez de prendre contact.",
+        "riskDesc": "Paiement significativement au-delà de l'intervalle habituel.",
         "previousDesc": "Ce client n'a aucune activité récente. La relation semble avoir pris fin naturellement. L'historique complet des paiements est visible dans la chronologie ci-dessous."
       },
       "revenueStory": {
@@ -1214,8 +1214,8 @@
         "major": "Majeur",
         "critical": "Critique",
         "manageableDesc": "Votre diversification des revenus est solide. Cette perte serait ressentie mais gérable.",
-        "significantDesc": "Vous ressentiriez cette perte. Remplacer ces revenus devrait être une priorité à court terme.",
-        "majorDesc": "Cela causerait une disruption majeure. Diversifiez votre base de clients dès maintenant.",
+        "significantDesc": "Vous ressentiriez cette perte. Ce client représente une part significative de vos revenus.",
+        "majorDesc": "Cela causerait une disruption majeure. Ce client représente une large portion de vos revenus totaux.",
         "criticalDesc": "Ce client est le pilier de vos revenus. Le perdre serait financièrement critique."
       },
       "timeline": {
@@ -1330,7 +1330,7 @@
     "categoryFell": "Les dépenses en <b>{category}</b> ont diminué de <b>{pct} %</b> en {years, plural, one {# an} other {# ans}} — passant de <b>{fromAmount}</b> en {fromYear} à <b>{toAmount}</b> en {toYear}.",
     "categoryDoubled": "Les dépenses en <b>{category}</b> ont plus que doublé, passant de <b>{fromAmount}</b> en {fromYear} à <b>{toAmount}</b> en {toYear}.",
     "categorySubscriptionsGrewEveryYear": "Les coûts liés à <b>{category}</b> ont augmenté chaque année depuis {fromYear}, passant de <b>{fromAmount}</b> à <b>{toAmount}</b> en {toYear}.",
-    "clientConcentration": "{hasSource, select, yes {<b>{source}</b> représente <b>{pct} %</b> de vos revenus} other {Une seule source représente <b>{pct} %</b> de vos revenus}} — dépendre fortement d'un seul client est un risque à surveiller.",
+    "clientConcentration": "{hasSource, select, yes {<b>{source}</b> représente <b>{pct} %</b> de vos revenus} other {Une seule source représente <b>{pct} %</b> de vos revenus}} — une forte concentration sur une seule source.",
     "incomeReasonablyDiversified": "Vos revenus sont raisonnablement diversifiés sur <b>{total, plural, one {# source} other {# sources}}</b>, votre principale source représentant <b>{pct} %</b>.",
     "context": {
       "incomeAboveAvg": "{incomeType, select, salary {Votre salaire} other {Vos revenus}} ce mois-ci, <b>{current}</b>, {incomeType, select, salary {est} other {sont}} {incomeType, select, salary {supérieur} other {supérieurs}} de <b>{pct} %</b> à votre moyenne sur {months, plural, one {le dernier mois} other {les # derniers mois}} (<b>{avg}</b>).",
@@ -1356,7 +1356,7 @@
       "expensesJumped": "Les dépenses ont bondi de <b>{ecPct} %</b> ce mois-ci{driverCount, select, 1 { — principalement à cause de <b>{cat1}</b> (<b>{amt1}</b> de plus).} other { — principalement à cause de <b>{cat1}</b> (<b>{amt1}</b> de plus) et <b>{cat2}</b> (<b>{amt2}</b> de plus).}}",
       "cashflowImprovedMeaningfully": "La trésorerie s'est nettement améliorée par rapport au mois dernier.",
       "stable": "Les revenus et les dépenses sont restés globalement stables par rapport au mois dernier.",
-      "suggestSaveExtra": "Revenus en hausse, dépenses en baisse — la meilleure combinaison. Mettez cette marge à profit : renforcez votre épargne de précaution ou transférez-la en épargne.",
+      "suggestSaveExtra": "Revenus en hausse, dépenses en baisse — la meilleure combinaison. Ce mois a dégagé plus de marge que le précédent.",
       "suggestWatchDriver": "<b>{cat1}</b> représente le mouvement de dépenses le plus important ce mois-ci, en hausse de <b>{amt1}</b>. Examinez si cela reflète un coût ponctuel, un changement récurrent ou une activité normale.",
       "suggestExpenseCeiling": "Les revenus ont progressé plus vite que les dépenses ce mois-ci. Aucune catégorie ne se distingue comme principal changement de dépenses.",
       "suggestExpenseReview": "<b>{cat1}</b> était le principal poste de dépenses ce mois-ci à <b>{amt1}</b>. Examinez s'il s'agit d'un coût ponctuel, d'un schéma récurrent ou d'une activité liée à un client.",
@@ -1364,8 +1364,8 @@
       "suggestDoublePressureGeneric": "Les revenus ont baissé tandis que les dépenses ont augmenté ce mois-ci. Examinez quelles catégories de dépenses ont progressé et vérifiez si des paiements clients sont encore en attente.",
       "suggestIncomeDecline": "{incomeType, select, freelance {Vérifiez si des paiements clients sont encore en attente — une seule facture encaissée peut changer le bilan de ce mois.} salary {Vérifiez votre calendrier de paie et contrôlez si des retenues ont changé de façon inattendue.} other {Vérifiez si une source de revenus attendue a été interrompue ce mois-ci et si des factures sont encore en attente.}}",
       "suggestExpenseBudget": "<b>{cat1}</b> représente la plus forte hausse de dépenses ce mois-ci, en hausse de <b>{amt1}</b>. Examinez s'il s'agit d'un coût ponctuel, d'un changement récurrent ou d'une activité liée à un client.",
-      "suggestBuildRunway": "Profitez de cette bonne dynamique — mettez de côté une partie de ce flux positif comme réserve pour un mois plus calme.",
-      "suggestStability": "La stabilité est une force. Utilisez cette période pour renforcer votre épargne de précaution ou revoir votre objectif d'épargne."
+      "suggestBuildRunway": "Ce mois a dégagé un flux de trésorerie positif — les revenus ont dépassé les dépenses plus que d'habitude.",
+      "suggestStability": "Les revenus et les dépenses sont stables sur les derniers mois — un schéma régulier."
     },
     "snapshot": {
       "uploadPrompt": "Importez votre relevé bancaire pour obtenir des analyses personnalisées de vos finances.",
@@ -1420,7 +1420,7 @@
       "incompleteDataWarning": "Les revenus récents (<b>{recentAvg}</b>/mois) sont bien inférieurs à votre moyenne historique (<b>{historicalAvg}</b>/mois) — certains comptes n'ont peut-être pas encore été importés."
     },
     "forecast": {
-      "incomeYoYDrop": "{incomeType, select, freelance {Les revenus clients ont} salary {Le revenu salarial a} mixed {Les revenus ont} other {Les revenus ont}} chuté de <b>{pct} %</b>, passant de <b>{prevAmount}</b> en {prevYear} à <b>{lastAmount}</b> en {lastYear} — c'est un point à traiter en priorité.",
+      "incomeYoYDrop": "{incomeType, select, freelance {Les revenus clients ont} salary {Le revenu salarial a} mixed {Les revenus ont} other {Les revenus ont}} chuté de <b>{pct} %</b>, passant de <b>{prevAmount}</b> en {prevYear} à <b>{lastAmount}</b> en {lastYear}.",
       "basis": "{months, plural, one {Basé sur # mois d'historique.} other {Basé sur # mois d'historique.}}",
       "cashflowPositiveHigh": "La trésorerie a été positive sur <b>{posMonths}</b> des <b>{totalMonths}</b> derniers mois — une base solide pour cette prévision.",
       "cashflowPositiveMedium": "La trésorerie a été positive sur <b>{posMonths}</b> des <b>{totalMonths}</b> derniers mois.",
@@ -1437,19 +1437,19 @@
       "deficitExpenseDriven": "La hausse des dépenses est le principal facteur — <b>{category}</b> représente à lui seul <b>{amount}</b> (<b>{pct} %</b> des dépenses récentes){growing, select, yes {, et cette catégorie augmente d'année en année} other {}}, face à des revenus moyens de <b>{recentIncome}</b>.",
       "deficitExpensesExceedIncome": "Les dépenses (<b>{recentExpenses}</b>) dépassent simplement les revenus (<b>{recentIncome}</b>) — <b>{category}</b> est votre principale dépense avec <b>{amount}</b> (<b>{pct} %</b>){growing, select, yes {, et cette catégorie augmente d'année en année} other {}}.",
       "deficitGeneral": "Les dépenses (<b>{recentExpenses}</b>) dépassent simplement les revenus (<b>{recentIncome}</b>) en moyenne.",
-      "reduceSubscriptions": "Réduire les coûts en <b>{category}</b> de <b>{reduction}</b>/mois permettrait d'économiser <b>{annual}</b> par an.",
+      "reduceSubscriptions": "Les coûts en <b>{category}</b> s'élèvent à <b>{reduction}</b>/mois — <b>{annual}</b>/an au total.",
       "restoreCashflow": "Combler l'écart projeté de <b>{amount}</b>/mois permettrait de retrouver une trésorerie positive.",
-      "marginLow": "Votre marge de trésorerie projetée de <b>{pct} %</b> est plutôt faible — constituer une réserve aiderait à absorber les imprévus.",
+      "marginLow": "Votre marge de trésorerie projetée est de <b>{pct} %</b> — les coûts absorbent la majeure partie des revenus.",
       "marginHealthy": "Votre marge de trésorerie projetée de <b>{pct} %</b> est saine — continuez ainsi."
     },
     "opportunity": {
-      "restoreCashflow": "Combler l'écart projeté de <b>{amount}</b>/mois permettrait d'économiser <b>{annual}</b> par an et de retrouver une trésorerie positive.",
-      "reviewSubscriptions": "Revoir vos dépenses en <b>{category}</b> (<b>{monthly}</b>/mois, <b>{annual}</b>/an) pourrait libérer une trésorerie non négligeable.",
-      "increaseMargin": "Augmenter votre marge de trésorerie de <b>{amount}</b>/mois représenterait jusqu'à <b>{annual}</b> d'économies par an.",
-      "maintainConsistency": "Maintenez des niveaux de revenus et de trésorerie constants — vos habitudes actuelles sont durables."
+      "restoreCashflow": "L'écart projeté est de <b>{amount}</b>/mois — <b>{annual}</b>/an au rythme actuel.",
+      "reviewSubscriptions": "Vos dépenses en <b>{category}</b> s'élèvent à <b>{monthly}</b>/mois (<b>{annual}</b>/an).",
+      "increaseMargin": "Votre marge de trésorerie est de <b>{amount}</b>/mois — <b>{annual}</b>/an à ce rythme.",
+      "maintainConsistency": "Les revenus et la trésorerie ont été stables — un schéma cohérent sur les derniers mois."
     },
     "risk": {
-      "incomeExpenseSqueeze": "Les revenus sont en baisse tandis que les dépenses sont en hausse — cette pression est le risque le plus urgent à traiter.",
+      "incomeExpenseSqueeze": "Les revenus sont en baisse tandis que les dépenses sont en hausse — deux tendances opposées qui se produisent simultanément.",
       "categoryFastestGrowing": "<b>{category}</b> est votre dépense qui augmente le plus vite, en hausse de <b>{pct} %</b> entre {fromYear} et {toYear}.",
       "categoryTrendingUp": "Les dépenses en <b>{category}</b> sont en hausse et méritent d'être surveillées.",
       "categoryTrendingUpBrief": "Les dépenses en <b>{category}</b> sont en hausse.",

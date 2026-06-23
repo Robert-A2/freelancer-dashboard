@@ -915,18 +915,18 @@
       "monthsCount": "{positive} of {total} months",
       "whatHappened": "What happened?",
       "whyHappened": "Why did it happen?",
-      "whatNext": "What should I do next?",
+      "whatNext": "What this shows",
       "narrative": {
         "summary": "<b>{positive}</b> of <b>{total}</b> months were cashflow positive (<b>{pct}%</b>).",
         "noNegativeMonths": "No negative months recorded.",
         "negativeMonthsCount": "{count, plural, one {<b>#</b> month had expenses exceeding income.} other {<b>#</b> months had expenses exceeding income.}}",
         "whyBothNeg": "Income dips and above-average expenses occurred together in {count, plural, one {<b>#</b> month} other {<b>#</b> months}}. When both move at once, cashflow turns negative fast.",
-        "whyLowIncome": "Income fell below your monthly average in <b>{lowCount}</b> of the {count, plural, one {<b>#</b> negative month} other {<b>#</b> negative months}}. Expenses were roughly normal — the problem was income.",
-        "whyHighExpenses": "Expenses exceeded your typical level in <b>{highCount}</b> of the {count, plural, one {<b>#</b> negative month} other {<b>#</b> negative months}}. Income held steady — the problem was spending.",
-        "actionBuildReserve": "Build a 2-month income reserve. A buffer absorbs the impact when income and expenses move against you simultaneously.",
-        "actionStabiliseClients": "Stabilise your client pipeline. Retainer agreements, earlier invoicing, or building a 60-day payment buffer all reduce the impact of slow-income months.",
-        "actionExpenseCeiling": "Set a monthly expense ceiling before the month starts. Review your recurring costs quarterly.",
-        "actionAutomateSurplus": "All months are positive. Consider automating a fixed monthly transfer to lock in surplus before it gets spent.",
+        "whyLowIncome": "Income fell below your monthly average in <b>{lowCount}</b> of the {count, plural, one {<b>#</b> negative month} other {<b>#</b> negative months}}. Expenses were roughly normal during those months.",
+        "whyHighExpenses": "Expenses exceeded your typical level in <b>{highCount}</b> of the {count, plural, one {<b>#</b> negative month} other {<b>#</b> negative months}}. Income held steady during those months.",
+        "actionBuildReserve": "In {count, plural, one {# month} other {# months}}, both income and expenses moved against each other simultaneously — a pattern worth reviewing.",
+        "actionStabiliseClients": "Low-income months were the main factor in {count, plural, one {# negative month} other {# negative months}}. Review whether outstanding invoices or delayed payments contributed.",
+        "actionExpenseCeiling": "Above-average expenses drove {count, plural, one {# negative month} other {# negative months}}. Review whether this reflects one-time costs, recurring changes, or business activity.",
+        "actionAutomateSurplus": "All months recorded were cashflow positive — income consistently exceeded expenses across this period.",
         "stabilityImproving": "Fewer negative months were detected in the second half of this period than the first. Cashflow is becoming more stable.",
         "stabilityWeakening": "More negative months occurred in the second half than the first. Cashflow stability is weakening.",
         "stabilityUnchanged": "The number of negative months has stayed consistent. Cashflow stability has not changed."
@@ -1141,7 +1141,7 @@
         "trendIncreasing": "↑ Up {pct}%",
         "trendStable": "→ Stable",
         "trendDeclining": "↓ Down {pct}%",
-        "doubleRisk": "High dependency on this client combined with declining overall revenue — income diversification is a priority."
+        "doubleRisk": "High dependency on this client combined with declining overall revenue — two patterns occurring at the same time."
       },
       "insights": {
         "title": "Insights",
@@ -1181,7 +1181,7 @@
         "excellentDesc": "Long track record with consistent on-time payments. No action needed.",
         "goodDesc": "Regular payment history. Currently on schedule.",
         "watchDesc": "Payment is slightly past their usual interval. Worth checking in.",
-        "riskDesc": "Payment is significantly past their usual interval. Consider reaching out.",
+        "riskDesc": "Payment is significantly past their usual interval.",
         "previousDesc": "This client has no recent activity. Their engagement appears to have concluded naturally. Their full payment history is visible in the timeline below."
       },
       "revenueStory": {
@@ -1214,8 +1214,8 @@
         "major": "Major",
         "critical": "Critical",
         "manageableDesc": "You have solid income diversification. This loss would be felt but you could adapt.",
-        "significantDesc": "You would feel this loss. Replacing this income should be a near-term priority.",
-        "majorDesc": "This would cause major disruption. Start diversifying your client base now.",
+        "significantDesc": "You would feel this loss. This client contributes a significant share of your income.",
+        "majorDesc": "This would cause major disruption. This client represents a large portion of your total income.",
         "criticalDesc": "This client is the backbone of your income. Losing them would be financially critical."
       },
       "timeline": {
@@ -1330,7 +1330,7 @@
     "categoryFell": "<b>{category}</b> spending fell <b>{pct}%</b> over {years, plural, one {# year} other {# years}} — from <b>{fromAmount}</b> in {fromYear} to <b>{toAmount}</b> in {toYear}.",
     "categoryDoubled": "<b>{category}</b> spending more than doubled, from <b>{fromAmount}</b> in {fromYear} to <b>{toAmount}</b> in {toYear}.",
     "categorySubscriptionsGrewEveryYear": "<b>{category}</b> costs have increased every year since {fromYear}, from <b>{fromAmount}</b> to <b>{toAmount}</b> in {toYear}.",
-    "clientConcentration": "{hasSource, select, yes {<b>{source}</b> accounts for <b>{pct}%</b> of your income} other {A single source accounts for <b>{pct}%</b> of your income}} — relying heavily on one client is a risk worth managing.",
+    "clientConcentration": "{hasSource, select, yes {<b>{source}</b> accounts for <b>{pct}%</b> of your income} other {A single source accounts for <b>{pct}%</b> of your income}} — a high concentration in one source.",
     "incomeReasonablyDiversified": "Your income is reasonably diversified across <b>{total, plural, one {# source} other {# sources}}</b>, with your top source making up <b>{pct}%</b>.",
     "context": {
       "incomeAboveAvg": "{incomeType, select, salary {Your salary} other {Your income}} this month, <b>{current}</b>, is <b>{pct}%</b> above your average over {months, plural, one {the last month} other {the last # months}} (<b>{avg}</b>).",
@@ -1356,7 +1356,7 @@
       "expensesJumped": "Expenses jumped <b>{ecPct}%</b> this month{driverCount, select, 1 { — mainly driven by <b>{cat1}</b> (<b>{amt1}</b> more).} other { — mainly driven by <b>{cat1}</b> (<b>{amt1}</b> more) and <b>{cat2}</b> (<b>{amt2}</b> more).}}",
       "cashflowImprovedMeaningfully": "Cashflow improved meaningfully compared to last month.",
       "stable": "Income and expenses were broadly stable compared to last month.",
-      "suggestSaveExtra": "Income up, costs down — the best combination. Put the extra margin to work: top up your emergency reserve or move it into savings.",
+      "suggestSaveExtra": "Income up, costs down — the best combination. This month produced more margin than the previous month.",
       "suggestWatchDriver": "<b>{cat1}</b> was the largest expense movement this month, up <b>{amt1}</b>. Review whether this reflects a one-time cost, a recurring change, or normal business activity.",
       "suggestExpenseCeiling": "Income grew faster than expenses this month. No single category stands out as the main expense change.",
       "suggestExpenseReview": "<b>{cat1}</b> was the largest expense contributor this month at <b>{amt1}</b>. Review whether this is a one-time cost, a recurring pattern, or client-related activity.",
@@ -1364,8 +1364,8 @@
       "suggestDoublePressureGeneric": "Income fell while expenses rose this month. Review which expense categories increased, and check whether any client payments are still outstanding.",
       "suggestIncomeDecline": "{incomeType, select, freelance {Review whether any client payments are still outstanding — one collected invoice can change this month's picture.} salary {Verify your pay schedule and check whether any deductions changed unexpectedly.} other {Review whether any expected income source paused this month, and check whether any invoices are still outstanding.}}",
       "suggestExpenseBudget": "<b>{cat1}</b> was the largest expense increase this month, up <b>{amt1}</b>. Review whether this is a one-time cost, a recurring change, or client-related activity.",
-      "suggestBuildRunway": "Use this positive run — set aside part of the extra cashflow as financial runway for a quieter month ahead.",
-      "suggestStability": "Stability is a strength. Use this steady period to build your emergency reserve or revisit your savings goal."
+      "suggestBuildRunway": "This month produced positive cashflow — income exceeded expenses by more than usual.",
+      "suggestStability": "Income and expenses have been stable across recent months — a consistent pattern."
     },
     "snapshot": {
       "uploadPrompt": "Upload your bank statement to get personalised insights about your finances.",
@@ -1420,7 +1420,7 @@
       "incompleteDataWarning": "Recent income (<b>{recentAvg}</b>/month) is much lower than your historical average (<b>{historicalAvg}</b>/month) — some accounts may not be uploaded yet."
     },
     "forecast": {
-      "incomeYoYDrop": "{incomeType, select, freelance {Client income} salary {Salary income} mixed {Income} other {Income}} fell <b>{pct}%</b> from <b>{prevAmount}</b> in {prevYear} to <b>{lastAmount}</b> in {lastYear} — addressing this should be a priority.",
+      "incomeYoYDrop": "{incomeType, select, freelance {Client income} salary {Salary income} mixed {Income} other {Income}} fell <b>{pct}%</b> from <b>{prevAmount}</b> in {prevYear} to <b>{lastAmount}</b> in {lastYear}.",
       "basis": "{months, plural, one {Based on # month of history.} other {Based on # months of history.}}",
       "cashflowPositiveHigh": "Cashflow has been positive in <b>{posMonths}</b> of the last <b>{totalMonths}</b> months — a strong foundation for this forecast.",
       "cashflowPositiveMedium": "Cashflow has been positive in <b>{posMonths}</b> of the last <b>{totalMonths}</b> months.",
@@ -1437,19 +1437,19 @@
       "deficitExpenseDriven": "Rising expenses are the main driver — <b>{category}</b> alone is <b>{amount}</b> (<b>{pct}%</b> of recent expenses){growing, select, yes {, and it's been growing year over year} other {}}, against average income of <b>{recentIncome}</b>.",
       "deficitExpensesExceedIncome": "Expenses (<b>{recentExpenses}</b>) simply exceed income (<b>{recentIncome}</b>) — <b>{category}</b> is your largest expense at <b>{amount}</b> (<b>{pct}%</b>){growing, select, yes {, and it's been growing year over year} other {}}.",
       "deficitGeneral": "Expenses (<b>{recentExpenses}</b>) simply exceed income (<b>{recentIncome}</b>) on average.",
-      "reduceSubscriptions": "Cutting <b>{category}</b> costs by <b>{reduction}</b>/month would save <b>{annual}</b> per year.",
+      "reduceSubscriptions": "<b>{category}</b> costs are <b>{reduction}</b>/month — <b>{annual}</b>/year in total.",
       "restoreCashflow": "Closing the projected <b>{amount}</b>/month gap would restore positive cashflow.",
-      "marginLow": "Your projected cashflow margin of <b>{pct}%</b> is on the low side — building a buffer would help absorb unexpected costs.",
+      "marginLow": "Your projected cashflow margin is <b>{pct}%</b> — costs are absorbing most of income.",
       "marginHealthy": "Your projected cashflow margin of <b>{pct}%</b> is healthy — keep it up."
     },
     "opportunity": {
-      "restoreCashflow": "Closing the projected <b>{amount}</b>/month gap would save <b>{annual}</b> per year and restore positive cashflow.",
-      "reviewSubscriptions": "Reviewing your <b>{category}</b> spend (<b>{monthly}</b>/month, <b>{annual}</b>/year) could free up meaningful cash.",
-      "increaseMargin": "Increasing your cashflow margin by <b>{amount}</b>/month would add up to <b>{annual}</b> per year in savings.",
-      "maintainConsistency": "Maintain consistent income and cashflow levels — your current patterns are sustainable."
+      "restoreCashflow": "The projected gap is <b>{amount}</b>/month — <b>{annual}</b>/year at the current pace.",
+      "reviewSubscriptions": "Your <b>{category}</b> spend is <b>{monthly}</b>/month (<b>{annual}</b>/year).",
+      "increaseMargin": "Your cashflow margin is <b>{amount}</b>/month — <b>{annual}</b>/year at this pace.",
+      "maintainConsistency": "Income and cashflow have been consistent — a stable pattern across recent months."
     },
     "risk": {
-      "incomeExpenseSqueeze": "Income is trending down while expenses are trending up — this squeeze is the most pressing risk to address.",
+      "incomeExpenseSqueeze": "Income is trending down while expenses are trending up — two opposing trends occurring at the same time.",
       "categoryFastestGrowing": "<b>{category}</b> is your fastest-growing expense, up <b>{pct}%</b> from {fromYear} to {toYear}.",
       "categoryTrendingUp": "<b>{category}</b> spending has been trending up and is worth keeping an eye on.",
       "categoryTrendingUpBrief": "<b>{category}</b> spending is trending up.",
