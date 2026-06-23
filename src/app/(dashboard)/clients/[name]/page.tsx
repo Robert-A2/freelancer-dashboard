@@ -343,13 +343,13 @@ export default async function ClientDetailPage({
       <div className="card">
         <p className="label mb-4">{t("detail.revenueStory.title")}</p>
         <div className="grid grid-cols-2 gap-3 mb-5">
-          <div className="bg-[#1A3048] rounded-xl p-4">
+          <div className="bg-[#1A3048] rounded-xl p-4 min-w-0">
             <p className="label mb-1 text-[11px]">{t("detail.revenueStory.allTime")}</p>
-            <p className="text-2xl font-bold text-[#4CC4A4] tabular-nums leading-none">
+            <p className="text-lg font-bold text-[#4CC4A4] tabular-nums leading-tight break-all">
               {formatCurrency(client.totalRevenue, locale)}
             </p>
           </div>
-          <div className="bg-[#1A3048] rounded-xl p-4">
+          <div className="bg-[#1A3048] rounded-xl p-4 min-w-0">
             <p className="label mb-1 text-[11px]">{t("detail.revenueStory.ofIncome")}</p>
             <p className={`text-2xl font-bold tabular-nums leading-none ${
               client.revenueContributionPct >= 50 ? "text-[#D97070]" :
@@ -385,16 +385,16 @@ export default async function ClientDetailPage({
             <div className="mt-5 pt-4 border-t border-[#243F5E]">
               <p className="label mb-3 text-[11px]">{t("detail.revenueStory.periodComparison")}</p>
               <div className="grid grid-cols-2 gap-3">
-                <div className="bg-[#1A3048] rounded-xl p-3.5">
+                <div className="bg-[#1A3048] rounded-xl p-3.5 min-w-0">
                   <p className="label mb-1 text-[11px]">{t("detail.revenueStory.recent3mo")}</p>
-                  <p className={`text-base font-bold tabular-nums ${hasRecentActivity ? "text-[#4CC4A4]" : "text-[#6A97B4]"}`}>
+                  <p className={`text-sm font-bold tabular-nums break-all leading-tight ${hasRecentActivity ? "text-[#4CC4A4]" : "text-[#6A97B4]"}`}>
                     {hasRecentActivity ? formatCurrency(client.recentMonthlyAvg, locale) : "—"}
                   </p>
                   <p className="text-[10px] text-[#6A97B4] mt-0.5">{t("detail.momentum.recentAvg")}</p>
                 </div>
-                <div className="bg-[#1A3048] rounded-xl p-3.5">
+                <div className="bg-[#1A3048] rounded-xl p-3.5 min-w-0">
                   <p className="label mb-1 text-[11px]">{t("detail.revenueStory.prior3mo")}</p>
-                  <p className={`text-base font-bold tabular-nums ${hasPriorActivity ? "text-[#A8C6E0]" : "text-[#6A97B4]"}`}>
+                  <p className={`text-sm font-bold tabular-nums break-all leading-tight ${hasPriorActivity ? "text-[#A8C6E0]" : "text-[#6A97B4]"}`}>
                     {hasPriorActivity ? formatCurrency(client.priorMonthlyAvg, locale) : "—"}
                   </p>
                   <p className="text-[10px] text-[#6A97B4] mt-0.5">{t("detail.momentum.priorAvg")}</p>
