@@ -614,7 +614,7 @@ export async function getClientInsights(userId: string): Promise<ClientInsightsD
 
     const firstMs = first.getTime();
     const lastMs  = last.getTime();
-    const monthsActive = Math.max(1, Math.round((lastMs - firstMs) / (30 * 86_400_000))) + 1;
+    const monthsActive = (last.getUTCFullYear() - first.getUTCFullYear()) * 12 + (last.getUTCMonth() - first.getUTCMonth()) + 1;
 
     return {
       name: c.name,

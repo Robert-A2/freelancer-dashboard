@@ -233,7 +233,7 @@ export async function getClientRiskProfiles(userId: string): Promise<ClientRiskC
     const first     = sorted[0].date;
     const last      = sorted[sorted.length - 1].date;
     const currentGapDays = Math.max(0, Math.floor((today.getTime() - last.getTime()) / 86_400_000));
-    const monthsActive = Math.max(1, Math.round((last.getTime() - first.getTime()) / (30 * 86_400_000))) + 1;
+    const monthsActive = (last.getUTCFullYear() - first.getUTCFullYear()) * 12 + (last.getUTCMonth() - first.getUTCMonth()) + 1;
 
     let avgIntervalDays: number | null = null;
     if (sorted.length >= 2) {
