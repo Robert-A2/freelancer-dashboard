@@ -7,9 +7,9 @@
 
 ---
 
-## Client Trust & Risk Center (`src/lib/client-risk-engine.ts`)
+## Client Trust & Risk Center (`src/lib/client-risk-engine.ts` + `src/lib/client-identity.ts`)
 
-Added 2026-06-22. Powers the `/clients` and `/clients/[name]` pages.
+Added 2026-06-22, Client Identity system added 2026-06-23. Powers the `/clients` and `/clients/[name]` pages.
 
 ### Data source
 
@@ -19,21 +19,54 @@ Queries `intent IN ['freelance_income', 'salary']` — the intent-classified inc
 
 Never uses savings transfers or internal transfers.
 
-Client names are extracted via `extractClientName()` (now exported from `analytics-engine.ts`) — the same normalisation used by `getClientInsights`.
+### Client name extraction (`src/lib/client-identity.ts`)
+
+Client names are extracted via `extractClientName(description, category)` — defined in `client-identity.ts` and re-exported from `analytics-engine.ts` for backward compatibility.
+
+**Core principle: a payment rail term is never a client name.** Bank descriptions follow the pattern `[RAIL PREFIX] [CLIENT NAME] [OPTIONAL REF]`. The engine:
+1. Detects known payment processors (Stripe, PayPal, Upwork, Wise, Malt, Fiverr, etc.) by category or keyword → returns the processor label with `isProcessor: true`
+2. Strips the first matching rail prefix from 35+ known patterns (SEPA CREDIT TRANSFER, VIREMENT SEPA, FASTER PAYMENT, BACS, CHAPS, ACH, VIR, etc.), ordered longest-first
+3. Strips additional leading noise words (PAYMENT, TRANSFER, CREDIT, FROM, REF)
+4. Strips tail noise (reference numbers, invoice IDs, dates)
+5. Checks if the remainder is only rail/noise words → returns `UNIDENTIFIED_SOURCE` if so
+6. Title-cases the result, caps at 40 characters
+7. Assigns confidence: `"high"` (≥2 meaningful letter-only words, reasonable length) · `"medium"` (1 word or contains digits) · `"low"` (short) · `"unknown"` (nothing extractable)
+
+```ts
+export type ClientConfidence = "high" | "medium" | "low" | "unknown";
+export const UNIDENTIFIED_SOURCE = "Unidentified Income Source";
+```
+
+Low or unknown confidence → the client is merged into the `UNIDENTIFIED_SOURCE` bucket rather than shown as a named client.
+
+### Alias resolution (`normalizeForAlias`)
+
+`normalizeForAlias(name)` strips legal suffixes (LTD, LIMITED, LLC, SARL, SAS, GMBH, etc.) so variant names merge to the same canonical group. `"ACME LTD"`, `"ACME LIMITED"`, and `"ACME CONSULTING LTD"` all normalize to `"ACME"` and are treated as one client. The most-used name variant becomes the canonical display name.
+
+### Two-phase grouping
+
+1. **Phase 1** — each transaction's extracted name is normalized via `normalizeForAlias()` to produce an `aliasKey`. Transactions sharing an `aliasKey` are grouped together, accumulating all name variants and their occurrence counts.
+2. **Phase 2** — the most-used name variant per group becomes the canonical name. Unidentified clients are sorted to the end of the list.
 
 ### Types
 
 ```ts
-export type ReliabilityScore = "excellent" | "good" | "watch" | "risk";
+export type ClientStatus    = "current" | "watch" | "risk" | "inactive";
+export type ClientLifecycle = "current" | "inactive";
+export type ReliabilityScore = "excellent" | "good" | "watch" | "risk" | "inactive";
 ```
 
-Added to `ClientRiskProfile` alongside the existing fields:
+`ClientRiskProfile` includes:
 
-| New field | Type | Meaning |
+| Field | Type | Meaning |
 |---|---|---|
-| `reliabilityScore` | `ReliabilityScore` | Deterministic rating from payment history — no AI scoring |
+| `confidence` | `ClientConfidence` | How certain we are this is a real client identity |
+| `isProcessor` | `boolean` | True for payment processors (Stripe, PayPal, etc.) that may aggregate multiple underlying clients |
+| `reliabilityScore` | `ReliabilityScore` | Deterministic rating from payment history |
 | `recentMonthlyAvg` | `number` | Average monthly revenue across indices 3–5 of the 6-month window (most recent 3 months) |
 | `priorMonthlyAvg` | `number` | Average monthly revenue across indices 0–2 of the 6-month window (prior 3 months) |
+
+`ClientRiskCenterData` uses `inactiveCount` (not `previousCount`) for concluded relationships.
 
 ### Key calculations
 
@@ -43,10 +76,11 @@ Added to `ClientRiskProfile` alongside the existing fields:
 | Revenue contribution | `clientRevenue / totalRevenue × 100` |
 | Avg interval | Average of (n−1) day-gaps between consecutive sorted payment dates |
 | Current gap | `floor((today - lastPaymentDate) / 86400s)` — uses real today, not data-anchor date |
-| Status | GREEN: gap ≤ avgInterval×1.2 · YELLOW: gap ≤ avgInterval×1.5 · RED: gap > avgInterval×1.5 OR gap ≥ 90 |
+| Inactive threshold | `min(max(avgInterval × 3, 180 days), 548 days)` — avoids false alarms for quarterly / annual payers |
+| Status | `current`: gap ≤ avgInterval×1.2 · `watch`: gap ≤ avgInterval×1.5 · `risk`: gap > avgInterval×1.5 · `inactive`: gap ≥ inactive threshold |
 | Dependency risk | LOW: 0–25% · MEDIUM: 25–50% · HIGH: 50%+ |
 | Revenue trend | Last 3-month avg vs prev 3-month avg across a 6-month window ending today · >10% = Increasing · <−10% = Declining |
-| Reliability score | `red status → "risk"` · `yellow → "watch"` · `green + ≥6 payments + ≥4 months active + not declining → "excellent"` · `green + ≥3 payments → "good"` · else `"watch"` |
+| Reliability score | `inactive status → "inactive"` · `risk → "risk"` · `watch → "watch"` · `current + ≥6 payments + ≥4 months active + not declining → "excellent"` · `current + ≥3 payments → "good"` · else `"watch"` |
 | Recent/prior monthly avg | `recentMonthlyAvg = avg(monthlyRevenue[3..5])` · `priorMonthlyAvg = avg(monthlyRevenue[0..2])` — used on the detail page for momentum comparison |
 
 > **Note on date anchoring**: unlike `analytics-engine.ts` which anchors to the user's last data point, `client-risk-engine.ts` uses `new Date()` (real today) for `currentGapDays` and the 6-month trend window. This is deliberate — the Client Trust feature answers real-world risk questions ("has this client paid recently?"), where anchoring to stale data would give a false sense of safety.
@@ -276,26 +310,17 @@ The most involved function in this file. Returns `null` if fewer than **3** qual
 
 **Data source (mirroring `client-risk-engine.ts`):** Prefers `intent IN ['freelance_income', 'salary']` transactions. Falls back to filtered income (`transactionType = 'income'`, `amount >= 5`, `category ≠ 'refund'`) when fewer than 3 intent-classified rows exist. This ensures only real client receipts feed client profiles — refunds, bank interest, and cashback noise are excluded.
 
-### Step 1 — `extractClientName(description, category)`
+### Step 1 — `extractClientName(description, category)` (defined in `src/lib/client-identity.ts`)
 
-```mermaid
-flowchart TD
-    A["description, category"] --> B{"category matches a\nPAYMENT_PROCESSORS key?\n(stripe, paypal, upwork,\nfiverr, toptal, malt,\npeopleperhour,\nfreelancer.com,\n99designs, wise)"}
-    B -- yes --> C["name = processor label\n(e.g. 'Stripe')\nisProcessor = true"]
-    B -- no --> D{"description contains\na processor keyword?"}
-    D -- yes --> C
-    D -- no --> E["Strip bank boilerplate:\n'faster payment', 'bacs', 'sepa credit',\n'chaps', 'ach', 'wire transfer',\n'standing order', 'payment ref', 'inv', etc.\n+ strip long reference numbers\n+ strip non-letters"]
-    E --> F["Title-case the remainder,\ntruncate to 35 chars"]
-    F --> G["name = cleaned text\n(or first 25 chars of original\nif cleaning produced nothing)\nisProcessor = false"]
-```
+See the [Client Identity section above](#client-name-extraction-srclibclient-identityts) for the full algorithm. In summary: strips rail prefixes → strips noise → assigns confidence → returns `{ name, confidence, isProcessor }`. Low/unknown confidence names become `UNIDENTIFIED_SOURCE`.
 
-This is how a raw description like `"FASTER PAYMENT FROM ACME CONSULTING LTD REF 88213764"` becomes the client name `"Acme Consulting Ltd"`.
+This is how a raw description like `"FASTER PAYMENT FROM ACME CONSULTING LTD REF 88213764"` becomes the client name `"Acme Consulting Ltd"` with confidence `"high"`.
 
 > **Why check `category` before keywords?** The categorization engine already determined (with confidence) that this is e.g. a Stripe payout (`category: "stripe"`) — trusting that is more reliable than re-deriving it from the description, but the description-keyword fallback still catches cases where the category is more generic (e.g. `"client payment"`) but the description itself names a processor.
 
 ### Step 2 — group and profile
 
-All income transactions are grouped by `extractClientName(...).name.toUpperCase()`. For each group, a `ClientProfile` is built:
+All income transactions are grouped using two-phase alias grouping (see [Client Trust section above](#client-trust--risk-center-srclibclient-risk-enginets--srclibclient-identityts)). For each canonical client group, a `ClientProfile` is built:
 
 | Field | Calculation |
 |---|---|

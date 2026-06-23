@@ -61,7 +61,8 @@ src/
 │   └── request.ts                  ← next-intl request config (cookie → locale)
 ├── lib/
 │   ├── analytics-engine.ts         ← see ANALYTICS_ENGINE.md
-│   ├── client-risk-engine.ts       ← Client Trust & Risk Center — payment pattern, status, dependency, trend
+│   ├── client-identity.ts          ← Client name extraction engine — rail prefix stripping, alias normalization, confidence scoring
+│   ├── client-risk-engine.ts       ← Client Trust & Risk Center — status (current/watch/risk/inactive), alias grouping, dependency, trend
 │   ├── financial-life-engine.ts    ← Financial Life Intelligence — temporal intent patterns (savings, spending, revenue trends, memory)
 │   ├── forecast-engine.ts          ← see FORECAST_ENGINE.md
 │   ├── intelligence-engine.ts      ← see INTELLIGENCE_ENGINE.md
@@ -137,6 +138,8 @@ flowchart TD
 | `csv-processor.ts` | Parses uploaded CSVs: column detection, date/amount parsing, dedup, validation | [CSV_IMPORT.md](./CSV_IMPORT.md) |
 | `categorization/` (`engine.ts`, `merchant-db.ts`, `keywords.ts`, `packs/`) | Classifies each transaction into a category + `income`/`expense`/`savings`/`transfer`, using learned rules → DB merchants → static packs → keyword fallback | [CATEGORIZATION_ENGINE.md](./CATEGORIZATION_ENGINE.md) |
 | `analytics-engine.ts` | Aggregates `Transaction` rows into `MonthlyAnalytics`, computes historical trends, category insights, seasonality, income concentration, client insights, data coverage | [ANALYTICS_ENGINE.md](./ANALYTICS_ENGINE.md) |
+| `client-identity.ts` | Extracts real client/merchant names from bank description strings — 35+ rail prefix patterns, confidence scoring (`high`/`medium`/`low`/`unknown`), alias normalization, `UNIDENTIFIED_SOURCE` fallback | [ANALYTICS_ENGINE.md §Client Trust](./ANALYTICS_ENGINE.md) |
+| `client-risk-engine.ts` | Client Trust & Risk Center: two-phase alias grouping, status (`current`/`watch`/`risk`/`inactive`), dependency risk, revenue trend, reliability scoring, payment timeline | [ANALYTICS_ENGINE.md §Client Trust](./ANALYTICS_ENGINE.md) |
 | `forecast-engine.ts` | Weighted-moving-average + seasonal projection of next month's income/expenses/cashflow, persisted to the `Forecast` table | [FORECAST_ENGINE.md](./FORECAST_ENGINE.md) |
 | `intelligence-engine.ts` | Turns analytics/forecast output into `{key, values}` insight descriptors — snapshot summaries, trajectory narratives, health status, biggest risk/opportunity | [INTELLIGENCE_ENGINE.md](./INTELLIGENCE_ENGINE.md) |
 | `insight-types.ts` | `Insight`/`RankedInsight` types, `cat()` category sentinel, `resolveInsightValues()` | [INTELLIGENCE_ENGINE.md](./INTELLIGENCE_ENGINE.md) |
