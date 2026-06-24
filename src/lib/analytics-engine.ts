@@ -27,34 +27,35 @@ export async function recalculateMonthlyAnalytics(userId: string): Promise<void>
     else if (tx.transactionType === "savings") byMonth[key].savings  += amount;
   }
 
-  for (const entry of Object.values(byMonth)) {
-    // Cashflow = Income − Expenses. This is the SINGLE definition of "cashflow"
-    // used everywhere in the app (dashboard cards, charts, risk/health scoring,
-    // forecasts, comparisons). Savings are tracked separately (totalSavings) and
-    // intentionally excluded — they represent a deliberate allocation, not an
-    // operating loss.
-    const netCashflow = entry.income - entry.expenses;
-
-    await prisma.monthlyAnalytics.upsert({
-      where: { userId_month_year: { userId, month: entry.month, year: entry.year } },
-      update: {
-        totalIncome:   new Decimal(entry.income),
-        totalExpenses: new Decimal(entry.expenses),
-        totalSavings:  new Decimal(entry.savings),
-        netCashflow:   new Decimal(netCashflow),
-        createdAt:     new Date(),
-      },
-      create: {
-        userId,
-        month:         entry.month,
-        year:          entry.year,
-        totalIncome:   new Decimal(entry.income),
-        totalExpenses: new Decimal(entry.expenses),
-        totalSavings:  new Decimal(entry.savings),
-        netCashflow:   new Decimal(netCashflow),
-      },
-    });
-  }
+  // Cashflow = Income − Expenses. This is the SINGLE definition of "cashflow"
+  // used everywhere in the app (dashboard cards, charts, risk/health scoring,
+  // forecasts, comparisons). Savings are tracked separately (totalSavings) and
+  // intentionally excluded — they represent a deliberate allocation, not an
+  // operating loss.
+  await Promise.all(
+    Object.values(byMonth).map((entry) => {
+      const netCashflow = entry.income - entry.expenses;
+      return prisma.monthlyAnalytics.upsert({
+        where: { userId_month_year: { userId, month: entry.month, year: entry.year } },
+        update: {
+          totalIncome:   new Decimal(entry.income),
+          totalExpenses: new Decimal(entry.expenses),
+          totalSavings:  new Decimal(entry.savings),
+          netCashflow:   new Decimal(netCashflow),
+          createdAt:     new Date(),
+        },
+        create: {
+          userId,
+          month:         entry.month,
+          year:          entry.year,
+          totalIncome:   new Decimal(entry.income),
+          totalExpenses: new Decimal(entry.expenses),
+          totalSavings:  new Decimal(entry.savings),
+          netCashflow:   new Decimal(netCashflow),
+        },
+      });
+    })
+  );
 
   // Remove analytics rows for months that no longer have any transactions
   // (e.g. after deleting an import) so dashboards/forecasts don't show stale data.

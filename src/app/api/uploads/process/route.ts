@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { categorizeTransaction } from "@/lib/categorization";
@@ -188,44 +188,50 @@ export async function POST(request: NextRequest) {
       data: { status: "completed", importedRows, duplicateRows },
     });
 
-    // ── Post-import enrichment pipeline ───────────────────────────────────
-    // Each step is isolated: a failure here must NOT fail the upload response.
-    // The import data is already saved and the csvImport record is "completed".
-    // Errors are logged for debugging but the user always gets a success response.
-    try {
-      const newTxIds = await prisma.transaction.findMany({
-        where:  { csvImportId: csvImport.id },
-        select: { id: true },
-      });
-      await resolvePayers(user.id, newTxIds.map((t) => t.id));
-    } catch (err) {
-      console.error("[Upload] resolvePayers failed (non-fatal):", err);
-    }
-
-    try {
-      await recalculateMonthlyAnalytics(user.id);
-      await recomputeVerifiedRevenue(user.id);
-    } catch (err) {
-      console.error("[Upload] analytics recalculation failed (non-fatal):", err);
-    }
-
-    try {
-      await generateForecast(user.id);
-    } catch (err) {
-      console.error("[Upload] forecast generation failed (non-fatal):", err);
-    }
-
-    try {
-      await reportUncategorizedMerchants(transactions);
-    } catch (err) {
-      console.error("[Upload] merchant reporting failed (non-fatal):", err);
-    }
-
     console.log(
       `[Upload] Import complete — ${importedRows} new rows, ${duplicateRows} duplicates. ` +
       `Account: ${accountId ?? "none"}. ` +
       `File range: ${parsedEarliest?.slice(0, 10) ?? "n/a"} to ${parsedLatest?.slice(0, 10) ?? "n/a"}`
     );
+
+    // ── Post-import enrichment pipeline (deferred) ─────────────────────────
+    // Runs after the response is sent so the user sees "Upload complete"
+    // immediately. Each step is isolated — a failure here never affects the
+    // already-saved import record.
+    const importId  = csvImport.id;
+    const userId    = user.id;
+    const txsSnap   = transactions; // closure over parsed transactions
+
+    after(async () => {
+      try {
+        const newTxIds = await prisma.transaction.findMany({
+          where:  { csvImportId: importId },
+          select: { id: true },
+        });
+        await resolvePayers(userId, newTxIds.map((t) => t.id));
+      } catch (err) {
+        console.error("[Upload/bg] resolvePayers failed:", err);
+      }
+
+      try {
+        await recalculateMonthlyAnalytics(userId);
+        await recomputeVerifiedRevenue(userId);
+      } catch (err) {
+        console.error("[Upload/bg] analytics recalculation failed:", err);
+      }
+
+      try {
+        await generateForecast(userId);
+      } catch (err) {
+        console.error("[Upload/bg] forecast generation failed:", err);
+      }
+
+      try {
+        await reportUncategorizedMerchants(txsSnap);
+      } catch (err) {
+        console.error("[Upload/bg] merchant reporting failed:", err);
+      }
+    });
 
     // ── Build response ─────────────────────────────────────────────────────
     const categoryCounts: Record<string, number> = {};
