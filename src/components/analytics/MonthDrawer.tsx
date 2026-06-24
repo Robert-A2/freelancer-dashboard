@@ -80,10 +80,12 @@ export default function MonthDrawer({
   month,
   onClose,
   locale,
+  apiBase = "/api",
 }: {
   month: SelectedMonth | null;
   onClose: () => void;
   locale: Locale;
+  apiBase?: string;
 }) {
   const tCategories = useTranslations("categories");
   const tM          = useTranslations("analytics.monthDrawer");
@@ -106,7 +108,7 @@ export default function MonthDrawer({
     setSelCat(null);
     setTxData(null);
     setActiveTab("cashflow");
-    fetch(`/api/analytics/month-breakdown?year=${month.year}&month=${month.monthNum}`)
+    fetch(`${apiBase}/analytics/month-breakdown?year=${month.year}&month=${month.monthNum}`)
       .then(r => r.json())
       .then(d => { setBreakdown(d); setBLoading(false); })
       .catch(() => setBLoading(false));
@@ -123,7 +125,7 @@ export default function MonthDrawer({
       year:     String(month.year),
       month:    String(month.monthNum),
     });
-    fetch(`/api/analytics/category-transactions?${p}`)
+    fetch(`${apiBase}/analytics/category-transactions?${p}`)
       .then(r => r.json())
       .then(d => { setTxData(d); setTxLoading(false); })
       .catch(() => setTxLoading(false));

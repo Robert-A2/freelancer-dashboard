@@ -28,6 +28,7 @@ interface Props {
   data: DataPoint[];
   trajectoryInsight?: Insight | null;
   trajectoryDetails?: Insight[];
+  apiBase?: string;
 }
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -50,7 +51,7 @@ const TOOLTIP_STYLE = {
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export default function TrendsChart({ data, trajectoryInsight, trajectoryDetails }: Props) {
+export default function TrendsChart({ data, trajectoryInsight, trajectoryDetails, apiBase = "/api" }: Props) {
   const t      = useTranslations("dashboard.trendsChart");
   const tm     = useTranslations("metrics");
   const locale = useLocale() as Locale;
@@ -154,7 +155,7 @@ export default function TrendsChart({ data, trajectoryInsight, trajectoryDetails
         )}
       </div>
 
-      <MonthDrawer month={selMonth} onClose={closeDrawer} locale={locale} />
+      <MonthDrawer month={selMonth} onClose={closeDrawer} locale={locale} apiBase={apiBase} />
     </>
   );
 }

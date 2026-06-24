@@ -18,7 +18,7 @@ interface DataPoint {
   income: number;
   expenses: number;
 }
-interface Props { data: DataPoint[]; hideHeader?: boolean; }
+interface Props { data: DataPoint[]; hideHeader?: boolean; apiBase?: string; }
 
 const TIME_RANGES = [
   { key: "6m",  months: 6   },
@@ -50,7 +50,7 @@ function localAvg(arr: number[]): number {
   return arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0;
 }
 
-export default function CashflowChart({ data, hideHeader = false }: Props) {
+export default function CashflowChart({ data, hideHeader = false, apiBase = "/api" }: Props) {
   const t = useTranslations("analytics");
   const tr = useTranslations("dashboard.trendsChart");
   const tm = useTranslations("metrics");
@@ -249,7 +249,7 @@ export default function CashflowChart({ data, hideHeader = false }: Props) {
 
     </div>
 
-    <MonthDrawer month={selMonth} onClose={closeDrawer} locale={locale} />
+    <MonthDrawer month={selMonth} onClose={closeDrawer} locale={locale} apiBase={apiBase} />
   </>
   );
 }

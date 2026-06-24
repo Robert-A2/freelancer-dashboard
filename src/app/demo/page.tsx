@@ -183,6 +183,7 @@ export default async function DemoDashboardPage() {
             data={chartData}
             trajectoryInsight={intel.trajectoryInsight}
             trajectoryDetails={intel.trajectoryDetails}
+            apiBase="/api/demo"
           />
         </div>
         <ForecastWidget

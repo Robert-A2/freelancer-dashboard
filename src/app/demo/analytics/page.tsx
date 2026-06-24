@@ -133,7 +133,7 @@ export default async function DemoAnalyticsPage() {
 
           {/* ── Cashflow chart ─────────────────────────────────────────────── */}
           <CollapsibleSection label={t("cashflowSection.label")} title={t("cashflowSection.title")}>
-            <CashflowChart data={chartData} hideHeader />
+            <CashflowChart data={chartData} hideHeader apiBase="/api/demo" />
           </CollapsibleSection>
 
           {/* ── Income sources + Expense breakdown ────────────────────────── */}

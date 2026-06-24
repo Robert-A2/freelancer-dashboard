@@ -382,7 +382,7 @@ export default async function DemoForecastPage() {
         </div>
       )}
 
-      <TrendsChart data={chartData} />
+      <TrendsChart data={chartData} apiBase="/api/demo" />
     </div>
   );
 }
