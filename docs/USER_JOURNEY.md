@@ -13,6 +13,9 @@
 flowchart TD
     A["/ — Landing page\n(public)"] -->|"Get Started"| B["/signup"]
     A -->|"Sign In"| C["/login"]
+    A -->|"Explore Sample Freelancer"| Demo["/demo — no-auth workspace\n(Sophie Martin, 3 years of data)"]
+    A -->|"Download CSV persona"| Upload2["/upload (after signing up)"]
+    Demo -->|"Create Account →"| B
     B -->|"signUp() succeeds,\nsession returned immediately"| D["/dashboard?firstUpload=true\n(empty state)"]
     B -->|"signUp() succeeds,\nemail confirmation required"| B2["'Check your email' screen"]
     B2 -->|"clicks confirmation link"| C
@@ -38,13 +41,28 @@ flowchart TD
 
 ## 2. Landing page (`/`)
 
-**File**: `src/app/page.tsx` (279 lines) + `src/components/landing/ProductWalkthrough.tsx`.
+**File**: `src/app/page.tsx` + `src/components/landing/DemoSection.tsx`.
 
 - A Server Component. If `supabase.auth.getUser()` returns a user, it immediately `redirect("/dashboard")` — logged-in users never see the marketing page (middleware also enforces this, see [ARCHITECTURE.md §3](./ARCHITECTURE.md)).
-- For anonymous visitors, the page renders (in order): a sticky navbar (app name, language switcher, Sign In / Get Started), a hero section, an "Understand your finances" 4-card grid, a "recognition" list, an interactive `<ProductWalkthrough>` (sample CSV → categorized transactions demo), a "history" section with 3 tiers, a "philosophy" section, and a "privacy" section.
+- For anonymous visitors, the page renders (in order): a sticky navbar (app name, language switcher, Sign In / Get Started), a hero section with `<DemoSection>` in the right column, an "Understand your finances" 4-card grid, a "recognition" list, a "history" tier section, a "philosophy" section, and a "privacy" section.
 - All copy comes from the `landing` translation namespace via `t.raw(...)` for arrays of `{title, body}` / `string[]` objects — see [TRANSLATIONS.md](./TRANSLATIONS.md) for how to edit this content.
+- The hero's right column `<DemoSection>` (`src/components/landing/DemoSection.tsx`) offers two paths: **Explore Sample Freelancer** → `/demo` (no login) and **Upload Sample CSV** → 4 downloadable personas in `public/samples/`. The trust note "The demo uses the exact same engine as real accounts" is intentional — see §2a below.
 - Both CTAs (`Sign In`, `Get Started`) link to `/login` and `/signup` respectively.
 - The product narrative ("what Freelancer OS is for") is covered in [PRODUCT.md](./PRODUCT.md) — this doc only covers the page's role in the navigation flow.
+
+### 2a. Demo workspace (`/demo/*`)
+
+**Files**: `src/app/demo/` (7 pages/layouts), `src/components/demo/DemoNavbar.tsx`, `src/lib/demo/` (in-memory engine).
+
+An unauthenticated user who clicks "Explore Sample Freelancer" enters a fully navigable demo workspace pre-loaded with a fictional freelancer profile (Sophie Martin, UX Designer, 3 years of transaction data). Every page is a real Server Component — no JavaScript-only modal or iframe.
+
+Key properties:
+- **No login required** — `/demo` is in `publicPaths`; authenticated users can also access it (not bounced to `/dashboard`).
+- **Amber banner** at the top of every demo page: "Demo Account — All data shown is fictional. This is Sophie Martin, Freelance UX Designer." with a "Use your own data →" link to `/signup`.
+- **Same engines, no shortcuts** — `getDemoDataset(locale)` feeds the same `generateDashboardIntelligence()`, `buildHistoricalInsights()`, forecast algorithms, and client-risk functions used by real accounts. Nothing is hardcoded.
+- **`DEMO_REF_DATE = new Date(Date.UTC(2026, 0, 1))`** is used instead of `new Date()` for all date-relative calculations so clients don't falsely appear inactive.
+
+Full architecture: [ARCHITECTURE.md §10](./ARCHITECTURE.md).
 
 ---
 

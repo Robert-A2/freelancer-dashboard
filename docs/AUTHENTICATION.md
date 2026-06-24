@@ -106,7 +106,7 @@ export function createAdminClient() {
 Runs on every request (per `config.matcher`, which excludes `_next/static`, `_next/image`, `favicon.ico`, and common image extensions).
 
 ```ts
-const publicPaths = ["/login", "/signup", "/reset-password"];
+const publicPaths = ["/login", "/signup", "/reset-password", "/demo"];
 const authOnlyPaths = ["/login", "/signup"];   // bounce signed-in users away from these
 const isLanding = pathname === "/";
 const isPublic  = isLanding || publicPaths.some((p) => pathname.startsWith(p));
@@ -121,9 +121,12 @@ if (user && (isLanding || isAuthOnly)) return NextResponse.redirect(new URL("/da
 | `/` (landing) | ✅ shown | 🔁 redirected to `/dashboard` |
 | `/login`, `/signup` | ✅ shown | 🔁 redirected to `/dashboard` |
 | `/reset-password` | ✅ shown | ✅ **shown** (not redirected) |
+| `/demo`, `/demo/*` | ✅ shown | ✅ **shown** (not redirected) |
 | `/dashboard`, `/upload`, `/history`, `/analytics`, `/forecast`, `/settings`, `/api/*` | 🔁 redirected to `/login` | ✅ shown |
 
 > **Why `/reset-password` is in `publicPaths` but *not* `authOnlyPaths`**: clicking a password-recovery email link causes the Supabase browser client to establish a session (see §6) — so by the time the page is interactive, the user technically *is* "signed in." If `/reset-password` were in `authOnlyPaths`, middleware would immediately bounce this newly-authenticated user to `/dashboard` *before* they could set their new password, silently aborting the recovery flow. This is a one-line list membership that's easy to "fix" by mistake — see the code comment in `middleware.ts` itself and [How to modify safely](#how-to-modify-safely).
+
+> **Why `/demo` is in `publicPaths` but *not* `authOnlyPaths`**: the demo workspace is intentionally open to both anonymous and authenticated users. An authenticated user who navigates to `/demo` should not be bounced to `/dashboard` — they may want to share the demo URL or explore it themselves. The demo workspace does its own auth-agnostic data fetching via `getDemoDataset()` (no Supabase call, no `userId`). See [ARCHITECTURE.md §10](./ARCHITECTURE.md).
 
 ### Session refresh mechanics
 

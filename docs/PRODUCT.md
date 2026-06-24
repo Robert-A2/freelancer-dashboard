@@ -68,18 +68,18 @@ From `landing.philosophy.items` — three statements that double as design princ
 
 ---
 
-## 5. The "30 seconds" walkthrough
+## 5. The interactive demo — landing page trust experience
 
-`landing.walkthrough` describes the upload-to-insight pipeline as 6 steps, shown interactively on the landing page via `<ProductWalkthrough>` (`src/components/landing/ProductWalkthrough.tsx`) with a worked example (`landing.walkthrough.sample`):
+The landing page's hero right column contains `<DemoSection>` (`src/components/landing/DemoSection.tsx`), which replaced the original `<ProductWalkthrough>` static-steps slider. It offers two paths:
 
-1. **Upload** — "Export a CSV from any bank. Revolut, Monzo, AIB, HSBC, Wise, or any bank worldwide." → [CSV_IMPORT.md](./CSV_IMPORT.md)
-2. **Detect** — "Every row is read automatically. Dates, amounts and descriptions, all in one place." → [CSV_IMPORT.md](./CSV_IMPORT.md)
-3. **Categorise** — "Software, client payments, travel, taxes. Tagged for you, and you can correct anything in one click." → [CATEGORIZATION_ENGINE.md](./CATEGORIZATION_ENGINE.md)
-4. **Insights** — "What changed this month and why, explained in words you'd use yourself." → [INTELLIGENCE_ENGINE.md](./INTELLIGENCE_ENGINE.md)
-5. **Forecast** — "A cashflow forecast built from your own patterns, not industry averages." → [FORECAST_ENGINE.md](./FORECAST_ENGINE.md)
-6. **Recommend** — "Specific suggestions based on your numbers, not generic advice." → [INTELLIGENCE_ENGINE.md §6](./INTELLIGENCE_ENGINE.md) (`biggestRisk`/`biggestOpportunity`/`forecastImprovements`)
+| Path | What happens |
+|---|---|
+| **Explore Sample Freelancer** (→ `/demo`) | Opens a fully navigable demo workspace (no login). Sophie Martin's 3 years of UX designer transactions, processed by the same real engines used by paying users. Dashboard, History, Analytics, Forecast, Clients — all populated with genuine engine output. |
+| **Upload Sample CSV** (→ `public/samples/*.csv`) | Downloads one of 4 persona CSVs (designer, developer, consultant, photographer). After signing up, the user uploads it through the standard pipeline — the real categorization, analytics, and forecast engines process it exactly as they would real data. |
 
-The worked example shown alongside these steps (a sample transaction list → categorized → "Software costs are up 14% this month, mainly a new Adobe plan added in March" → "Next month cashflow around €1,890" → "Cancelling unused subscriptions could add about €984 a year") is a **scripted illustration**, not live data — it's static JSON in `landing.walkthrough.sample`, shown to anonymous visitors who have no account yet. The real end-to-end journey for a signed-up user is documented in [USER_JOURNEY.md](./USER_JOURNEY.md).
+**Why the shift from scripted walkthrough to real engine demo**: the `<ProductWalkthrough>` showed a hardcoded illustration of what the app might say — "Software costs are up 14%…" — disconnected from actual engine behavior. The demo workspace shows what the engine **actually** produces from realistic freelancer transactions, making the product promise verifiable before signup.
+
+The trust note on `<DemoSection>` — "The demo uses the exact same engine as real accounts." — is both a product claim and a technical constraint: any change that introduces demo-only fake data or hardcoded insight strings violates this principle. See [ARCHITECTURE.md §10](./ARCHITECTURE.md) for the demo engine implementation.
 
 ---
 
@@ -124,7 +124,7 @@ The last item is worth calling out: the product **does not pretend categorizatio
 ### Editing landing-page copy / messaging
 
 - All visible product copy lives under the `landing` namespace in `messages/en.json` and `messages/fr.json` — see [TRANSLATIONS.md](./TRANSLATIONS.md) for the editing workflow. The landing page itself (`src/app/page.tsx`) contains almost no hardcoded English text; it's all `t("...")` / `t.raw("...")` lookups, plus a handful of emoji icons (`understandIcons`, `privacyIcons`, `tierIntensities`) that are positional — if you reorder or add/remove items in an array (e.g. `landing.understand.cards`), update the corresponding icon array in `page.tsx` to match the new length/order.
-- `<ProductWalkthrough>` (`src/components/landing/ProductWalkthrough.tsx`) takes `steps` and `sample` as typed props (`WalkthroughStep[]`, `WalkthroughSample`) sourced via `t.raw("walkthrough.steps")` / `t.raw("walkthrough.sample")`. If you add a field to the sample data, update the `WalkthroughSample` type in that component too, or TypeScript won't catch a missing translation key in `fr.json`.
+- `<DemoSection>` (`src/components/landing/DemoSection.tsx`) is hardcoded in English (not i18n'd) and references `/demo` and `public/samples/` links directly. The preview metrics shown (income growth, top-client share, months of data) are hardcoded display values derived from the demo dataset design — if the demo data changes significantly, update these values to stay accurate.
 
 ### Changing a promise (§4 table)
 
@@ -133,6 +133,6 @@ The last item is worth calling out: the product **does not pretend categorizatio
 
 ### Things to be careful about
 
-- **The walkthrough sample (§5) is static marketing copy, shown to logged-out visitors** — it is *not* validated against the real engines and will not break if engine formulas change. Don't treat it as a test fixture; if it starts looking unrealistic compared to what the app actually produces (e.g. the "Cancelling unused subscriptions could add about €984/year" framing no longer matches how `forecastImprovements` are worded), update it manually.
+- **The demo workspace (§5) uses the real engine** — unlike the old static `<ProductWalkthrough>`, it will automatically reflect any engine change. If you change how an insight is worded or a metric is calculated, the demo will show the updated output without any manual copy update. This is a feature, not a risk — but it means you can't "control" what the demo says independently of the engine.
 - **The target user (§2) is the lens for every UX decision.** When evaluating a new feature idea, ask: does this help someone with *irregular* income understand "was this month actually good?" If a feature only makes sense for someone with a steady monthly paycheck, it's probably out of scope — or needs to be reframed (this is exactly why `detectIncomeType()` exists rather than assuming a fixed pay cycle).
 - **"Your data is yours" (§3) is a constraint on *every* future feature**, not just account deletion. Any new feature that stores derived data, calls a third-party API with user data, or makes data harder to fully delete should be checked against this principle before being built.

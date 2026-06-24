@@ -44,6 +44,14 @@ src/
 │   │   ├── history/page.tsx
 │   │   ├── upload/page.tsx
 │   │   └── settings/page.tsx
+│   ├── demo/                     ← no-auth demo workspace (see §10)
+│   │   ├── layout.tsx            ← DemoNavbar + amber "Demo Account" banner
+│   │   ├── page.tsx              ← demo dashboard (mirrors dashboard/page.tsx)
+│   │   ├── history/page.tsx
+│   │   ├── analytics/page.tsx
+│   │   ├── forecast/page.tsx
+│   │   ├── clients/page.tsx
+│   │   └── clients/[name]/page.tsx
 │   ├── api/                      ← route handlers (see §7)
 │   │   ├── account/route.ts
 │   │   ├── dashboard/route.ts
@@ -55,7 +63,7 @@ src/
 │   │   └── users/create/route.ts
 │   ├── layout.tsx                 ← root layout: <html>, font, NextIntlClientProvider
 │   └── page.tsx                   ← landing page (public)
-├── components/                    ← grouped by feature: analytics/ dashboard/ history/ landing/ settings/ ui/ upload/
+├── components/                    ← grouped by feature: analytics/ dashboard/ demo/ history/ landing/ settings/ ui/ upload/
 ├── i18n/
 │   ├── locales.ts                  ← LOCALES, DEFAULT_LOCALE, INTL_LOCALES
 │   └── request.ts                  ← next-intl request config (cookie → locale)
@@ -68,6 +76,10 @@ src/
 │   ├── intelligence-engine.ts      ← see INTELLIGENCE_ENGINE.md
 │   ├── csv-processor.ts            ← see CSV_IMPORT.md
 │   ├── categorization/             ← see CATEGORIZATION_ENGINE.md
+│   ├── demo/                       ← in-memory demo engine (see §10)
+│   │   ├── transactions.ts         ← DEMO_TRANSACTIONS singleton, DEMO_REF_DATE, DEMO_PERSONA
+│   │   ├── engine.ts               ← pure in-memory equivalents of all DB-coupled engines
+│   │   └── index.ts                ← barrel: getDemoDataset, DemoDataset, DemoTransaction
 │   ├── insight-types.ts            ← Insight/RankedInsight types, cat(), resolveInsightValues()
 │   ├── merchant-reports.ts         ← global uncategorized-merchant worklist
 │   ├── locale-actions.ts           ← server action: setUserLocale()
@@ -96,15 +108,17 @@ flowchart TD
     Pass --> Auth["(auth) route group\nlogin / signup / reset-password\n— no shared layout"]
     Pass --> DashGroup["(dashboard) route group\n→ layout.tsx (Navbar + container)\n→ dashboard / analytics / forecast / history / upload / settings"]
     Pass --> Landing["/ — landing page (public)"]
+    Pass --> Demo["demo/ — no-auth workspace\n→ layout.tsx (DemoNavbar + banner)\n→ dashboard / history / analytics / forecast / clients"]
 ```
 
 - **Route groups** `(auth)` and `(dashboard)` are Next.js folder-naming conventions — the parentheses mean the segment doesn't appear in the URL. Each group can have its own `layout.tsx`; `(auth)` has none (each auth page is a standalone full-screen form), `(dashboard)` wraps every page in `<Navbar />` + a centered `<main>` container (`src/app/(dashboard)/layout.tsx`).
 - **`middleware.ts`** runs on every request matched by its `config.matcher` (everything except `_next/static`, `_next/image`, `favicon.ico`, and image files). It does two jobs:
   1. **Refreshes the Supabase session cookies** — `@supabase/ssr`'s `createServerClient` with a `setAll` callback that writes any refreshed cookies onto both the incoming request and the outgoing response. This is what keeps a logged-in session alive across server-rendered navigations.
   2. **Redirects based on auth state**:
-     - Unauthenticated + not on a public path (`/`, `/login`, `/signup`, `/reset-password`) → `/login`.
+     - Unauthenticated + not on a public path (`/`, `/login`, `/signup`, `/reset-password`, `/demo`) → `/login`.
      - Authenticated + on `/`, `/login`, or `/signup` → `/dashboard`.
      - **`/reset-password` is deliberately exempt from the "bounce authenticated users" rule** — exchanging a password-recovery code signs the user in via Supabase, but they still need to land on `/reset-password` to actually set a new password. See [AUTHENTICATION.md](./AUTHENTICATION.md) for the full recovery flow.
+     - **`/demo` is in `publicPaths` but NOT in `authOnlyPaths`** — both unauthenticated and authenticated users can access the demo workspace. Authenticated users are not bounced to `/dashboard` when visiting `/demo`. See §10 for the demo architecture.
 - Every `(dashboard)` page additionally calls `createClient()` → `supabase.auth.getUser()` itself and `redirect("/login")` if there's no user — a defence-in-depth check independent of the middleware (Next.js Server Components don't always re-run middleware on client-side navigations).
 - Every `(dashboard)` page sets `export const dynamic = "force-dynamic"` — these pages read live, per-user data from the database and must never be statically cached or pre-rendered.
 
@@ -263,6 +277,47 @@ If the `User` row is already missing (Prisma error `P2025`), deletion continues 
 - `src/app/layout.tsx` (root layout) wraps everything in `<NextIntlClientProvider locale={locale} messages={messages}>` — `messages` is the **entire** `messages/{locale}.json` file, loaded once per request.
 - All user-facing strings live in `messages/en.json` / `messages/fr.json`. The `intelligence-engine.ts` insight system (`{key, values}` + `cat()` + `<InsightText>`, see [INTELLIGENCE_ENGINE.md](./INTELLIGENCE_ENGINE.md)) is the main producer of dynamic translated content; everything else uses `useTranslations()` / `getTranslations()` directly.
 - Full conventions, message structure, and how to add/edit strings: [TRANSLATIONS.md](./TRANSLATIONS.md).
+
+---
+
+## 10. The demo workspace (`/demo/*`)
+
+A no-login-required replica of the full dashboard workspace, pre-loaded with a fictional freelancer profile (Sophie Martin, UX Designer, 3 years of data). Its purpose is to build trust on the landing page: visitors can explore the real engine's output before signing up.
+
+### Critical design rule
+
+> **The demo workspace uses the exact same engines as real accounts.** Nothing is hardcoded or faked. The same `generateDashboardIntelligence()`, `buildHistoricalInsights()`, forecast algorithms, and client-risk calculations run on the demo data — the only difference is that the input is a pre-seeded in-memory `DemoTransaction[]` array instead of Prisma rows.
+
+### Files
+
+| File | Role |
+|---|---|
+| `src/lib/demo/transactions.ts` | `DEMO_TRANSACTIONS` — 36 months (Jan 2023–Dec 2025) of realistic UX designer transactions. `DEMO_REF_DATE = new Date(Date.UTC(2026, 0, 1))` — used instead of `new Date()` for all date-relative calculations so clients don't incorrectly appear inactive against the wall-clock date. |
+| `src/lib/demo/engine.ts` | Pure in-memory equivalents of all DB-coupled analytics/forecast/client functions. Every function accepts `DemoTransaction[]` and returns the same shape as the real engines. `getDemoDataset(locale)` is cached per locale to avoid recomputing on each render. |
+| `src/lib/demo/index.ts` | Barrel export: `getDemoDataset`, `DemoDataset`, `DemoTransaction`, `DEMO_TRANSACTIONS`, `DEMO_REF_DATE`, `DEMO_PERSONA`. |
+| `src/app/demo/layout.tsx` | `DemoNavbar` + amber banner: "Demo Account — All data shown is fictional. This is Sophie Martin, Freelance UX Designer." |
+| `src/components/demo/DemoNavbar.tsx` | Mirrors the real `Navbar` but links to `/demo/*` routes; shows "Sign In / Create Account" instead of "Sign Out"; no Supabase dependency. |
+| `src/app/demo/page.tsx` | Demo dashboard — calls `getDemoDataset(locale)`, then `generateDashboardIntelligence()` and `buildHistoricalInsights()` with that data (same real functions). |
+| `src/app/demo/history/page.tsx` | In-memory filter + pagination of `DEMO_TRANSACTIONS`. |
+| `src/app/demo/analytics/page.tsx` | Uses `getDemoDataset` + `computeCategoryBreakdown()` + `computeIncomeBySource()` + `computeYtdTotals()`. |
+| `src/app/demo/forecast/page.tsx` | Full feature parity with real forecast page; `computeForecast()` returns a complete `ForecastResult` matching the real interface. |
+| `src/app/demo/clients/page.tsx` | Uses `getDemoDataset(locale)` for client list. |
+| `src/app/demo/clients/[name]/page.tsx` | Full feature parity with real client detail page. |
+
+### Data design choices (why the demo produces interesting insights)
+
+- **Nexo Startup** ≈ 83 % of last-12-month income → `isHighConcentration = true`, concentration insight fires.
+- **Nova Digital** last payment Oct 5 2025 → 87 days from `DEMO_REF_DATE` (Jan 1 2026) → `status: "risk"`.
+- **DesignCraft Agency** last payment Jun 20 2024 → 559 days from `DEMO_REF_DATE` → `status: "inactive"`.
+- Transport costs grew ~32 % YoY vs income ~16 % → transport-growing-faster insight fires.
+
+### Sample CSVs (`public/samples/`)
+
+Four downloadable personas (designer, developer, consultant, photographer) for the landing page's "Upload Sample CSV" CTA. They use the **real upload pipeline** — no shortcuts. Key format constraint: income amounts are positive, expenses are negative (the categorization engine classifies by amount sign); savings rows use descriptions matching `SAVINGS_TRANSFER_OVERRIDES` (e.g. `VIREMENT EPARGNE`, `TRANSFER TO SAVINGS`). See [CSV_IMPORT.md](./CSV_IMPORT.md) and [CATEGORIZATION_ENGINE.md](./CATEGORIZATION_ENGINE.md) for why signed amounts matter.
+
+### `DEMO_REF_DATE` — why it exists
+
+All real engines use `new Date()` ("today") for date-gap calculations. Since demo data ends Dec 2025 and `new Date()` is mid-2026+, every client would appear inactive. `DEMO_REF_DATE = new Date(Date.UTC(2026, 0, 1))` (the day after the last demo transaction) is used throughout `src/lib/demo/engine.ts` instead. **Do not replace it with `new Date()` in demo code** — that would break the intended client-risk states.
 
 ---
 
