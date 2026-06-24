@@ -64,13 +64,87 @@ export interface PayerProfile {
 // ── Signal dictionaries ───────────────────────────────────────────────────────
 // All strings are matched against a lowercased, accent-stripped description.
 
+// Own-account transfers — definitively not revenue regardless of amount.
+// Checked FIRST so "VIREMENT INTERNE 5000" never leaks into payer extraction.
+const TRANSFER_SIGNALS = [
+  "virement interne", "vir interne", "virt interne",
+  "virement entre comptes", "virement de compte a compte",
+  "virement vers mon compte", "virement depuis mon compte",
+  "own account", "own transfer", "internal transfer", "self transfer",
+  "account to account", "between accounts", "between my accounts",
+  "mon compte courant", "de mon compte", "vers mon compte",
+  "compte a compte", "retour virement",
+];
+
+// Savings products and bank institution signals in the description.
+// Space-padded short names ("lcl ", " n26 ") prevent matching unrelated words.
 const BANK_SIGNALS = [
+  // Savings products — own money returning from savings
   "livret a", "livret bleu", "ldd ", "ldds", "cel ", "pel ", "pea ",
   "assurance vie", "epargne", "savings account", "savings transfer",
   "isa account", "isa transfer", "lisa ", "premium bond", "ns&i",
-  "mon livret", "compte epargne", "compte sur livret",
-  "livret developpement",
+  "mon livret", "compte epargne", "compte sur livret", "livret developpement",
+  // Named French retail banks
+  "bnp paribas", " bnp ", "credit agricole", "societe generale",
+  "caisse d epargne", "banque postale", "la banque postale",
+  "credit mutuel", " lcl ", "credit du nord", "banque populaire",
+  "bpce", "natixis", "bpi france", "bpifrance", "credit foncier",
+  // French online / neo banks
+  "boursorama", "hello bank", "fortuneo", "orange bank", "shine bank",
+  "monabanq", "axa banque",
+  // International neo banks (excluding Revolut and Wise which also act as
+  // payment platforms for client payments — handled in PLATFORM_SIGNALS)
+  " n26 ", "monzo", "starling bank", "bunq", "qonto", "paysend",
+  // UK banks
+  "natwest", "lloyds bank", "barclays bank", "santander uk", "halifax",
+  "nationwide", "first direct", "metro bank", "hsbc bank",
+  "royal bank of scotland", "bank of scotland",
 ];
+
+// Normalised match keys for known banks — used for post-extraction exact check.
+// After prefix-stripping, if the extracted payer IS one of these, it is a bank
+// transfer disguised as a client payment (e.g. "VIREMENT BNP PARIBAS REF 001").
+const KNOWN_BANK_MATCH_KEYS = new Set([
+  "bnp", "bnp paribas",
+  "credit agricole",
+  "societe generale",
+  "caisse epargne", "caisse d epargne",
+  "banque postale", "la banque postale",
+  "credit mutuel",
+  "lcl",
+  "credit du nord",
+  "banque populaire",
+  "bpce", "natixis", "bpi france", "bpifrance",
+  "boursorama",
+  "hello bank",
+  "fortuneo",
+  "orange bank",
+  "shine", "shine bank",
+  "qonto",
+  "n26",
+  "monzo",
+  "starling", "starling bank",
+  "bunq",
+  "natwest",
+  "lloyds", "lloyds bank",
+  "barclays",
+  "santander",
+  "halifax",
+  "nationwide",
+  "hsbc",
+  "ing",
+  "axa banque",
+  "credit foncier",
+]);
+
+// Single-word extractions that are not meaningful payer names.
+// A description that yields only one of these after stripping provides no
+// identity signal — returning null triggers the Needs Review queue correctly.
+const MEANINGLESS_EXTRACTED = new Set([
+  "credit", "debit", "virement", "paiement", "payment",
+  "transfer", "transaction", "operation", "interne", "incoming",
+  "received", "recu", "depot", "deposit", "compte", "banque", "bank",
+]);
 
 const GOVERNMENT_SIGNALS = [
   "dgfip", "direction generale des finances",
@@ -220,10 +294,23 @@ export function extractPayer(
 ): PayerExtraction | null {
   if (amount <= 0) return null;
 
-  const norm = asciiLower(description);
+  // Space-pad so signals with word boundaries (e.g. " bnp ", " n26 ") match
+  // at the start and end of descriptions, not just in the middle.
+  const norm = ` ${asciiLower(description)} `;
   const cat  = category.toLowerCase();
 
-  // 1. Known savings / bank signals → payer type = bank
+  // 1. Own-account transfer signals — must be first.
+  //    "VIREMENT INTERNE 5000" would otherwise be extracted as payer "Interne".
+  if (matchesAny(norm, TRANSFER_SIGNALS)) {
+    return {
+      rawName:      "Internal Transfer",
+      matchKey:     "own-account-transfer",
+      detectedType: "bank",
+      method:       "transfer-signal",
+    };
+  }
+
+  // 2. Savings products and named bank institutions in the description.
   for (const signal of BANK_SIGNALS) {
     if (norm.includes(signal)) {
       return {
@@ -235,7 +322,7 @@ export function extractPayer(
     }
   }
 
-  // 2. Government / benefits signals
+  // 3. Government / benefits signals
   for (const signal of GOVERNMENT_SIGNALS) {
     if (norm.includes(signal)) {
       return {
@@ -247,7 +334,7 @@ export function extractPayer(
     }
   }
 
-  // 3. Known platforms (Stripe, Upwork, PayPal, etc.)
+  // 4. Known platforms (Stripe, Upwork, PayPal, etc.)
   for (const [keyword, displayName] of Object.entries(PLATFORM_SIGNALS)) {
     if (norm.includes(keyword)) {
       return {
@@ -259,7 +346,7 @@ export function extractPayer(
     }
   }
 
-  // 4. Refund signals
+  // 5. Refund signals
   if (matchesAny(norm, REFUND_SIGNALS) || cat === "refund") {
     return {
       rawName:      capitalizeWords(description.slice(0, 40).trim()),
@@ -269,7 +356,7 @@ export function extractPayer(
     };
   }
 
-  // 5. Strip bank prefixes from the description to expose the payer name
+  // 6. Strip bank prefixes to expose the payer name
   let extracted = description.trim();
   for (const pattern of PREFIX_PATTERNS) {
     const match = extracted.match(pattern);
@@ -279,12 +366,12 @@ export function extractPayer(
     }
   }
 
-  // 6. Strip trailing reference noise
+  // 7. Strip trailing reference noise
   for (const pattern of SUFFIX_PATTERNS) {
     extracted = extracted.replace(pattern, "").trim();
   }
 
-  // 7. Validate: need at least 3 chars, and it can't be purely numeric
+  // 8. Validate: need at least 3 chars, not purely numeric
   if (extracted.length < 3 || /^\d+$/.test(extracted)) return null;
 
   const rawName  = capitalizeWords(extracted.slice(0, 60).trim());
@@ -292,7 +379,23 @@ export function extractPayer(
 
   if (matchKey.length < 2) return null;
 
-  // 8. Check whether the extracted name contains salary markers
+  // 9. Post-extraction: check if the extracted name resolves to a known bank.
+  //    Catches "VIREMENT BNP PARIBAS REF 001" → extracted "BNP PARIBAS" → bank.
+  if (KNOWN_BANK_MATCH_KEYS.has(matchKey)) {
+    return {
+      rawName,
+      matchKey,
+      detectedType: "bank",
+      method:       "extracted-bank-name",
+    };
+  }
+
+  // 10. Filter out meaningless single-word extractions.
+  //     "CREDIT REF 48291730" → stripped to "CREDIT" → no identity signal.
+  //     Return null: transaction goes to needsReview with no payer linked.
+  if (MEANINGLESS_EXTRACTED.has(matchKey)) return null;
+
+  // 11. Check salary markers in the extracted name → employer type
   const extractedNorm = asciiLower(extracted);
   const isEmployer    = matchesAny(extractedNorm, SALARY_SIGNALS) || cat === "salary";
 
@@ -423,71 +526,66 @@ export async function resolvePayers(
     existingAliases.map((a) => [a.matchKey, { payerId: a.payerId, aliasId: a.id }]),
   );
 
+  // Payer types that are definitively identified — no review needed
+  const KNOWN_TYPES = new Set<PayerType>(["bank", "government", "refund_source", "platform", "employer"]);
+
   // Process each transaction
-  const txUpdates: Array<{ id: string; payerId: string; needsReview: boolean }> = [];
-  const newPayers:  Map<string, { canonicalName: string; payerType: PayerType; txIds: string[] }> = new Map();
-  const aliasHits:  Map<string, { payerId: string; aliasId: string; txIds: string[] }> = new Map();
-  const newAliases: Map<string, { payerId: string; rawText: string; matchKey: string }> = new Map();
+  const txUpdates:     Array<{ id: string; payerId: string; needsReview: boolean }> = [];
+  const unresolvable:  string[] = []; // income txs where payer identity cannot be extracted
+  const newPayers:     Map<string, { canonicalName: string; payerType: PayerType; txIds: string[] }> = new Map();
+  const aliasHits:     Map<string, { payerId: string; aliasId: string; txIds: string[] }> = new Map();
 
   for (const tx of txs) {
     const extraction = extractPayer(tx.description, tx.category, Number(tx.amount));
-    if (!extraction) continue;
+
+    if (!extraction) {
+      // Description too generic to extract a payer identity (e.g. "CREDIT REF 48291730").
+      // Mark for manual review — do NOT silently skip.
+      unresolvable.push(tx.id);
+      continue;
+    }
 
     const { matchKey, rawName, detectedType } = extraction;
-
     const existingMatch = aliasMap.get(matchKey);
 
     if (existingMatch) {
-      // Known payer → just increment hit and link
+      // Returning payer — link to existing record, no review needed
       const hit = aliasHits.get(matchKey) ?? { ...existingMatch, txIds: [] };
       hit.txIds.push(tx.id);
       aliasHits.set(matchKey, hit);
       txUpdates.push({ id: tx.id, payerId: existingMatch.payerId, needsReview: false });
 
     } else if (newPayers.has(matchKey)) {
-      // Already creating this payer in the same batch → link to it
+      // Same new payer seen twice in this batch
       newPayers.get(matchKey)!.txIds.push(tx.id);
 
     } else {
-      // Brand-new payer for this batch
-      newPayers.set(matchKey, {
-        canonicalName: rawName,
-        payerType:     detectedType,
-        txIds:         [tx.id],
-      });
+      // Brand-new payer
+      newPayers.set(matchKey, { canonicalName: rawName, payerType: detectedType, txIds: [tx.id] });
     }
   }
 
   // Persist new Payer records and aliases
   for (const [matchKey, payerData] of newPayers) {
-    // Upsert so concurrent imports don't race on the unique constraint
     const payer = await prisma.payer.upsert({
       where:  { userId_canonicalName: { userId, canonicalName: payerData.canonicalName } },
       update: { updatedAt: new Date() },
-      create: {
-        userId,
-        canonicalName: payerData.canonicalName,
-        payerType:     payerData.payerType,
-      },
+      create: { userId, canonicalName: payerData.canonicalName, payerType: payerData.payerType },
     });
 
-    // Upsert alias
     await prisma.payerAlias.upsert({
       where:  { payerId_matchKey: { payerId: payer.id, matchKey } },
       update: { hitCount: { increment: 1 } },
-      create: {
-        payerId:  payer.id,
-        rawText:  payerData.canonicalName,
-        matchKey,
-        hitCount: 1,
-      },
+      create: { payerId: payer.id, rawText: payerData.canonicalName, matchKey, hitCount: 1 },
     });
 
-    // Register in aliasMap for future txs in this batch
     aliasMap.set(matchKey, { payerId: payer.id, aliasId: "" });
 
+    // needsReview = false when the payer type is definitively known (bank, platform, etc.)
+    // needsReview = true when payer is "unknown" or "client" appearing for the first time
+    const needsReview = !KNOWN_TYPES.has(payerData.payerType);
     for (const txId of payerData.txIds) {
-      txUpdates.push({ id: txId, payerId: payer.id, needsReview: true });
+      txUpdates.push({ id: txId, payerId: payer.id, needsReview });
     }
   }
 
@@ -501,7 +599,7 @@ export async function resolvePayers(
     }
   }
 
-  // Update all transactions with their resolved payerId
+  // Apply payerId + needsReview to resolved transactions
   if (txUpdates.length > 0) {
     await Promise.all(
       txUpdates.map((u) =>
@@ -511,6 +609,14 @@ export async function resolvePayers(
         }),
       ),
     );
+  }
+
+  // Mark unresolvable income transactions for manual review
+  if (unresolvable.length > 0) {
+    await prisma.transaction.updateMany({
+      where: { id: { in: unresolvable } },
+      data:  { needsReview: true },
+    });
   }
 }
 
