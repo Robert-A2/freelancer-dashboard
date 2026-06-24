@@ -374,6 +374,30 @@
       "error": "Something went wrong while deleting your account. Please try again."
     }
   },
+  "accountTypes": {
+    "personal_checking": "Personal checking",
+    "personal_savings": "Personal savings",
+    "business_checking": "Business checking",
+    "business_savings": "Business savings",
+    "investment": "Investment",
+    "credit_card": "Credit card",
+    "other": "Other"
+  },
+  "accountSelect": {
+    "stepLabel": "Step 1 of 2 — Choose account",
+    "heading": "Which account is this from?",
+    "subtitle": "Every transaction will be tagged to this account so you can track multiple banks separately.",
+    "existingLabel": "Your accounts",
+    "newLabel": "Add a new account",
+    "nameLabel": "Account name",
+    "namePlaceholder": "e.g. Revolut Business",
+    "typeLabel": "Account type",
+    "detectedHint": "We detected \"{name}\" from your CSV — feel free to adjust.",
+    "continueToFile": "Continue to file upload →",
+    "createAndContinue": "Save account & continue →",
+    "transactionsCount": "{count, plural, one {# transaction} other {# transactions}}",
+    "skipLabel": "Skip — don't track account"
+  },
   "upload": {
     "heading": "Upload CSV",
     "subtitle": "Upload any bank statement CSV. Historical and incremental imports both work.",

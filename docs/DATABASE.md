@@ -35,6 +35,7 @@ datasource db {
 
 ```mermaid
 erDiagram
+    User ||--o{ Account : "has"
     User ||--o{ CsvImport : "uploads"
     User ||--o{ Transaction : "owns"
     User ||--o{ MonthlyAnalytics : "has"
@@ -42,6 +43,8 @@ erDiagram
     User ||--o{ CategoryRule : "learns"
     User ||--o{ CategoryCorrection : "makes"
 
+    Account ||--o{ CsvImport : "tagged to"
+    Account ||--o{ Transaction : "groups"
     CsvImport ||--o{ Transaction : "contains"
 
     Merchant ||--o{ MerchantAlias : "has aliases"
@@ -54,9 +57,22 @@ erDiagram
         datetime updatedAt
     }
 
+    Account {
+        string id PK
+        string userId FK
+        string name
+        string institution
+        string accountType
+        string currency
+        string color
+        bool isArchived
+        datetime createdAt
+    }
+
     CsvImport {
         string id PK
         string userId FK
+        string accountId FK
         string fileName
         string status
         int totalRows
@@ -69,6 +85,7 @@ erDiagram
         string id PK
         string userId FK
         string csvImportId FK
+        string accountId FK
         datetime transactionDate
         string description
         decimal amount
@@ -191,16 +208,90 @@ This row is created by the `POST /api/users/create` route immediately after Supa
 
 ### Cascade behavior
 
-Every child table uses `onDelete: Cascade` on its `userId` relation. Deleting a `User` row deletes **all** of that user's transactions, imports, analytics, forecasts, rules, and corrections. This is what powers the "Delete account" feature in Settings — a single `prisma.user.delete()` cleans up everything.
+Every child table uses `onDelete: Cascade` on its `userId` relation. Deleting a `User` row deletes **all** of that user's accounts, transactions, imports, analytics, forecasts, rules, and corrections. This is what powers the "Delete account" feature in Settings — a single `prisma.user.delete()` cleans up everything.
 
 ---
 
-## 4. `CsvImport`
+## 4. `Account`
+
+```prisma
+enum AccountType {
+  personal_checking
+  personal_savings
+  business_checking
+  business_savings
+  investment
+  credit_card
+  other
+}
+
+model Account {
+  id          String      @id @default(uuid())
+  userId      String
+  name        String
+  institution String?
+  accountType AccountType @default(personal_checking)
+  currency    String      @default("EUR")
+  color       String?
+  isArchived  Boolean     @default(false)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions Transaction[]
+  csvImports   CsvImport[]
+
+  @@unique([userId, name])
+  @@index([userId])
+  @@map("accounts")
+}
+```
+
+Represents a single bank account (or credit card, investment account, etc.) belonging to a user. When a CSV is imported, the user assigns it to an account — every transaction from that file is tagged with `accountId`.
+
+| Field | Purpose |
+|---|---|
+| `name` | User-given label: `"Revolut Business"`, `"BNP Courant"`. Unique per user — upserted by name on creation. |
+| `institution` | Auto-detected bank name from CSV header metadata (e.g. `"Revolut"`, `"BNP"`). Nullable — not always detectable. |
+| `accountType` | `AccountType` enum. Drives UI labels and future filtering. Defaults to `personal_checking`. |
+| `currency` | ISO code, defaults to `"EUR"`. Stored here for potential future multi-currency account views. |
+| `color` | Hex accent for UI dot indicators (e.g. `"#3AB5A0"`). Chosen by the user in the import flow. |
+| `isArchived` | Soft-delete flag. Archived accounts are hidden from the account picker but their transactions remain. |
+
+### Why an Account model instead of a free-text label on Transaction?
+
+A dedicated model lets us:
+1. Show the user their accounts as a list (with transaction counts).
+2. Scope deduplication per-account — re-uploading the same Revolut export won't falsely deduplicate against a Barclays transaction with the same date/amount/description.
+3. Render per-account color dots consistently in the UI without storing color on every transaction row.
+
+### Deduplication scope
+
+The `@@unique([userId, name])` constraint prevents duplicate account names per user. At the transaction level, two partial DB indexes scope the `(date, description, amount)` uniqueness within the same account:
+
+```sql
+-- for transactions tagged to an account
+CREATE UNIQUE INDEX tx_dedup_with_account
+  ON transactions("userId", "accountId", "transactionDate", description, amount)
+  WHERE "accountId" IS NOT NULL;
+
+-- for transactions with no account tag
+CREATE UNIQUE INDEX tx_dedup_no_account
+  ON transactions("userId", "transactionDate", description, amount)
+  WHERE "accountId" IS NULL;
+```
+
+These are applied via `prisma/apply-account-indexes.sql` (run once, not tracked by Prisma). The application also enforces this in `POST /api/uploads/process` by pre-fetching existing rows and filtering duplicates before calling `createMany` — so the DB constraint is a safety net, not the primary mechanism.
+
+---
+
+## 5. `CsvImport`
 
 ```prisma
 model CsvImport {
   id            String   @id @default(uuid())
   userId        String
+  accountId     String?
   fileName      String
   status        String   @default("pending")
   totalRows     Int      @default(0)
@@ -209,6 +300,7 @@ model CsvImport {
   importedAt    DateTime @default(now())
 
   user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  account      Account?      @relation(fields: [accountId], references: [id], onDelete: SetNull)
   transactions Transaction[]
 
   @@index([userId])
@@ -220,11 +312,12 @@ One row per uploaded CSV file. This is the **audit trail** for uploads — it's 
 
 | Field | Purpose |
 |---|---|
+| `accountId` | Nullable FK to `Account`. Set when the user assigns the import to an account in the upload UI. `onDelete: SetNull` so archiving an account doesn't destroy the import audit trail. |
 | `fileName` | The original uploaded filename, shown in the UI. |
 | `status` | `"pending"` → `"completed"` (or `"failed"`). Set by `/api/uploads/process`. |
 | `totalRows` | Total data rows found in the CSV (including skipped/invalid ones). |
 | `importedRows` | Rows that were successfully parsed **and** inserted as new `Transaction` rows. |
-| `duplicateRows` | Rows that parsed successfully but were already in the database (matched the `Transaction` unique constraint — see below) and were therefore skipped. |
+| `duplicateRows` | Rows that parsed successfully but were already in the database (matched the dedup check — see [§4 Account](#4-account)) and were therefore skipped. |
 | `importedAt` | When the import was processed. |
 
 ### Why track `duplicateRows` separately from skipped rows?
@@ -240,6 +333,7 @@ model Transaction {
   id                 String   @id @default(uuid())
   userId             String
   csvImportId        String?
+  accountId          String?
   transactionDate    DateTime
   description        String
   amount             Decimal  @db.Decimal(12, 2)
@@ -252,11 +346,12 @@ model Transaction {
 
   user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   csvImport CsvImport? @relation(fields: [csvImportId], references: [id], onDelete: SetNull)
+  account   Account?   @relation(fields: [accountId], references: [id], onDelete: SetNull)
 
-  @@unique([userId, transactionDate, description, amount])
   @@index([userId, transactionDate])
   @@index([userId, transactionType])
   @@index([userId, transactionDate, transactionType])
+  @@index([userId, accountId])
   @@map("transactions")
 }
 ```
@@ -266,6 +361,7 @@ This is the **core table** — every other table either feeds it, is derived fro
 | Field | Purpose |
 |---|---|
 | `csvImportId` | Nullable FK to `CsvImport`. `onDelete: SetNull` means deleting an import does **not** delete its transactions by default in the schema — the app explicitly deletes the transactions for that import (see [USER_JOURNEY.md](./USER_JOURNEY.md)), but the FK is `SetNull` so orphaned rows never cause an FK-violation crash if that logic ever changes. |
+| `accountId` | Nullable FK to `Account`. Populated when the user assigns the CSV import to an account in the upload flow. Scopes deduplication — two rows are considered duplicates only if they share the same `(userId, accountId, transactionDate, description, amount)` tuple. See [§4 Account](#4-account). |
 | `transactionDate` | Always stored as a **UTC-midnight** `Date` (see [CSV_IMPORT.md](./CSV_IMPORT.md)) so month/year extraction (`getUTCMonth()`, `getUTCFullYear()`) is timezone-independent everywhere downstream. |
 | `description` | The raw description string from the bank statement, as-is (used both for display and as the categorization input). |
 | `amount` | `Decimal(12, 2)`, **always stored as a positive number**. The sign is captured separately by `transactionType` (income vs. expense), not by the sign of `amount`. This avoids "is a negative expense actually income?" ambiguity everywhere downstream. |
@@ -279,12 +375,35 @@ This is the **core table** — every other table either feeds it, is derived fro
 
 Floating-point arithmetic on money compounds rounding errors across thousands of transactions and months of aggregation. PostgreSQL's `Decimal` (mapped from Prisma's `Decimal` type, backed by `decimal.js` in the client) keeps every sum exact to the cent. Application code converts to `number` via `Number(tx.amount)` only at the point of use (display, arithmetic for analytics) — the database itself never loses precision.
 
-### The dedup constraint: `@@unique([userId, transactionDate, description, amount])`
+### Deduplication strategy
 
-This is the **most important constraint in the schema**. It's what makes "upload the same CSV twice" or "upload overlapping date ranges from two different exports" safe:
+Making "upload the same CSV twice" or "upload overlapping date ranges from two different exports" safe requires deduplication. The key challenge is that the uniqueness scope changed with the introduction of `Account`: a €4.50 coffee charge on the same day could legitimately appear in both a personal Monzo account and a business Revolut account — those are *not* duplicates, even though `(userId, transactionDate, description, amount)` collides.
 
-- If a row with the exact same `(userId, transactionDate, description, amount)` already exists, the new row is treated as a duplicate (counted in `CsvImport.duplicateRows`, not re-inserted).
-- This is a heuristic, not a perfect identity — two genuinely different transactions on the same day, with the same description and amount (e.g. two identical €4.50 coffee purchases), will collide and the second will be silently dropped as a "duplicate". In practice this is rare and the trade-off strongly favors preventing accidental double-counting from re-uploads, which is the much more common case for freelancers re-exporting bank statements with overlapping date ranges.
+**The solution: account-scoped deduplication via application-level pre-filtering and partial DB indexes.**
+
+**Application layer** (`POST /api/uploads/process`):
+1. Fetch all existing transactions for `(userId, accountId ?? null)` within the date range being imported.
+2. Build a `Set` of `"isoDate|description|amount"` fingerprints.
+3. Filter the incoming rows against the set — only truly new rows reach `createMany`.
+
+This is the *primary* mechanism. It avoids both NULL-in-unique-constraint PostgreSQL edge cases and the blunt `skipDuplicates: true` that Prisma used to use (which couldn't express account-scoped logic).
+
+**Database layer** (`prisma/apply-account-indexes.sql`):
+```sql
+-- Rows tagged to an account: dedup within that account
+CREATE UNIQUE INDEX tx_dedup_with_account
+  ON transactions("userId", "accountId", "transactionDate", description, amount)
+  WHERE "accountId" IS NOT NULL;
+
+-- Rows with no account: dedup globally (legacy imports)
+CREATE UNIQUE INDEX tx_dedup_no_account
+  ON transactions("userId", "transactionDate", description, amount)
+  WHERE "accountId" IS NULL;
+```
+
+These are a safety net only — `createMany` will still error if the application-level filter somehow missed a duplicate, but in normal operation the app filters first.
+
+The same heuristic limitation applies: two genuinely different transactions on the same day with the same description and amount (e.g. two identical €4.50 coffee purchases from the same account) will still collide. In practice this is rare; preventing accidental double-counting from re-uploads is the much more common case.
 
 ### Indexes
 

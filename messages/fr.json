@@ -374,6 +374,30 @@
       "error": "Une erreur s'est produite lors de la suppression de votre compte. Veuillez réessayer."
     }
   },
+  "accountTypes": {
+    "personal_checking": "Compte courant personnel",
+    "personal_savings": "Épargne personnelle",
+    "business_checking": "Compte courant professionnel",
+    "business_savings": "Épargne professionnelle",
+    "investment": "Investissement",
+    "credit_card": "Carte de crédit",
+    "other": "Autre"
+  },
+  "accountSelect": {
+    "stepLabel": "Étape 1 sur 2 — Choisir un compte",
+    "heading": "De quel compte provient ce relevé ?",
+    "subtitle": "Chaque transaction sera associée à ce compte pour suivre plusieurs banques séparément.",
+    "existingLabel": "Vos comptes",
+    "newLabel": "Ajouter un nouveau compte",
+    "nameLabel": "Nom du compte",
+    "namePlaceholder": "ex. Revolut Pro",
+    "typeLabel": "Type de compte",
+    "detectedHint": "Nous avons détecté \"{name}\" dans votre CSV — vous pouvez le modifier.",
+    "continueToFile": "Continuer vers le fichier →",
+    "createAndContinue": "Enregistrer le compte et continuer →",
+    "transactionsCount": "{count, plural, one {# transaction} other {# transactions}}",
+    "skipLabel": "Ignorer — ne pas suivre le compte"
+  },
   "upload": {
     "heading": "Importer un CSV",
     "subtitle": "Importez n'importe quel relevé bancaire au format CSV. Les imports complets et incrémentaux fonctionnent tous les deux.",

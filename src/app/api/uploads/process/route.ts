@@ -53,6 +53,7 @@ export async function POST(request: NextRequest) {
       hasMixedCurrencies,
       parsedEarliest,
       parsedLatest,
+      accountId,
     } = (await request.json()) as {
       transactions:       SerializedTransaction[];
       fileName:           string;
@@ -62,10 +63,22 @@ export async function POST(request: NextRequest) {
       hasMixedCurrencies: boolean;
       parsedEarliest:     string | null;
       parsedLatest:       string | null;
+      accountId?:         string;
     };
 
     if (!rawTransactions?.length) {
       return NextResponse.json({ error: "No transactions received" }, { status: 400 });
+    }
+
+    // If an accountId was supplied, verify it belongs to this user
+    if (accountId) {
+      const acc = await prisma.account.findUnique({
+        where: { id: accountId },
+        select: { userId: true },
+      });
+      if (!acc || acc.userId !== user.id) {
+        return NextResponse.json({ error: "Invalid account" }, { status: 403 });
+      }
     }
 
     // ── Re-hydrate dates ───────────────────────────────────────────────────
@@ -75,9 +88,6 @@ export async function POST(request: NextRequest) {
     }));
 
     // ── Merchant second pass ───────────────────────────────────────────────
-    // The browser parsed with an empty merchantIndex (it has no DB access).
-    // Re-run merchant lookup server-side — upgrades keyword/default categories
-    // to merchant-db when a match exists. Never overrides user-taught rules.
     const transactions: NormalizedTransaction[] = hydrated.map((tx) => {
       if (tx.categorySource === "learned") return tx;
       const result = categorizeTransaction(tx.description, tx.amount, new Map(), undefined, merchantIndex);
@@ -94,26 +104,63 @@ export async function POST(request: NextRequest) {
 
     const validRows = transactions.length;
 
+    // ── Application-level deduplication ───────────────────────────────────
+    // Mirrors the two partial DB indexes:
+    //   • accountId set   → dedup within (userId, accountId, date, description, amount)
+    //   • accountId null  → dedup within (userId, date, description, amount)
+    // We fetch existing rows for the date range being imported so we don't
+    // need to send duplicate rows to createMany at all.
+    let newTransactions = transactions;
+
+    if (transactions.length > 0) {
+      const dates = transactions.map(t => t.transactionDate.getTime());
+      const minDate = new Date(Math.min(...dates));
+      const maxDate = new Date(Math.max(...dates));
+
+      const existing = await prisma.transaction.findMany({
+        where: {
+          userId:          user.id,
+          accountId:       accountId ?? null,
+          transactionDate: { gte: minDate, lte: maxDate },
+        },
+        select: { transactionDate: true, description: true, amount: true },
+      });
+
+      const existingSet = new Set(
+        existing.map(t =>
+          `${t.transactionDate.toISOString()}|${t.description}|${Number(t.amount)}`
+        )
+      );
+
+      newTransactions = transactions.filter(tx =>
+        !existingSet.has(
+          `${tx.transactionDate.toISOString()}|${tx.description}|${tx.amount}`
+        )
+      );
+    }
+
     // ── Create import record ───────────────────────────────────────────────
     const csvImport = await prisma.csvImport.create({
       data: {
-        userId:   user.id,
-        fileName: fileName ?? "import.csv",
-        status:   "processing",
+        userId:    user.id,
+        accountId: accountId ?? null,
+        fileName:  fileName ?? "import.csv",
+        status:    "processing",
         totalRows,
       },
     });
 
-    // ── Batch insert with native duplicate skipping ────────────────────────
+    // ── Batch insert ───────────────────────────────────────────────────────
     let importedRows = 0;
 
-    for (let i = 0; i < transactions.length; i += BATCH_SIZE) {
-      const batch = transactions.slice(i, i + BATCH_SIZE);
+    for (let i = 0; i < newTransactions.length; i += BATCH_SIZE) {
+      const batch = newTransactions.slice(i, i + BATCH_SIZE);
 
       const result = await prisma.transaction.createMany({
         data: batch.map((tx) => ({
           userId:             user.id,
           csvImportId:        csvImport.id,
+          accountId:          accountId ?? null,
           transactionDate:    tx.transactionDate,
           description:        tx.description,
           amount:             new Decimal(tx.amount),
@@ -127,7 +174,6 @@ export async function POST(request: NextRequest) {
           intentSource:       tx.intentSource       ?? null,
           needsReview:        tx.needsReview,
         })),
-        skipDuplicates: true,
       });
 
       importedRows += result.count;
@@ -150,13 +196,11 @@ export async function POST(request: NextRequest) {
 
     console.log(
       `[Upload] Import complete — ${importedRows} new rows, ${duplicateRows} duplicates. ` +
+      `Account: ${accountId ?? "none"}. ` +
       `File range: ${parsedEarliest?.slice(0, 10) ?? "n/a"} to ${parsedLatest?.slice(0, 10) ?? "n/a"}`
     );
 
     // ── Build response ─────────────────────────────────────────────────────
-    const dateRangeFrom = parsedEarliest ?? null;
-    const dateRangeTo   = parsedLatest   ?? null;
-
     const categoryCounts: Record<string, number> = {};
     for (const tx of transactions) {
       categoryCounts[tx.category] = (categoryCounts[tx.category] ?? 0) + 1;
@@ -178,8 +222,8 @@ export async function POST(request: NextRequest) {
       importedRows,
       duplicateRows,
       skippedRows,
-      dateRangeFrom,
-      dateRangeTo,
+      dateRangeFrom:      parsedEarliest ?? null,
+      dateRangeTo:        parsedLatest   ?? null,
       categoriesDetected,
       currencies,
       hasMixedCurrencies,

@@ -138,7 +138,7 @@ flowchart TD
 
 ## 5. Database layer — Prisma
 
-- **`prisma/schema.prisma`** (193 lines) — 10 models: `User`, `CsvImport`, `Transaction`, `MonthlyAnalytics`, `CategoryRule`, `CategoryCorrection`, `Forecast`, `Merchant`, `MerchantAlias`, `UncategorizedMerchantReport`. Full field-by-field documentation, relationships, and cascade behavior: [DATABASE.md](./DATABASE.md).
+- **`prisma/schema.prisma`** — 11 models: `User`, `Account`, `CsvImport`, `Transaction`, `MonthlyAnalytics`, `CategoryRule`, `CategoryCorrection`, `Forecast`, `Merchant`, `MerchantAlias`, `UncategorizedMerchantReport`. Full field-by-field documentation, relationships, and cascade behavior: [DATABASE.md](./DATABASE.md).
 - **`src/lib/prisma.ts`** — the standard Next.js "singleton `PrismaClient`" pattern: stash the client on `globalThis` in development so hot-reloading doesn't open a new connection pool on every edit. Every server-side file does `import { prisma } from "@/lib/prisma"`.
 - **`prisma/seed.ts` + `prisma/seed-data/`** — seeds the `Merchant`/`MerchantAlias` tables from static merchant packs (global, France, UK, Europe). Run via `npm run db:seed`. See [CATEGORIZATION_ENGINE.md](./CATEGORIZATION_ENGINE.md) for how these feed the DB-backed merchant index.
 - Money fields are `Decimal(12,2)` — Prisma returns these as `Decimal` objects, which is why almost every API route and page does `Number(tx.amount)` etc. before sending values to the client or doing arithmetic.
@@ -190,7 +190,8 @@ flowchart LR
 
 | Component | Calls | Route | What happens |
 |---|---|---|---|
-| `CsvUploader.tsx` | `GET /api/uploads/rules` → parse CSV in browser → `POST /api/uploads/process` | `uploads/rules`, `uploads/process` | §8a |
+| `CsvUploader.tsx` | `GET /api/uploads/rules` → parse CSV → `GET /api/accounts` → `POST /api/uploads/process` | `uploads/rules`, `accounts`, `uploads/process` | §8a |
+| `CsvUploader.tsx` (account picker) | `GET /api/accounts` → `POST /api/accounts` | `accounts` | List existing accounts; create a new account before import |
 | `DeleteImportButton.tsx` | `DELETE /api/uploads/[id]` | `uploads/[id]` | Deletes an import's transactions, recalculates analytics + forecast |
 | `RecategorizeButton.tsx` | `PATCH /api/transactions/recategorize` | `transactions/recategorize` | §8b |
 | `RecategorizeAllButton.tsx` | `POST /api/transactions/recategorize-all` | `transactions/recategorize-all` | Re-runs categorization on every transaction |
@@ -218,22 +219,26 @@ The raw CSV file is parsed **entirely in the browser** and never sent to the ser
 flowchart TD
     A["CsvUploader.tsx\n(user selects/drops file)"] --> B["file.text()\n— read CSV in-memory\nnothing sent to server yet"]
     B --> C["GET /api/uploads/rules\n→ load CategoryRule + UserIntentRule\nfor this user (small JSON)"]
-    C --> D["parseCsv(csvText, learnedRules,\nEMPTY_MERCHANT_INDEX, userIntentRules)\n— pure function, client-side\nsee CSV_IMPORT.md + CATEGORIZATION_ENGINE.md"]
-    D --> E["POST /api/uploads/process\n{ transactions[], fileName, totalRows,\nskippedRows, currencies, ... }\n— structured rows only, no raw CSV"]
-    E --> F["loadMerchantIndex()\n— DB-backed merchant directory"]
-    F --> G["Merchant second pass:\ncategorizeTransaction() on each row\n— upgrades keyword/default categories\nif a merchant-db match exists\n— never overrides 'learned' source"]
-    G --> H["prisma.csvImport.create()\nstatus: 'processing'"]
-    H --> I["prisma.transaction.createMany()\nin batches of 1000,\nskipDuplicates: true"]
-    I --> J["prisma.csvImport.update()\nstatus: 'completed'"]
-    J --> K["recalculateMonthlyAnalytics(userId)\nsee ANALYTICS_ENGINE.md"]
-    K --> L["generateForecast(userId)\nsee FORECAST_ENGINE.md"]
-    L --> M["reportUncategorizedMerchants()\n→ UncategorizedMerchantReport"]
-    M --> N["Return summary:\nimportedRows, duplicateRows, skippedRows,\ndateRange, currencies, typeBreakdown"]
+    C --> D["parseCsv(csvText, learnedRules,\nEMPTY_MERCHANT_INDEX, userIntentRules)\n— pure function, client-side\nsee CSV_IMPORT.md + CATEGORIZATION_ENGINE.md\nreturns: transactions[], detectedAccount"]
+    D --> E["Account selection step:\nGET /api/accounts → show picker\nPOST /api/accounts if new account\n(detectedAccount pre-fills name field)"]
+    E --> F["POST /api/uploads/process\n{ transactions[], fileName, totalRows,\nskippedRows, currencies, accountId }\n— structured rows only, no raw CSV"]
+    F --> G["loadMerchantIndex()\n— DB-backed merchant directory"]
+    G --> H["Merchant second pass:\ncategorizeTransaction() on each row\n— upgrades keyword/default categories\nif a merchant-db match exists\n— never overrides 'learned' source"]
+    H --> I["Application-level dedup:\nfetch existing rows for (userId, accountId, dateRange)\nbuild fingerprint Set, filter incoming rows"]
+    I --> J["prisma.csvImport.create()\nstatus: 'processing', accountId"]
+    J --> K["prisma.transaction.createMany()\nnew rows only, in batches of 1000\neach tagged with accountId"]
+    K --> L["prisma.csvImport.update()\nstatus: 'completed'"]
+    L --> M["recalculateMonthlyAnalytics(userId)\nsee ANALYTICS_ENGINE.md"]
+    M --> N["generateForecast(userId)\nsee FORECAST_ENGINE.md"]
+    N --> O["reportUncategorizedMerchants()\n→ UncategorizedMerchantReport"]
+    O --> P["Return summary:\nimportedRows, duplicateRows, skippedRows,\ndateRange, currencies, typeBreakdown"]
 ```
 
 Key points:
 - **The raw CSV never leaves the browser.** `parseCsv()` runs client-side; the server only receives structured JSON. This is both a privacy guarantee and a scalability property — file size doesn't affect the server request body size, only browser memory.
+- **Account selection step**: after parsing, the user assigns the CSV to a bank account (or creates one). `parseCsv()` returns a `detectedAccount` extracted from CSV header metadata (e.g. `"Account Name: Revolut Business"`) which pre-fills the new-account form. Assigning an account is optional — the user can skip, in which case `accountId` is `null`.
 - **Two-pass categorization**: the browser pass uses the user's learned rules but an empty merchant index (no DB access). The server's second pass re-runs `categorizeTransaction()` against the full `Merchant`/`MerchantAlias` DB to upgrade any transaction that can be matched to a named merchant. User-learned categories (`categorySource: "learned"`) are skipped in the second pass.
+- **Account-scoped deduplication**: the app pre-fetches existing transactions for the same `(userId, accountId)` pair and date range, builds a fingerprint set, and filters before `createMany`. This replaces the old `skipDuplicates: true` approach, which couldn't scope uniqueness per account. See [DATABASE.md §4](./DATABASE.md#4-account) for the partial DB indexes that act as a secondary safety net.
 - **`/api/uploads/rules`** returns only the current user's `CategoryRule` and `UserIntentRule` rows — it does not expose any other user's data or any raw transaction content.
 - `recalculateMonthlyAnalytics` + `generateForecast` run **synchronously, in the request** — for very large imports this makes the request slower but keeps the dashboard always in sync immediately after upload (no background job queue exists in this app).
 - **`/api/uploads/presign`** still exists in the codebase but is no longer called by `CsvUploader.tsx` — it is dead code from the previous Supabase Storage upload flow.

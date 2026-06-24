@@ -20,6 +20,11 @@ export interface NormalizedTransaction {
   needsReview:      boolean;
 }
 
+export interface DetectedAccount {
+  name: string;         // raw value from the CSV header line, e.g. "Revolut Business"
+  institution?: string; // extracted institution when separable, e.g. "Revolut"
+}
+
 export interface ProcessResult {
   transactions: NormalizedTransaction[];
   totalRows: number;
@@ -29,6 +34,7 @@ export interface ProcessResult {
   hasMixedCurrencies: boolean;   // true when > 1 distinct currency detected
   parsedEarliest: Date | null;   // earliest transaction date in this file
   parsedLatest: Date | null;     // latest transaction date in this file
+  detectedAccount: DetectedAccount | null; // account info extracted from CSV metadata rows
 }
 
 // ── BOM removal ───────────────────────────────────────────────────────────────
@@ -42,6 +48,72 @@ function stripBOM(text: string): string {
 // same keyword lists as their unaccented equivalents.
 function normalize(s: string): string {
   return s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
+}
+
+// ── Account header detection ──────────────────────────────────────────────────
+// Many bank exports prepend account metadata before the transaction rows.
+// Scan those lines for known patterns and return a best-guess account name.
+// Examples from real exports:
+//   "Account Name: Revolut Business"          → { name:"Revolut Business", institution:"Revolut" }
+//   "Account Number: GB29NWBK60161331926819"  → { name:"GB29NWBK…", institution:undefined }
+//   "Account: Current Account"                → { name:"Current Account" }
+//   "Bank: BNP Paribas"                       → { name:"BNP Paribas", institution:"BNP Paribas" }
+
+const ACCOUNT_HEADER_PATTERNS: { re: RegExp; isInstitution?: boolean }[] = [
+  { re: /^account\s+name\s*[:\-]\s*(.+)/i },
+  { re: /^account\s+holder\s*[:\-]\s*(.+)/i },
+  { re: /^account\s+title\s*[:\-]\s*(.+)/i },
+  { re: /^account\s*[:\-]\s*(.+)/i },
+  { re: /^nom\s+du\s+compte\s*[:\-]\s*(.+)/i },          // French
+  { re: /^titulaire\s*[:\-]\s*(.+)/i },                    // French account holder
+  { re: /^bank\s*[:\-]\s*(.+)/i, isInstitution: true },
+  { re: /^banque\s*[:\-]\s*(.+)/i, isInstitution: true },  // French
+  { re: /^iban\s*[:\-]\s*([A-Z]{2}\w+)/i },
+  { re: /^account\s+number\s*[:\-]\s*(\S+)/i },
+  { re: /^sort\s+code\s*[:\-]\s*(\S+)/i },
+];
+
+// Well-known institution name prefixes to extract from account names like "Revolut Business"
+const INSTITUTION_PREFIXES = [
+  "revolut", "monzo", "starling", "wise", "n26", "bunq",
+  "barclays", "natwest", "lloyds", "hsbc", "santander", "halifax",
+  "bnp", "credit agricole", "societe generale", "lcl", "ing",
+  "paypal", "stripe",
+];
+
+function detectAccountFromMetadata(lines: string[]): DetectedAccount | null {
+  const limit = Math.min(lines.length, 20);
+  let name: string | undefined;
+  let institution: string | undefined;
+
+  for (let i = 0; i < limit; i++) {
+    const line = lines[i].trim();
+    for (const { re, isInstitution } of ACCOUNT_HEADER_PATTERNS) {
+      const m = line.match(re);
+      if (m) {
+        const val = m[1].trim().replace(/^["']|["']$/g, ""); // strip quotes
+        if (!val) continue;
+        if (isInstitution) {
+          institution = institution ?? val;
+        } else if (!name) {
+          name = val;
+          // Try to extract institution from names like "Revolut Business" or "BNP Paribas Courant"
+          const lower = val.toLowerCase();
+          for (const prefix of INSTITUTION_PREFIXES) {
+            if (lower.startsWith(prefix)) {
+              institution = institution ?? (val.slice(0, prefix.length).trim() ||
+                val.split(/\s+/)[0]);
+              break;
+            }
+          }
+        }
+      }
+    }
+    if (name && institution) break;
+  }
+
+  if (!name) return null;
+  return { name, ...(institution ? { institution } : {}) };
 }
 
 // ── Metadata row skipping ─────────────────────────────────────────────────────
@@ -296,8 +368,9 @@ export function parseCsv(
   // 1. Strip BOM
   const clean = stripBOM(csvText);
 
-  // 2. Split into lines and find where the real header starts
+  // 2. Split into lines, detect account metadata, find where the real header starts
   const allLines = clean.split(/\r?\n/);
+  const detectedAccount = detectAccountFromMetadata(allLines);
   const headerIdx = findHeaderRowIndex(allLines);
   const csvFromHeader = allLines.slice(headerIdx).join("\n");
 
@@ -310,7 +383,7 @@ export function parseCsv(
 
   const rows = (result as Papa.ParseResult<RawRow>).data;
   if (!rows.length) {
-    return { transactions: [], totalRows: 0, validRows: 0, skippedRows: 0, currencies: [], hasMixedCurrencies: false, parsedEarliest: null, parsedLatest: null };
+    return { transactions: [], totalRows: 0, validRows: 0, skippedRows: 0, currencies: [], hasMixedCurrencies: false, parsedEarliest: null, parsedLatest: null, detectedAccount };
   }
 
   const headers = Object.keys(rows[0]);
@@ -426,5 +499,6 @@ export function parseCsv(
     hasMixedCurrencies: currencies.length > 1,
     parsedEarliest,
     parsedLatest,
+    detectedAccount,
   };
 }

@@ -289,7 +289,24 @@ Each surviving row is categorized via `categorizeTransaction()` (see [CATEGORIZA
 
 ### Deduplication (handled downstream, not in `parseCsv`)
 
-`parseCsv()` does **not** deduplicate against existing data — that's enforced by the database's `@@unique([userId, transactionDate, description, amount])` constraint and `createMany({ skipDuplicates: true })` in `/api/uploads/process`. Re-uploading the same file (or an overlapping date range) is therefore safe: identical rows are silently skipped at the DB layer and counted as `duplicateRows` on the `CsvImport` record. See [DATABASE.md §4–5](./DATABASE.md#4-csvimport).
+`parseCsv()` does **not** deduplicate against existing data — that happens in `/api/uploads/process` using application-level pre-filtering scoped to the `(userId, accountId)` pair being imported. Re-uploading the same file (or an overlapping date range) is therefore safe: identical rows are filtered out before `createMany` and counted as `duplicateRows` on the `CsvImport` record. See [DATABASE.md §4 Account](./DATABASE.md#4-account) for the full dedup strategy, including the partial DB indexes that act as a secondary safety net.
+
+### Account detection from CSV metadata (`detectedAccount`)
+
+Many bank exports prepend metadata rows above the actual column header. `parseCsv()` now scans these rows for known account-name patterns before the column-detection phase:
+
+```ts
+const ACCOUNT_HEADER_PATTERNS = [
+  /^account\s*name\s*[:\-]/i,
+  /^account\s*holder\s*[:\-]/i,
+  /^account\s*[:\-]/i,
+  /^iban\s*[:\-]/i,
+  /^bank\s*[:\-]/i,
+  // French equivalents…
+];
+```
+
+If a match is found, the account name (and institution, if a known bank prefix is recognized) is returned as `detectedAccount: { name, institution? }` in the `ProcessResult`. The upload UI pre-fills the new-account form with this value so the user doesn't have to type it manually. See `detectAccountFromMetadata()` in `csv-processor.ts`.
 
 ---
 
