@@ -469,11 +469,12 @@
       "stillStuck": "Toujours bloqué ? Contactez-nous, on vous aide →",
       "noTransactions": {
         "heading": "Nous n'avons pas trouvé vos transactions",
-        "reason": "Votre fichier a bien été importé, mais nous n'avons pas pu lire les données de transactions qu'il contient.",
+        "reason": "Votre fichier a bien été importé, mais nous n'avons pas pu lire les données de transactions. Cela signifie généralement que les noms de colonnes de votre CSV ne correspondent pas à ce que nous attendons.",
         "steps": [
           "Assurez-vous d'avoir exporté au format CSV, et non Excel (.xlsx) ou PDF",
-          "Réexportez directement depuis le site ou l'application de votre banque",
-          "Le fichier doit contenir des colonnes Date, Description et Montant"
+          "Colonne date : Date, Transaction Date, Booking Date, Value Date",
+          "Colonne description : Description, Détails, Narration, Libellé, Memo, Référence, Remarks",
+          "Colonne montant : Montant, Débit, Crédit, Money In, Money Out, DR, CR"
         ]
       },
       "emptyFile": {

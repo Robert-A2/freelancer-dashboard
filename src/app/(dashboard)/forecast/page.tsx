@@ -78,7 +78,12 @@ export default async function ForecastPage() {
     intentBreakdown.hasEnoughDataForDisplay ? intentBreakdown : null
   );
 
-  const hasData = monthCount > 0;
+  // Use the same definition as analytics/page.tsx: require at least one month with
+  // real income or expense data. monthCount > 0 alone is insufficient — a user who
+  // uploaded a CSV where every row was classified as "transfer" would have monthly
+  // analytics records with zero income/expenses, causing confusing zero projections
+  // to appear instead of the empty state.
+  const hasData = chartData.some(d => d.income > 0 || d.expenses > 0);
 
   // ── Computed metrics ────────────────────────────────────────────────────────
   const activeMonths   = chartData.filter(d => d.income > 0 || d.expenses > 0);

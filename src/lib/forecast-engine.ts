@@ -309,6 +309,15 @@ export async function generateForecast(userId: string): Promise<ForecastResult |
 
   const incomes  = records.map(r => Number(r.totalIncome));
   const expenses = records.map(r => Number(r.totalExpenses));
+
+  // No meaningful forecast can be generated when the user has uploaded only
+  // transfer transactions — all income and expense values are zero.
+  const hasAnyIncome   = incomes.some(v => v > 0);
+  const hasAnyExpenses = expenses.some(v => v > 0);
+  if (!hasAnyIncome && !hasAnyExpenses) {
+    await prisma.forecast.deleteMany({ where: { userId } });
+    return null;
+  }
   const savings  = records.map(r => Number(r.totalSavings));
 
   let projectedIncome   = weightedAvg(incomes);

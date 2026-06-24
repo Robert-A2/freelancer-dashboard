@@ -469,11 +469,12 @@
       "stillStuck": "Still stuck? Email us and we'll help →",
       "noTransactions": {
         "heading": "We couldn't find your transactions",
-        "reason": "Your file uploaded successfully but we couldn't read the transaction data inside it.",
+        "reason": "Your file uploaded successfully but we couldn't read the transaction data inside it. This usually means the column names in your CSV don't match what we expect.",
         "steps": [
           "Make sure you exported as CSV, not Excel (.xlsx) or PDF",
-          "Re-export directly from your bank's website or app",
-          "The file should have Date, Description, and Amount columns"
+          "Date column: Date, Transaction Date, Booking Date, Value Date",
+          "Description column: Description, Details, Narration, Narrative, Memo, Reference, Remarks",
+          "Amount column: Amount, Debit, Credit, Money In, Money Out, DR, CR"
         ]
       },
       "emptyFile": {

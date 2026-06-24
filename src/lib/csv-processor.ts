@@ -148,10 +148,10 @@ function detectColumns(headers: string[]): {
     "datum", "fecha", "data", "started date", "completed date",
   ];
   const descCandidates = [
-    "description", "details", "narrative", "memo", "payee", "merchant",
+    "description", "details", "narrative", "narration", "memo", "payee", "merchant",
     "name", "reference", "particulars", "transaction description",
     "omschrijving", "payment reference", "transaction details",
-    "beneficiary name", "remittance info", "libelle",
+    "beneficiary name", "remittance info", "libelle", "remarks",
   ];
   // Only use as single amount col if NOT also paired with a separate debit col.
   // debit/credit pair detection happens separately and overrides this.
@@ -187,13 +187,17 @@ function detectDebitCreditColumns(headers: string[]): {
 } {
   const lower = headers.map((h) => normalize(h));
 
-  const debitKeywords  = ["debit", "withdrawal", "money out", "paid out", "payments out", "out ", "amount out", "withdrawals"];
-  const creditKeywords = ["credit", "deposit", "money in", "paid in", "payments in", "in ",  "amount in", "deposits"];
+  const debitKeywords  = ["debit", "withdrawal", "money out", "paid out", "payments out", "out ", "amount out", "withdrawals", "dr"];
+  const creditKeywords = ["credit", "deposit", "money in", "paid in", "payments in", "in ",  "amount in", "deposits", "cr"];
   const drCrKeywords   = ["d/c", "cr/dr", "dr/cr", "dc", "debit/credit indicator", "credit/debit"];
 
+  // Short keywords (≤2 chars like "dr", "cr") use exact-match only to prevent false
+  // positives — e.g. "dr" as substring would match "address", "credit", "description".
   const findCol = (keywords: string[]) => {
     for (const kw of keywords) {
-      const idx = lower.findIndex((h) => h === kw || h.startsWith(kw) || h.endsWith(kw) || h.includes(kw));
+      const idx = kw.length <= 2
+        ? lower.findIndex((h) => h === kw)
+        : lower.findIndex((h) => h === kw || h.startsWith(kw) || h.endsWith(kw) || h.includes(kw));
       if (idx !== -1) return headers[idx];
     }
     return null;
@@ -300,21 +304,24 @@ const MONTH_ABBR: Record<string, number> = {
 // ── Date parsing ──────────────────────────────────────────────────────────────
 // ALL formats produce a UTC-midnight Date so month/year extraction is
 // timezone-independent everywhere downstream (getUTCMonth, getUTCFullYear).
+//
+// End-of-string anchors ($) are intentionally omitted from numeric patterns so
+// dates with trailing time components (e.g. "15/01/2024 09:14:38") parse correctly.
 export function parseDate(raw: string): Date | null {
   if (!raw?.trim()) return null;
   const s = raw.trim();
 
-  // YYYY-MM-DD (ISO 8601, with optional time component) — keep date part only
-  const isoDate = s.match(/^(\d{4})[-\/](\d{2})[-\/](\d{2})/);
+  // YYYY-MM-DD or YYYY/MM/DD (ISO 8601, with optional time component)
+  // Accepts 1-2 digit month/day to handle banks that omit zero-padding ("2024/1/5").
+  const isoDate = s.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})/);
   if (isoDate) {
     const date = new Date(Date.UTC(+isoDate[1], +isoDate[2] - 1, +isoDate[3]));
     return isNaN(date.getTime()) ? null : date;
   }
 
-  // DD/MM/YYYY  DD-MM-YYYY  DD.MM.YYYY
-  // Validates that month field is 1-12 so US-format dates (e.g. "01/13/2023")
-  // fall through to the MM/DD/YYYY branch below rather than wrapping.
-  const dmy = s.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{2,4})$/);
+  // DD/MM/YYYY  DD-MM-YYYY  DD.MM.YYYY  (with optional time suffix, 2 or 4-digit year)
+  // Validates month 1-12 so US-format dates (e.g. "01/13/2023") fall through to mdy.
+  const dmy = s.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{2,4})/);
   if (dmy) {
     const [, dd, mm, yy] = dmy;
     const year = yy.length === 2 ? 2000 + +yy : +yy;
@@ -324,8 +331,8 @@ export function parseDate(raw: string): Date | null {
     }
   }
 
-  // MM/DD/YYYY (US format) — only reached when first field > 12
-  const mdy = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  // MM/DD/YYYY (US format) — only reached when month field > 12 (with optional time suffix)
+  const mdy = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
   if (mdy) {
     const [, mm, dd, yy] = mdy;
     if (+mm <= 12 && +dd >= 1 && +dd <= 31) {
@@ -334,22 +341,26 @@ export function parseDate(raw: string): Date | null {
     }
   }
 
-  // "01 Jan 2024" or "01 January 2024"
-  const dmyText = s.match(/^(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})$/);
+  // "01 Jan 2024", "01-Jan-2024", "01 January 2024" (with optional time suffix, 2 or 4-digit year)
+  const dmyText = s.match(/^(\d{1,2})[\s\-]+([A-Za-z]+)[\s\-]+(\d{2,4})/);
   if (dmyText) {
     const month = MONTH_ABBR[dmyText[2].toLowerCase().slice(0, 3)];
     if (month !== undefined) {
-      const date = new Date(Date.UTC(+dmyText[3], month, +dmyText[1]));
+      const yy = dmyText[3];
+      const year = yy.length === 2 ? 2000 + +yy : +yy;
+      const date = new Date(Date.UTC(year, month, +dmyText[1]));
       return isNaN(date.getTime()) ? null : date;
     }
   }
 
-  // "Jan 01, 2024" or "January 01, 2024"
-  const mdyText = s.match(/^([A-Za-z]+)\s+(\d{1,2}),?\s+(\d{4})$/);
+  // "Jan 01, 2024", "January 01, 2024", "Jan-01-2024" (with optional time suffix, 2 or 4-digit year)
+  const mdyText = s.match(/^([A-Za-z]+)[\s\-]+(\d{1,2}),?[\s\-]+(\d{2,4})/);
   if (mdyText) {
     const month = MONTH_ABBR[mdyText[1].toLowerCase().slice(0, 3)];
     if (month !== undefined) {
-      const date = new Date(Date.UTC(+mdyText[3], month, +mdyText[2]));
+      const yy = mdyText[3];
+      const year = yy.length === 2 ? 2000 + +yy : +yy;
+      const date = new Date(Date.UTC(year, month, +mdyText[2]));
       return isNaN(date.getTime()) ? null : date;
     }
   }
