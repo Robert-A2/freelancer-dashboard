@@ -188,22 +188,38 @@ export async function POST(request: NextRequest) {
       data: { status: "completed", importedRows, duplicateRows },
     });
 
-    // ── Payer identity resolution ──────────────────────────────────────────
-    // Identify WHO sent each payment. Revenue confidence is derived from
-    // payer behaviour (repeat payments, cadence, consistency) — not keywords.
-    const newTxIds = await prisma.transaction.findMany({
-      where:  { csvImportId: csvImport.id },
-      select: { id: true },
-    });
-    await resolvePayers(user.id, newTxIds.map((t) => t.id));
+    // ── Post-import enrichment pipeline ───────────────────────────────────
+    // Each step is isolated: a failure here must NOT fail the upload response.
+    // The import data is already saved and the csvImport record is "completed".
+    // Errors are logged for debugging but the user always gets a success response.
+    try {
+      const newTxIds = await prisma.transaction.findMany({
+        where:  { csvImportId: csvImport.id },
+        select: { id: true },
+      });
+      await resolvePayers(user.id, newTxIds.map((t) => t.id));
+    } catch (err) {
+      console.error("[Upload] resolvePayers failed (non-fatal):", err);
+    }
 
-    // ── Update analytics + forecast ────────────────────────────────────────
-    await recalculateMonthlyAnalytics(user.id);
-    await recomputeVerifiedRevenue(user.id);
-    await generateForecast(user.id);
+    try {
+      await recalculateMonthlyAnalytics(user.id);
+      await recomputeVerifiedRevenue(user.id);
+    } catch (err) {
+      console.error("[Upload] analytics recalculation failed (non-fatal):", err);
+    }
 
-    // ── Feed the global uncategorized-merchant worklist ────────────────────
-    await reportUncategorizedMerchants(transactions);
+    try {
+      await generateForecast(user.id);
+    } catch (err) {
+      console.error("[Upload] forecast generation failed (non-fatal):", err);
+    }
+
+    try {
+      await reportUncategorizedMerchants(transactions);
+    } catch (err) {
+      console.error("[Upload] merchant reporting failed (non-fatal):", err);
+    }
 
     console.log(
       `[Upload] Import complete — ${importedRows} new rows, ${duplicateRows} duplicates. ` +

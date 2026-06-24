@@ -599,10 +599,12 @@ export async function resolvePayers(
     }
   }
 
-  // Apply payerId + needsReview to resolved transactions
-  if (txUpdates.length > 0) {
+  // Apply payerId + needsReview to resolved transactions.
+  // Batched to avoid exhausting the DB connection pool on large imports.
+  const UPDATE_BATCH = 50;
+  for (let i = 0; i < txUpdates.length; i += UPDATE_BATCH) {
     await Promise.all(
-      txUpdates.map((u) =>
+      txUpdates.slice(i, i + UPDATE_BATCH).map((u) =>
         prisma.transaction.update({
           where: { id: u.id },
           data:  { payerId: u.payerId, needsReview: u.needsReview },
