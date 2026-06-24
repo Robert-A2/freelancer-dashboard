@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getTranslations } from "next-intl/server";
 import Link from "next/link";
 import LanguageSwitcher from "@/components/ui/LanguageSwitcher";
-import ProductWalkthrough, { type WalkthroughStep, type WalkthroughSample } from "@/components/landing/ProductWalkthrough";
+import DemoSection from "@/components/landing/DemoSection";
 
 export default async function LandingPage() {
   const supabase = await createClient();
@@ -17,9 +17,6 @@ export default async function LandingPage() {
   const understandIcons = ["💰", "📊", "🔮", "💡"];
 
   const recognitionItems = t.raw("recognition.items") as string[];
-
-  const walkthroughSteps = t.raw("walkthrough.steps") as WalkthroughStep[];
-  const walkthroughSample = t.raw("walkthrough.sample") as WalkthroughSample;
 
   const historyPoints = t.raw("history.points") as string[];
   const historyTiers = t.raw("history.tiers") as { label: string; title: string; body: string }[];
@@ -88,15 +85,8 @@ export default async function LandingPage() {
             </div>
           </div>
 
-          <div className="relative">
-            <h2 className="sr-only">{t("walkthrough.title")}</h2>
-            <p className="text-xs font-medium text-[#3AB5A0] uppercase tracking-widest mb-3 text-center lg:text-left">
-              {t("walkthrough.eyebrow")}
-            </p>
-            <ProductWalkthrough steps={walkthroughSteps} sample={walkthroughSample} />
-            <p className="text-xs text-[#6A97B4] mt-3 text-center lg:text-left">
-              {t("walkthrough.caption")}
-            </p>
+          <div>
+            <DemoSection />
           </div>
         </div>
       </section>

@@ -1,0 +1,207 @@
+import { getTranslations, getLocale } from "next-intl/server";
+import { INTL_LOCALES, type Locale } from "@/i18n/locales";
+import { getDemoDataset } from "@/lib/demo";
+import { computeCategoryBreakdown, computeIncomeBySource, computeYtdTotals } from "@/lib/demo/engine";
+import { formatCurrency } from "@/utils/finance";
+import DataCoverageBar from "@/components/dashboard/DataCoverage";
+import CashflowChart from "@/components/analytics/CashflowChart";
+import FinancialStory from "@/components/analytics/FinancialStory";
+import CollapsibleSection from "@/components/ui/CollapsibleSection";
+import ExpenseBreakdown from "@/components/analytics/ExpenseBreakdown";
+import type { BreakdownItem } from "@/components/analytics/ExpenseBreakdown";
+import Link from "next/link";
+
+export const dynamic = "force-dynamic";
+
+function pctChange(curr: number, prev: number): number {
+  if (prev === 0) return curr > 0 ? 100 : 0;
+  return Math.round(((curr - prev) / Math.abs(prev)) * 100);
+}
+
+function ChangeChip({ value, invert = false }: { value: number; invert?: boolean }) {
+  const good = invert ? value <= 0 : value >= 0;
+  return (
+    <span className={`text-xs font-semibold px-1.5 py-0.5 rounded ${good ? "bg-[#4CC4A415] text-[#4CC4A4]" : "bg-[#D9707015] text-[#D97070]"}`}>
+      {value >= 0 ? "↑" : "↓"} {Math.abs(value)}%
+    </span>
+  );
+}
+
+export default async function DemoAnalyticsPage() {
+  const t          = await getTranslations("analytics");
+  const tm         = await getTranslations("metrics");
+  const tCategories = await getTranslations("categories");
+  const locale     = (await getLocale()) as Locale;
+
+  const { chartData, coverage, categoryInsights, concentration, rankedInsights, nonZeroMonths } = getDemoDataset(locale);
+  const categoryBreakdown = computeCategoryBreakdown();
+  const incomeBySource    = computeIncomeBySource();
+  const ytd               = computeYtdTotals();
+
+  const hasData = chartData.some(d => d.income > 0 || d.expenses > 0);
+
+  const { dataYear, prevYear, dataMonthMax, ytdInc, ytdExp, ytdCash, prevInc, prevExp, prevCash } = ytd;
+  const ytdMargin  = ytdInc  > 0 ? Math.round((ytdCash  / ytdInc)  * 100) : null;
+  const prevMargin = prevInc > 0 ? Math.round((prevCash / prevInc) * 100) : null;
+  const showPrevYearComparison = prevInc > 0;
+
+  const now = new Date();
+  const ytdSectionLabel = dataYear === now.getUTCFullYear() ? t("ytdSection.yearToDate") : t("ytdSection.annualComparison");
+
+  const ytdStartMonthLabel = new Date(Date.UTC(dataYear, 0, 1)).toLocaleDateString(INTL_LOCALES[locale], { month: "long", timeZone: "UTC" });
+  const ytdEndMonthLabel   = new Date(Date.UTC(dataYear, dataMonthMax - 1, 1)).toLocaleDateString(INTL_LOCALES[locale], { month: "long", timeZone: "UTC" });
+
+  const totalExpenses = categoryBreakdown.reduce((s, c) => s + c.total, 0);
+  const totalIncSrc   = incomeBySource.reduce((s, c) => s + c.total, 0);
+
+  const incSinceLabel = new Date(Date.UTC(dataYear, dataMonthMax - 12, 1)).toISOString();
+
+  return (
+    <div className="space-y-8 md:space-y-10">
+      <div>
+        <h1 className="text-2xl font-bold">{t("title")}</h1>
+        <p className="text-[#7BA8C4] text-sm mt-0.5">{t("subtitle")}</p>
+      </div>
+
+      {coverage.count > 0 && <DataCoverageBar coverage={coverage} />}
+
+      {hasData && (
+        <>
+          {/* ── Year-to-date comparison ────────────────────────────────────── */}
+          <CollapsibleSection
+            label={ytdSectionLabel}
+            title={showPrevYearComparison
+              ? t("ytdSection.titleVs", { dataYear: String(dataYear), prevYear: String(prevYear) })
+              : dataMonthMax === 1
+                ? t("ytdSection.titleCurrentSingle", { month: ytdStartMonthLabel, dataYear: String(dataYear) })
+                : t("ytdSection.titleCurrent", { startMonth: ytdStartMonthLabel, endMonth: ytdEndMonthLabel, dataYear: String(dataYear) })}
+            subtitle={showPrevYearComparison
+              ? t("ytdSection.subtitle", { endMonth: ytdEndMonthLabel })
+              : t("ytdSection.subtitleCurrent")}
+          >
+            <div className="card">
+              {!showPrevYearComparison && (
+                <p className="text-xs text-[#6A97B4] mb-4">{t("ytdSection.noComparisonYet")}</p>
+              )}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                {[
+                  { key: "income",   label: tm("income"),   curr: ytdInc,  prev: prevInc,  color: "text-[#4CC4A4]", invert: false },
+                  { key: "expenses", label: tm("expenses"), curr: ytdExp,  prev: prevExp,  color: "text-[#D4A254]", invert: true  },
+                  { key: "cashflow", label: tm("cashflow"), curr: ytdCash, prev: prevCash, color: ytdCash >= 0 ? "text-[#3AB5A0]" : "text-[#D97070]", invert: false },
+                ].map(item => {
+                  const change = showPrevYearComparison ? pctChange(item.curr, item.prev) : null;
+                  return (
+                    <div key={item.key} className="bg-[#1A3048] rounded-xl p-4">
+                      <p className="label mb-1">{item.label}</p>
+                      <p className={`text-lg font-bold tabular-nums ${item.color} mb-1`}>{formatCurrency(item.curr, locale)}</p>
+                      <div className="flex items-center gap-2">
+                        {change !== null && <ChangeChip value={change} invert={item.invert} />}
+                        {showPrevYearComparison && (
+                          <span className="text-xs text-[#6A97B4]">
+                            {t("ytdSection.lastYr", { amount: formatCurrency(item.prev, locale) })}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+                <div className="bg-[#1A3048] rounded-xl p-4">
+                  <p className="label mb-1">{tm("margin")}</p>
+                  <p className={`text-lg font-bold tabular-nums mb-1 ${
+                    ytdMargin === null ? "text-[#6A97B4]"
+                      : ytdMargin >= 30 ? "text-[#4CC4A4]"
+                      : ytdMargin >= 10 ? "text-[#D4A254]"
+                      : "text-[#D97070]"
+                  }`}>
+                    {ytdMargin !== null ? `${ytdMargin}%` : "—"}
+                  </p>
+                  <div className="flex items-center gap-2">
+                    {ytdMargin !== null && prevMargin !== null && showPrevYearComparison && (
+                      <ChangeChip value={ytdMargin - prevMargin} />
+                    )}
+                    {prevMargin !== null && showPrevYearComparison && (
+                      <span className="text-xs text-[#6A97B4]">{t("ytdSection.marginLastYr", { pct: String(prevMargin) })}</span>
+                    )}
+                    {ytdMargin !== null && !showPrevYearComparison && (
+                      <span className="text-xs text-[#6A97B4]">{t("ytdSection.ofIncomeKept")}</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </CollapsibleSection>
+
+          {/* ── Cashflow chart ─────────────────────────────────────────────── */}
+          <CollapsibleSection label={t("cashflowSection.label")} title={t("cashflowSection.title")}>
+            <CashflowChart data={chartData} hideHeader />
+          </CollapsibleSection>
+
+          {/* ── Income sources + Expense breakdown ────────────────────────── */}
+          <CollapsibleSection label={t("breakdownsSection.label")} title={t("breakdownsSection.title")}>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 md:gap-6">
+              <ExpenseBreakdown
+                type="income"
+                since={incSinceLabel}
+                breakdown={incomeBySource.map((src): BreakdownItem => ({
+                  category: src.category,
+                  total: src.total,
+                  pct: src.pct,
+                  trend: null,
+                }))}
+                labels={{
+                  title:    t("breakdownsSection.incomeSources"),
+                  subtitle: t("breakdownsSection.last12Months"),
+                  empty:    t("breakdownsSection.noIncomeData"),
+                }}
+              />
+
+              <ExpenseBreakdown
+                breakdown={categoryBreakdown.map((cat): BreakdownItem => {
+                  const trend = categoryInsights.topExpenseCategories.find(c => c.category === cat.category);
+                  return {
+                    category: cat.category,
+                    total: cat.total,
+                    pct: totalExpenses > 0 ? Math.round((cat.total / totalExpenses) * 100) : 0,
+                    trend: trend?.yearOverYearTrend === "growing"
+                      ? "growing"
+                      : trend?.yearOverYearTrend === "declining"
+                      ? "declining"
+                      : "stable",
+                  };
+                })}
+                labels={{
+                  title:    t("breakdownsSection.expenseBreakdown"),
+                  subtitle: t("breakdownsSection.allTime"),
+                  empty:    t("breakdownsSection.noExpenseData"),
+                }}
+              />
+            </div>
+          </CollapsibleSection>
+
+          {/* ── Client section ─────────────────────────────────────────────── */}
+          <div className="flex items-center gap-2 mt-1">
+            <Link href="/demo/clients" className="inline-flex items-center gap-1.5 text-sm text-[#3AB5A0] hover:text-[#4CC4A4] font-medium transition-colors">
+              {t("clientSection.trustCenter")}
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+              </svg>
+            </Link>
+          </div>
+
+          {/* ── Financial Story ────────────────────────────────────────────── */}
+          {rankedInsights.length > 0 && (
+            <div id="financial-story">
+              <CollapsibleSection
+                label={t("storySection.label")}
+                title={t("storySection.title")}
+                subtitle={t("storySection.subtitle")}
+              >
+                <FinancialStory insights={rankedInsights} totalMonths={nonZeroMonths} />
+              </CollapsibleSection>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}

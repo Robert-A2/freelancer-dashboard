@@ -31,7 +31,7 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const { pathname } = request.nextUrl;
-  const publicPaths = ["/login", "/signup", "/reset-password"];
+  const publicPaths = ["/login", "/signup", "/reset-password", "/demo"];
 
   // Pages an already-authenticated user should be bounced away from.
   // "/reset-password" is deliberately NOT included here: exchanging the
