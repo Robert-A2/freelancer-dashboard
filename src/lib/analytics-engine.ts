@@ -113,10 +113,13 @@ export interface MonthPoint {
   month: string;
   year: number;
   monthNum: number;
-  income: number;
+  income: number;           // raw bank inflows (totalIncome)
   expenses: number;
   savings: number;
   cashflow: number;
+  verifiedRevenue: number;  // HIGH-confidence payer payments only
+  likelyRevenue: number;    // MEDIUM-confidence payer payments
+  reviewRevenue: number;    // LOW-confidence — Needs Review
 }
 
 // ── getHistoricalData ──────────────────────────────────────────────────────────
@@ -175,13 +178,16 @@ export async function getHistoricalData(userId: string, months: number): Promise
     const rec   = recordMap.get(`${y}-${m}`);
 
     result.push({
-      month:    label,
-      year:     y,
-      monthNum: m,
-      income:   rec ? Number(rec.totalIncome)   : 0,
-      expenses: rec ? Number(rec.totalExpenses) : 0,
-      savings:  rec ? Number(rec.totalSavings)  : 0,
-      cashflow: rec ? Number(rec.netCashflow)   : 0,
+      month:           label,
+      year:            y,
+      monthNum:        m,
+      income:          rec ? Number(rec.totalIncome)      : 0,
+      expenses:        rec ? Number(rec.totalExpenses)    : 0,
+      savings:         rec ? Number(rec.totalSavings)     : 0,
+      cashflow:        rec ? Number(rec.netCashflow)      : 0,
+      verifiedRevenue: rec ? Number(rec.verifiedRevenue)  : 0,
+      likelyRevenue:   rec ? Number(rec.likelyRevenue)    : 0,
+      reviewRevenue:   rec ? Number(rec.reviewRevenue)    : 0,
     });
 
     cursor.setUTCMonth(cursor.getUTCMonth() + 1);
@@ -201,7 +207,7 @@ export async function getMonthlyComparison(userId: string) {
     orderBy: [{ year: "desc" }, { month: "desc" }],
   });
 
-  const zero = { totalIncome: 0, totalExpenses: 0, totalSavings: 0, netCashflow: 0 };
+  const zero = { totalIncome: 0, totalExpenses: 0, totalSavings: 0, netCashflow: 0, verifiedRevenue: 0, likelyRevenue: 0, reviewRevenue: 0 };
 
   if (!latestRecord) {
     return { current: null, previous: null, changes: null, currLabel: "", prevLabel: "" };
@@ -222,11 +228,27 @@ export async function getMonthlyComparison(userId: string) {
   ]);
 
   const curr = current
-    ? { totalIncome: Number(current.totalIncome), totalExpenses: Number(current.totalExpenses), totalSavings: Number(current.totalSavings), netCashflow: Number(current.netCashflow) }
+    ? {
+        totalIncome:     Number(current.totalIncome),
+        totalExpenses:   Number(current.totalExpenses),
+        totalSavings:    Number(current.totalSavings),
+        netCashflow:     Number(current.netCashflow),
+        verifiedRevenue: Number(current.verifiedRevenue),
+        likelyRevenue:   Number(current.likelyRevenue),
+        reviewRevenue:   Number(current.reviewRevenue),
+      }
     : zero;
 
   const prev = previous
-    ? { totalIncome: Number(previous.totalIncome), totalExpenses: Number(previous.totalExpenses), totalSavings: Number(previous.totalSavings), netCashflow: Number(previous.netCashflow) }
+    ? {
+        totalIncome:     Number(previous.totalIncome),
+        totalExpenses:   Number(previous.totalExpenses),
+        totalSavings:    Number(previous.totalSavings),
+        netCashflow:     Number(previous.netCashflow),
+        verifiedRevenue: Number(previous.verifiedRevenue),
+        likelyRevenue:   Number(previous.likelyRevenue),
+        reviewRevenue:   Number(previous.reviewRevenue),
+      }
     : zero;
 
   function changePct(c: number, p: number): number {
@@ -245,10 +267,13 @@ export async function getMonthlyComparison(userId: string) {
     currLabel,
     prevLabel,
     changes: {
-      income:   changePct(curr.totalIncome,   prev.totalIncome),
-      expenses: changePct(curr.totalExpenses, prev.totalExpenses),
-      savings:  changePct(curr.totalSavings,  prev.totalSavings),
-      cashflow: changePct(curr.netCashflow,   prev.netCashflow),
+      // income change is always based on verified revenue, not raw bank inflows
+      income:          changePct(curr.verifiedRevenue, prev.verifiedRevenue),
+      expenses:        changePct(curr.totalExpenses,   prev.totalExpenses),
+      savings:         changePct(curr.totalSavings,    prev.totalSavings),
+      cashflow:        changePct(curr.netCashflow,     prev.netCashflow),
+      verifiedRevenue: changePct(curr.verifiedRevenue, prev.verifiedRevenue),
+      likelyRevenue:   changePct(curr.likelyRevenue,   prev.likelyRevenue),
     },
   };
 }
@@ -443,13 +468,12 @@ export interface IncomeConcentration {
 }
 
 export async function getIncomeConcentration(userId: string): Promise<IncomeConcentration> {
-  // Anchor to the user's most recent transaction, not to today.
-  // A user whose data ends Dec 2024 visiting in 2026 would get zero results
-  // if we used `new Date() - 1 year` as the cutoff.
+  // Use payer-identity data: concentration is measured over verified payers only.
+  // Anchored to the most recent income transaction, not to wall-clock today.
   const latestTx = await prisma.transaction.findFirst({
-    where: { userId, transactionType: "income" },
+    where:   { userId, transactionType: "income", payerId: { not: null } },
     orderBy: { transactionDate: "desc" },
-    select: { transactionDate: true },
+    select:  { transactionDate: true },
   });
 
   if (!latestTx) return { topSourceDesc: null, topSourcePct: 0, totalSources: 0, isHighConcentration: false };
@@ -457,27 +481,44 @@ export async function getIncomeConcentration(userId: string): Promise<IncomeConc
   const since = new Date(latestTx.transactionDate);
   since.setFullYear(since.getFullYear() - 1);
 
+  // Only include transactions linked to payers whose revenue confidence is
+  // HIGH or MEDIUM — raw unresolved income is excluded from concentration.
   const incomeTxs = await prisma.transaction.findMany({
-    where: { userId, transactionType: "income", transactionDate: { gte: since } },
-    select: { description: true, amount: true },
+    where: {
+      userId,
+      transactionType: "income",
+      transactionDate: { gte: since },
+      payerId:         { not: null },
+    },
+    select: { amount: true, payer: { select: { canonicalName: true, displayName: true, payerType: true } } },
   });
 
-  if (incomeTxs.length < 3) return { topSourceDesc: null, topSourcePct: 0, totalSources: 0, isHighConcentration: false };
+  // Exclude non-revenue payers (bank, government, refund_source)
+  const revenueTxs = incomeTxs.filter(
+    (t) => t.payer && !["bank", "government", "refund_source"].includes(t.payer.payerType),
+  );
 
-  const total = incomeTxs.reduce((s, t) => s + Number(t.amount), 0);
+  if (revenueTxs.length < 3) return { topSourceDesc: null, topSourcePct: 0, totalSources: 0, isHighConcentration: false };
+
+  const total = revenueTxs.reduce((s, t) => s + Number(t.amount), 0);
   if (total === 0) return { topSourceDesc: null, topSourcePct: 0, totalSources: 0, isHighConcentration: false };
 
   const bySource: Record<string, number> = {};
-  for (const tx of incomeTxs) {
-    const key = tx.description.slice(0, 35).replace(/\d+/g, "").replace(/[^A-Z a-z]/g, " ").trim().toUpperCase().replace(/\s+/g, " ");
-    if (key.length >= 3) bySource[key] = (bySource[key] ?? 0) + Number(tx.amount);
+  for (const tx of revenueTxs) {
+    const name = tx.payer!.displayName ?? tx.payer!.canonicalName;
+    bySource[name] = (bySource[name] ?? 0) + Number(tx.amount);
   }
 
   const sorted = Object.entries(bySource).sort((a, b) => b[1] - a[1]);
   const top    = sorted[0];
   const topPct = top ? Math.round((top[1] / total) * 100) : 0;
 
-  return { topSourceDesc: top?.[0] ?? null, topSourcePct: topPct, totalSources: sorted.length, isHighConcentration: topPct >= 50 && sorted.length <= 4 };
+  return {
+    topSourceDesc:       top?.[0] ?? null,
+    topSourcePct:        topPct,
+    totalSources:        sorted.length,
+    isHighConcentration: topPct >= 50 && sorted.length <= 4,
+  };
 }
 
 // ── Client insights ───────────────────────────────────────────────────────────
@@ -524,14 +565,17 @@ export async function getClientInsights(userId: string): Promise<ClientInsightsD
   });
 
   if (allTxs.length < 3) {
-    // Fallback: exclude refunds (reversed purchases, not client income) and
-    // amounts below €5 (bank interest, cashback rounding, micro-credits).
+    // Fallback: use payer-resolved income transactions, excluding known
+    // non-revenue payers (bank, government, refund_source).
+    // This is safer than filtering by transactionType alone: a savings
+    // withdrawal or a loan would otherwise appear as a "client".
     allTxs = await prisma.transaction.findMany({
       where: {
         userId,
         transactionType: "income",
-        amount: { gte: 5 },
-        NOT: { category: { in: ["refund"] } },
+        payerId:         { not: null },
+        amount:          { gte: 5 },
+        payer:           { payerType: { notIn: ["bank", "government", "refund_source"] } },
       },
       select: { description: true, amount: true, transactionDate: true, category: true },
       orderBy: { transactionDate: "asc" },

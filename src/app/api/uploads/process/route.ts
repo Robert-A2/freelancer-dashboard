@@ -5,6 +5,7 @@ import { categorizeTransaction } from "@/lib/categorization";
 import type { NormalizedTransaction } from "@/lib/csv-processor";
 import { recalculateMonthlyAnalytics } from "@/lib/analytics-engine";
 import { generateForecast } from "@/lib/forecast-engine";
+import { resolvePayers, recomputeVerifiedRevenue } from "@/lib/payer-engine";
 import { loadMerchantIndex, reportUncategorizedMerchants } from "@/lib/merchant-reports";
 import { Decimal } from "@prisma/client/runtime/library";
 
@@ -187,8 +188,18 @@ export async function POST(request: NextRequest) {
       data: { status: "completed", importedRows, duplicateRows },
     });
 
+    // ── Payer identity resolution ──────────────────────────────────────────
+    // Identify WHO sent each payment. Revenue confidence is derived from
+    // payer behaviour (repeat payments, cadence, consistency) — not keywords.
+    const newTxIds = await prisma.transaction.findMany({
+      where:  { csvImportId: csvImport.id },
+      select: { id: true },
+    });
+    await resolvePayers(user.id, newTxIds.map((t) => t.id));
+
     // ── Update analytics + forecast ────────────────────────────────────────
     await recalculateMonthlyAnalytics(user.id);
+    await recomputeVerifiedRevenue(user.id);
     await generateForecast(user.id);
 
     // ── Feed the global uncategorized-merchant worklist ────────────────────

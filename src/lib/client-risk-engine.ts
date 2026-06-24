@@ -183,25 +183,27 @@ function computeReliabilityScore(p: PartialProfile): ReliabilityScore {
 // ── Main export ───────────────────────────────────────────────────────────────
 
 export async function getClientRiskProfiles(userId: string): Promise<ClientRiskCenterData> {
-  // Primary: intent-classified income (most accurate signal for real client payments)
+  // Primary: payer-resolved transactions, excluding known non-revenue payers.
+  // The payer engine answers "who sent this money?" so banks, government bodies,
+  // and refund sources are already excluded at the identity level.
   let txs = await prisma.transaction.findMany({
-    where: { userId, intent: { in: ["freelance_income", "salary"] } },
+    where: {
+      userId,
+      transactionType: "income",
+      payerId:         { not: null },
+      amount:          { gte: 5 },
+      payer:           { payerType: { notIn: ["bank", "government", "refund_source"] } },
+    },
     select: { description: true, amount: true, transactionDate: true, category: true },
     orderBy: { transactionDate: "asc" },
   });
 
-  const hasIntentData = txs.length >= 3;
+  const hasIntentData = txs.length >= 3; // reuse flag for UI — means "has payer data"
 
-  // Fallback: income filtered to likely client receipts.
-  // Excludes refunds (reversed user purchases) and micro-amounts (bank interest, cashback).
+  // Fallback when payer engine hasn't run yet: intent-classified income.
   if (!hasIntentData) {
     txs = await prisma.transaction.findMany({
-      where: {
-        userId,
-        transactionType: "income",
-        amount: { gte: 5 },
-        NOT: { category: { in: ["refund"] } },
-      },
+      where: { userId, intent: { in: ["freelance_income", "salary"] } },
       select: { description: true, amount: true, transactionDate: true, category: true },
       orderBy: { transactionDate: "asc" },
     });

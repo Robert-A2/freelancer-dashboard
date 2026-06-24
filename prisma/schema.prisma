@@ -24,6 +24,7 @@ model User {
   categoryRules       CategoryRule[]
   categoryCorrections CategoryCorrection[]
   userIntentRules     UserIntentRule[]
+  payers              Payer[]
 
   @@map("users")
 }
@@ -66,6 +67,65 @@ model Account {
   @@map("accounts")
 }
 
+// ── Payer Identity ───────────────────────────────────────────────────────────
+// The payer identity system answers "who sent this money?" for every incoming
+// transaction. Revenue confidence is derived from payer behaviour (payment
+// frequency, amount consistency, cadence) — not from transaction keywords alone.
+//
+// PayerType classifies the nature of the entity sending money:
+//   - client / employer / platform → potential revenue sources
+//   - bank / government / refund_source → excluded from revenue (by definition)
+//   - unknown → accumulates evidence; confidence rises with each payment
+//
+// Revenue tiers:
+//   HIGH confidence  → verifiedRevenue  (3+ payments with pattern, OR 6+ payments)
+//   MEDIUM confidence → likelyRevenue   (2+ payments from same payer)
+//   LOW confidence   → reviewRevenue    (single payment, no pattern)
+//   NONE (bank/gov)  → excluded from all revenue figures
+
+enum PayerType {
+  client        // confirmed revenue source — freelance client
+  employer      // salary / employment — recurring fixed payroll
+  platform      // Upwork, Fiverr, Stripe, PayPal, Malt, etc.
+  bank          // financial institution transfers — NOT revenue
+  government    // tax authorities, social benefits — NOT revenue
+  refund_source // merchant / purchase reversal — NOT revenue
+  unknown       // unclassified — confidence determined by payment history
+}
+
+model Payer {
+  id            String    @id @default(uuid())
+  userId        String
+  canonicalName String    // display name set on first encounter, e.g. "Acme Sarl"
+  displayName   String?   // user-set preferred name (overrides canonicalName in UI)
+  payerType     PayerType @default(unknown)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  aliases      PayerAlias[]
+  transactions Transaction[]
+
+  @@unique([userId, canonicalName])
+  @@index([userId, payerType])
+  @@map("payers")
+}
+
+model PayerAlias {
+  id        String   @id @default(uuid())
+  payerId   String
+  rawText   String   // exact text extracted from bank description
+  matchKey  String   // normalized for dedup (no legal suffixes, lowercase, accent-free)
+  hitCount  Int      @default(1)
+  createdAt DateTime @default(now())
+
+  payer Payer @relation(fields: [payerId], references: [id], onDelete: Cascade)
+
+  @@unique([payerId, matchKey])
+  @@index([matchKey])
+  @@map("payer_aliases")
+}
+
 model CsvImport {
   id            String   @id @default(uuid())
   userId        String
@@ -90,6 +150,7 @@ model Transaction {
   userId          String
   csvImportId     String?
   accountId       String?
+  payerId         String?  // resolved payer — set by payer engine after import
   transactionDate DateTime
   description     String
   amount          Decimal  @db.Decimal(12, 2)
@@ -111,6 +172,7 @@ model Transaction {
   user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   csvImport CsvImport? @relation(fields: [csvImportId], references: [id], onDelete: SetNull)
   account   Account?   @relation(fields: [accountId], references: [id], onDelete: SetNull)
+  payer     Payer?     @relation(fields: [payerId], references: [id], onDelete: SetNull)
 
   // Deduplication is per-account when an account is set, cross-account otherwise.
   // Two partial unique indexes (created via raw SQL after prisma db push) enforce this:
@@ -123,19 +185,27 @@ model Transaction {
   @@index([userId, transactionDate, transactionType])
   @@index([userId, needsReview])
   @@index([userId, accountId])
+  @@index([userId, payerId])
   @@map("transactions")
 }
 
 model MonthlyAnalytics {
-  id            String  @id @default(uuid())
-  userId        String
-  month         Int
-  year          Int
-  totalIncome   Decimal @db.Decimal(12, 2) @default(0)
-  totalExpenses Decimal @db.Decimal(12, 2) @default(0)
-  totalSavings  Decimal @db.Decimal(12, 2) @default(0)
-  netCashflow   Decimal @db.Decimal(12, 2) @default(0)
-  createdAt     DateTime @default(now())
+  id              String  @id @default(uuid())
+  userId          String
+  month           Int
+  year            Int
+  // ── Bank cashflow (raw) ───────────────────────────────────────────────────
+  totalIncome     Decimal @db.Decimal(12, 2) @default(0)  // all positive inflows
+  totalExpenses   Decimal @db.Decimal(12, 2) @default(0)
+  totalSavings    Decimal @db.Decimal(12, 2) @default(0)
+  netCashflow     Decimal @db.Decimal(12, 2) @default(0)  // totalIncome - totalExpenses
+  // ── Payer-derived revenue tiers ───────────────────────────────────────────
+  // Computed by payer-engine after each import. These answer the question
+  // "how much was actually earned from clients?" — not "how much came in?"
+  verifiedRevenue Decimal @db.Decimal(12, 2) @default(0)  // HIGH confidence payers
+  likelyRevenue   Decimal @db.Decimal(12, 2) @default(0)  // MEDIUM confidence payers
+  reviewRevenue   Decimal @db.Decimal(12, 2) @default(0)  // LOW confidence — Needs Review
+  createdAt       DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 

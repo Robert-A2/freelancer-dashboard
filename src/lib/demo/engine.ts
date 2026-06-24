@@ -118,13 +118,18 @@ export function computeHistoricalData(locale: Locale): MonthPoint[] {
     const cashflow = rec ? rec.income - rec.expenses : 0;
 
     result.push({
-      month:    cursor.toLocaleDateString(INTL_LOCALES[locale], { month: "short", year: "2-digit", timeZone: "UTC" }),
-      year:     y,
-      monthNum: m,
-      income:   rec?.income   ?? 0,
-      expenses: rec?.expenses ?? 0,
-      savings:  rec?.savings  ?? 0,
+      month:           cursor.toLocaleDateString(INTL_LOCALES[locale], { month: "short", year: "2-digit", timeZone: "UTC" }),
+      year:            y,
+      monthNum:        m,
+      income:          rec?.income   ?? 0,
+      expenses:        rec?.expenses ?? 0,
+      savings:         rec?.savings  ?? 0,
       cashflow,
+      // Demo data has no payer engine — show income as all three tiers so charts
+      // render. Real data will have these split by payer confidence.
+      verifiedRevenue: rec?.income ?? 0,
+      likelyRevenue:   0,
+      reviewRevenue:   0,
     });
 
     cursor.setUTCMonth(cursor.getUTCMonth() + 1);
