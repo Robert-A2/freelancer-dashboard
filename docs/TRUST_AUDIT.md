@@ -165,6 +165,11 @@ revenue classification occurs.
 | Engine | `payer-engine.ts` — extract, normalize, resolve, profile, confidence | ✅ Done |
 | Engine | `resolvePayers()` called on every import | ✅ Done |
 | Engine | `recomputeVerifiedRevenue()` updates MonthlyAnalytics after each import | ✅ Done |
+| Engine | `transfer-detector.ts` — detects internal account transfers from description patterns | ✅ Done |
+| API | `POST /api/payers/assign` — manually assign a payer identity to a transaction | ✅ Done |
+| API | `PATCH /api/payers/[id]` — rename or edit a payer (canonical name, type override) | ✅ Done |
+| UI | `NameSourceButton.tsx` — badge showing payer name source on client rows | ✅ Done |
+| UI | `RenameClientForm.tsx` — inline form to rename/assign payer identity on Clients pages | ✅ Done |
 | Analytics | `MonthPoint` type includes `verifiedRevenue`, `likelyRevenue`, `reviewRevenue` | ✅ Done |
 | Analytics | `getMonthlyComparison.changes.income` uses `verifiedRevenue` | ✅ Done |
 | Analytics | `getIncomeConcentration` uses payer identity | ✅ Done |
@@ -207,7 +212,7 @@ HIGH   → 3+ payments with detectable cadence (weekly / bi-weekly / monthly / q
 | 1 | Revenue Foundation — audit every calculation surface | ✅ This document |
 | 2 | Payer Identity Engine — extract, normalize, confidence | ✅ Implemented |
 | 3 | Revenue Audit Center — clickable monthly breakdown UI | ⏳ Next |
-| 4 | Multi-Account Readiness — architecture for transfer detection | ⏳ Design only |
+| 4 | Multi-Account Readiness — transfer detection + per-account dashboard filter | ✅ Implemented |
 | 5 | Client Identity Resolution — alias grouping improvements | ⏳ Partially in payer engine |
 | 6 | Forecast Trust Audit — wire forecast to `verifiedRevenue` | ⏳ Pending |
 | 7 | Insight Verification — all intelligence text traceable to evidence | ⏳ Pending |

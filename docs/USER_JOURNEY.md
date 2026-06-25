@@ -212,13 +212,14 @@ Once `hasData = true`, the full dashboard renders (data fetching covered in [ARC
 
 | Section | Component | Driven by |
 |---|---|---|
+| Account filter bar | `<AccountFilterBar>` | `prisma.account.findMany` — pill row above the header showing "All accounts" + one pill per uploaded account with a colored dot. Only renders when the user has **2 or more** accounts; new users never see it. Clicking a pill sets `?accountId=xxx` in the URL; all dashboard data functions filter to that account. Uses `?accountId` URL param — navigation is a plain `<Link>` (no JS state). |
 | Header | inline JSX | `intel.healthStatus` badge (links to `/forecast`), `transactionsMonths` subtitle |
-| Data coverage | `<DataCoverageBar>` | `getDataCoverage(userId)` |
+| Data coverage | `<DataCoverageBar>` | `getDataCoverage(userId, accountId?)` |
 | Summary cards | `<SummaryCards>` | `current`/`previous` totals, `riskLevel`, `intel.snapshotSummary`/`snapshotContext` |
 | Trends chart | `<TrendsChart>` | `chartData` (12-month `MonthPoint[]`), `intel.trajectoryInsight`/`trajectoryDetails` — **clickable**: tapping a month opens `<MonthDrawer>` with a 2-level drill-down (month totals → category → transactions) |
-| Forecast widget | `<ForecastWidget>` | `forecast` (`getLatestForecast`), `intel.forecastReasons`/`forecastImprovements`/`cashflowDeficitReason` |
+| Forecast widget | `<ForecastWidget>` | `forecast` (`getLatestForecast`), `intel.forecastReasons`/`forecastImprovements`/`cashflowDeficitReason` — **hidden when `accountId` is set** (forecast is user-wide; showing it per-account would display invented data) |
 | Monthly comparison | `<MonthlyComparisonWidget>` | `comparison` (`getMonthlyComparison`), `intel.comparisonInterpretation` |
-| Recent transactions | `<RecentTransactions>` | `recent` (last transactions from `getDashboardSummary`, including `intent`/`intentConfidence`/`needsReview`), `intel.notableTransactions` — **clickable**: each row opens a `<TransactionDrawer>` with full intent context (no API call — data is passed from server at page load) |
+| Recent transactions | `<RecentTransactions>` | `recent` (last transactions from `getDashboardSummary`, including `intent`/`intentConfidence`/`needsReview` and `accountName`/`accountColor` for the account badge on each row), `intel.notableTransactions` — **clickable**: each row opens a `<TransactionDrawer>` with full intent context (no API call — data is passed from server at page load) |
 | Historical insights | `<HistoricalInsights>` | `rankedInsights` (`buildHistoricalInsights`) — only rendered if non-empty |
 
 `riskLevel` (low/medium/high/critical) is computed inline on this page using the **same formula** as the Forecast page's cashflow-risk calculation — see [FORECAST_ENGINE.md §9](./FORECAST_ENGINE.md) and [INTELLIGENCE_ENGINE.md](./INTELLIGENCE_ENGINE.md) for why these two pages are kept in lock-step.
@@ -296,6 +297,7 @@ Rendered sections (in page order):
 **File**: `src/app/(dashboard)/settings/page.tsx` (46 lines) + `src/components/settings/{SignOutButton,DeleteAccountSection}.tsx`.
 
 - **Account card** — shows the user's email + `<SignOutButton>` (`supabase.auth.signOut()` → redirect to `/login`).
+- **`<ExportDataButton>`** — calls `GET /api/export`, which streams all of the user's transactions as a downloadable CSV. The export includes every transaction field (date, description, amount, type, category, account name, intent).
 - **Data notice** — a static reassurance banner about data handling.
 - **`<DeleteAccountSection>`** — a confirmation-gated **"Delete account"** flow → `DELETE /api/account`. See [ARCHITECTURE.md §8c](./ARCHITECTURE.md) for the full cascade (Storage files → `User` row, cascading to all owned tables → Supabase Auth user → sign-out).
 

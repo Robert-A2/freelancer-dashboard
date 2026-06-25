@@ -55,15 +55,20 @@ src/
 │   ├── api/                      ← route handlers (see §7)
 │   │   ├── account/route.ts
 │   │   ├── dashboard/route.ts
+│   │   ├── export/route.ts           ← GET: export all user transactions as CSV
 │   │   ├── forecast/route.ts
 │   │   ├── history/route.ts
 │   │   ├── monthly-comparison/route.ts
+│   │   ├── payers/{assign,[id]}/route.ts  ← POST assign payer to tx; PATCH rename/edit payer
 │   │   ├── transactions/{recategorize,recategorize-all}/route.ts
+│   │   ├── transfers/confirm/route.ts    ← POST: confirm a detected internal transfer
 │   │   ├── uploads/{rules,process,[id]}/route.ts   ← presign removed; rules is new (GET learned category+intent rules for browser-side parse)
 │   │   └── users/create/route.ts
 │   ├── layout.tsx                 ← root layout: <html>, font, NextIntlClientProvider
 │   └── page.tsx                   ← landing page (public)
-├── components/                    ← grouped by feature: analytics/ dashboard/ demo/ history/ landing/ settings/ ui/ upload/
+├── components/                    ← grouped by feature: analytics/ clients/ dashboard/ demo/ history/ landing/ settings/ ui/ upload/
+│   │                               ← clients/: NameSourceButton.tsx (badge showing payer name source), RenameClientForm.tsx (inline rename for payer identity)
+│   │                               ← settings/: ExportDataButton.tsx (triggers GET /api/export, downloads CSV)
 ├── i18n/
 │   ├── locales.ts                  ← LOCALES, DEFAULT_LOCALE, INTL_LOCALES
 │   └── request.ts                  ← next-intl request config (cookie → locale)
@@ -82,6 +87,7 @@ src/
 │   │   └── index.ts                ← barrel: getDemoDataset, DemoDataset, DemoTransaction
 │   ├── insight-types.ts            ← Insight/RankedInsight types, cat(), resolveInsightValues()
 │   ├── merchant-reports.ts         ← global uncategorized-merchant worklist
+│   ├── transfer-detector.ts        ← detects internal account transfers from transaction descriptions (self-transfers, account moves)
 │   ├── locale-actions.ts           ← server action: setUserLocale()
 │   ├── prisma.ts                   ← PrismaClient singleton
 │   └── supabase/{client,server,admin}.ts
@@ -158,6 +164,7 @@ flowchart TD
 | `intelligence-engine.ts` | Turns analytics/forecast output into `{key, values}` insight descriptors — snapshot summaries, trajectory narratives, health status, biggest risk/opportunity | [INTELLIGENCE_ENGINE.md](./INTELLIGENCE_ENGINE.md) |
 | `insight-types.ts` | `Insight`/`RankedInsight` types, `cat()` category sentinel, `resolveInsightValues()` | [INTELLIGENCE_ENGINE.md](./INTELLIGENCE_ENGINE.md) |
 | `merchant-reports.ts` | `loadMerchantIndex()` (DB-backed merchant directory for categorization) and `reportUncategorizedMerchants()` (writes to `UncategorizedMerchantReport` for `npm run report:uncategorized`) | [CATEGORIZATION_ENGINE.md](./CATEGORIZATION_ENGINE.md) |
+| `transfer-detector.ts` | Detects internal account transfers from transaction descriptions — used to avoid classifying account-to-account moves as income or expense | (used by payer-engine.ts) |
 | `locale-actions.ts` | `setUserLocale()` server action — sets the `NEXT_LOCALE` cookie | [TRANSLATIONS.md](./TRANSLATIONS.md) |
 | `prisma.ts` | `PrismaClient` singleton | §5 above |
 | `supabase/{client,server,admin}.ts` | The three Supabase clients | §4 above |
@@ -179,9 +186,10 @@ Every page in `(dashboard)/` is an `async` Server Component that:
 ```mermaid
 flowchart LR
     Page["dashboard/page.tsx\n(Server Component)"] --> Auth["supabase.auth.getUser()"]
-    Page --> PA["Promise.all([\n getDashboardSummary,\n getLatestForecast,\n getHistoricalData,\n getMonthlyComparison,\n getDataCoverage,\n getCategoryInsights,\n getIncomeConcentration,\n prisma.user.findUnique, ...\n])"]
+    Page --> AID["searchParams.accountId?\n→ per-account filter"]
+    Page --> PA["Promise.all([\n getDashboardSummary(userId, accountId?),\n getLatestForecast,\n getHistoricalData(userId, months, accountId?),\n getMonthlyComparison(userId, accountId?),\n getDataCoverage(userId, accountId?),\n getCategoryInsights(userId, accountId?),\n getIncomeConcentration(userId, accountId?),\n prisma.user.findUnique, ...\n prisma.account.findMany\n])"]
     PA --> Intel["generateDashboardIntelligence()\nbuildHistoricalInsights()"]
-    Intel --> Render["SummaryCards, TrendsChart,\nForecastWidget, RecentTransactions,\nHistoricalInsights, ..."]
+    Intel --> Render["AccountFilterBar (≥2 accounts),\nSummaryCards, TrendsChart,\nForecastWidget (hidden if accountId set),\nRecentTransactions (with account badges),\nHistoricalInsights, ..."]
 ```
 
 `analytics/page.tsx` and `forecast/page.tsx` follow the same shape with a different subset of analytics-engine calls (see [ANALYTICS_ENGINE.md](./ANALYTICS_ENGINE.md) and [FORECAST_ENGINE.md](./FORECAST_ENGINE.md)).
@@ -196,6 +204,9 @@ flowchart LR
 | `RecategorizeButton.tsx` | `PATCH /api/transactions/recategorize` | `transactions/recategorize` | §8b |
 | `RecategorizeAllButton.tsx` | `POST /api/transactions/recategorize-all` | `transactions/recategorize-all` | Re-runs categorization on every transaction |
 | `DeleteAccountSection.tsx` | `DELETE /api/account` | `account` | §8c |
+| `ExportDataButton.tsx` | `GET /api/export` | `export` | Streams all of the user's transactions as a downloadable CSV from the Settings page |
+| `NameSourceButton.tsx` | `POST /api/payers/assign` | `payers/assign` | Assigns a resolved payer identity to a transaction (used on the Clients pages) |
+| `RenameClientForm.tsx` | `PATCH /api/payers/[id]` | `payers/[id]` | Renames/edits a payer identity (canonical name, type override) |
 | `signup/page.tsx` | `POST /api/users/create` | `users/create` | Creates the `User` row right after Supabase Auth signup (client-side `signUp()` can't write to Postgres directly) |
 | `MonthDrawer.tsx` | `GET /api/analytics/month-breakdown?year=&month=` | `analytics/month-breakdown` | Loads expense + income category totals for a clicked month (used by TrendsChart and CashflowChart drill-down drawers) |
 | `MonthDrawer.tsx` | `GET /api/analytics/category-transactions?year=&month=&type=&category=` | `analytics/category-transactions` | Loads individual transactions for a clicked category within a month (also accepts `since=` for all-time category views) |

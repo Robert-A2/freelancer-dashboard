@@ -25,8 +25,8 @@ datasource db {
 ```
 
 - **Provider**: PostgreSQL, hosted on Supabase.
-- **`DATABASE_URL`**: the pooled connection string (PgBouncer) — used at runtime by the app.
-- **`DIRECT_URL`**: a direct (non-pooled) connection — used by Prisma Migrate, since DDL statements (`CREATE TABLE`, etc.) don't work reliably through a connection pooler.
+- **`DATABASE_URL`**: the PgBouncer (Transaction Pooler) connection string — used at runtime by the app. Must use Supabase's port **6543** with `?pgbouncer=true&connection_limit=2` appended (e.g. `postgresql://postgres.[ref]:[pwd]@aws-0-eu-west-1.pooler.supabase.com:6543/postgres?pgbouncer=true&connection_limit=2`). Without the pooler, firing multiple parallel Prisma queries exhausts Supabase's direct connection slots and returns a `FATAL: remaining connection slots are reserved for roles with the SUPERUSER attribute` error.
+- **`DIRECT_URL`**: a direct (non-pooled) connection on port **5432** — used by Prisma Migrate only, since DDL statements (`CREATE TABLE`, etc.) don't work reliably through PgBouncer transaction mode.
 - **`binaryTargets`**: includes `rhel-openssl-1.0.x` so `prisma generate` produces a query engine binary compatible with common serverless/Linux deployment targets (e.g. Vercel) in addition to your local machine (`native`).
 
 ---

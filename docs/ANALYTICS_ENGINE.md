@@ -208,7 +208,9 @@ This function is the basis for `comparisonInterpretation` in the intelligence en
 
 ---
 
-## 6. `getCategoryInsights(userId)` — category trends, yearly snapshots, seasonality
+## 6. `getCategoryInsights(userId, accountId?)` — category trends, yearly snapshots, seasonality
+
+When `accountId` is set, bypasses `MonthlyAnalytics` and computes all three outputs (topExpenseCategories, yearlySnapshots, seasonality) directly from raw `Transaction` rows for that account.
 
 Returns three things from one pass over the data:
 
@@ -284,7 +286,9 @@ interface CategorizationHealth {
 
 ---
 
-## 8. `getIncomeConcentration(userId)`
+## 8. `getIncomeConcentration(userId, accountId?)`
+
+When `accountId` is set, scopes the income transaction query to that account only via `{ accountId }` spread on the Prisma where clause.
 
 ```ts
 interface IncomeConcentration {
@@ -347,7 +351,9 @@ All income transactions are grouped using two-phase alias grouping (see [Client 
 
 ---
 
-## 10. `getDataCoverage(userId)` — single source of truth for date range
+## 10. `getDataCoverage(userId, accountId?)` — single source of truth for date range
+
+When `accountId` is set, the aggregate is scoped to that account's transactions — so the date range, count, and `rangeLabel` reflect only that account's history.
 
 ```ts
 interface DataCoverage {
