@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { getTranslations, getLocale } from "next-intl/server";
 import { getClientRiskProfiles } from "@/lib/client-risk-engine";
 import type { ClientStatus } from "@/lib/client-risk-engine";
+import NameSourceButton from "@/components/clients/NameSourceButton";
 import { UNIDENTIFIED_SOURCE } from "@/lib/client-identity";
 import { formatCurrency } from "@/utils/finance";
 import { INTL_LOCALES, type Locale } from "@/i18n/locales";
@@ -35,7 +36,7 @@ export default async function ClientsPage() {
   const t      = await getTranslations("clients");
   const locale = (await getLocale()) as Locale;
   const data   = await getClientRiskProfiles(user.id);
-  const { clients, currentCount, followUpCount, inactiveCount, hasIntentData } = data;
+  const { clients, currentCount, followUpCount, inactiveCount, hasIntentData, unresolvedGroups } = data;
 
   return (
     <div className="space-y-8">
@@ -139,6 +140,11 @@ export default async function ClientsPage() {
                         {!isUnidentified && (
                           <StatusBadge status={c.status} label={t(`status.${c.status}`)} />
                         )}
+                        {!isUnidentified && (c.confidence === "medium" || c.confidence === "low") && (
+                          <span className="text-[11px] font-medium text-[#D4A254] bg-[#D4A25410] border border-[#D4A25425] px-1.5 py-0.5 rounded-full">
+                            {t(`confidence.${c.confidence}`)}
+                          </span>
+                        )}
                         {isUnidentified && (
                           <span className="text-[11px] text-[#4A7A9B] bg-[#1A304880] px-1.5 py-0.5 rounded">
                             {t("status.unidentified")}
@@ -166,7 +172,37 @@ export default async function ClientsPage() {
                 );
               })}
             </div>
+            <p className="text-[11px] text-[#475569] leading-relaxed mt-4 px-1">
+              {t("list.multiProcessorNote")}
+            </p>
           </div>
+
+          {/* Unresolved payments — couldn't identify any sender name */}
+          {unresolvedGroups.length > 0 && (
+            <div className="card">
+              <p className="label mb-1">{t("unresolved.title")}</p>
+              <p className="text-[13px] text-[#6A97B4] mb-5">{t("unresolved.subtitle")}</p>
+
+              <div className="divide-y divide-[#1A3048]">
+                {unresolvedGroups.map((g) => (
+                  <div key={g.fingerprint} className="py-3 first:pt-0 last:pb-0">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-[#A8C6E0] font-mono truncate">{g.description}</p>
+                        <p className="text-xs text-[#6A97B4] mt-0.5">
+                          {t("unresolved.summary", {
+                            count: g.txCount,
+                            amount: formatCurrency(g.totalRevenue, locale),
+                          })}
+                        </p>
+                        <NameSourceButton description={g.description} fingerprint={g.fingerprint} />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </>
       )}
     </div>

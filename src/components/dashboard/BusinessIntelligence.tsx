@@ -57,6 +57,7 @@ export default function BusinessIntelligence({
           {margin !== null && (
             <p className="text-[13px] text-[#6A97B4]">{t("margin", { margin })}</p>
           )}
+          <p className="text-[11px] text-[#475569] leading-tight">{t("businessProfitNote")}</p>
         </div>
 
         <div className="bg-[#0D1B2B] border border-[#1E3550] rounded-xl p-4 space-y-1.5">

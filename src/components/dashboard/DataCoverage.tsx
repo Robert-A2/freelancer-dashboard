@@ -9,6 +9,8 @@ interface Props {
 export default async function DataCoverage({ coverage, lastImportedAt }: Props) {
   if (coverage.count === 0) return null;
 
+
+
   const t = await getTranslations("dashboard.dataCoverage");
 
   const daysSinceImport = lastImportedAt

@@ -23,6 +23,9 @@ interface Props {
   summary?: Insight | null;
   context?: Insight[];
   periodLabel?: string;
+  currentMonth?: number;
+  currentYear?: number;
+  isPartialMonth?: boolean;
 }
 
 const RISK_COLOR = {
@@ -49,7 +52,7 @@ function Chip({ value, invert }: { value: number; invert?: boolean }) {
 }
 
 export default function SummaryCards({
-  current, previous, riskLevel, riskPositiveMonths, riskTotalMonths, summary, context, periodLabel,
+  current, previous, riskLevel, riskPositiveMonths, riskTotalMonths, summary, context, periodLabel, currentMonth, currentYear, isPartialMonth,
 }: Props) {
   const t = useTranslations("dashboard.summaryCards");
   const tm = useTranslations("metrics");
@@ -72,14 +75,28 @@ export default function SummaryCards({
     : margin >= 10 ? "text-[#D4A254]"
     : "text-[#D97070]";
 
+  const drillBase = currentMonth && currentYear
+    ? `?year=${currentYear}&month=${currentMonth}`
+    : null;
+  const incomeUrl  = drillBase ? `/history${drillBase}&type=income`  : "/history";
+  const expenseUrl = drillBase ? `/history${drillBase}&type=expense` : "/history";
+  const allTxUrl   = drillBase ? `/history${drillBase}`              : "/history";
+
   return (
     <div className="space-y-4">
-      {periodLabel && (
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-semibold text-[#6A97B4] uppercase tracking-wide">{t("showing")}</span>
-          <span className="text-xs font-semibold text-[#A8C6E0] bg-[#1A3048] px-2 py-0.5 rounded">{periodLabel}</span>
-        </div>
-      )}
+      <div className="flex items-center gap-2 flex-wrap">
+        {periodLabel && (
+          <>
+            <span className="text-xs font-semibold text-[#6A97B4] uppercase tracking-wide">{t("showing")}</span>
+            <span className="text-xs font-semibold text-[#E8F0F8] bg-[#1A3048] border border-[#243F5E] px-2.5 py-0.5 rounded-md">{periodLabel}</span>
+          </>
+        )}
+        {isPartialMonth && (
+          <span className="text-xs font-medium text-[#D4A254] bg-[#D4A25410] border border-[#D4A25430] px-2.5 py-0.5 rounded-md">
+            {t("partialMonth")}
+          </span>
+        )}
+      </div>
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4 md:gap-5 items-stretch">
 
         {/* Income */}
@@ -89,9 +106,12 @@ export default function SummaryCards({
             {formatCurrency(c.totalIncome, locale)}
           </p>
           <div className="flex items-center gap-2 flex-wrap">
-            <p className="text-[13px] text-[#6A97B4]">{t("totalThisMonth")}</p>
+            <p className="text-[13px] text-[#6A97B4]">{periodLabel || t("totalThisMonth")}</p>
             {previous && p.totalIncome > 0 && <Chip value={changePct(c.totalIncome, p.totalIncome)} />}
           </div>
+          <Link href={incomeUrl} className="text-xs font-semibold text-[#3AB5A0] hover:text-[#4CC4A4] transition-colors mt-auto">
+            {t("viewTransactions")} →
+          </Link>
         </div>
 
         {/* Expenses */}
@@ -101,9 +121,12 @@ export default function SummaryCards({
             {formatCurrency(c.totalExpenses, locale)}
           </p>
           <div className="flex items-center gap-2 flex-wrap">
-            <p className="text-[13px] text-[#6A97B4]">{t("totalThisMonth")}</p>
+            <p className="text-[13px] text-[#6A97B4]">{periodLabel || t("totalThisMonth")}</p>
             {previous && p.totalExpenses > 0 && <Chip value={changePct(c.totalExpenses, p.totalExpenses)} invert />}
           </div>
+          <Link href={expenseUrl} className="text-xs font-semibold text-[#3AB5A0] hover:text-[#4CC4A4] transition-colors mt-auto">
+            {t("viewTransactions")} →
+          </Link>
         </div>
 
         {/* Cashflow */}
@@ -118,7 +141,10 @@ export default function SummaryCards({
             </p>
             {previous && prevCashflow !== 0 && <Chip value={changePct(currCashflow, prevCashflow)} />}
           </div>
-          <p className="text-xs text-[#6A97B4]/60">{t("cashflowSavingsNote")}</p>
+          <p className="text-xs text-[#6A97B4]/60">{periodLabel ? `${periodLabel} · ${t("cashflowSavingsNote")}` : t("cashflowSavingsNote")}</p>
+          <Link href={allTxUrl} className="text-xs font-semibold text-[#3AB5A0] hover:text-[#4CC4A4] transition-colors mt-auto">
+            {t("viewTransactions")} →
+          </Link>
         </div>
 
         {/* Margin */}
@@ -128,7 +154,7 @@ export default function SummaryCards({
             {margin !== null ? `${margin}%` : "—"}
           </p>
           <div className="flex items-center gap-2 flex-wrap">
-            <p className="text-[13px] text-[#6A97B4]">{t("ofIncomeKept")}</p>
+            <p className="text-[13px] text-[#6A97B4]">{periodLabel || t("ofIncomeKept")}</p>
             {previous && margin !== null && prevMargin !== null && prevMargin > 0 && (
               <Chip value={margin - prevMargin} />
             )}

@@ -1,6 +1,7 @@
 import Papa from "papaparse";
 import { categorizeTransaction, type LearnedRules, type Confidence, type MerchantIndex } from "./categorization";
 import { classifyIntent, type FinancialIntent, type UserIntentRules } from "./intent-engine";
+import { extractClientName, UNIDENTIFIED_SOURCE } from "./client-identity";
 
 export interface RawRow {
   [key: string]: string;
@@ -41,6 +42,17 @@ export interface ProcessResult {
 // Some banks add a BOM (byte order mark) that corrupts the first column name.
 function stripBOM(text: string): string {
   return text.startsWith("﻿") ? text.slice(1) : text;
+}
+
+// ── Name likelihood check ─────────────────────────────────────────────────────
+// Quick pre-filter before running full extraction: does this value look like it
+// could contain a person or company name? Rejects pure numbers, IBANs, and
+// values that are too short or too long to be a name.
+function looksLikeName(val: string): boolean {
+  if (!val || val.length < 3 || val.length > 120) return false;
+  if (!/[A-Za-z]{2,}/.test(val)) return false;          // must have letters
+  if (/^[A-Z0-9]{15,}$/.test(val.toUpperCase())) return false; // IBAN / token
+  return true;
 }
 
 // ── Diacritic-insensitive lowercase ──────────────────────────────────────────
@@ -134,10 +146,16 @@ function findHeaderRowIndex(lines: string[]): number {
 }
 
 // ── Column detection ──────────────────────────────────────────────────────────
-// Finds which CSV columns map to date, description, and signed amount.
+// Finds which CSV columns map to date, description, payee, and signed amount.
+// "payee" is detected separately from "description" because many banks export
+// both: description = the payment rail string (e.g. "SEPA CREDIT TRANSFER"),
+// payee = the actual sender name (e.g. "NEXO STARTUP SAS").
+// When both exist, the payee value is prepended to the description so the
+// client identity engine sees the real sender name first.
 function detectColumns(headers: string[]): {
   dateCol: string | null;
   descCol: string | null;
+  payeeCol: string | null;
   amountCol: string | null;
 } {
   const lower = headers.map((h) => normalize(h));
@@ -147,11 +165,21 @@ function detectColumns(headers: string[]): {
     "posted date", "post date", "settlement date", "entry date",
     "datum", "fecha", "data", "started date", "completed date",
   ];
+  // Payee candidates — these columns contain the actual counterparty name.
+  // Must be detected BEFORE descCandidates so we don't accidentally merge them.
+  const payeeCandidates = [
+    "payee", "payee name", "beneficiary", "beneficiary name",
+    "counterpart", "counterparty", "counterparty name",
+    "third party", "third party name",
+    "creditor name", "debtor name",
+    "nom beneficiaire", "libelle beneficiaire", "tiers",
+  ];
   const descCandidates = [
-    "description", "details", "narrative", "narration", "memo", "payee", "merchant",
-    "name", "reference", "particulars", "transaction description",
+    "description", "details", "narrative", "narration", "memo", "merchant",
+    "reference", "particulars", "transaction description",
     "omschrijving", "payment reference", "transaction details",
-    "beneficiary name", "remittance info", "libelle", "remarks",
+    "remittance info", "libelle", "remarks",
+    // "name" and "payee" are intentionally absent here — they go to payeeCandidates
   ];
   // Only use as single amount col if NOT also paired with a separate debit col.
   // debit/credit pair detection happens separately and overrides this.
@@ -170,9 +198,24 @@ function detectColumns(headers: string[]): {
     return null;
   };
 
+  const payeeCol = find(payeeCandidates);
+  // For descCol, exclude the column already claimed by payeeCol
+  const descColHeaders = headers.filter((h) => h !== payeeCol);
+  const descColLower   = descColHeaders.map((h) => normalize(h));
+  const findInDesc = (candidates: string[]) => {
+    for (const c of candidates) {
+      const exact = descColLower.indexOf(c);
+      if (exact !== -1) return descColHeaders[exact];
+      const partial = descColLower.findIndex((h) => h.includes(c));
+      if (partial !== -1) return descColHeaders[partial];
+    }
+    return null;
+  };
+
   return {
-    dateCol: find(dateCandidates),
-    descCol: find(descCandidates),
+    dateCol:   find(dateCandidates),
+    descCol:   findInDesc(descCandidates),
+    payeeCol,
     amountCol: find(amountCandidates),
   };
 }
@@ -398,8 +441,16 @@ export function parseCsv(
   }
 
   const headers = Object.keys(rows[0]);
-  const { dateCol, descCol, amountCol } = detectColumns(headers);
+  const { dateCol, descCol, payeeCol, amountCol } = detectColumns(headers);
   const { debitCol, creditCol, drCrCol } = detectDebitCreditColumns(headers);
+
+  // All columns that are not structural (date / amount / debit / credit).
+  // We'll scan these for a client name when the primary description column
+  // doesn't yield one — so the app works regardless of column naming conventions.
+  const reservedCols = new Set(
+    [dateCol, amountCol, debitCol, creditCol, drCrCol].filter(Boolean) as string[]
+  );
+  const scanCols = headers.filter(h => !reservedCols.has(h));
 
   // Use separate debit/credit pair when both sides are detected
   const useDebitCreditPair = !!(debitCol && creditCol);
@@ -423,7 +474,37 @@ export function parseCsv(
     if (!date) { skippedRows++; continue; }
 
     // ── Description ─────────────────────────────────────────────────────────
-    const description = (descCol ? row[descCol] ?? "" : "").trim();
+    const rawDesc    = (descCol  ? row[descCol]  ?? "" : "").trim();
+    const payeeValue = (payeeCol ? row[payeeCol] ?? "" : "").trim();
+
+    // Multi-column name scan: try every non-reserved column to find the
+    // highest-confidence client name — regardless of what the column is called.
+    // This makes the parser work with any bank CSV format, not just ones that
+    // use the column names we know about.
+    const CONF_RANK: Record<string, number> = { high: 3, medium: 2, low: 1, unknown: 0 };
+    let bestNameValue = payeeValue; // payeeCol already wins if it exists
+    let bestRank = payeeValue ? CONF_RANK[extractClientName(payeeValue, "income").confidence] : -1;
+
+    if (bestRank < 3) { // only scan further if we don't already have a "high" result
+      for (const col of scanCols) {
+        if (col === descCol || col === payeeCol) continue; // already handled
+        const val = (row[col] ?? "").trim();
+        if (!looksLikeName(val)) continue;
+        const result = extractClientName(val, "income");
+        const rank = CONF_RANK[result.confidence] ?? 0;
+        if (rank > bestRank && result.name !== UNIDENTIFIED_SOURCE) {
+          bestRank = rank;
+          bestNameValue = val;
+          if (rank === 3) break; // high confidence — no need to keep searching
+        }
+      }
+    }
+
+    // Build the stored description: prepend the best name value so the identity
+    // engine sees the sender name before any payment-rail noise.
+    const description = bestNameValue && bestNameValue !== rawDesc
+      ? `${bestNameValue} ${rawDesc}`.trim()
+      : rawDesc;
     if (!description) { skippedRows++; continue; }
 
     // ── Amount ──────────────────────────────────────────────────────────────

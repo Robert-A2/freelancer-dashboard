@@ -153,7 +153,7 @@
         "forecastLabel": "Next month",
         "forecastValue": "Cashflow around €1,890",
         "recommendationTitle": "Suggestion",
-        "recommendationBody": "Cancelling unused subscriptions could add about €984 a year to your cashflow."
+        "recommendationBody": "Software subscriptions are running at about €984/year — worth checking whether all are still needed."
       }
     },
     "history": {
@@ -349,6 +349,12 @@
       "body": "Freelancer OS never sells or shares your financial data. You can leave at any time, and permanently remove every record we hold about you — no questions asked."
     },
     "signingOut": "Signing out…",
+    "export": {
+      "label": "Export your data",
+      "body": "Download all your transactions as a CSV file. Includes date, description, amount, type, category, and intent.",
+      "cta": "Download CSV",
+      "downloading": "Preparing download…"
+    },
     "deleteAccount": {
       "dangerZone": "Danger Zone",
       "warning": "Permanently delete your account and every record associated with it — uploads, transactions, categories, analytics, and forecasts. This cannot be undone.",
@@ -387,16 +393,24 @@
     "stepLabel": "Step 1 of 2 — Choose account",
     "heading": "Which account is this from?",
     "subtitle": "Every transaction will be tagged to this account so you can track multiple banks separately.",
-    "existingLabel": "Your accounts",
+    "question": "Is this from a different bank account?",
+    "questionNewAccount": "New account",
+    "questionNewAccountDesc": "This CSV is from a bank account I haven't uploaded before.",
+    "questionSameAccount": "Same account already uploaded",
+    "questionSameAccountDesc": "I want to add more recent transactions to an existing account.",
+    "existingLabel": "Choose an account",
     "newLabel": "Add a new account",
     "nameLabel": "Account name",
     "namePlaceholder": "e.g. Revolut Business",
     "typeLabel": "Account type",
     "detectedHint": "We detected \"{name}\" from your CSV — feel free to adjust.",
-    "continueToFile": "Continue to file upload →",
-    "createAndContinue": "Save account & continue →",
+    "continueToFile": "Add transactions to this account →",
+    "createAndContinue": "Create account & continue →",
     "transactionsCount": "{count, plural, one {# transaction} other {# transactions}}",
-    "skipLabel": "Skip — don't track account"
+    "skipLabel": "Skip — don't track account",
+    "back": "Back",
+    "newAccountAdded": "New account added — {name}",
+    "existingAccountReceived": "{name} has received {count, plural, one {# new transaction} other {# new transactions}}"
   },
   "upload": {
     "heading": "Upload CSV",
@@ -404,6 +418,11 @@
     "uploadingAgain": {
       "title": "Uploading again?",
       "body": "Just export your latest months from your bank. We automatically skip any transactions already in your history — no need to re-upload your full statement each time."
+    },
+    "dataGaps": {
+      "heading": "{count, plural, one {Your history has a gap in 1 month} other {Your history has gaps in # months}}",
+      "subtitle": "Uploading statements for these months would improve your forecast accuracy:",
+      "uploadTip": "Export those months from your bank and drop them here."
     },
     "expectedFormat": {
       "label": "Expected format",
@@ -459,6 +478,21 @@
       "internalTransfers": "Internal transfers",
       "transferNote": "Internal transfers (between your own accounts) are excluded from income and expense totals.",
       "reviewCategorisation": "Review categorisation in History →",
+      "duplicatesDetail": {
+        "fewHeading": "{count, plural, one {1 transaction skipped — already in your account} other {# transactions skipped — already in your account}}",
+        "fewNote": "These matched existing records exactly. If you believe a payment is missing, check your History.",
+        "manyNote": "Looks like you've uploaded this period before — {count} transactions already existed.",
+        "show": "Show →",
+        "hide": "Hide",
+        "viewHistory": "Check History →"
+      },
+      "transferReview": {
+        "heading": "{count, plural, one {1 possible internal transfer detected} other {# possible internal transfers detected}}",
+        "subtitle": "These look like money moving between your own accounts — not real income. Marking them as transfers stops them from inflating your income and expense totals.",
+        "confirmButton": "{count, plural, one {Mark 1 pair as transfer} other {Mark # pairs as transfers}}",
+        "dismiss": "Keep as-is",
+        "confirmed": "{count, plural, one {1 transfer pair marked — excluded from totals} other {# transfer pairs marked — excluded from totals}}"
+      },
       "mixedCurrencies": "Multiple currencies detected ({currencies}). Totals and insights are calculated across all amounts. Results may be inaccurate if currencies were not converted before export. Consider exporting a single-currency statement for best accuracy.",
       "uploadAnother": "Upload another file",
       "viewDashboard": "View Dashboard"
@@ -532,6 +566,12 @@
     "heading": "History",
     "transactionCount": "{count, plural, one {# transaction} other {# transactions}}",
     "noResults": "No transactions match these filters.",
+    "reconciliation": {
+      "backToDashboard": "← Back to dashboard",
+      "incomeTotal": "Your {period} income is {amount} across {count, plural, one {# transaction} other {# transactions}}. Every row below is included in this number.",
+      "expenseTotal": "Your {period} expenses are {amount} across {count, plural, one {# transaction} other {# transactions}}. Every row below is included in this number.",
+      "allTotal": "All transactions for {period}: {count, plural, one {# transaction} other {# transactions}}. Income minus expenses equals your cashflow for this period."
+    },
     "pagination": {
       "previous": "← Previous",
       "next": "Next →",
@@ -590,6 +630,9 @@
     "change": "Change"
   },
   "dashboard": {
+    "accountFilter": {
+      "allAccounts": "All accounts"
+    },
     "welcomeBack": "Welcome back, {name}.",
     "title": "Dashboard",
     "showingDataThrough": "Showing data through {date}",
@@ -618,6 +661,7 @@
         "cta": "Review transactions →"
       },
       "businessProfit": "Business Profit",
+      "businessProfitNote": "Based on categorized expenses — not a tax figure",
       "margin": "{margin}% margin",
       "trueNetCashflow": "True Net Cashflow",
       "trueNetCashflowNote": "After costs, personal spend & debt",
@@ -625,9 +669,11 @@
       "personalBurnRateNote": "Personal expenses & family support"
     },
     "summaryCards": {
-      "showing": "Showing",
+      "showing": "Period",
       "risk": "Risk",
       "totalThisMonth": "total this month",
+      "viewTransactions": "View transactions",
+      "partialMonth": "Month in progress — % changes are not final",
       "incomeAboveExpenses": "income above expenses",
       "expensesExceedIncome": "expenses exceed income",
       "ofIncomeKept": "of income kept",
@@ -639,7 +685,7 @@
       },
       "monthsPositive": "{positive} of {total, plural, one {# month} other {# months}} positive",
       "noHistory": "No history yet",
-      "cashflowSavingsNote": "Savings transfers not included",
+      "cashflowSavingsNote": "Savings transfers not included · does not account for tax owed",
       "riskSeeBreakdown": "See full breakdown →"
     },
     "trendsChart": {
@@ -761,7 +807,8 @@
       "critical": {
         "label": "Critical",
         "desc": "Cashflow is negative most months. Immediate action is required to avoid a cash shortfall."
-      }
+      },
+      "taxAdjustmentNote": "{count, plural, one {# month} other {# months}} with tax payments excluded — paying taxes on time doesn't mean your cashflow is poor."
     },
     "healthScore": {
       "label": "Business Health Score",
@@ -795,7 +842,7 @@
       "marginApprox": "~{pct}%",
       "ofIncomeKept": "of income kept after expenses",
       "ofIncomeKeptApprox": "approximate — limited data",
-      "extrapolationNote": "Extrapolated from projected monthly average. Assumes a consistent run-rate through the year — actual results will vary.",
+      "extrapolationNote": "Extrapolated from projected monthly average. Assumes a consistent run-rate — it cannot predict client loss, market changes, or unexpected costs. Do not use this figure to take on debt, hire staff, or make major financial commitments.",
       "noValue": "—"
     },
     "keyDrivers": {
@@ -835,12 +882,12 @@
       "fallback": "No significant risk detected based on current data."
     },
     "biggestOpportunity": {
-      "label": "Biggest Opportunity",
+      "label": "Something to Consider",
       "fallback": "Maintain consistent cashflow and income levels."
     },
     "recommendedActions": {
-      "label": "Recommended Actions",
-      "subtitle": "Specific steps derived from your actual financial patterns:"
+      "label": "Things Worth Reviewing",
+      "subtitle": "Based on your data — only you know what's actually worth changing."
     },
     "seasonalPatterns": {
       "label": "Seasonal Patterns"
@@ -848,6 +895,12 @@
     "incompleteDataWarning": {
       "title": "Recent income appears lower than usual",
       "body": "Your last {recentMonths, plural, one {# month} other {# months}} averaged {recentAvg}/month in income — well below your prior {historicMonths}-month average of {historicAvg}/month. Some bank statements may be missing. The projections above are based on your full history and may overstate future income."
+    },
+    "dataGaps": {
+      "heading": "{count, plural, one {1 month in your history has no data} other {# months in your history have no data}}",
+      "subtitle": "Uploading bank statements for those months would make this forecast more accurate.",
+      "months": "{months}",
+      "uploadNow": "Upload statements →"
     },
     "howBuilt": {
       "label": "How This Forecast Was Built",
@@ -869,6 +922,8 @@
       "seasonalAdjustmentNote": "Seasonal adjustment applied: months that are historically stronger or weaker are accounted for.",
       "seasonalFactorNote": "Seasonal note: this month historically runs {pct}% {aboveBelow, select, above {above} below {below} other {near}} your average, based on your own prior data. Applied at {blend}% blend.",
       "moreHistoryNote": "More history produces a more reliable forecast.",
+      "revenueMatchRate": "{pct}% of your income has been matched to a known client or income source — the rest came from payments we couldn't identify. Visit the Clients page to review.",
+      "revenueMatchRateHigh": "{pct}% of your income has been matched to a known client or income source.",
       "confidenceScore": "Confidence Score",
       "recurringExpensesLabel": "Recurring Expenses Detected",
       "recurringExpensesBody": "{amount}/month in stable, recurring costs identified. The expense projection will not drop below this floor.",
@@ -908,6 +963,7 @@
       "titleCurrentSingle": "{month} {dataYear}",
       "subtitleCurrent": "Your totals for this period so far.",
       "noComparisonYet": "Year-over-year comparison will appear once a full year of history has been collected.",
+      "missingMonthsNote": "{count, plural, one {# month} other {# months}} in this period have no data — upload those statements to make this comparison accurate.",
       "lastYr": "{amount} last yr",
       "marginLastYr": "{pct}% last yr",
       "ofIncomeKept": "of income kept"
@@ -965,7 +1021,8 @@
       "noIncomeData": "No income data",
       "expenseBreakdown": "Expense breakdown",
       "allTime": "All time, share of total spending",
-      "noExpenseData": "No expense data"
+      "noExpenseData": "No expense data",
+      "revenueSourceNote": "Income sources are identified from bank description patterns. The same platform (e.g. Stripe, PayPal) may appear under multiple entries if payout descriptions vary — and some payouts may be miscategorised if your bank uses generic descriptions."
     },
     "categorizationSection": {
       "label": "Categorization health",
@@ -1098,9 +1155,10 @@
     },
     "list": {
       "title": "All clients",
-      "subtitle": "Ranked by total revenue · click to view full profile",
+      "subtitle": "Ranked by total revenue · statuses are based on each client's historical payment intervals, not your invoice terms",
       "lastPayment": "Last payment: {date}",
-      "ofIncome": "{pct}% of income"
+      "ofIncome": "{pct}% of income",
+      "multiProcessorNote": "The same client may appear more than once if they pay via different methods (e.g. bank transfer and Stripe). Check each entry's payment history to confirm they are distinct."
     },
     "status": {
       "current": "Active",
@@ -1108,6 +1166,31 @@
       "risk": "Late",
       "inactive": "Inactive",
       "unidentified": "Identity not verified"
+    },
+    "confidence": {
+      "medium": "Auto-detected name",
+      "low": "Uncertain name",
+      "mediumTooltip": "This name was extracted automatically from your bank descriptions. Correct it if it looks wrong.",
+      "lowTooltip": "This name came from a single transaction. We can't verify it yet."
+    },
+    "rename": {
+      "editName": "Correct this name →",
+      "placeholder": "Client name",
+      "save": "Save",
+      "cancel": "Cancel",
+      "resetToAuto": "Reset to auto-detected: {name}",
+      "error": "Failed to save. Please try again."
+    },
+    "unresolved": {
+      "title": "Unrecognised payments",
+      "subtitle": "These income payments couldn't be matched to a client name. Do you recognise them?",
+      "summary": "{count, plural, one {# payment} other {# payments}} · {amount} total",
+      "nameCta": "Who sent this? →",
+      "inputPlaceholder": "Enter client name",
+      "save": "Save",
+      "cancel": "Cancel",
+      "error": "Could not save — please try again",
+      "saved": "Saved. Future imports with the same pattern will be matched automatically."
     },
     "dependency": {
       "low": "Low risk",
@@ -1367,17 +1450,17 @@
     "clientConcentration": "{hasSource, select, yes {<b>{source}</b> accounts for <b>{pct}%</b> of your income} other {A single source accounts for <b>{pct}%</b> of your income}} — a high concentration in one source.",
     "incomeReasonablyDiversified": "Your income is reasonably diversified across <b>{total, plural, one {# source} other {# sources}}</b>, with your top source making up <b>{pct}%</b>.",
     "context": {
-      "incomeAboveAvg": "{incomeType, select, salary {Your salary} other {Your income}} this month, <b>{current}</b>, is <b>{pct}%</b> above your average over {months, plural, one {the last month} other {the last # months}} (<b>{avg}</b>).",
-      "incomeBelowAvg": "{incomeType, select, salary {Your salary} other {Your income}} this month, <b>{current}</b>, is <b>{pct}%</b> below your average over {months, plural, one {the last month} other {the last # months}} (<b>{avg}</b>).",
+      "incomeAboveAvg": "{incomeType, select, salary {Your salary} other {Your income}} in <b>{period}</b>, <b>{current}</b>, is <b>{pct}%</b> above your average over {months, plural, one {the last month} other {the last # months}} (<b>{avg}</b>).",
+      "incomeBelowAvg": "{incomeType, select, salary {Your salary} other {Your income}} in <b>{period}</b>, <b>{current}</b>, is <b>{pct}%</b> below your average over {months, plural, one {the last month} other {the last # months}} (<b>{avg}</b>).",
       "analysisCovers": "This analysis covers <b>{months, plural, one {# month} other {# months}}</b>, from {fromMonth} to {toMonth}.",
-      "incomeInLine": "Your income this month is in line with your average over {months, plural, one {the last month} other {the last # months}} (<b>{avg}</b>).",
-      "expensesAboveAvgTopCat": "Expenses this month, <b>{current}</b>, are <b>{pct}%</b> above your average — your largest category is <b>{category}</b> at <b>{amount}</b>.",
-      "expensesBelowAvg": "Expenses this month, <b>{current}</b>, are <b>{pct}%</b> below your average of <b>{avg}</b>.",
+      "incomeInLine": "Your income in <b>{period}</b> is in line with your average over {months, plural, one {the last month} other {the last # months}} (<b>{avg}</b>).",
+      "expensesAboveAvgTopCat": "Expenses in <b>{period}</b>, <b>{current}</b>, are <b>{pct}%</b> above your average — your largest category is <b>{category}</b> at <b>{amount}</b>.",
+      "expensesBelowAvg": "Expenses in <b>{period}</b>, <b>{current}</b>, are <b>{pct}%</b> below your average of <b>{avg}</b>.",
       "cashflowDrop": "Cashflow dropped <b>{amount}</b> compared to last month.",
       "cashflowDropWithDriver": "Cashflow dropped <b>{amount}</b> compared to last month. Higher <b>{category}</b> spending (+<b>{changeAmt}</b>) was the main driver.",
-      "savingsDrop": "Savings dropped from <b>{prev}</b> last month to <b>{curr}</b> this month.",
+      "savingsDrop": "Savings dropped from <b>{prev}</b> to <b>{curr}</b> in <b>{period}</b>.",
       "expensesRisingTrend": "Expenses have been rising for 3 months in a row, now averaging <b>{amount}</b> per month.",
-      "clientConcentrationRising": "<b>{name}</b> brought in <b>{currentPct}%</b> of your income this month, up from <b>{prevPct}%</b> on average. Client dependency is increasing."
+      "clientConcentrationRising": "<b>{name}</b> brought in <b>{currentPct}%</b> of your income in <b>{period}</b>, up from <b>{prevPct}%</b> on average. Client dependency is increasing."
     },
     "comparison": {
       "incomeDecline": "{incomeType, select, freelance {Client income} salary {Your salary income} mixed {Your income} other {Your income}} dropped <b>{pct}%</b> compared to last month.",
@@ -1387,28 +1470,29 @@
       "expensesOutpaceIncomeWithDrivers": "Expenses grew <b>{ecPct}%</b>, faster than income growth of <b>{icPct}%</b>{driverCount, select, 1 { — <b>{cat1}</b> rose by <b>{amt1}</b>} other { — <b>{cat1}</b> (<b>{amt1}</b>) and <b>{cat2}</b> (<b>{amt2}</b>) rose}}.",
       "expensesOutpaceIncome": "Expenses grew <b>{ecPct}%</b>, faster than income growth of <b>{icPct}%</b>.",
       "incomeDownExpensesUp": "Income fell <b>{icPct}%</b> while expenses rose <b>{ecPct}%</b>{driverCount, select, 0 {.} 1 { — driven by <b>{cat1}</b> (<b>{amt1}</b> more).} other { — driven by <b>{cat1}</b> (<b>{amt1}</b> more) and <b>{cat2}</b> (<b>{amt2}</b> more).}}",
-      "expensesJumped": "Expenses jumped <b>{ecPct}%</b> this month{driverCount, select, 1 { — mainly driven by <b>{cat1}</b> (<b>{amt1}</b> more).} other { — mainly driven by <b>{cat1}</b> (<b>{amt1}</b> more) and <b>{cat2}</b> (<b>{amt2}</b> more).}}",
+      "expensesJumped": "Expenses jumped <b>{ecPct}%</b> in <b>{period}</b>{driverCount, select, 1 { — mainly driven by <b>{cat1}</b> (<b>{amt1}</b> more).} other { — mainly driven by <b>{cat1}</b> (<b>{amt1}</b> more) and <b>{cat2}</b> (<b>{amt2}</b> more).}}",
       "cashflowImprovedMeaningfully": "Cashflow improved meaningfully compared to last month.",
       "stable": "Income and expenses were broadly stable compared to last month.",
-      "suggestSaveExtra": "Income up, costs down — the best combination. This month produced more margin than the previous month.",
-      "suggestWatchDriver": "<b>{cat1}</b> was the largest expense movement this month, up <b>{amt1}</b>. Review whether this reflects a one-time cost, a recurring change, or normal business activity.",
-      "suggestExpenseCeiling": "Income grew faster than expenses this month. No single category stands out as the main expense change.",
-      "suggestExpenseReview": "<b>{cat1}</b> was the largest expense contributor this month at <b>{amt1}</b>. Review whether this is a one-time cost, a recurring pattern, or client-related activity.",
-      "suggestDoublePressure": "<b>{cat1}</b> was the largest expense change this month (<b>{amt1}</b>). On the income side, review whether any client payments are still outstanding.",
-      "suggestDoublePressureGeneric": "Income fell while expenses rose this month. Review which expense categories increased, and check whether any client payments are still outstanding.",
-      "suggestIncomeDecline": "{incomeType, select, freelance {Review whether any client payments are still outstanding — one collected invoice can change this month's picture.} salary {Verify your pay schedule and check whether any deductions changed unexpectedly.} other {Review whether any expected income source paused this month, and check whether any invoices are still outstanding.}}",
-      "suggestExpenseBudget": "<b>{cat1}</b> was the largest expense increase this month, up <b>{amt1}</b>. Review whether this is a one-time cost, a recurring change, or client-related activity.",
-      "suggestBuildRunway": "This month produced positive cashflow — income exceeded expenses by more than usual.",
-      "suggestStability": "Income and expenses have been stable across recent months — a consistent pattern."
+      "suggestSaveExtra": "Income up, costs down — the best combination. <b>{period}</b> produced more margin than the previous month.",
+      "suggestWatchDriver": "<b>{cat1}</b> was the largest expense movement in <b>{period}</b>, up <b>{amt1}</b>. Review whether this reflects a one-time cost, a recurring change, or normal business activity.",
+      "suggestExpenseCeiling": "Income grew faster than expenses in <b>{period}</b>. No single category stands out as the main expense change.",
+      "suggestExpenseReview": "<b>{cat1}</b> was the largest expense contributor in <b>{period}</b> at <b>{amt1}</b>. Review whether this is a one-time cost, a recurring pattern, or client-related activity.",
+      "suggestDoublePressure": "<b>{cat1}</b> was the largest expense change in <b>{period}</b> (<b>{amt1}</b>). On the income side, review whether any client payments are still outstanding.",
+      "suggestDoublePressureGeneric": "Income fell while expenses rose in <b>{period}</b>. Review which expense categories increased, and check whether any client payments are still outstanding.",
+      "suggestIncomeDecline": "{incomeType, select, freelance {Review whether any client payments are still outstanding — one collected invoice can still improve <b>{period}</b>.} salary {Verify your pay schedule and check whether any deductions changed unexpectedly.} other {Review whether any expected income source paused in <b>{period}</b>, and check whether any invoices are still outstanding.}}",
+      "suggestExpenseBudget": "<b>{cat1}</b> was the largest expense increase in <b>{period}</b>, up <b>{amt1}</b>. Review whether this is a one-time cost, a recurring change, or client-related activity.",
+      "suggestBuildRunway": "<b>{period}</b> produced positive cashflow — income exceeded expenses by more than usual.",
+      "suggestStability": "Income and expenses have been stable across recent months — a consistent pattern.",
+      "partialMonth": "<b>{period}</b> is still in progress. Month-to-month comparisons aren't shown yet — figures will update as the month completes."
     },
     "snapshot": {
       "uploadPrompt": "Upload your bank statement to get personalised insights about your finances.",
-      "firstUpload": "{cashflowOk, select, positive {Great start — your cashflow this month is positive.} other {Your cashflow this month is negative — let's see what's driving that.}}",
+      "firstUpload": "{cashflowOk, select, positive {Great start — your <b>{period}</b> cashflow is positive.} other {Your <b>{period}</b> cashflow is negative — let's see what's driving that.}}",
       "excellentMonth": "Excellent month — income is up and expenses are down.",
-      "incomeUpExpensesUp": "{hasCategory, select, yes {Income is up this month, but so are expenses — mainly driven by <b>{category}</b> (<b>{amount}</b> more than last month).} other {Income is up this month, but so are expenses.}}",
+      "incomeUpExpensesUp": "{hasCategory, select, yes {Income is up in <b>{period}</b>, but so are expenses — mainly driven by <b>{category}</b> (<b>{amount}</b> more than last month).} other {Income is up in <b>{period}</b>, but so are expenses.}}",
       "incomeDownExpensesUp": "{hasCategory, select, yes {A difficult month — income is down and expenses are up, mainly driven by <b>{category}</b> (<b>{amount}</b> more than last month).} other {A difficult month — income is down while expenses are up.}}",
-      "expensesExceedIncome": "{hasCategory, select, yes {Expenses exceeded income this month, mainly due to <b>{category}</b> spending.} other {Expenses exceeded income this month — cashflow is negative.}}",
-      "expensesIncreasedLed": "Expenses increased this month, led by <b>{category}</b> (<b>{amount}</b> above last month). Cashflow remains positive.",
+      "expensesExceedIncome": "{hasCategory, select, yes {Expenses exceeded income in <b>{period}</b>, mainly due to <b>{category}</b> spending.} other {Expenses exceeded income in <b>{period}</b> — cashflow is negative.}}",
+      "expensesIncreasedLed": "Expenses increased in <b>{period}</b>, led by <b>{category}</b> (<b>{amount}</b> above last month). Cashflow remains positive.",
       "goodCostControl": "Good cost control — <b>{category}</b> spending fell by <b>{amount}</b> compared to last month.",
       "stableMonth": "Stable month — your finances are holding steady."
     },
@@ -1471,7 +1555,7 @@
       "deficitExpenseDriven": "Rising expenses are the main driver — <b>{category}</b> alone is <b>{amount}</b> (<b>{pct}%</b> of recent expenses){growing, select, yes {, and it's been growing year over year} other {}}, against average income of <b>{recentIncome}</b>.",
       "deficitExpensesExceedIncome": "Expenses (<b>{recentExpenses}</b>) simply exceed income (<b>{recentIncome}</b>) — <b>{category}</b> is your largest expense at <b>{amount}</b> (<b>{pct}%</b>){growing, select, yes {, and it's been growing year over year} other {}}.",
       "deficitGeneral": "Expenses (<b>{recentExpenses}</b>) simply exceed income (<b>{recentIncome}</b>) on average.",
-      "reduceSubscriptions": "<b>{category}</b> costs are <b>{reduction}</b>/month — <b>{annual}</b>/year in total.",
+      "reduceSubscriptions": "Your <b>{category}</b> spend is <b>{monthly}</b>/month — <b>{annual}</b>/year annualised.",
       "restoreCashflow": "Closing the projected <b>{amount}</b>/month gap would restore positive cashflow.",
       "marginLow": "Your projected cashflow margin is <b>{pct}%</b> — costs are absorbing most of income.",
       "marginHealthy": "Your projected cashflow margin of <b>{pct}%</b> is healthy — keep it up."

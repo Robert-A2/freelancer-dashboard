@@ -4,6 +4,7 @@ import { getTranslations } from "next-intl/server";
 import { prisma } from "@/lib/prisma";
 import SignOutButton from "@/components/settings/SignOutButton";
 import DeleteAccountSection from "@/components/settings/DeleteAccountSection";
+import ExportDataButton from "@/components/settings/ExportDataButton";
 
 export const dynamic = "force-dynamic";
 
@@ -38,6 +39,12 @@ export default async function SettingsPage() {
           <span className="font-medium text-[#E8F0F8]">{t("dataNotice.title")}</span>{" "}
           {t("dataNotice.body")}
         </p>
+      </div>
+
+      <div className="card">
+        <p className="label mb-1">{t("export.label")}</p>
+        <p className="text-sm text-[#7BA8C4] mb-4">{t("export.body")}</p>
+        <ExportDataButton />
       </div>
 
       <DeleteAccountSection email={user.email ?? ""} />

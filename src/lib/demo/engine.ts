@@ -739,7 +739,7 @@ export function computeClientRiskProfiles(locale: Locale): ClientRiskCenterData 
   const incomeTxs = txs.filter(t => t.intent === "freelance_income");
 
   if (incomeTxs.length === 0) {
-    return { clients: [], totalRevenue: 0, currentCount: 0, followUpCount: 0, inactiveCount: 0, hasIntentData: true };
+    return { clients: [], totalRevenue: 0, currentCount: 0, followUpCount: 0, inactiveCount: 0, hasIntentData: true, unresolvedGroups: [] };
   }
 
   // Build 6-month window ending Dec 2025 (month before refDate)
@@ -851,6 +851,8 @@ export function computeClientRiskProfiles(locale: Locale): ClientRiskCenterData 
 
     return {
       name: c.name,
+      payerId: null,
+      canonicalName: c.name,
       confidence: c.confidence,
       isProcessor: c.isProcessor,
       totalRevenue: totalRev,
@@ -890,8 +892,9 @@ export function computeClientRiskProfiles(locale: Locale): ClientRiskCenterData 
     totalRevenue,
     currentCount:  profiles.filter(p => p.lifecycle === "current").length,
     followUpCount: profiles.filter(p => p.status === "watch" || p.status === "risk").length,
-    inactiveCount: profiles.filter(p => p.lifecycle === "inactive").length,
-    hasIntentData: true,
+    inactiveCount:    profiles.filter(p => p.lifecycle === "inactive").length,
+    hasIntentData:    true,
+    unresolvedGroups: [],
   };
 }
 

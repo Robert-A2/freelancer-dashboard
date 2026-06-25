@@ -20,6 +20,8 @@ interface Transaction {
   intent: string | null;
   intentConfidence: string | null;
   needsReview: boolean;
+  accountName?: string | null;
+  accountColor?: string | null;
 }
 
 interface Props {
@@ -275,6 +277,15 @@ export default function RecentTransactions({ transactions, notable }: Props) {
                   <p className="text-xs text-[#6A97B4]">
                     {new Date(tx.date).toLocaleDateString(INTL_LOCALES[locale], { day: "numeric", month: "short", timeZone: "UTC" })}
                   </p>
+                  {tx.accountName && (
+                    <span className="flex items-center gap-1 text-xs text-[#7BA8C4]">
+                      <span
+                        className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                        style={{ backgroundColor: tx.accountColor ?? "#7BA8C4" }}
+                      />
+                      {tx.accountName}
+                    </span>
+                  )}
                   <span className="text-xs px-1.5 py-0.5 bg-[#1A3048] rounded text-[#7BA8C4]">
                     {tCategories.has(tx.category) ? tCategories(tx.category) : tx.category}
                   </span>

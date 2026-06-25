@@ -8,6 +8,7 @@ import { parseCsv, type DetectedAccount } from "@/lib/csv-processor";
 import type { LearnedRules, MerchantIndex } from "@/lib/categorization";
 import type { UserIntentRules } from "@/lib/intent-engine";
 import type { NormalizedTransaction } from "@/lib/csv-processor";
+import { formatCurrency } from "@/utils/finance";
 
 const EMPTY_MERCHANT_INDEX: MerchantIndex = {
   expenseHigh:    [],
@@ -49,6 +50,17 @@ interface ParsedPayload {
   detectedAccount: DetectedAccount | null;
 }
 
+interface SuspectedTransferPair {
+  incomeId:    string;
+  expenseId:   string;
+  amount:      number;
+  date:        string;
+  incomeDesc:  string;
+  expenseDesc: string;
+  incomeAcct:  string;
+  expenseAcct: string;
+}
+
 interface ImportResult {
   totalRows: number;
   importedRows: number;
@@ -60,6 +72,8 @@ interface ImportResult {
   currencies: string[];
   hasMixedCurrencies: boolean;
   typeBreakdown: { income: number; expense: number; savings: number; transfer: number } | null;
+  suspectedTransfers?: SuspectedTransferPair[];
+  skippedDuplicates?: Array<{ date: string; description: string; amount: number; type: string }>;
 }
 
 type Stage =
@@ -100,6 +114,21 @@ export default function CsvUploader() {
   const [newType,      setNewType]      = useState<AccountTypeName>("personal_checking");
   const [newColor,     setNewColor]     = useState(ACCOUNT_COLORS[0]);
   const [acctLoading,  setAcctLoading]  = useState(false);
+
+  // ── Account question flow ─────────────────────────────────────────────────
+  // null = question not yet answered, "different" = new account, "same" = pick existing
+  const [accountQuestion, setAccountQuestion]   = useState<"different" | "same" | null>(null);
+  const [lastAccountName, setLastAccountName]   = useState<string | null>(null);
+  const [isNewAccount,    setIsNewAccount]      = useState(false);
+
+  // ── Duplicate visibility state ────────────────────────────────────────────
+  const [showDuplicates, setShowDuplicates] = useState(false);
+
+  // ── Transfer review state ──────────────────────────────────────────────────
+  // checkedKeys: "incomeId|expenseId" strings; all checked by default
+  const [checkedKeys,       setCheckedKeys]       = useState<Set<string>>(new Set());
+  const [transfersDismissed, setTransfersDismissed] = useState(false);
+  const [confirmedCount,    setConfirmedCount]    = useState<number | null>(null);
 
   // Fetch existing accounts when we enter account-selection step
   useEffect(() => {
@@ -209,22 +238,27 @@ export default function CsvUploader() {
       return;
     }
 
-    setStage({
-      status: "done",
-      fileName: payload.fileName,
-      result: {
-        totalRows:          data.totalRows,
-        importedRows:       data.importedRows,
-        duplicateRows:      data.duplicateRows,
-        skippedRows:        data.skippedRows,
-        dateRangeFrom:      data.dateRangeFrom      ?? null,
-        dateRangeTo:        data.dateRangeTo        ?? null,
-        categoriesDetected: data.categoriesDetected ?? 0,
-        currencies:         data.currencies         ?? [],
-        hasMixedCurrencies: data.hasMixedCurrencies ?? false,
-        typeBreakdown:      data.typeBreakdown       ?? null,
-      },
-    });
+    const result: ImportResult = {
+      totalRows:           data.totalRows,
+      importedRows:        data.importedRows,
+      duplicateRows:       data.duplicateRows,
+      skippedRows:         data.skippedRows,
+      dateRangeFrom:       data.dateRangeFrom       ?? null,
+      dateRangeTo:         data.dateRangeTo         ?? null,
+      categoriesDetected:  data.categoriesDetected  ?? 0,
+      currencies:          data.currencies          ?? [],
+      hasMixedCurrencies:  data.hasMixedCurrencies  ?? false,
+      typeBreakdown:       data.typeBreakdown        ?? null,
+      suspectedTransfers:  data.suspectedTransfers   ?? undefined,
+      skippedDuplicates:   data.skippedDuplicates    ?? undefined,
+    };
+
+    // Pre-check all suspected transfer pairs
+    if (result.suspectedTransfers && result.suspectedTransfers.length > 0) {
+      setCheckedKeys(new Set(result.suspectedTransfers.map(p => `${p.incomeId}|${p.expenseId}`)));
+    }
+
+    setStage({ status: "done", fileName: payload.fileName, result });
 
     router.refresh();
   }, [stage, router]);
@@ -243,12 +277,17 @@ export default function CsvUploader() {
         const data = await res.json();
         setAcctLoading(false);
         if (!res.ok) return;
+        setLastAccountName(name);
+        setIsNewAccount(true);
         await submitWithAccount(data.account.id);
       } catch { setAcctLoading(false); }
     } else {
+      const acct = accounts.find(a => a.id === selectedId);
+      setLastAccountName(acct?.name ?? null);
+      setIsNewAccount(false);
       await submitWithAccount(selectedId);
     }
-  }, [createMode, newName, newType, newColor, selectedId, submitWithAccount]);
+  }, [createMode, newName, newType, newColor, selectedId, accounts, submitWithAccount]);
 
   // ── Drag / file input ──────────────────────────────────────────────────────
   const handleDrop = useCallback((e: React.DragEvent) => {
@@ -264,6 +303,21 @@ export default function CsvUploader() {
     e.target.value = "";
   };
 
+  const handleConfirmTransfers = useCallback(async (pairs: SuspectedTransferPair[]) => {
+    const selected = pairs.filter(p => checkedKeys.has(`${p.incomeId}|${p.expenseId}`));
+    if (selected.length === 0) { setTransfersDismissed(true); return; }
+
+    const ids = selected.flatMap(p => [p.incomeId, p.expenseId]);
+    await fetch("/api/transfers/confirm", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ transactionIds: ids }),
+    });
+    setConfirmedCount(selected.length);
+    setTransfersDismissed(true);
+    router.refresh();
+  }, [checkedKeys, router]);
+
   const reset = () => {
     setStage({ status: "idle" });
     setSelectedId(null);
@@ -271,6 +325,13 @@ export default function CsvUploader() {
     setNewName("");
     setNewType("personal_checking");
     setNewColor(ACCOUNT_COLORS[0]);
+    setCheckedKeys(new Set());
+    setTransfersDismissed(false);
+    setConfirmedCount(null);
+    setShowDuplicates(false);
+    setAccountQuestion(null);
+    setLastAccountName(null);
+    setIsNewAccount(false);
   };
 
   // ──────────────────────────────────────────────────────────────────────────
@@ -324,8 +385,14 @@ export default function CsvUploader() {
   // ── Account selection ──────────────────────────────────────────────────────
   if (stage.status === "account-selection") {
     const { payload } = stage;
-    const detectedName = payload.detectedAccount?.name;
-    const txCount = payload.transactions.length;
+    const txCount    = payload.transactions.length;
+    const hasExisting = accounts.length > 0;
+
+    // Three display modes
+    const showQuestion    = hasExisting && accountQuestion === null;
+    const showCreateForm  = !hasExisting || accountQuestion === "different";
+    const showExistingList = hasExisting && accountQuestion === "same";
+
     const canSubmit = createMode ? newName.trim().length > 0 : !!selectedId;
 
     return (
@@ -333,11 +400,12 @@ export default function CsvUploader() {
         {/* Step header */}
         <div>
           <p className="label mb-1">{tA("stepLabel")}</p>
-          <h3 className="text-lg font-semibold text-[#E8F0F8]">{tA("heading")}</h3>
-          <p className="text-sm text-[#7BA8C4] mt-1">{tA("subtitle")}</p>
+          <h3 className="text-lg font-semibold text-[#E8F0F8]">
+            {showQuestion ? tA("question") : showCreateForm ? tA("newLabel") : tA("existingLabel")}
+          </h3>
         </div>
 
-        {/* Parsed file summary */}
+        {/* File summary pill */}
         <div className="flex items-center gap-2 px-3 py-2 bg-[#1A3048] rounded-xl text-xs text-[#7BA8C4]">
           <span className="text-[#3AB5A0]">📄</span>
           <span className="font-medium text-[#A8C6E0] truncate">{payload.fileName}</span>
@@ -345,20 +413,45 @@ export default function CsvUploader() {
           <span className="flex-shrink-0">{tA("transactionsCount", { count: txCount })}</span>
         </div>
 
-        {/* Detected account hint */}
-        {detectedName && (
-          <div className="flex items-start gap-2.5 px-3 py-2.5 bg-[#3AB5A008] border border-[#3AB5A020] rounded-xl">
-            <span className="text-[#3AB5A0] flex-shrink-0 mt-0.5">✦</span>
-            <p className="text-xs text-[#7BA8C4] leading-relaxed">
-              {tA("detectedHint", { name: detectedName })}
-            </p>
+        {/* ── STEP A: Question ─────────────────────────────────────────── */}
+        {showQuestion && (
+          <div className="space-y-2">
+            {/* Option: New account */}
+            <button
+              onClick={() => { setAccountQuestion("different"); setCreateMode(true); setSelectedId(null); }}
+              className="w-full flex items-start gap-3 px-4 py-4 rounded-xl border border-[#243F5E] hover:border-[#3AB5A040] bg-[#1A3048] hover:bg-[#1E3550] text-left transition-colors"
+            >
+              <span className="text-[#3AB5A0] text-base mt-0.5 flex-shrink-0">+</span>
+              <div>
+                <p className="text-sm font-semibold text-[#E8F0F8]">{tA("questionNewAccount")}</p>
+                <p className="text-xs text-[#6A97B4] mt-0.5">{tA("questionNewAccountDesc")}</p>
+              </div>
+            </button>
+
+            {/* Option: Same account already uploaded */}
+            <button
+              onClick={() => { setAccountQuestion("same"); setCreateMode(false); setSelectedId(accounts[0].id); }}
+              className="w-full flex items-start gap-3 px-4 py-4 rounded-xl border border-[#243F5E] hover:border-[#4A9FD440] bg-[#1A3048] hover:bg-[#1E3550] text-left transition-colors"
+            >
+              <span className="text-[#4A9FD4] text-base mt-0.5 flex-shrink-0">↩</span>
+              <div>
+                <p className="text-sm font-semibold text-[#E8F0F8]">{tA("questionSameAccount")}</p>
+                <p className="text-xs text-[#6A97B4] mt-0.5">{tA("questionSameAccountDesc")}</p>
+              </div>
+            </button>
+
+            <button
+              onClick={() => submitWithAccount(null)}
+              className="w-full text-xs text-center text-[#4A7A9B] hover:text-[#7BA8C4] transition-colors py-1"
+            >
+              {tA("skipLabel")}
+            </button>
           </div>
         )}
 
-        {/* Existing accounts */}
-        {accounts.length > 0 && !createMode && (
-          <div>
-            <p className="label mb-2">{tA("existingLabel")}</p>
+        {/* ── STEP B: Pick existing account ────────────────────────────── */}
+        {showExistingList && (
+          <div className="space-y-3">
             <div className="space-y-2">
               {accounts.map(acc => (
                 <button
@@ -378,27 +471,24 @@ export default function CsvUploader() {
                     </p>
                   </div>
                   {selectedId === acc.id && (
-                    <span className="text-[#3AB5A0] flex-shrink-0 text-sm font-bold">✓</span>
+                    <span className="text-[#3AB5A0] flex-shrink-0 font-bold">✓</span>
                   )}
                 </button>
               ))}
             </div>
 
             <button
-              onClick={() => { setCreateMode(true); setSelectedId(null); }}
-              className="mt-2 w-full flex items-center gap-2 px-4 py-3 rounded-xl border border-dashed border-[#243F5E] hover:border-[#3AB5A040] text-sm text-[#6A97B4] hover:text-[#3AB5A0] transition-colors"
+              onClick={() => setAccountQuestion(null)}
+              className="text-xs text-[#6A97B4] hover:text-[#7BA8C4] transition-colors"
             >
-              <span className="text-base leading-none">+</span>
-              {tA("newLabel")}
+              ← {tA("back")}
             </button>
           </div>
         )}
 
-        {/* Create new account form */}
-        {createMode && (
+        {/* ── STEP C: Create new account ───────────────────────────────── */}
+        {showCreateForm && (
           <div className="space-y-4">
-            <p className="label">{accounts.length > 0 ? tA("newLabel") : tA("existingLabel")}</p>
-
             {/* Color picker */}
             <div className="flex gap-2">
               {ACCOUNT_COLORS.map(c => (
@@ -412,7 +502,6 @@ export default function CsvUploader() {
               ))}
             </div>
 
-            {/* Name */}
             <div>
               <label className="label mb-1.5 block">{tA("nameLabel")}</label>
               <input
@@ -421,10 +510,10 @@ export default function CsvUploader() {
                 onChange={e => setNewName(e.target.value)}
                 placeholder={tA("namePlaceholder")}
                 className="w-full bg-[#1A3048] border border-[#243F5E] rounded-xl px-4 py-2.5 text-sm text-[#E8F0F8] placeholder:text-[#4A7A9B] focus:outline-none focus:border-[#3AB5A0]"
+                autoFocus={hasExisting}
               />
             </div>
 
-            {/* Type */}
             <div>
               <label className="label mb-1.5 block">{tA("typeLabel")}</label>
               <select
@@ -438,37 +527,37 @@ export default function CsvUploader() {
               </select>
             </div>
 
-            {accounts.length > 0 && (
+            {hasExisting && (
               <button
-                onClick={() => { setCreateMode(false); setSelectedId(accounts[0].id); }}
+                onClick={() => setAccountQuestion(null)}
                 className="text-xs text-[#6A97B4] hover:text-[#7BA8C4] transition-colors"
               >
-                ← Back to existing accounts
+                ← {tA("back")}
               </button>
             )}
           </div>
         )}
 
-        {/* Actions */}
-        <div className="flex flex-col gap-2 pt-1">
-          <button
-            onClick={handleContinue}
-            disabled={!canSubmit || acctLoading}
-            className="btn-primary w-full disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            {acctLoading
-              ? "…"
-              : createMode
-              ? tA("createAndContinue")
-              : tA("continueToFile")}
-          </button>
-          <button
-            onClick={() => submitWithAccount(null)}
-            className="text-xs text-center text-[#4A7A9B] hover:text-[#7BA8C4] transition-colors py-1"
-          >
-            {tA("skipLabel")}
-          </button>
-        </div>
+        {/* Actions — only when user has made their choice */}
+        {!showQuestion && (
+          <div className="flex flex-col gap-2 pt-1">
+            <button
+              onClick={handleContinue}
+              disabled={!canSubmit || acctLoading}
+              className="btn-primary w-full disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {acctLoading ? "…" : createMode ? tA("createAndContinue") : tA("continueToFile")}
+            </button>
+            {!hasExisting && (
+              <button
+                onClick={() => submitWithAccount(null)}
+                className="text-xs text-center text-[#4A7A9B] hover:text-[#7BA8C4] transition-colors py-1"
+              >
+                {tA("skipLabel")}
+              </button>
+            )}
+          </div>
+        )}
       </div>
     );
   }
@@ -525,6 +614,10 @@ export default function CsvUploader() {
       { label: t("done.stats.invalid"),    value: result.skippedRows.toLocaleString(locale),   color: "text-[#D4A254]" },
     ];
 
+    const pairs = result.suspectedTransfers ?? [];
+    const showTransferReview = pairs.length > 0 && !transfersDismissed;
+    const checkedCount = pairs.filter(p => checkedKeys.has(`${p.incomeId}|${p.expenseId}`)).length;
+
     return (
       <div className="card space-y-5">
         <div className="flex items-center gap-3">
@@ -534,6 +627,87 @@ export default function CsvUploader() {
             <p className="text-sm text-[#7BA8C4]">{fileName}</p>
           </div>
         </div>
+
+        {/* Account confirmation — green message for new or existing account */}
+        {lastAccountName && (
+          <div className="flex items-center gap-2.5 px-3 py-3 bg-[#4CC4A40A] border border-[#4CC4A420] rounded-xl">
+            <span className="text-[#4CC4A4] flex-shrink-0">✓</span>
+            <p className="text-sm text-[#4CC4A4]">
+              {isNewAccount
+                ? tA("newAccountAdded", { name: lastAccountName })
+                : tA("existingAccountReceived", { name: lastAccountName, count: result.importedRows })}
+            </p>
+          </div>
+        )}
+
+        {/* Confirmed transfer banner */}
+        {confirmedCount !== null && (
+          <div className="flex items-center gap-2.5 px-3 py-3 bg-[#4CC4A40A] border border-[#4CC4A420] rounded-xl">
+            <span className="text-[#4CC4A4] flex-shrink-0">✓</span>
+            <p className="text-sm text-[#4CC4A4]">
+              {t("done.transferReview.confirmed", { count: confirmedCount })}
+            </p>
+          </div>
+        )}
+
+        {/* Cross-account transfer review */}
+        {showTransferReview && (
+          <div className="bg-[#D4A2540A] border border-[#D4A25430] rounded-xl px-4 py-4 space-y-3">
+            <div className="flex items-start gap-2.5">
+              <span className="text-[#D4A254] flex-shrink-0 mt-0.5">⚠</span>
+              <div>
+                <p className="text-sm font-semibold text-[#D4A254]">
+                  {t("done.transferReview.heading", { count: pairs.length })}
+                </p>
+                <p className="text-xs text-[#A8C6E0] mt-1 leading-relaxed">
+                  {t("done.transferReview.subtitle")}
+                </p>
+              </div>
+            </div>
+            <div className="space-y-2">
+              {pairs.map((pair) => {
+                const key = `${pair.incomeId}|${pair.expenseId}`;
+                const checked = checkedKeys.has(key);
+                return (
+                  <label key={key} className="flex items-center gap-3 cursor-pointer group">
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => setCheckedKeys(prev => {
+                        const next = new Set(prev);
+                        if (next.has(key)) next.delete(key); else next.add(key);
+                        return next;
+                      })}
+                      className="w-4 h-4 rounded accent-[#D4A254] flex-shrink-0"
+                    />
+                    <span className="text-xs text-[#A8C6E0] leading-relaxed">
+                      <span className="font-semibold text-[#E8F0F8]">{formatCurrency(pair.amount, locale)}</span>
+                      {" · "}
+                      {new Date(pair.date).toLocaleDateString(INTL_LOCALES[locale], { day: "numeric", month: "short", timeZone: "UTC" })}
+                      {" · "}
+                      <span className="text-[#7BA8C4]">{pair.incomeAcct} ↔ {pair.expenseAcct}</span>
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
+            <div className="flex items-center gap-3 pt-1">
+              <button
+                onClick={() => handleConfirmTransfers(pairs)}
+                disabled={checkedCount === 0}
+                className="text-xs font-semibold px-4 py-2 rounded-lg bg-[#D4A254] text-[#0D1E2E] hover:bg-[#E8B86A] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                {t("done.transferReview.confirmButton", { count: checkedCount })}
+              </button>
+              <button
+                onClick={() => setTransfersDismissed(true)}
+                className="text-xs text-[#6A97B4] hover:text-[#7BA8C4] transition-colors"
+              >
+                {t("done.transferReview.dismiss")}
+              </button>
+            </div>
+          </div>
+        )}
 
         <div className="grid grid-cols-2 gap-3">
           {stats.map((s) => (
@@ -600,6 +774,48 @@ export default function CsvUploader() {
             <div className="pt-1">
               <a href="/history" className="text-xs text-[#3AB5A0] hover:underline">{t("done.reviewCategorisation")}</a>
             </div>
+          </div>
+        )}
+
+        {/* Duplicate visibility */}
+        {result.duplicateRows > 0 && (
+          <div className="bg-[#1A3048] border border-[#243F5E] rounded-xl px-4 py-3 space-y-2">
+            {result.skippedDuplicates && result.skippedDuplicates.length > 0 ? (
+              <>
+                <button
+                  onClick={() => setShowDuplicates(v => !v)}
+                  className="w-full flex items-center justify-between text-xs text-[#7BA8C4] hover:text-[#A8C6E0] transition-colors"
+                >
+                  <span>{t("done.duplicatesDetail.fewHeading", { count: result.duplicateRows })}</span>
+                  <span className="text-[#4A7A9B]">{showDuplicates ? t("done.duplicatesDetail.hide") : t("done.duplicatesDetail.show")}</span>
+                </button>
+                {showDuplicates && (
+                  <>
+                    <div className="space-y-1.5 pt-1">
+                      {result.skippedDuplicates.map((tx, i) => (
+                        <div key={i} className="flex items-center gap-2 text-xs text-[#6A97B4]">
+                          <span className="flex-shrink-0 w-20">
+                            {new Date(tx.date).toLocaleDateString(INTL_LOCALES[locale], { day: "numeric", month: "short", timeZone: "UTC" })}
+                          </span>
+                          <span className="flex-1 truncate text-[#A8C6E0]">{tx.description}</span>
+                          <span className={`flex-shrink-0 font-medium tabular-nums ${tx.type === "income" ? "text-[#4CC4A4]" : "text-[#D4A254]"}`}>
+                            {formatCurrency(tx.amount, locale)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                    <p className="text-xs text-[#6A97B4] leading-relaxed pt-1">
+                      {t("done.duplicatesDetail.fewNote")}{" "}
+                      <a href="/history" className="text-[#3AB5A0] hover:underline">{t("done.duplicatesDetail.viewHistory")}</a>
+                    </p>
+                  </>
+                )}
+              </>
+            ) : (
+              <p className="text-xs text-[#6A97B4]">
+                {t("done.duplicatesDetail.manyNote", { count: result.duplicateRows })}
+              </p>
+            )}
           </div>
         )}
 

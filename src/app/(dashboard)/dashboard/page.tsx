@@ -25,6 +25,7 @@ import HistoricalInsights from "@/components/dashboard/HistoricalInsights";
 import BusinessIntelligence from "@/components/dashboard/BusinessIntelligence";
 import DataCoverageBar from "@/components/dashboard/DataCoverage";
 import FirstUploadBanner from "@/components/dashboard/FirstUploadBanner";
+import AccountFilterBar from "@/components/dashboard/AccountFilterBar";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
@@ -32,7 +33,7 @@ export const dynamic = "force-dynamic";
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ firstUpload?: string }>;
+  searchParams: Promise<{ firstUpload?: string; accountId?: string }>;
 }) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -42,17 +43,22 @@ export default async function DashboardPage({
   const locale = (await getLocale()) as Locale;
 
   const params = await searchParams;
+  const accountId = params.accountId ?? null;
 
-  const [summary, forecast, chartData, comparison, totalTx, coverage, categoryInsights, concentration, dbUser, lastImport, intentBreakdown, financialLife, clientData] =
-    await Promise.all([
-      getDashboardSummary(user.id),
+  const [[
+    summary, forecast, chartData, comparison, totalTx, coverage,
+    categoryInsights, concentration, dbUser, lastImport, intentBreakdown,
+    financialLife, clientData,
+  ], accounts] = await Promise.all([
+    Promise.all([
+      getDashboardSummary(user.id, accountId),
       getLatestForecast(user.id),
-      getHistoricalData(user.id, 999),
-      getMonthlyComparison(user.id),
-      prisma.transaction.count({ where: { userId: user.id } }),
-      getDataCoverage(user.id),
-      getCategoryInsights(user.id),
-      getIncomeConcentration(user.id),
+      getHistoricalData(user.id, 999, accountId),
+      getMonthlyComparison(user.id, accountId),
+      prisma.transaction.count({ where: { userId: user.id, ...(accountId ? { accountId } : {}) } }),
+      getDataCoverage(user.id, accountId),
+      getCategoryInsights(user.id, accountId),
+      getIncomeConcentration(user.id, accountId),
       prisma.user.findUnique({ where: { id: user.id }, select: { fullName: true } }),
       // Fix 1: use last IMPORT date for freshness, not last transaction date.
       // Using transaction dates caused a permanent warning for any historical upload.
@@ -61,10 +67,16 @@ export default async function DashboardPage({
         orderBy: { importedAt: "desc" },
         select: { importedAt: true },
       }),
-      getIntentBreakdown(user.id),
-      getFinancialLifeIntelligence(user.id),
-      getClientRiskProfiles(user.id),
-    ]);
+      getIntentBreakdown(user.id, undefined, undefined, accountId),
+      getFinancialLifeIntelligence(user.id, accountId),
+      getClientRiskProfiles(user.id, accountId),
+    ]),
+    prisma.account.findMany({
+      where: { userId: user.id, isArchived: false },
+      select: { id: true, name: true, color: true },
+      orderBy: { createdAt: "asc" },
+    }),
+  ]);
 
   const current = summary.current
     ? {
@@ -94,6 +106,8 @@ export default async function DashboardPage({
     intent: tx.intent,
     intentConfidence: tx.intentConfidence,
     needsReview: tx.needsReview,
+    accountName: tx.account?.name ?? null,
+    accountColor: tx.account?.color ?? null,
   }));
 
   // Client concentration trend: compares top client's current-month share
@@ -149,7 +163,9 @@ export default async function DashboardPage({
     locale,
     intentBreakdown.hasEnoughDataForDisplay ? intentBreakdown : null,
     financialLife,
-    clientConcentrationTrend
+    clientConcentrationTrend,
+    comparison.currLabel,
+    comparison.isPartialMonth
   );
 
   const hasData = totalTx > 0;
@@ -206,6 +222,8 @@ export default async function DashboardPage({
 
   return (
     <div className="space-y-8">
+      <AccountFilterBar accounts={accounts} selectedAccountId={accountId} />
+
       {/* Header */}
       <div className="flex items-start justify-between flex-wrap gap-3">
         <div>
@@ -213,16 +231,6 @@ export default async function DashboardPage({
             <h1 className="text-2xl font-bold">
               {firstName ? t("welcomeBack", { name: firstName }) : t("title")}
             </h1>
-            {hasData && (
-              <Link href="/forecast" className={`hidden sm:inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full transition-opacity hover:opacity-80 ${
-                intel.healthStatus === "healthy"  ? "bg-[#4CC4A415] text-[#4CC4A4]" :
-                intel.healthStatus === "at-risk"  ? "bg-[#D9707015] text-[#D97070]" :
-                                                    "bg-[#D4A25415] text-[#D4A254]"
-              }`}>
-                <span className="w-1.5 h-1.5 rounded-full bg-current" />
-                {intel.healthStatus === "healthy" ? t("health.healthy") : intel.healthStatus === "watch" ? t("health.watch") : t("health.atRisk")}
-              </Link>
-            )}
           </div>
           <p className="text-[#7BA8C4] text-sm">
             {coverage.latest
@@ -285,6 +293,9 @@ export default async function DashboardPage({
             summary={intel.snapshotSummary}
             context={intel.snapshotContext}
             periodLabel={comparison.currLabel}
+            currentMonth={comparison.currMonth}
+            currentYear={comparison.currYear}
+            isPartialMonth={comparison.isPartialMonth}
           />
 
           {nudgeClients.length > 0 && (
@@ -345,20 +356,20 @@ export default async function DashboardPage({
             </div>
           )}
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
-            <div className="lg:col-span-2">
+          <div className={`grid grid-cols-1 gap-6 md:gap-8 ${!accountId ? "lg:grid-cols-3" : ""}`}>
+            <div className={!accountId ? "lg:col-span-2" : ""}>
               <TrendsChart
                 data={chartData}
                 trajectoryInsight={intel.trajectoryInsight}
                 trajectoryDetails={intel.trajectoryDetails}
               />
             </div>
-            <ForecastWidget
+            {!accountId && <ForecastWidget
               forecast={forecast}
               reasons={intel.forecastReasons}
               improvements={intel.forecastImprovements}
               deficitReason={intel.cashflowDeficitReason}
-            />
+            />}
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">

@@ -3,12 +3,15 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getDataCoverage } from "@/lib/analytics-engine";
 import { Suspense } from "react";
-import { getTranslations } from "next-intl/server";
+import { getTranslations, getLocale } from "next-intl/server";
+import { INTL_LOCALES, type Locale } from "@/i18n/locales";
+import { formatCurrency } from "@/utils/finance";
 import HistoryFilters from "@/components/history/HistoryFilters";
 import NeedsReviewBanner from "@/components/history/NeedsReviewBanner";
 import RecategorizeAllButton from "@/components/history/RecategorizeAllButton";
 import TransactionList from "@/components/history/TransactionList";
 import DataCoverageBar from "@/components/dashboard/DataCoverage";
+import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
@@ -21,6 +24,7 @@ export default async function HistoryPage({ searchParams }: { searchParams: Prom
   if (!user) redirect("/login");
 
   const params   = await searchParams;
+  const locale   = (await getLocale()) as Locale;
   const page     = Math.max(1, parseInt(params.page || "1"));
   const type     = params.type || undefined;
   const category = params.category || undefined;
@@ -30,6 +34,34 @@ export default async function HistoryPage({ searchParams }: { searchParams: Prom
   const confidence = params.confidence === "low" ? "low" : undefined;
   const limit      = 50;
   const skip       = (page - 1) * limit;
+
+  // Reconciliation mode: arriving via "View transactions →" from a dashboard card.
+  // Shows a banner with the total amount so the user can verify it matches the card.
+  const isReconciliation = !!(year && month);
+  const periodLabel = isReconciliation
+    ? new Date(Date.UTC(year!, month! - 1, 1)).toLocaleDateString(INTL_LOCALES[locale], { month: "short", year: "numeric", timeZone: "UTC" })
+    : null;
+
+  // For income/expense reconciliation: aggregate the exact same rows that make up
+  // the dashboard card total so the user can confirm the numbers match.
+  const reconWhere = (isReconciliation && (type === "income" || type === "expense"))
+    ? {
+        userId: user.id,
+        transactionType: type,
+        transactionDate: {
+          gte: new Date(Date.UTC(year!, month! - 1, 1)),
+          lt: new Date(Date.UTC(year!, month!, 1)),
+        },
+      }
+    : null;
+
+  const reconAggregate = reconWhere
+    ? await prisma.transaction.aggregate({
+        where: reconWhere,
+        _sum: { amount: true },
+        _count: { _all: true },
+      })
+    : null;
 
   let dateFilter: { gte?: Date; lt?: Date } | undefined;
   if (year && month)  dateFilter = { gte: new Date(Date.UTC(year, month - 1, 1)), lt: new Date(Date.UTC(year, month, 1)) };
@@ -104,6 +136,34 @@ export default async function HistoryPage({ searchParams }: { searchParams: Prom
         </div>
         <RecategorizeAllButton />
       </div>
+
+      {/* Reconciliation banner — shown when arriving from a dashboard card via "View transactions →" */}
+      {isReconciliation && periodLabel && (
+        <div className="flex flex-col gap-3 px-5 py-4 bg-[#3AB5A00A] border border-[#3AB5A028] rounded-2xl">
+          <Link href="/dashboard" className="text-xs font-semibold text-[#3AB5A0] hover:text-[#4CC4A4] transition-colors w-fit">
+            {t("reconciliation.backToDashboard")}
+          </Link>
+          {reconAggregate ? (
+            <p className="text-sm text-[#C8DCF0] leading-relaxed">
+              {type === "income"
+                ? t("reconciliation.incomeTotal", {
+                    period: periodLabel,
+                    amount: formatCurrency(Number(reconAggregate._sum.amount ?? 0), locale),
+                    count: reconAggregate._count._all,
+                  })
+                : t("reconciliation.expenseTotal", {
+                    period: periodLabel,
+                    amount: formatCurrency(Number(reconAggregate._sum.amount ?? 0), locale),
+                    count: reconAggregate._count._all,
+                  })}
+            </p>
+          ) : (
+            <p className="text-sm text-[#C8DCF0] leading-relaxed">
+              {t("reconciliation.allTotal", { period: periodLabel, count: displayTotal })}
+            </p>
+          )}
+        </div>
+      )}
 
       {coverage.count > 0 && <DataCoverageBar coverage={coverage} />}
 

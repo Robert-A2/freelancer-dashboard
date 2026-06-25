@@ -204,7 +204,7 @@ function detectIncomeType(recentTxs: RecentTx[], active: MonthPoint[]): IncomeTy
 // These return Insight descriptors with an `incomeType` select tag, so a
 // salaried user never sees "client payments" or "pipeline" language.
 
-function phraseIncomeAboveAvg(it: IncomeType, currentInc: number, avgInc: number, diff: number, months: number, locale: Locale): Insight {
+function phraseIncomeAboveAvg(it: IncomeType, currentInc: number, avgInc: number, diff: number, months: number, locale: Locale, period = ""): Insight {
   return {
     key: "insights.context.incomeAboveAvg",
     values: {
@@ -213,11 +213,12 @@ function phraseIncomeAboveAvg(it: IncomeType, currentInc: number, avgInc: number
       pct: String(diff),
       months,
       avg: fmtAmt(avgInc, locale),
+      period,
     },
   };
 }
 
-function phraseIncomeBelowAvg(it: IncomeType, currentInc: number, avgInc: number, diff: number, months: number, locale: Locale): Insight {
+function phraseIncomeBelowAvg(it: IncomeType, currentInc: number, avgInc: number, diff: number, months: number, locale: Locale, period = ""): Insight {
   return {
     key: "insights.context.incomeBelowAvg",
     values: {
@@ -226,6 +227,7 @@ function phraseIncomeBelowAvg(it: IncomeType, currentInc: number, avgInc: number
       pct: String(Math.abs(diff)),
       months,
       avg: fmtAmt(avgInc, locale),
+      period,
     },
   };
 }
@@ -610,7 +612,12 @@ export function generateDashboardIntelligence(
   // Temporal financial life intelligence — savings, spending, business trends
   financialLife?: FinancialLifeIntelligence | null,
   // Client concentration trend: current month top-client share vs rolling prior months
-  clientConcentrationTrend?: { currentPct: number; rollingAvgPct: number; topClientName: string | null } | null
+  clientConcentrationTrend?: { currentPct: number; rollingAvgPct: number; topClientName: string | null } | null,
+  // Actual data period label (e.g. "Oct 2024") — replaces "this month" in all narrative insights
+  periodLabel = "",
+  // When true, the current data month is still in progress — suppress month-to-month
+  // comparisons to prevent "income down 40%" alerts mid-month.
+  isPartialMonth = false
 ): DashboardIntelligence {
   // Defensive: guard against undefined inputs that can arrive at runtime
   const categories: CategoryTrend[] = _categories ?? [];
@@ -668,23 +675,23 @@ export function generateDashboardIntelligence(
   let snapshotSummary: Insight;
 
   if (!previous) {
-    snapshotSummary = { key: "insights.snapshot.firstUpload", values: { cashflowOk: cashflowOk ? "positive" : "negative" } };
+    snapshotSummary = { key: "insights.snapshot.firstUpload", values: { cashflowOk: cashflowOk ? "positive" : "negative", period: periodLabel } };
   } else if (incUp && expDown) {
     snapshotSummary = { key: "insights.snapshot.excellentMonth" };
   } else if (incUp && expUp) {
     snapshotSummary = biggestExpIncrease
-      ? { key: "insights.snapshot.incomeUpExpensesUp", values: { hasCategory: "yes", category: cat(biggestExpIncrease.category), amount: fmtAmt(biggestExpIncrease.changeAmount, locale) } }
-      : { key: "insights.snapshot.incomeUpExpensesUp", values: { hasCategory: "no" } };
+      ? { key: "insights.snapshot.incomeUpExpensesUp", values: { hasCategory: "yes", category: cat(biggestExpIncrease.category), amount: fmtAmt(biggestExpIncrease.changeAmount, locale), period: periodLabel } }
+      : { key: "insights.snapshot.incomeUpExpensesUp", values: { hasCategory: "no", period: periodLabel } };
   } else if (incDown && expUp) {
     snapshotSummary = biggestExpIncrease
       ? { key: "insights.snapshot.incomeDownExpensesUp", values: { hasCategory: "yes", category: cat(biggestExpIncrease.category), amount: fmtAmt(biggestExpIncrease.changeAmount, locale) } }
       : { key: "insights.snapshot.incomeDownExpensesUp", values: { hasCategory: "no" } };
   } else if (!cashflowOk) {
     snapshotSummary = biggestExpIncrease
-      ? { key: "insights.snapshot.expensesExceedIncome", values: { hasCategory: "yes", category: cat(biggestExpIncrease.category) } }
-      : { key: "insights.snapshot.expensesExceedIncome", values: { hasCategory: "no" } };
+      ? { key: "insights.snapshot.expensesExceedIncome", values: { hasCategory: "yes", category: cat(biggestExpIncrease.category), period: periodLabel } }
+      : { key: "insights.snapshot.expensesExceedIncome", values: { hasCategory: "no", period: periodLabel } };
   } else if (expUp && biggestExpIncrease) {
-    snapshotSummary = { key: "insights.snapshot.expensesIncreasedLed", values: { category: cat(biggestExpIncrease.category), amount: fmtAmt(biggestExpIncrease.changeAmount, locale) } };
+    snapshotSummary = { key: "insights.snapshot.expensesIncreasedLed", values: { category: cat(biggestExpIncrease.category), amount: fmtAmt(biggestExpIncrease.changeAmount, locale), period: periodLabel } };
   } else if (expDown && biggestExpDecrease) {
     snapshotSummary = { key: "insights.snapshot.goodCostControl", values: { category: cat(biggestExpDecrease.category), amount: fmtAmt(Math.abs(biggestExpDecrease.changeAmount), locale) } };
   } else {
@@ -709,11 +716,11 @@ export function generateDashboardIntelligence(
   if (avgIncome > 0) {
     const diff = pct(current.totalIncome, avgIncome);
     if (diff > 5) {
-      snapshotContext.push(phraseIncomeAboveAvg(incomeType, current.totalIncome, avgIncome, diff, active.length, locale));
+      snapshotContext.push(phraseIncomeAboveAvg(incomeType, current.totalIncome, avgIncome, diff, active.length, locale, periodLabel));
     } else if (diff < -5) {
-      snapshotContext.push(phraseIncomeBelowAvg(incomeType, current.totalIncome, avgIncome, diff, active.length, locale));
+      snapshotContext.push(phraseIncomeBelowAvg(incomeType, current.totalIncome, avgIncome, diff, active.length, locale, periodLabel));
     } else {
-      snapshotContext.push({ key: "insights.context.incomeInLine", values: { months: active.length, avg: fmtAmt(avgIncome, locale) } });
+      snapshotContext.push({ key: "insights.context.incomeInLine", values: { months: active.length, avg: fmtAmt(avgIncome, locale), period: periodLabel } });
     }
   }
 
@@ -723,12 +730,12 @@ export function generateDashboardIntelligence(
     if (diff > 10 && topCat) {
       snapshotContext.push({
         key: "insights.context.expensesAboveAvgTopCat",
-        values: { current: fmtAmt(current.totalExpenses, locale), pct: String(diff), category: cat(topCat.category), amount: fmtAmt(topCat.currentMonthTotal, locale) },
+        values: { current: fmtAmt(current.totalExpenses, locale), pct: String(diff), category: cat(topCat.category), amount: fmtAmt(topCat.currentMonthTotal, locale), period: periodLabel },
       });
     } else if (diff < -10) {
       snapshotContext.push({
         key: "insights.context.expensesBelowAvg",
-        values: { current: fmtAmt(current.totalExpenses, locale), pct: String(Math.abs(diff)), avg: fmtAmt(avgExpenses, locale) },
+        values: { current: fmtAmt(current.totalExpenses, locale), pct: String(Math.abs(diff)), avg: fmtAmt(avgExpenses, locale), period: periodLabel },
       });
     }
   }
@@ -764,7 +771,7 @@ export function generateDashboardIntelligence(
   if (!hasCfDropInsight && previous && previous.totalSavings > 200 && current.totalSavings < previous.totalSavings * 0.5) {
     snapshotContext.push({
       key: "insights.context.savingsDrop",
-      values: { prev: fmtAmt(previous.totalSavings, locale), curr: fmtAmt(current.totalSavings, locale) },
+      values: { prev: fmtAmt(previous.totalSavings, locale), curr: fmtAmt(current.totalSavings, locale), period: periodLabel },
     });
   }
 
@@ -807,6 +814,7 @@ export function generateDashboardIntelligence(
         name: clientConcentrationTrend.topClientName,
         currentPct: String(clientConcentrationTrend.currentPct),
         prevPct: String(clientConcentrationTrend.rollingAvgPct),
+        period: periodLabel,
       },
     });
   }
@@ -814,11 +822,18 @@ export function generateDashboardIntelligence(
   // ── COMPARISON INTERPRETATION + SUGGESTION ───────────────────────────────
   // interpretation = what happened (proof from data)
   // suggestion     = what to do next ("And so?")
+  //
+  // When the current month is still in progress (isPartialMonth), suppress
+  // all comparison insights — mid-month figures vs. a full prior month produce
+  // false alarms and erode trust.
 
   let comparisonInterpretation: Insight | null = null;
   let comparisonSuggestion: Insight | null = null;
 
-  if (changes && previous) {
+  if (isPartialMonth) {
+    comparisonInterpretation = { key: "insights.comparison.partialMonth", values: { period: periodLabel } };
+    // No suggestion — don't ask users to act on incomplete data.
+  } else if (changes && previous) {
     const { income: ic, expenses: ec } = changes;
     const driversUp = topChangedCategories(categories, "up", 2);
     const driversDown = topChangedCategories(categories, "down", 2);
@@ -848,7 +863,7 @@ export function generateDashboardIntelligence(
     } else if (ic < -5) {
       comparisonInterpretation = phraseIncomeDecline(incomeType, Math.abs(ic));
     } else if (ec > 10 && driversUp.length) {
-      comparisonInterpretation = { key: "insights.comparison.expensesJumped", values: { ...driverValues(driversUp, false), ecPct: String(ec) } };
+      comparisonInterpretation = { key: "insights.comparison.expensesJumped", values: { ...driverValues(driversUp, false), ecPct: String(ec), period: periodLabel } };
     } else if (changes.cashflow > 10) {
       comparisonInterpretation = { key: "insights.comparison.cashflowImprovedMeaningfully" };
     } else {
@@ -865,33 +880,33 @@ export function generateDashboardIntelligence(
       .sort((a, b) => b.currentMonthTotal - a.currentMonthTotal)[0] ?? null;
 
     if (ic > 5 && ec < 0) {
-      comparisonSuggestion = { key: "insights.comparison.suggestSaveExtra" };
+      comparisonSuggestion = { key: "insights.comparison.suggestSaveExtra", values: { period: periodLabel } };
     } else if (ic > 5 && ec > 5) {
       if (ic > ec) {
         // Income outpaces expenses — name what's rising or what costs most
         const ref = d1 ?? topExpCat;
         comparisonSuggestion = ref
-          ? { key: "insights.comparison.suggestWatchDriver", values: { cat1: cat(ref.category), amt1: fmtAmt(d1 ? d1.changeAmount : ref.currentMonthTotal, locale) } }
-          : { key: "insights.comparison.suggestExpenseCeiling" };
+          ? { key: "insights.comparison.suggestWatchDriver", values: { cat1: cat(ref.category), amt1: fmtAmt(d1 ? d1.changeAmount : ref.currentMonthTotal, locale), period: periodLabel } }
+          : { key: "insights.comparison.suggestExpenseCeiling", values: { period: periodLabel } };
       } else {
         // Expenses outpace income — name what's driving it or what costs most
         const ref = d1 ?? topExpCat;
         comparisonSuggestion = ref
-          ? { key: "insights.comparison.suggestExpenseReview", values: { cat1: cat(ref.category), amt1: fmtAmt(ref.currentMonthTotal, locale) } }
-          : { key: "insights.comparison.suggestExpenseCeiling" };
+          ? { key: "insights.comparison.suggestExpenseReview", values: { cat1: cat(ref.category), amt1: fmtAmt(ref.currentMonthTotal, locale), period: periodLabel } }
+          : { key: "insights.comparison.suggestExpenseCeiling", values: { period: periodLabel } };
       }
     } else if (ic < -5 && ec > 5) {
       const ref = d1 ?? topExpCat;
       comparisonSuggestion = ref
-        ? { key: "insights.comparison.suggestDoublePressure", values: { cat1: cat(ref.category), amt1: fmtAmt(ref.currentMonthTotal, locale) } }
-        : { key: "insights.comparison.suggestDoublePressureGeneric" };
+        ? { key: "insights.comparison.suggestDoublePressure", values: { cat1: cat(ref.category), amt1: fmtAmt(ref.currentMonthTotal, locale), period: periodLabel } }
+        : { key: "insights.comparison.suggestDoublePressureGeneric", values: { period: periodLabel } };
     } else if (ic < -5) {
-      comparisonSuggestion = { key: "insights.comparison.suggestIncomeDecline", values: { incomeType } };
+      comparisonSuggestion = { key: "insights.comparison.suggestIncomeDecline", values: { incomeType, period: periodLabel } };
     } else if (ec > 10 && driversUp.length) {
       const ref = driversUp[0];
-      comparisonSuggestion = { key: "insights.comparison.suggestExpenseBudget", values: { cat1: cat(ref.category), amt1: fmtAmt(ref.changeAmount, locale) } };
+      comparisonSuggestion = { key: "insights.comparison.suggestExpenseBudget", values: { cat1: cat(ref.category), amt1: fmtAmt(ref.changeAmount, locale), period: periodLabel } };
     } else if (changes.cashflow > 10) {
-      comparisonSuggestion = { key: "insights.comparison.suggestBuildRunway" };
+      comparisonSuggestion = { key: "insights.comparison.suggestBuildRunway", values: { period: periodLabel } };
     } else {
       comparisonSuggestion = { key: "insights.comparison.suggestStability" };
     }
@@ -1312,10 +1327,9 @@ export function generateDashboardIntelligence(
     // cashflow is comfortable, and the reduction amount should scale with
     // actual spend rather than a flat figure.
     if (subCat && subCat.currentMonthTotal > 50 && cashflowMargin < 30) {
-      const reduction = Math.round(subCat.currentMonthTotal * 0.3);
       forecastImprovements.push({
         key: "insights.forecast.reduceSubscriptions",
-        values: { category: cat(subCat.category), reduction: fmtAmt(reduction, locale), annual: fmtAmt(reduction * 12, locale) },
+        values: { category: cat(subCat.category), monthly: fmtAmt(subCat.currentMonthTotal, locale), annual: fmtAmt(subCat.currentMonthTotal * 12, locale) },
       });
     }
 

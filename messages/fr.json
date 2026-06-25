@@ -153,7 +153,7 @@
         "forecastLabel": "Mois prochain",
         "forecastValue": "Trésorerie autour de 1 890 €",
         "recommendationTitle": "Suggestion",
-        "recommendationBody": "Annuler les abonnements inutilisés pourrait ajouter environ 984 € par an à votre trésorerie."
+        "recommendationBody": "Les abonnements logiciels représentent environ 984 €/an — vaut la peine de vérifier si tous sont encore nécessaires."
       }
     },
     "history": {
@@ -349,6 +349,12 @@
       "body": "Freelancer OS ne vend ni ne partage jamais vos données financières. Vous pouvez partir à tout moment et supprimer définitivement toutes les données que nous détenons sur vous, sans aucune question."
     },
     "signingOut": "Déconnexion…",
+    "export": {
+      "label": "Exporter vos données",
+      "body": "Téléchargez toutes vos transactions en fichier CSV. Inclut la date, la description, le montant, le type, la catégorie et l'intention.",
+      "cta": "Télécharger le CSV",
+      "downloading": "Préparation du téléchargement…"
+    },
     "deleteAccount": {
       "dangerZone": "Zone de danger",
       "warning": "Supprimez définitivement votre compte et toutes les données associées : imports, transactions, catégories, analyses et prévisions. Cette action est irréversible.",
@@ -387,16 +393,24 @@
     "stepLabel": "Étape 1 sur 2 — Choisir un compte",
     "heading": "De quel compte provient ce relevé ?",
     "subtitle": "Chaque transaction sera associée à ce compte pour suivre plusieurs banques séparément.",
-    "existingLabel": "Vos comptes",
+    "question": "Ce relevé provient-il d'un compte différent ?",
+    "questionNewAccount": "Nouveau compte",
+    "questionNewAccountDesc": "Ce CSV provient d'une banque que je n'ai pas encore importée.",
+    "questionSameAccount": "Même compte déjà importé",
+    "questionSameAccountDesc": "Je veux ajouter des transactions récentes à un compte existant.",
+    "existingLabel": "Choisir un compte",
     "newLabel": "Ajouter un nouveau compte",
     "nameLabel": "Nom du compte",
     "namePlaceholder": "ex. Revolut Pro",
     "typeLabel": "Type de compte",
     "detectedHint": "Nous avons détecté \"{name}\" dans votre CSV — vous pouvez le modifier.",
-    "continueToFile": "Continuer vers le fichier →",
-    "createAndContinue": "Enregistrer le compte et continuer →",
+    "continueToFile": "Ajouter les transactions à ce compte →",
+    "createAndContinue": "Créer le compte et continuer →",
     "transactionsCount": "{count, plural, one {# transaction} other {# transactions}}",
-    "skipLabel": "Ignorer — ne pas suivre le compte"
+    "skipLabel": "Ignorer — ne pas suivre le compte",
+    "back": "Retour",
+    "newAccountAdded": "Nouveau compte ajouté — {name}",
+    "existingAccountReceived": "{name} a reçu {count, plural, one {# nouvelle transaction} other {# nouvelles transactions}}"
   },
   "upload": {
     "heading": "Importer un CSV",
@@ -404,6 +418,11 @@
     "uploadingAgain": {
       "title": "Vous importez à nouveau ?",
       "body": "Exportez simplement vos derniers mois depuis votre banque. Nous ignorons automatiquement les transactions déjà présentes dans votre historique — inutile de réimporter votre relevé complet à chaque fois."
+    },
+    "dataGaps": {
+      "heading": "{count, plural, one {Votre historique a un manque sur 1 mois} other {Votre historique a des manques sur # mois}}",
+      "subtitle": "Importer les relevés de ces mois améliorerait la précision de votre projection :",
+      "uploadTip": "Exportez ces mois depuis votre banque et déposez-les ici."
     },
     "expectedFormat": {
       "label": "Format attendu",
@@ -459,6 +478,21 @@
       "internalTransfers": "Virements internes",
       "transferNote": "Les virements internes (entre vos propres comptes) sont exclus des totaux de revenus et de dépenses.",
       "reviewCategorisation": "Vérifier la catégorisation dans l'historique →",
+      "duplicatesDetail": {
+        "fewHeading": "{count, plural, one {1 transaction ignorée — déjà dans votre compte} other {# transactions ignorées — déjà dans votre compte}}",
+        "fewNote": "Ces transactions correspondaient exactement à des enregistrements existants. Si vous pensez qu'un paiement est manquant, vérifiez dans l'historique.",
+        "manyNote": "Il semble que vous ayez déjà importé cette période — {count} transactions existaient déjà.",
+        "show": "Afficher →",
+        "hide": "Masquer",
+        "viewHistory": "Voir l'historique →"
+      },
+      "transferReview": {
+        "heading": "{count, plural, one {1 virement interne possible détecté} other {# virements internes possibles détectés}}",
+        "subtitle": "Ces transactions ressemblent à des mouvements d'argent entre vos propres comptes — pas de vrais revenus. Les marquer comme virements les exclut des totaux.",
+        "confirmButton": "{count, plural, one {Marquer 1 paire comme virement} other {Marquer # paires comme virements}}",
+        "dismiss": "Garder tel quel",
+        "confirmed": "{count, plural, one {1 paire de virement marquée — exclue des totaux} other {# paires de virements marquées — exclues des totaux}}"
+      },
       "mixedCurrencies": "Plusieurs devises détectées ({currencies}). Les totaux et analyses sont calculés sur l'ensemble des montants. Les résultats peuvent être inexacts si les devises n'ont pas été converties avant l'export. Pour une meilleure précision, exportez un relevé dans une seule devise.",
       "uploadAnother": "Importer un autre fichier",
       "viewDashboard": "Voir le tableau de bord"
@@ -532,6 +566,12 @@
     "heading": "Historique",
     "transactionCount": "{count, plural, one {# transaction} other {# transactions}}",
     "noResults": "Aucune transaction ne correspond à ces filtres.",
+    "reconciliation": {
+      "backToDashboard": "← Retour au tableau de bord",
+      "incomeTotal": "Vos revenus en {period} s'élèvent à {amount} répartis sur {count, plural, one {# transaction} other {# transactions}}. Chaque ligne ci-dessous est incluse dans ce chiffre.",
+      "expenseTotal": "Vos dépenses en {period} s'élèvent à {amount} réparties sur {count, plural, one {# transaction} other {# transactions}}. Chaque ligne ci-dessous est incluse dans ce chiffre.",
+      "allTotal": "Toutes les transactions pour {period} : {count, plural, one {# transaction} other {# transactions}}. Revenus moins dépenses = votre flux de trésorerie pour cette période."
+    },
     "pagination": {
       "previous": "← Précédent",
       "next": "Suivant →",
@@ -590,6 +630,9 @@
     "change": "Variation"
   },
   "dashboard": {
+    "accountFilter": {
+      "allAccounts": "Tous les comptes"
+    },
     "welcomeBack": "Bon retour, {name}.",
     "title": "Tableau de bord",
     "showingDataThrough": "Données affichées jusqu'au {date}",
@@ -618,6 +661,7 @@
         "cta": "Vérifier les transactions →"
       },
       "businessProfit": "Bénéfice d'activité",
+      "businessProfitNote": "Basé sur les dépenses catégorisées — pas un chiffre fiscal",
       "margin": "{margin}% de marge",
       "trueNetCashflow": "Flux de trésorerie net réel",
       "trueNetCashflowNote": "Après charges, dépenses perso & dettes",
@@ -625,9 +669,11 @@
       "personalBurnRateNote": "Dépenses perso & soutien familial"
     },
     "summaryCards": {
-      "showing": "Affichage",
+      "showing": "Période",
       "risk": "Risque",
       "totalThisMonth": "au total ce mois-ci",
+      "viewTransactions": "Voir les transactions",
+      "partialMonth": "Mois en cours — les variations en % ne sont pas définitives",
       "incomeAboveExpenses": "de revenus en plus des dépenses",
       "expensesExceedIncome": "de dépenses en plus des revenus",
       "ofIncomeKept": "des revenus conservés",
@@ -639,7 +685,7 @@
       },
       "monthsPositive": "{positive} mois positifs sur {total}",
       "noHistory": "Pas encore d'historique",
-      "cashflowSavingsNote": "Virements épargne non inclus",
+      "cashflowSavingsNote": "Virements épargne non inclus · ne tient pas compte des impôts dus",
       "riskSeeBreakdown": "Voir le détail complet →"
     },
     "trendsChart": {
@@ -761,7 +807,8 @@
       "critical": {
         "label": "Critique",
         "desc": "La trésorerie est négative la plupart des mois. Une action immédiate est nécessaire pour éviter un déficit de trésorerie."
-      }
+      },
+      "taxAdjustmentNote": "{count, plural, one {# mois avec paiement fiscal exclu} other {# mois avec paiements fiscaux exclus}} de ce calcul — payer ses impôts à temps ne signifie pas une mauvaise trésorerie."
     },
     "healthScore": {
       "label": "Indice de santé financière",
@@ -795,7 +842,7 @@
       "marginApprox": "~{pct} %",
       "ofIncomeKept": "des revenus conservés après dépenses",
       "ofIncomeKeptApprox": "approximatif — données limitées",
-      "extrapolationNote": "Extrapolé à partir de la moyenne mensuelle projetée. Suppose un rythme constant sur l'année — les résultats réels varieront.",
+      "extrapolationNote": "Extrapolé à partir de la moyenne mensuelle projetée. Suppose un rythme constant — ne peut pas prédire la perte d'un client, des changements de marché ou des coûts imprévus. N'utilisez pas ce chiffre pour contracter des dettes, embaucher du personnel ou prendre des engagements financiers importants.",
       "noValue": "—"
     },
     "keyDrivers": {
@@ -835,12 +882,12 @@
       "fallback": "Aucun risque significatif détecté dans les données actuelles."
     },
     "biggestOpportunity": {
-      "label": "Opportunité principale",
+      "label": "À considérer",
       "fallback": "Maintenez des niveaux de trésorerie et de revenus constants."
     },
     "recommendedActions": {
-      "label": "Actions recommandées",
-      "subtitle": "Étapes concrètes issues de vos habitudes financières réelles :"
+      "label": "À examiner",
+      "subtitle": "D'après vos données — vous seul savez ce qui vaut la peine de changer."
     },
     "seasonalPatterns": {
       "label": "Tendances saisonnières"
@@ -848,6 +895,12 @@
     "incompleteDataWarning": {
       "title": "Les revenus récents semblent inférieurs à la normale",
       "body": "Vos {recentMonths, plural, one {# dernier mois} other {# derniers mois}} ont généré en moyenne {recentAvg}/mois en revenus — bien en dessous de votre moyenne sur {historicMonths} mois de {historicAvg}/mois. Des relevés bancaires sont peut-être manquants. Les projections ci-dessus sont basées sur l'intégralité de votre historique et peuvent surestimer les revenus futurs."
+    },
+    "dataGaps": {
+      "heading": "{count, plural, one {1 mois de votre historique n'a pas de données} other {# mois de votre historique n'ont pas de données}}",
+      "subtitle": "Importer les relevés de ces mois améliorerait la précision de cette projection.",
+      "months": "{months}",
+      "uploadNow": "Importer les relevés →"
     },
     "howBuilt": {
       "label": "Comment cette prévision a été établie",
@@ -869,6 +922,8 @@
       "seasonalAdjustmentNote": "Ajustement saisonnier appliqué : les mois historiquement plus forts ou plus faibles sont pris en compte.",
       "seasonalFactorNote": "Note saisonnière : ce mois est historiquement {pct} % {aboveBelow, select, above {au-dessus} below {en dessous} other {proche}} de votre moyenne, selon vos propres données. Appliqué à {blend} % de pondération.",
       "moreHistoryNote": "Plus d'historique permet une prévision plus fiable.",
+      "revenueMatchRate": "{pct} % de vos revenus ont été associés à un client ou une source connue — le reste provient de paiements non identifiés. Consultez la page Clients pour vérifier.",
+      "revenueMatchRateHigh": "{pct} % de vos revenus ont été associés à un client ou une source de revenus connue.",
       "confidenceScore": "Score de confiance",
       "recurringExpensesLabel": "Dépenses récurrentes détectées",
       "recurringExpensesBody": "{amount}/mois en coûts récurrents stables identifiés. La projection des dépenses ne tombera pas en dessous de ce plancher.",
@@ -908,6 +963,7 @@
       "titleCurrentSingle": "{month} {dataYear}",
       "subtitleCurrent": "Vos totaux pour cette période.",
       "noComparisonYet": "La comparaison sur un an apparaîtra une fois qu'un historique complet d'un an aura été collecté.",
+      "missingMonthsNote": "{count, plural, one {# mois} other {# mois}} de cette période n'ont pas de données — importez ces relevés pour rendre cette comparaison précise.",
       "lastYr": "{amount} l'an dernier",
       "marginLastYr": "{pct} % l'an dernier",
       "ofIncomeKept": "des revenus conservés"
@@ -965,7 +1021,8 @@
       "noIncomeData": "Aucune donnée de revenus",
       "expenseBreakdown": "Répartition des dépenses",
       "allTime": "Depuis le début, part des dépenses totales",
-      "noExpenseData": "Aucune donnée de dépenses"
+      "noExpenseData": "Aucune donnée de dépenses",
+      "revenueSourceNote": "Les sources de revenus sont identifiées à partir des libellés bancaires. Une même plateforme (ex. Stripe, PayPal) peut apparaître en plusieurs entrées si les libellés de virement varient — et certains virements peuvent être mal catégorisés si votre banque utilise des libellés génériques."
     },
     "categoryDrawer": {
       "incomeSource": "Source de revenus",
@@ -1098,9 +1155,10 @@
     },
     "list": {
       "title": "Tous les clients",
-      "subtitle": "Classés par revenu total · cliquez pour voir le profil complet",
+      "subtitle": "Classés par revenu total · les statuts sont basés sur les intervalles de paiement historiques de chaque client, pas sur vos conditions de facturation",
       "lastPayment": "Dernier paiement : {date}",
-      "ofIncome": "{pct}% des revenus"
+      "ofIncome": "{pct}% des revenus",
+      "multiProcessorNote": "Un même client peut apparaître plusieurs fois s'il paie via différents moyens (ex. virement bancaire et Stripe). Vérifiez l'historique de chaque entrée pour confirmer qu'il s'agit bien de clients distincts."
     },
     "status": {
       "current": "Actif",
@@ -1108,6 +1166,31 @@
       "risk": "En retard",
       "inactive": "Inactif",
       "unidentified": "Identité non vérifiée"
+    },
+    "confidence": {
+      "medium": "Nom détecté automatiquement",
+      "low": "Nom incertain",
+      "mediumTooltip": "Ce nom a été extrait automatiquement de vos descriptions bancaires. Corrigez-le s'il semble incorrect.",
+      "lowTooltip": "Ce nom provient d'une seule transaction. Nous ne pouvons pas encore le vérifier."
+    },
+    "rename": {
+      "editName": "Corriger ce nom →",
+      "placeholder": "Nom du client",
+      "save": "Enregistrer",
+      "cancel": "Annuler",
+      "resetToAuto": "Rétablir la détection auto : {name}",
+      "error": "Échec de la sauvegarde. Veuillez réessayer."
+    },
+    "unresolved": {
+      "title": "Paiements non identifiés",
+      "subtitle": "Ces paiements n'ont pas pu être associés à un client. Les reconnaissez-vous ?",
+      "summary": "{count, plural, one {# paiement} other {# paiements}} · {amount} au total",
+      "nameCta": "Qui a envoyé ceci ? →",
+      "inputPlaceholder": "Nom du client",
+      "save": "Enregistrer",
+      "cancel": "Annuler",
+      "error": "Impossible d'enregistrer — veuillez réessayer",
+      "saved": "Enregistré. Les imports futurs avec le même modèle seront associés automatiquement."
     },
     "dependency": {
       "low": "Risque faible",
@@ -1367,17 +1450,17 @@
     "clientConcentration": "{hasSource, select, yes {<b>{source}</b> représente <b>{pct} %</b> de vos revenus} other {Une seule source représente <b>{pct} %</b> de vos revenus}} — une forte concentration sur une seule source.",
     "incomeReasonablyDiversified": "Vos revenus sont raisonnablement diversifiés sur <b>{total, plural, one {# source} other {# sources}}</b>, votre principale source représentant <b>{pct} %</b>.",
     "context": {
-      "incomeAboveAvg": "{incomeType, select, salary {Votre salaire} other {Vos revenus}} ce mois-ci, <b>{current}</b>, {incomeType, select, salary {est} other {sont}} {incomeType, select, salary {supérieur} other {supérieurs}} de <b>{pct} %</b> à votre moyenne sur {months, plural, one {le dernier mois} other {les # derniers mois}} (<b>{avg}</b>).",
-      "incomeBelowAvg": "{incomeType, select, salary {Votre salaire} other {Vos revenus}} ce mois-ci, <b>{current}</b>, {incomeType, select, salary {est} other {sont}} {incomeType, select, salary {inférieur} other {inférieurs}} de <b>{pct} %</b> à votre moyenne sur {months, plural, one {le dernier mois} other {les # derniers mois}} (<b>{avg}</b>).",
+      "incomeAboveAvg": "{incomeType, select, salary {Votre salaire} other {Vos revenus}} en <b>{period}</b>, <b>{current}</b>, {incomeType, select, salary {est} other {sont}} {incomeType, select, salary {supérieur} other {supérieurs}} de <b>{pct} %</b> à votre moyenne sur {months, plural, one {le dernier mois} other {les # derniers mois}} (<b>{avg}</b>).",
+      "incomeBelowAvg": "{incomeType, select, salary {Votre salaire} other {Vos revenus}} en <b>{period}</b>, <b>{current}</b>, {incomeType, select, salary {est} other {sont}} {incomeType, select, salary {inférieur} other {inférieurs}} de <b>{pct} %</b> à votre moyenne sur {months, plural, one {le dernier mois} other {les # derniers mois}} (<b>{avg}</b>).",
       "analysisCovers": "Cette analyse couvre <b>{months, plural, one {# mois} other {# mois}}</b>, de {fromMonth} à {toMonth}.",
-      "incomeInLine": "Vos revenus ce mois-ci sont conformes à votre moyenne sur {months, plural, one {le dernier mois} other {les # derniers mois}} (<b>{avg}</b>).",
-      "expensesAboveAvgTopCat": "Les dépenses ce mois-ci, <b>{current}</b>, sont supérieures de <b>{pct} %</b> à votre moyenne — votre principale catégorie est <b>{category}</b> avec <b>{amount}</b>.",
-      "expensesBelowAvg": "Les dépenses ce mois-ci, <b>{current}</b>, sont inférieures de <b>{pct} %</b> à votre moyenne de <b>{avg}</b>.",
+      "incomeInLine": "Vos revenus en <b>{period}</b> sont conformes à votre moyenne sur {months, plural, one {le dernier mois} other {les # derniers mois}} (<b>{avg}</b>).",
+      "expensesAboveAvgTopCat": "Les dépenses en <b>{period}</b>, <b>{current}</b>, sont supérieures de <b>{pct} %</b> à votre moyenne — votre principale catégorie est <b>{category}</b> avec <b>{amount}</b>.",
+      "expensesBelowAvg": "Les dépenses en <b>{period}</b>, <b>{current}</b>, sont inférieures de <b>{pct} %</b> à votre moyenne de <b>{avg}</b>.",
       "cashflowDrop": "La trésorerie a baissé de <b>{amount}</b> par rapport au mois dernier.",
       "cashflowDropWithDriver": "La trésorerie a baissé de <b>{amount}</b> par rapport au mois dernier. La hausse des dépenses <b>{category}</b> (+<b>{changeAmt}</b>) en est la principale cause.",
-      "savingsDrop": "L'épargne est passée de <b>{prev}</b> le mois dernier à <b>{curr}</b> ce mois-ci.",
+      "savingsDrop": "L'épargne est passée de <b>{prev}</b> à <b>{curr}</b> en <b>{period}</b>.",
       "expensesRisingTrend": "Les dépenses sont en hausse depuis 3 mois consécutifs et atteignent désormais une moyenne de <b>{amount}</b> par mois.",
-      "clientConcentrationRising": "<b>{name}</b> a représenté <b>{currentPct}%</b> de vos revenus ce mois-ci, contre <b>{prevPct}%</b> en moyenne. La dépendance client augmente."
+      "clientConcentrationRising": "<b>{name}</b> a représenté <b>{currentPct}%</b> de vos revenus en <b>{period}</b>, contre <b>{prevPct}%</b> en moyenne. La dépendance client augmente."
     },
     "comparison": {
       "incomeDecline": "{incomeType, select, freelance {Les revenus clients} salary {Votre revenu salarial} mixed {Vos revenus} other {Vos revenus}} {incomeType, select, salary {a chuté} other {ont chuté}} de <b>{pct} %</b> par rapport au mois dernier.",
@@ -1387,28 +1470,29 @@
       "expensesOutpaceIncomeWithDrivers": "Les dépenses ont augmenté de <b>{ecPct} %</b>, plus vite que les revenus (<b>{icPct} %</b>){driverCount, select, 1 { — <b>{cat1}</b> a augmenté de <b>{amt1}</b>} other { — <b>{cat1}</b> (<b>{amt1}</b>) et <b>{cat2}</b> (<b>{amt2}</b>) ont augmenté}}.",
       "expensesOutpaceIncome": "Les dépenses ont augmenté de <b>{ecPct} %</b>, plus vite que les revenus (<b>{icPct} %</b>).",
       "incomeDownExpensesUp": "Les revenus ont diminué de <b>{icPct} %</b> tandis que les dépenses ont augmenté de <b>{ecPct} %</b>{driverCount, select, 0 {.} 1 { — surtout à cause de <b>{cat1}</b> (<b>{amt1}</b> de plus).} other { — surtout à cause de <b>{cat1}</b> (<b>{amt1}</b> de plus) et <b>{cat2}</b> (<b>{amt2}</b> de plus).}}",
-      "expensesJumped": "Les dépenses ont bondi de <b>{ecPct} %</b> ce mois-ci{driverCount, select, 1 { — principalement à cause de <b>{cat1}</b> (<b>{amt1}</b> de plus).} other { — principalement à cause de <b>{cat1}</b> (<b>{amt1}</b> de plus) et <b>{cat2}</b> (<b>{amt2}</b> de plus).}}",
+      "expensesJumped": "Les dépenses ont bondi de <b>{ecPct} %</b> en <b>{period}</b>{driverCount, select, 1 { — principalement à cause de <b>{cat1}</b> (<b>{amt1}</b> de plus).} other { — principalement à cause de <b>{cat1}</b> (<b>{amt1}</b> de plus) et <b>{cat2}</b> (<b>{amt2}</b> de plus).}}",
       "cashflowImprovedMeaningfully": "La trésorerie s'est nettement améliorée par rapport au mois dernier.",
       "stable": "Les revenus et les dépenses sont restés globalement stables par rapport au mois dernier.",
-      "suggestSaveExtra": "Revenus en hausse, dépenses en baisse — la meilleure combinaison. Ce mois a dégagé plus de marge que le précédent.",
-      "suggestWatchDriver": "<b>{cat1}</b> représente le mouvement de dépenses le plus important ce mois-ci, en hausse de <b>{amt1}</b>. Examinez si cela reflète un coût ponctuel, un changement récurrent ou une activité normale.",
-      "suggestExpenseCeiling": "Les revenus ont progressé plus vite que les dépenses ce mois-ci. Aucune catégorie ne se distingue comme principal changement de dépenses.",
-      "suggestExpenseReview": "<b>{cat1}</b> était le principal poste de dépenses ce mois-ci à <b>{amt1}</b>. Examinez s'il s'agit d'un coût ponctuel, d'un schéma récurrent ou d'une activité liée à un client.",
-      "suggestDoublePressure": "<b>{cat1}</b> représente la plus grande variation de dépenses ce mois-ci (<b>{amt1}</b>). Côté revenus, vérifiez si des paiements clients sont encore en attente.",
-      "suggestDoublePressureGeneric": "Les revenus ont baissé tandis que les dépenses ont augmenté ce mois-ci. Examinez quelles catégories de dépenses ont progressé et vérifiez si des paiements clients sont encore en attente.",
-      "suggestIncomeDecline": "{incomeType, select, freelance {Vérifiez si des paiements clients sont encore en attente — une seule facture encaissée peut changer le bilan de ce mois.} salary {Vérifiez votre calendrier de paie et contrôlez si des retenues ont changé de façon inattendue.} other {Vérifiez si une source de revenus attendue a été interrompue ce mois-ci et si des factures sont encore en attente.}}",
-      "suggestExpenseBudget": "<b>{cat1}</b> représente la plus forte hausse de dépenses ce mois-ci, en hausse de <b>{amt1}</b>. Examinez s'il s'agit d'un coût ponctuel, d'un changement récurrent ou d'une activité liée à un client.",
-      "suggestBuildRunway": "Ce mois a dégagé un flux de trésorerie positif — les revenus ont dépassé les dépenses plus que d'habitude.",
-      "suggestStability": "Les revenus et les dépenses sont stables sur les derniers mois — un schéma régulier."
+      "suggestSaveExtra": "Revenus en hausse, dépenses en baisse — la meilleure combinaison. <b>{period}</b> a dégagé plus de marge que le mois précédent.",
+      "suggestWatchDriver": "<b>{cat1}</b> représente le mouvement de dépenses le plus important en <b>{period}</b>, en hausse de <b>{amt1}</b>. Examinez si cela reflète un coût ponctuel, un changement récurrent ou une activité normale.",
+      "suggestExpenseCeiling": "Les revenus ont progressé plus vite que les dépenses en <b>{period}</b>. Aucune catégorie ne se distingue comme principal changement de dépenses.",
+      "suggestExpenseReview": "<b>{cat1}</b> était le principal poste de dépenses en <b>{period}</b> à <b>{amt1}</b>. Examinez s'il s'agit d'un coût ponctuel, d'un schéma récurrent ou d'une activité liée à un client.",
+      "suggestDoublePressure": "<b>{cat1}</b> représente la plus grande variation de dépenses en <b>{period}</b> (<b>{amt1}</b>). Côté revenus, vérifiez si des paiements clients sont encore en attente.",
+      "suggestDoublePressureGeneric": "Les revenus ont baissé tandis que les dépenses ont augmenté en <b>{period}</b>. Examinez quelles catégories de dépenses ont progressé et vérifiez si des paiements clients sont encore en attente.",
+      "suggestIncomeDecline": "{incomeType, select, freelance {Vérifiez si des paiements clients sont encore en attente — une seule facture encaissée peut encore améliorer <b>{period}</b>.} salary {Vérifiez votre calendrier de paie et contrôlez si des retenues ont changé de façon inattendue.} other {Vérifiez si une source de revenus attendue a été interrompue en <b>{period}</b> et si des factures sont encore en attente.}}",
+      "suggestExpenseBudget": "<b>{cat1}</b> représente la plus forte hausse de dépenses en <b>{period}</b>, en hausse de <b>{amt1}</b>. Examinez s'il s'agit d'un coût ponctuel, d'un changement récurrent ou d'une activité liée à un client.",
+      "suggestBuildRunway": "<b>{period}</b> a dégagé un flux de trésorerie positif — les revenus ont dépassé les dépenses plus que d'habitude.",
+      "suggestStability": "Les revenus et les dépenses sont stables sur les derniers mois — un schéma régulier.",
+      "partialMonth": "<b>{period}</b> est encore en cours. Les comparaisons mois par mois ne sont pas encore affichées — les chiffres seront mis à jour en fin de mois."
     },
     "snapshot": {
       "uploadPrompt": "Importez votre relevé bancaire pour obtenir des analyses personnalisées de vos finances.",
-      "firstUpload": "{cashflowOk, select, positive {Excellent début — votre trésorerie ce mois-ci est positive.} other {Votre trésorerie ce mois-ci est négative — voyons ce qui en est la cause.}}",
+      "firstUpload": "{cashflowOk, select, positive {Excellent début — votre trésorerie en <b>{period}</b> est positive.} other {Votre trésorerie en <b>{period}</b> est négative — voyons ce qui en est la cause.}}",
       "excellentMonth": "Excellent mois — les revenus sont en hausse et les dépenses en baisse.",
-      "incomeUpExpensesUp": "{hasCategory, select, yes {Les revenus sont en hausse ce mois-ci, mais les dépenses aussi — principalement à cause de <b>{category}</b> (<b>{amount}</b> de plus que le mois dernier).} other {Les revenus sont en hausse ce mois-ci, mais les dépenses aussi.}}",
+      "incomeUpExpensesUp": "{hasCategory, select, yes {Les revenus sont en hausse en <b>{period}</b>, mais les dépenses aussi — principalement à cause de <b>{category}</b> (<b>{amount}</b> de plus que le mois dernier).} other {Les revenus sont en hausse en <b>{period}</b>, mais les dépenses aussi.}}",
       "incomeDownExpensesUp": "{hasCategory, select, yes {Un mois difficile — les revenus sont en baisse et les dépenses en hausse, principalement à cause de <b>{category}</b> (<b>{amount}</b> de plus que le mois dernier).} other {Un mois difficile — les revenus sont en baisse tandis que les dépenses sont en hausse.}}",
-      "expensesExceedIncome": "{hasCategory, select, yes {Les dépenses ont dépassé les revenus ce mois-ci, principalement à cause des dépenses en <b>{category}</b>.} other {Les dépenses ont dépassé les revenus ce mois-ci — la trésorerie est négative.}}",
-      "expensesIncreasedLed": "Les dépenses ont augmenté ce mois-ci, principalement à cause de <b>{category}</b> (<b>{amount}</b> de plus que le mois dernier). La trésorerie reste positive.",
+      "expensesExceedIncome": "{hasCategory, select, yes {Les dépenses ont dépassé les revenus en <b>{period}</b>, principalement à cause des dépenses en <b>{category}</b>.} other {Les dépenses ont dépassé les revenus en <b>{period}</b> — la trésorerie est négative.}}",
+      "expensesIncreasedLed": "Les dépenses ont augmenté en <b>{period}</b>, principalement à cause de <b>{category}</b> (<b>{amount}</b> de plus que le mois dernier). La trésorerie reste positive.",
       "goodCostControl": "Bonne maîtrise des coûts — les dépenses en <b>{category}</b> ont diminué de <b>{amount}</b> par rapport au mois dernier.",
       "stableMonth": "Mois stable — vos finances restent stables."
     },
@@ -1471,7 +1555,7 @@
       "deficitExpenseDriven": "La hausse des dépenses est le principal facteur — <b>{category}</b> représente à lui seul <b>{amount}</b> (<b>{pct} %</b> des dépenses récentes){growing, select, yes {, et cette catégorie augmente d'année en année} other {}}, face à des revenus moyens de <b>{recentIncome}</b>.",
       "deficitExpensesExceedIncome": "Les dépenses (<b>{recentExpenses}</b>) dépassent simplement les revenus (<b>{recentIncome}</b>) — <b>{category}</b> est votre principale dépense avec <b>{amount}</b> (<b>{pct} %</b>){growing, select, yes {, et cette catégorie augmente d'année en année} other {}}.",
       "deficitGeneral": "Les dépenses (<b>{recentExpenses}</b>) dépassent simplement les revenus (<b>{recentIncome}</b>) en moyenne.",
-      "reduceSubscriptions": "Les coûts en <b>{category}</b> s'élèvent à <b>{reduction}</b>/mois — <b>{annual}</b>/an au total.",
+      "reduceSubscriptions": "Vos dépenses en <b>{category}</b> s'élèvent à <b>{monthly}</b>/mois — <b>{annual}</b>/an annualisé.",
       "restoreCashflow": "Combler l'écart projeté de <b>{amount}</b>/mois permettrait de retrouver une trésorerie positive.",
       "marginLow": "Votre marge de trésorerie projetée est de <b>{pct} %</b> — les coûts absorbent la majeure partie des revenus.",
       "marginHealthy": "Votre marge de trésorerie projetée de <b>{pct} %</b> est saine — continuez ainsi."

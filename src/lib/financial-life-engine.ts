@@ -92,10 +92,11 @@ const EMPTY: FinancialLifeIntelligence = {
 };
 
 export async function getFinancialLifeIntelligence(
-  userId: string
+  userId: string,
+  accountId?: string | null,
 ): Promise<FinancialLifeIntelligence> {
   const transactions = await prisma.transaction.findMany({
-    where: { userId, intent: { not: null } },
+    where: { userId, ...(accountId ? { accountId } : {}), intent: { not: null } },
     select: { transactionDate: true, amount: true, intent: true },
     orderBy: { transactionDate: "asc" },
   });

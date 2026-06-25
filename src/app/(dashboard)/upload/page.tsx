@@ -5,6 +5,7 @@ import CsvUploader from "@/components/upload/CsvUploader";
 import DeleteImportButton from "@/components/upload/DeleteImportButton";
 import { prisma } from "@/lib/prisma";
 import { INTL_LOCALES, type Locale } from "@/i18n/locales";
+import { detectDataGaps } from "@/lib/analytics-engine";
 
 export const dynamic = "force-dynamic";
 
@@ -13,12 +14,15 @@ export default async function UploadPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const imports = await prisma.csvImport.findMany({
-    where: { userId: user.id },
-    orderBy: { importedAt: "desc" },
-    take: 5,
-    select: { id: true, fileName: true, status: true, importedRows: true, duplicateRows: true, importedAt: true },
-  });
+  const [imports, dataGaps] = await Promise.all([
+    prisma.csvImport.findMany({
+      where: { userId: user.id },
+      orderBy: { importedAt: "desc" },
+      take: 5,
+      select: { id: true, fileName: true, status: true, importedRows: true, duplicateRows: true, importedAt: true },
+    }),
+    detectDataGaps(user.id),
+  ]);
 
   const t = await getTranslations("upload");
   const locale = (await getLocale()) as Locale;
@@ -31,6 +35,25 @@ export default async function UploadPage() {
           {t("subtitle")}
         </p>
       </div>
+
+      {dataGaps.length > 0 && (
+        <div className="flex items-start gap-3 px-4 py-3 bg-[#D4A2540A] border border-[#D4A25430] rounded-xl">
+          <span className="text-[#D4A254] flex-shrink-0 mt-0.5">◈</span>
+          <div>
+            <p className="text-sm font-semibold text-[#D4A254]">
+              {t("dataGaps.heading", { count: dataGaps.length })}
+            </p>
+            <p className="text-xs text-[#A8C6E0] mt-0.5 leading-relaxed">
+              {t("dataGaps.subtitle")}{" "}
+              <span className="text-[#E8F0F8]">
+                {dataGaps.slice(0, 3).map(g => g.label).join(", ")}
+                {dataGaps.length > 3 ? ` +${dataGaps.length - 3}` : ""}
+              </span>
+            </p>
+            <p className="text-xs text-[#6A97B4] mt-1">{t("dataGaps.uploadTip")}</p>
+          </div>
+        </div>
+      )}
 
       <CsvUploader />
 

@@ -8,6 +8,7 @@ import { getFinancialLifeIntelligence } from "@/lib/financial-life-engine";
 import { formatCurrency } from "@/utils/finance";
 import { INTL_LOCALES, type Locale } from "@/i18n/locales";
 import Link from "next/link";
+import RenameClientForm from "@/components/clients/RenameClientForm";
 
 export const dynamic = "force-dynamic";
 
@@ -214,12 +215,26 @@ export default async function ClientDetailPage({
           <h1 className={`text-2xl font-bold break-words ${isUnidentified ? "text-[#6A97B4] italic" : "text-[#E8F0F8]"}`}>
             {client.name}
           </h1>
+          {!isUnidentified && (client.confidence === "medium" || client.confidence === "low") && (
+            <span className="inline-block mt-1 text-[11px] font-medium text-[#D4A254] bg-[#D4A25410] border border-[#D4A25425] px-2 py-0.5 rounded-full">
+              {t(`confidence.${client.confidence}`)}
+            </span>
+          )}
           {isUnidentified ? (
             <p className="text-xs text-[#4A7A9B] mt-1">{t("detail.identityUnknown")}</p>
           ) : (
             <p className="text-xs text-[#6A97B4] mt-1">
               {t("detail.clientSince", { date: fmtDate(client.firstPayment) })}
             </p>
+          )}
+          {!isUnidentified && client.payerId && (
+            <div className="mt-2">
+              <RenameClientForm
+                payerId={client.payerId}
+                currentName={client.name}
+                canonicalName={client.canonicalName}
+              />
+            </div>
           )}
         </div>
         {!isUnidentified && (

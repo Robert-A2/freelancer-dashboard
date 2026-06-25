@@ -7,6 +7,7 @@ import { recalculateMonthlyAnalytics } from "@/lib/analytics-engine";
 import { generateForecast } from "@/lib/forecast-engine";
 import { resolvePayers, recomputeVerifiedRevenue } from "@/lib/payer-engine";
 import { loadMerchantIndex, reportUncategorizedMerchants } from "@/lib/merchant-reports";
+import { detectCrossAccountTransfers } from "@/lib/transfer-detector";
 import { Decimal } from "@prisma/client/runtime/library";
 
 const BATCH_SIZE = 1000;
@@ -112,6 +113,9 @@ export async function POST(request: NextRequest) {
     // We fetch existing rows for the date range being imported so we don't
     // need to send duplicate rows to createMany at all.
     let newTransactions = transactions;
+    // Duplicates captured for visibility — returned to the client so users can
+    // see exactly which transactions were skipped rather than a silent count.
+    let droppedDuplicates: Array<{ date: string; description: string; amount: number; type: string }> = [];
 
     if (transactions.length > 0) {
       const dates = transactions.map(t => t.transactionDate.getTime());
@@ -133,11 +137,25 @@ export async function POST(request: NextRequest) {
         )
       );
 
-      newTransactions = transactions.filter(tx =>
-        !existingSet.has(
-          `${tx.transactionDate.toISOString()}|${tx.description}|${tx.amount}`
-        )
-      );
+      const kept    = [] as typeof transactions;
+      const dropped = [] as typeof transactions;
+      for (const tx of transactions) {
+        const key = `${tx.transactionDate.toISOString()}|${tx.description}|${tx.amount}`;
+        if (existingSet.has(key)) dropped.push(tx); else kept.push(tx);
+      }
+      newTransactions = kept;
+
+      // Only surface per-row details when the count is small — a large number
+      // of duplicates almost certainly means a re-upload of the same CSV, which
+      // doesn't need per-transaction review.
+      if (dropped.length <= 30) {
+        droppedDuplicates = dropped.slice(0, 20).map(tx => ({
+          date:        tx.transactionDate.toISOString(),
+          description: tx.description,
+          amount:      tx.amount,
+          type:        tx.transactionType,
+        }));
+      }
     }
 
     // ── Create import record ───────────────────────────────────────────────
@@ -233,6 +251,18 @@ export async function POST(request: NextRequest) {
       }
     });
 
+    // ── Detect potential cross-account transfers ───────────────────────────
+    // Runs synchronously (before response) so the client gets results in one
+    // round trip. Fast: only fires when user has ≥ 2 accounts.
+    let suspectedTransfers: Awaited<ReturnType<typeof detectCrossAccountTransfers>> = [];
+    if (accountId) {
+      try {
+        suspectedTransfers = await detectCrossAccountTransfers(user.id, csvImport.id);
+      } catch (err) {
+        console.error("[Upload] transfer detection failed:", err);
+      }
+    }
+
     // ── Build response ─────────────────────────────────────────────────────
     const categoryCounts: Record<string, number> = {};
     for (const tx of transactions) {
@@ -261,6 +291,8 @@ export async function POST(request: NextRequest) {
       currencies,
       hasMixedCurrencies,
       typeBreakdown,
+      suspectedTransfers:  suspectedTransfers.length  > 0 ? suspectedTransfers  : undefined,
+      skippedDuplicates:   droppedDuplicates.length   > 0 ? droppedDuplicates   : undefined,
     });
   } catch (error) {
     console.error("CSV processing error:", error);

@@ -1,6 +1,7 @@
 import { prisma } from "./prisma";
 import { extractClientName, normalizeForAlias, UNIDENTIFIED_SOURCE } from "./client-identity";
 import type { ClientConfidence } from "./client-identity";
+import { descriptionFingerprint } from "./payer-engine";
 import { getLocale } from "next-intl/server";
 import { INTL_LOCALES, type Locale } from "@/i18n/locales";
 
@@ -39,6 +40,8 @@ export interface ClientPayment {
 
 export interface ClientRiskProfile {
   name: string;
+  payerId: string | null;          // null in fallback path (payer engine not yet run)
+  canonicalName: string;           // system-extracted name; equals name unless user corrected
   confidence: ClientConfidence;    // how certain we are this is a real client identity
   isProcessor: boolean;
   totalRevenue: number;
@@ -66,6 +69,14 @@ export interface ClientRiskProfile {
   rawDescriptions: string[]; // kept for the payment timeline — ground truth
 }
 
+export interface UnresolvedGroup {
+  fingerprint: string;
+  description: string;   // example raw description from one of the matching transactions
+  totalRevenue: number;
+  txCount: number;
+  lastDate: Date;
+}
+
 export interface ClientRiskCenterData {
   clients: ClientRiskProfile[];
   totalRevenue: number;
@@ -73,6 +84,7 @@ export interface ClientRiskCenterData {
   followUpCount: number;   // active clients with unusual payment timing (watch + risk)
   inactiveCount: number;   // concluded relationships
   hasIntentData: boolean;
+  unresolvedGroups: UnresolvedGroup[];
 }
 
 // ── Status computation ────────────────────────────────────────────────────────
@@ -182,35 +194,40 @@ function computeReliabilityScore(p: PartialProfile): ReliabilityScore {
 
 // ── Main export ───────────────────────────────────────────────────────────────
 
-export async function getClientRiskProfiles(userId: string): Promise<ClientRiskCenterData> {
-  // Primary: payer-resolved transactions, excluding known non-revenue payers.
-  // The payer engine answers "who sent this money?" so banks, government bodies,
-  // and refund sources are already excluded at the identity level.
-  let txs = await prisma.transaction.findMany({
+export async function getClientRiskProfiles(userId: string, accountId?: string | null): Promise<ClientRiskCenterData> {
+  const acctFilter = accountId ? { accountId } : {};
+
+  // Primary: payer-resolved transactions (payer engine has run).
+  // Includes payer metadata so we can use user-corrected names (displayName).
+  const primaryTxs = await prisma.transaction.findMany({
     where: {
       userId,
+      ...acctFilter,
       transactionType: "income",
       payerId:         { not: null },
       amount:          { gte: 5 },
       payer:           { payerType: { notIn: ["bank", "government", "refund_source"] } },
     },
-    select: { description: true, amount: true, transactionDate: true, category: true },
+    select: {
+      description: true, amount: true, transactionDate: true, category: true,
+      payerId: true,
+      payer: { select: { id: true, canonicalName: true, displayName: true, payerType: true } },
+    },
     orderBy: { transactionDate: "asc" },
   });
 
-  const hasIntentData = txs.length >= 3; // reuse flag for UI — means "has payer data"
+  const hasIntentData = primaryTxs.length >= 3;
 
   // Fallback when payer engine hasn't run yet: intent-classified income.
-  if (!hasIntentData) {
-    txs = await prisma.transaction.findMany({
-      where: { userId, intent: { in: ["freelance_income", "salary"] } },
-      select: { description: true, amount: true, transactionDate: true, category: true },
-      orderBy: { transactionDate: "asc" },
-    });
-  }
+  const fallbackTxs = !hasIntentData ? await prisma.transaction.findMany({
+    where: { userId, ...acctFilter, intent: { in: ["freelance_income", "salary"] } },
+    select: { description: true, amount: true, transactionDate: true, category: true },
+    orderBy: { transactionDate: "asc" },
+  }) : [];
 
-  if (txs.length === 0) {
-    return { clients: [], totalRevenue: 0, currentCount: 0, followUpCount: 0, inactiveCount: 0, hasIntentData: false };
+  const activeTxCount = hasIntentData ? primaryTxs.length : fallbackTxs.length;
+  if (activeTxCount === 0) {
+    return { clients: [], totalRevenue: 0, currentCount: 0, followUpCount: 0, inactiveCount: 0, hasIntentData: false, unresolvedGroups: [] };
   }
 
   const locale = (await getLocale()) as Locale;
@@ -227,78 +244,103 @@ export async function getClientRiskProfiles(userId: string): Promise<ClientRiskC
     });
   }
 
-  const totalRevenue = txs.reduce((s, t) => s + Number(t.amount), 0);
+  const totalRevenue = hasIntentData
+    ? primaryTxs.reduce((s, t) => s + Number(t.amount), 0)
+    : fallbackTxs.reduce((s, t) => s + Number(t.amount), 0);
 
-  // ── Phase 1: Extract and group by alias-normalized key ───────────────────────
-  // Two-level grouping:
-  //   aliasKey → canonicalName → { txs[], confidence, isProcessor }
-  //
-  // aliasKey strips legal suffixes so "ACME LTD" and "ACME LIMITED" map to the
-  // same key. The canonical name is the one that appears most often.
-
-  const aliasGroups: Record<string, {
-    names: Record<string, { count: number; confidence: ClientConfidence; isProcessor: boolean }>;
-    txs: { amount: number; date: Date; description: string }[];
-  }> = {};
-
-  for (const tx of txs) {
-    const result = extractClientName(tx.description, tx.category);
-
-    // Low or unknown confidence → merge into the unidentified bucket
-    const effectiveName =
-      result.confidence === "unknown" || result.confidence === "low"
-        ? UNIDENTIFIED_SOURCE
-        : result.name;
-
-    const aliasKey = normalizeForAlias(effectiveName);
-
-    if (!aliasGroups[aliasKey]) {
-      aliasGroups[aliasKey] = { names: {}, txs: [] };
-    }
-
-    const nameKey = effectiveName.toUpperCase();
-    if (!aliasGroups[aliasKey].names[nameKey]) {
-      aliasGroups[aliasKey].names[nameKey] = { count: 0, confidence: result.confidence, isProcessor: result.isProcessor };
-    }
-    aliasGroups[aliasKey].names[nameKey].count += 1;
-
-    aliasGroups[aliasKey].txs.push({
-      amount: Number(tx.amount),
-      date: new Date(tx.transactionDate),
-      description: tx.description,
-    });
-  }
-
-  // ── Phase 2: Pick canonical name per group ────────────────────────────────────
-  // Canonical = the name variant with the highest payment count.
-  // Confidence = that of the most-used variant.
+  // ── Phase 1 & 2: Group transactions by client identity ───────────────────────
 
   const map: Record<string, {
     name: string;
+    payerId: string | null;
+    canonicalName: string;
     confidence: ClientConfidence;
     isProcessor: boolean;
     txs: { amount: number; date: Date; description: string }[];
   }> = {};
 
-  for (const [aliasKey, group] of Object.entries(aliasGroups)) {
-    const canonical = Object.entries(group.names)
-      .sort((a, b) => b[1].count - a[1].count)[0];
+  if (hasIntentData) {
+    // Primary path: use payer names from DB (respects user corrections via displayName).
+    const payerBuckets: Record<string, {
+      payer: { id: string; canonicalName: string; displayName: string | null; payerType: string };
+      txs: { amount: number; date: Date; description: string }[];
+    }> = {};
 
-    // Use the correctly-cased name from the first transaction that produced it
-    // (extractClientName already title-cases), not the uppercased map key.
-    // We need to re-extract for the canonical key — take the most common name's
-    // display form directly from what extractClientName already returned.
-    // Since we stored it title-cased as effectiveName above, recover from the key:
-    const displayName = canonical[0] === UNIDENTIFIED_SOURCE.toUpperCase()
-      ? UNIDENTIFIED_SOURCE
-      : canonical[0].split(" ").map(w => w[0] + w.slice(1).toLowerCase()).join(" ");
+    for (const tx of primaryTxs) {
+      if (!tx.payer || !tx.payerId) continue;
+      if (!payerBuckets[tx.payerId]) {
+        payerBuckets[tx.payerId] = { payer: tx.payer, txs: [] };
+      }
+      payerBuckets[tx.payerId].txs.push({
+        amount: Number(tx.amount),
+        date: new Date(tx.transactionDate),
+        description: tx.description,
+      });
+    }
 
-    map[aliasKey] = {
-      name: displayName,
-      confidence: canonical[1].confidence,
-      isProcessor: canonical[1].isProcessor,
-      txs: group.txs,
-    };
+    for (const [payerId, data] of Object.entries(payerBuckets)) {
+      const { payer, txs: ptxs } = data;
+      const isProcessor = payer.payerType === "platform";
+      const hasUserName = !!payer.displayName;
+
+      const confidence: ClientConfidence =
+        hasUserName ? "high" :
+        payer.payerType === "platform" || payer.payerType === "employer" || payer.payerType === "client" ? "high" :
+        ptxs.length >= 3 ? "high" :
+        ptxs.length >= 2 ? "medium" : "low";
+
+      map[payerId] = {
+        name: payer.displayName ?? payer.canonicalName,
+        payerId,
+        canonicalName: payer.canonicalName,
+        confidence,
+        isProcessor,
+        txs: ptxs,
+      };
+    }
+
+  } else {
+    // Fallback path: payer engine hasn't run — extract names from descriptions.
+    const aliasGroups: Record<string, {
+      names: Record<string, { count: number; confidence: ClientConfidence; isProcessor: boolean }>;
+      txs: { amount: number; date: Date; description: string }[];
+    }> = {};
+
+    for (const tx of fallbackTxs) {
+      const result = extractClientName(tx.description, tx.category);
+      const effectiveName =
+        result.confidence === "unknown" || result.confidence === "low"
+          ? UNIDENTIFIED_SOURCE
+          : result.name;
+      const aliasKey = normalizeForAlias(effectiveName);
+
+      if (!aliasGroups[aliasKey]) aliasGroups[aliasKey] = { names: {}, txs: [] };
+      const nameKey = effectiveName.toUpperCase();
+      if (!aliasGroups[aliasKey].names[nameKey]) {
+        aliasGroups[aliasKey].names[nameKey] = { count: 0, confidence: result.confidence, isProcessor: result.isProcessor };
+      }
+      aliasGroups[aliasKey].names[nameKey].count += 1;
+      aliasGroups[aliasKey].txs.push({
+        amount: Number(tx.amount),
+        date: new Date(tx.transactionDate),
+        description: tx.description,
+      });
+    }
+
+    for (const [aliasKey, group] of Object.entries(aliasGroups)) {
+      const canonical = Object.entries(group.names).sort((a, b) => b[1].count - a[1].count)[0];
+      const displayName = canonical[0] === UNIDENTIFIED_SOURCE.toUpperCase()
+        ? UNIDENTIFIED_SOURCE
+        : canonical[0].split(" ").map(w => w[0] + w.slice(1).toLowerCase()).join(" ");
+      map[aliasKey] = {
+        name: displayName,
+        payerId: null,
+        canonicalName: displayName,
+        confidence: canonical[1].confidence,
+        isProcessor: canonical[1].isProcessor,
+        txs: group.txs,
+      };
+    }
   }
 
   // ── Phase 3: Build risk profiles ─────────────────────────────────────────────
@@ -342,6 +384,8 @@ export async function getClientRiskProfiles(userId: string): Promise<ClientRiskC
 
     const partial: PartialProfile = {
       name: c.name,
+      payerId: c.payerId,
+      canonicalName: c.canonicalName,
       confidence: c.confidence,
       isProcessor: c.isProcessor,
       totalRevenue: totalRev,
@@ -378,12 +422,44 @@ export async function getClientRiskProfiles(userId: string): Promise<ClientRiskC
     return b.totalRevenue - a.totalRevenue;
   });
 
+  // ── Phase 4: Unresolved transactions (payerId: null) ─────────────────────────
+  // Income transactions where extractPayer() found nothing to work with.
+  // Group by description fingerprint so the user can name each distinct pattern.
+
+  const unresolvedTxs = await prisma.transaction.findMany({
+    where: { userId, ...acctFilter, transactionType: "income", payerId: null, amount: { gte: 5 } },
+    select: { description: true, amount: true, transactionDate: true },
+    orderBy: { transactionDate: "desc" },
+  });
+
+  const unresolvedMap: Record<string, UnresolvedGroup> = {};
+  for (const tx of unresolvedTxs) {
+    const fp = descriptionFingerprint(tx.description);
+    if (!unresolvedMap[fp]) {
+      unresolvedMap[fp] = {
+        fingerprint: fp,
+        description: tx.description.slice(0, 80).trim(),
+        totalRevenue: 0,
+        txCount: 0,
+        lastDate: new Date(tx.transactionDate),
+      };
+    }
+    unresolvedMap[fp].totalRevenue += Number(tx.amount);
+    unresolvedMap[fp].txCount += 1;
+    const txDate = new Date(tx.transactionDate);
+    if (txDate > unresolvedMap[fp].lastDate) unresolvedMap[fp].lastDate = txDate;
+  }
+
+  const unresolvedGroups = Object.values(unresolvedMap)
+    .sort((a, b) => b.totalRevenue - a.totalRevenue);
+
   return {
-    clients:       profiles,
+    clients:          profiles,
     totalRevenue,
-    currentCount:  profiles.filter(p => p.lifecycle === "current").length,
-    followUpCount: profiles.filter(p => p.status === "watch" || p.status === "risk").length,
-    inactiveCount: profiles.filter(p => p.lifecycle === "inactive").length,
+    currentCount:     profiles.filter(p => p.lifecycle === "current").length,
+    followUpCount:    profiles.filter(p => p.status === "watch" || p.status === "risk").length,
+    inactiveCount:    profiles.filter(p => p.lifecycle === "inactive").length,
     hasIntentData,
+    unresolvedGroups,
   };
 }

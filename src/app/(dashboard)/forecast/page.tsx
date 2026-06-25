@@ -5,7 +5,7 @@ import { INTL_LOCALES, type Locale } from "@/i18n/locales";
 import {
   getHistoricalData, getMonthlyComparison,
   getDashboardSummary, getCategoryInsights, getIncomeConcentration,
-  getDataCoverage, getIntentBreakdown,
+  getDataCoverage, getIntentBreakdown, detectDataGaps,
 } from "@/lib/analytics-engine";
 import { generateForecast } from "@/lib/forecast-engine";
 import { generateDashboardIntelligence } from "@/lib/intelligence-engine";
@@ -49,7 +49,7 @@ export default async function ForecastPage() {
     critical: { label: t("cashflowRisk.critical.label"), desc: t("cashflowRisk.critical.desc"), bg: "bg-[#D970700A]", border: "border-[#D9707025]", text: "text-[#D97070]" },
   };
 
-  const [forecast, chartData, monthCount, summary, comparison, categoryInsights, concentration, coverage, intentBreakdown] =
+  const [forecast, chartData, monthCount, summary, comparison, categoryInsights, concentration, coverage, intentBreakdown, dataGaps, taxPaymentTxs] =
     await Promise.all([
       generateForecast(user.id),
       getHistoricalData(user.id, 999),
@@ -60,6 +60,11 @@ export default async function ForecastPage() {
       getIncomeConcentration(user.id),
       getDataCoverage(user.id),
       getIntentBreakdown(user.id),
+      detectDataGaps(user.id),
+      prisma.transaction.findMany({
+        where: { userId: user.id, intent: "tax_payment", transactionType: "expense" },
+        select: { transactionDate: true, amount: true },
+      }),
     ]);
 
   const current = summary.current
@@ -85,9 +90,31 @@ export default async function ForecastPage() {
   // to appear instead of the empty state.
   const hasData = chartData.some(d => d.income > 0 || d.expenses > 0);
 
+  // ── Tax-payment months map ──────────────────────────────────────────────────
+  // Used to adjust cashflow risk so that months where taxes were paid don't
+  // count as "negative cashflow months" — paying taxes correctly is not a
+  // sign of financial distress.
+  const taxByMonthKey = new Map<string, number>();
+  for (const tx of taxPaymentTxs) {
+    const y = tx.transactionDate.getUTCFullYear();
+    const m = tx.transactionDate.getUTCMonth() + 1;
+    const key = `${y}-${m}`;
+    taxByMonthKey.set(key, (taxByMonthKey.get(key) ?? 0) + Number(tx.amount));
+  }
+
   // ── Computed metrics ────────────────────────────────────────────────────────
   const activeMonths   = chartData.filter(d => d.income > 0 || d.expenses > 0);
-  const positiveCount  = activeMonths.filter(d => d.cashflow >= 0).length;
+  // A month counts as positive if cashflow is non-negative after adding back
+  // any tax payments that month (taxes are obligations, not operating losses).
+  const positiveCount  = activeMonths.filter(d => {
+    const taxAdj = taxByMonthKey.get(`${d.year}-${d.monthNum}`) ?? 0;
+    return d.cashflow + taxAdj >= 0;
+  }).length;
+  // How many months flipped from negative → positive due to tax adjustment
+  const taxAdjustedCount = activeMonths.filter(d => {
+    const taxAdj = taxByMonthKey.get(`${d.year}-${d.monthNum}`) ?? 0;
+    return d.cashflow < 0 && taxAdj > 0 && d.cashflow + taxAdj >= 0;
+  }).length;
   const negativeCount  = activeMonths.length - positiveCount;
   const posRatio       = activeMonths.length > 0 ? positiveCount / activeMonths.length : 0;
 
@@ -98,13 +125,6 @@ export default async function ForecastPage() {
   const avgPrev6  = prev6.length  ? prev6.reduce((s, d)  => s + d.income, 0) / prev6.length  : 0;
   const incTrend  = avgPrev6 > 0  ? (avgLast6 - avgPrev6) / avgPrev6 : 0;
   const incPct    = Math.round(incTrend * 100);
-
-  // Business Health Score (0–100)
-  const cashflowScore = Math.round(posRatio * 40);
-  const trendScore    = incTrend > 0.05 ? 25 : incTrend > -0.05 ? 15 : 5;
-  const depthScore    = activeMonths.length >= 12 ? 20 : activeMonths.length >= 6 ? 12 : 5;
-  const statusScore   = intel.healthStatus === "healthy" ? 15 : intel.healthStatus === "watch" ? 8 : 0;
-  const healthScore   = Math.min(100, cashflowScore + trendScore + depthScore + statusScore);
 
   // Cashflow risk level
   const cashflowRisk: "low" | "medium" | "high" | "critical" =
@@ -173,6 +193,15 @@ export default async function ForecastPage() {
     });
   }
 
+  // Revenue match rate — what % of all-time income was matched to a known payer.
+  // Only shown when the payer engine has run (verifiedRevenue > 0 on at least one month).
+  const totalHistoricIncome   = activeMonths.reduce((s, d) => s + d.income, 0);
+  const totalMatchedRevenue   = activeMonths.reduce((s, d) => s + d.verifiedRevenue + d.likelyRevenue, 0);
+  const payerEngineHasRun     = activeMonths.some(d => d.verifiedRevenue > 0 || d.likelyRevenue > 0);
+  const revenueMatchPct       = payerEngineHasRun && totalHistoricIncome > 0
+    ? Math.round((totalMatchedRevenue / totalHistoricIncome) * 100)
+    : null;
+
   // Annual projections — cashflow = forecast.projectedCashflow (Income − Expenses),
   // the same definition used everywhere else (see forecast-engine.ts).
   const annualIncome    = forecast ? forecast.projectedIncome   * 12 : 0;
@@ -187,13 +216,6 @@ export default async function ForecastPage() {
   const health = HEALTH[intel.healthStatus];
   const trend  = TREND[intel.businessTrendDirection];
 
-  // The 0-100 score and the categorical health status answer different
-  // questions (overall foundation vs. a specific trend to watch) and can
-  // legitimately disagree — color them independently so a high score doesn't
-  // get painted amber just because something recent is "worth watching".
-  const scoreLevel: "healthy" | "watch" | "at-risk" =
-    healthScore >= 80 ? "healthy" : healthScore >= 50 ? "watch" : "at-risk";
-  const scoreColor = HEALTH[scoreLevel];
   const risk   = RISK_CONFIG[cashflowRisk];
 
   const fmtDate = (d: Date) => d.toLocaleDateString(INTL_LOCALES[locale], { month: "long", year: "numeric", timeZone: "UTC" });
@@ -212,6 +234,28 @@ export default async function ForecastPage() {
       {/* Data coverage — always visible so the user knows exactly what was analyzed */}
       {coverage.count > 0 && <DataCoverageBar coverage={coverage} />}
 
+      {/* Data gaps — amber callout when interior months have no transactions */}
+      {dataGaps.length > 0 && (
+        <div className="flex items-start gap-3 px-4 py-3 bg-[#D4A2540A] border border-[#D4A25430] rounded-xl">
+          <span className="text-[#D4A254] flex-shrink-0 mt-0.5">◈</span>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-[#D4A254]">
+              {t("dataGaps.heading", { count: dataGaps.length })}
+            </p>
+            <p className="text-xs text-[#A8C6E0] mt-0.5 leading-relaxed">
+              {t("dataGaps.subtitle")}{" "}
+              <span className="text-[#E8F0F8]">
+                {dataGaps.slice(0, 3).map(g => g.label).join(", ")}
+                {dataGaps.length > 3 ? ` +${dataGaps.length - 3} more` : ""}
+              </span>
+            </p>
+          </div>
+          <Link href="/upload" className="text-xs font-semibold text-[#D4A254] hover:text-[#E8B86A] transition-colors flex-shrink-0 mt-0.5 whitespace-nowrap">
+            {t("dataGaps.uploadNow")}
+          </Link>
+        </div>
+      )}
+
       {!hasData && (
         <div className="card text-center py-16">
           <div className="text-5xl mb-4">📈</div>
@@ -228,31 +272,17 @@ export default async function ForecastPage() {
           {/* ── 1. Health overview row ─────────────────────────────────────── */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
 
-            {/* Business Health Score */}
+            {/* Business Health */}
             <div className="card">
               <p className="label mb-3">{t("healthScore.label")}</p>
-              <div className="flex items-end gap-2 mb-3">
-                <span className={`text-4xl font-bold tabular-nums ${scoreColor.text}`}>{healthScore}</span>
-                <span className="text-[#475569] text-sm mb-1">{t("healthScore.outOf100")}</span>
-              </div>
-              <div className="h-2 bg-[#243F5E] rounded-full overflow-hidden mb-3">
-                <div className={`h-full rounded-full ${scoreColor.bar}`} style={{ width: `${healthScore}%` }} />
-              </div>
-              <p className={`text-xs font-semibold mb-3 ${health.text}`}>{health.label}</p>
-              <div className="space-y-1.5 pt-3">
-                <p className="text-xs text-[#6A97B4] font-semibold uppercase tracking-wide mb-2">{t("healthScore.howCalculated")}</p>
-                {[
-                  { key: "cashflowConsistency", label: t("healthScore.rows.cashflowConsistency"), score: cashflowScore, max: 40, detail: t("monthsPositive", { positive: positiveCount, total: activeMonths.length }) },
-                  { key: "incomeTrend",         label: t("healthScore.rows.incomeTrend"),         score: trendScore,    max: 25, detail: incPct > 3 ? t("healthScore.trendUp", { pct: String(incPct) }) : incPct < -3 ? t("healthScore.trendDown", { pct: String(Math.abs(incPct)) }) : t("healthScore.trendStable") },
-                  { key: "dataDepth",           label: t("healthScore.rows.dataDepth"),           score: depthScore,    max: 20, detail: t("healthScore.monthsOfHistory", { count: activeMonths.length }) },
-                  { key: "healthStatus",        label: t("healthScore.rows.healthStatus"),        score: statusScore,   max: 15, detail: health.label },
-                ].map((row) => (
-                  <div key={row.key} className="flex items-center justify-between gap-2 text-xs">
-                    <span className="text-[#7BA8C4] truncate">{row.label}</span>
-                    <span className="text-[#A8C6E0] flex-shrink-0 tabular-nums">{row.score}/{row.max}</span>
-                  </div>
-                ))}
-              </div>
+              <span className={`text-sm font-semibold px-3 py-1.5 rounded-lg inline-block mb-3 ${health.bg} ${health.text}`}>
+                {health.label}
+              </span>
+              {intel.healthStatusExplanation && (
+                <p className={`text-xs leading-relaxed ${health.text}`}>
+                  <InsightText insight={intel.healthStatusExplanation} />
+                </p>
+              )}
             </div>
 
             {/* Cashflow Risk */}
@@ -261,6 +291,11 @@ export default async function ForecastPage() {
               <p className={`text-2xl font-bold mb-2 ${risk.text}`}>{risk.label}</p>
               <p className="text-xs text-[#7BA8C4] leading-relaxed">{risk.desc}</p>
               <p className="text-xs text-[#6A97B4] mt-2">{t("monthsPositive", { positive: positiveCount, total: activeMonths.length })}</p>
+              {taxAdjustedCount > 0 && (
+                <p className="text-xs text-[#6A97B4] mt-1.5 italic">
+                  {t("cashflowRisk.taxAdjustmentNote", { count: taxAdjustedCount })}
+                </p>
+              )}
             </div>
 
             {/* Business Direction */}
@@ -278,15 +313,6 @@ export default async function ForecastPage() {
               )}
             </div>
           </div>
-
-          {/* Health status narrative */}
-          {intel.healthStatusExplanation && (
-            <div className={`rounded-2xl px-5 py-4 border ${health.bg} ${health.border}`}>
-              <p className={`text-sm leading-relaxed ${health.text}`}>
-                <InsightText insight={intel.healthStatusExplanation} />
-              </p>
-            </div>
-          )}
 
           {/* ── 2. Year-End Projection ────────────────────────────────────── */}
           <div className="card">
@@ -482,6 +508,13 @@ export default async function ForecastPage() {
                 })}</p>
               )}
               <p>· {t(`confidenceDescriptions.${forecast?.confidence ?? "low"}`)}. {t("howBuilt.moreHistoryNote")}</p>
+              {revenueMatchPct !== null && (
+                <p className={revenueMatchPct < 80 ? "text-[#D4A254]" : ""}>
+                  · {revenueMatchPct >= 90
+                    ? t("howBuilt.revenueMatchRateHigh", { pct: String(revenueMatchPct) })
+                    : t("howBuilt.revenueMatchRate", { pct: String(revenueMatchPct) })}
+                </p>
+              )}
             </div>
           </div>
 
@@ -541,10 +574,8 @@ export default async function ForecastPage() {
               </p>
               <div className="space-y-3">
                 {intel.forecastImprovements.slice(0, 4).map((action, i) => (
-                  <div key={i} className="flex items-start gap-4 bg-[#1A3048] rounded-xl p-3 md:p-4">
-                    <span className="text-xs font-bold text-[#3AB5A0] bg-[#3AB5A020] w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0">
-                      {i + 1}
-                    </span>
+                  <div key={i} className="flex items-start gap-3 bg-[#1A3048] rounded-xl p-3 md:p-4">
+                    <span className="text-base text-[#3AB5A0] flex-shrink-0 mt-0.5">→</span>
                     <p className="text-sm text-[#A8C6E0] leading-relaxed">
                       <InsightText insight={action} />
                     </p>

@@ -89,7 +89,7 @@ export default function CashflowChart({ data, hideHeader = false, apiBase = "/ap
       actionContent = t("cashflowChart.narrative.actionBuildReserve");
     } else if (lowIncNeg >= highExpNeg) {
       whyContent    = t.rich("cashflowChart.narrative.whyLowIncome", { count: negativeMonths, lowCount: lowIncNeg, b: bold });
-      actionContent = t("cashflowChart.narrative.actionStabiliseClients");
+      actionContent = t("cashflowChart.narrative.actionStabiliseClients", { count: negativeMonths });
     } else {
       whyContent    = t.rich("cashflowChart.narrative.whyHighExpenses", { count: negativeMonths, highCount: highExpNeg, b: bold });
       actionContent = t("cashflowChart.narrative.actionExpenseCeiling");

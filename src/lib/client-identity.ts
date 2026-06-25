@@ -107,16 +107,19 @@ const RAIL_PREFIXES: string[] = [
 // only remaining word (we never reduce the result to nothing via this path).
 const LEADING_NOISE_WORDS = new Set([
   "PAYMENT", "TRANSFER", "CREDIT", "DEBIT",
-  "FROM", "BY", "REF", "REFERENCE",
+  "FROM", "BY", "REF", "REFERENCE", "DE", "A",
 ]);
 
 // ── Tail noise patterns ───────────────────────────────────────────────────────
-// Removed from the END of the extracted name.
-// Reference numbers, dates, invoice IDs — not part of the client's name.
+// Applied globally (all occurrences, not just tail) so refs embedded anywhere
+// in the string are removed, not just refs at the end.
 const TAIL_PATTERNS: RegExp[] = [
-  /\b(ref|reference|inv|invoice|payment|id|no\.?|num|number|order)\s*[:#\-]?\s*[\w\-/]+$/gi,
-  /\b\d{5,}\b/g,        // long numeric refs (5+ digits)
-  /\b\d{2}[/-]\d{2}([/-]\d{2,4})?\b/g, // date patterns DD/MM/YY
+  // Invoice/reference keyword followed by an identifier — anywhere in the string
+  /\b(ref|reference|inv|invoice|facture|fact|payment|motif|id|no\.?|num|number|order|rdv)\s*[:#\-]?\s*[\w\-/]+/gi,
+  /\b\d{5,}\b/g,                            // standalone 5+ digit references
+  /\b(19|20)\d{2}\b/g,                      // 4-digit years (2024, 2023, 1999…)
+  /\b\d{2}[/-]\d{2}([/-]\d{2,4})?\b/g,     // date patterns DD/MM/YY
+  /\b[A-Z]{2}\d{10,}\b/g,                   // IBAN / account numbers (GB29NWBK…)
   /\s+$/g,
 ];
 
@@ -154,15 +157,19 @@ export function extractClientName(
   // Work in uppercase for consistent prefix matching
   let working = description.toUpperCase().trim();
 
-  // Step 3: Strip the first matching rail prefix from the start
-  for (const prefix of RAIL_PREFIXES) {
-    if (working === prefix) {
-      working = "";
-      break;
-    }
-    if (working.startsWith(prefix + " ") || working.startsWith(prefix + ":")) {
-      working = working.slice(prefix.length).replace(/^[\s:]+/, "").trim();
-      break;
+  // Step 3: Strip ALL leading rail prefixes (loop until nothing changes).
+  // Descriptions like "VIR SEPA INST NEXO STARTUP" have multiple stacked
+  // prefixes — stopping after the first miss leaves rail noise in the name.
+  let stripped = true;
+  while (stripped && working.length > 0) {
+    stripped = false;
+    for (const prefix of RAIL_PREFIXES) {
+      if (working === prefix) { working = ""; stripped = true; break; }
+      if (working.startsWith(prefix + " ") || working.startsWith(prefix + ":")) {
+        working = working.slice(prefix.length).replace(/^[\s:]+/, "").trim();
+        stripped = true;
+        break;
+      }
     }
   }
 

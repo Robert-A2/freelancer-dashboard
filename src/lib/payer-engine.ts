@@ -252,6 +252,28 @@ const LEGAL_SUFFIXES = [
   "ab", "as", "oy",
 ];
 
+// ── Description fingerprinting ────────────────────────────────────────────────
+
+/**
+ * Stable key for a bank description — strips variable parts (reference numbers,
+ * dates, amounts) so two descriptions from the same sender share one fingerprint.
+ * Used to match user-assigned names to future transactions with the same pattern.
+ */
+export function descriptionFingerprint(description: string): string {
+  return description
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[̀-ͯ]/g, "")       // strip accents
+    .replace(/\b[a-z]{2}\d{10,}\b/g, "")  // IBAN / account refs (GB29NWBK…)
+    .replace(/\b(19|20)\d{2}\b/g, "")     // 4-digit years
+    .replace(/\b\d{2}[\/\-]\d{2}([\/\-]\d{2,4})?\b/g, "") // DD/MM/YY dates
+    .replace(/\b\d{5,}\b/g, "")           // 5+ digit reference numbers
+    .replace(/[^a-z ]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 60);
+}
+
 // ── Pure helper functions ─────────────────────────────────────────────────────
 
 function asciiLower(text: string): string {
@@ -539,9 +561,16 @@ export async function resolvePayers(
     const extraction = extractPayer(tx.description, tx.category, Number(tx.amount));
 
     if (!extraction) {
-      // Description too generic to extract a payer identity (e.g. "CREDIT REF 48291730").
-      // Mark for manual review — do NOT silently skip.
-      unresolvable.push(tx.id);
+      // Check if the user has previously named this description pattern via /api/payers/assign.
+      // The assign endpoint stores a PayerAlias with matchKey = descriptionFingerprint(description).
+      const fp = descriptionFingerprint(tx.description);
+      const learnedAlias = fp ? aliasMap.get(fp) : undefined;
+      if (learnedAlias) {
+        txUpdates.push({ id: tx.id, payerId: learnedAlias.payerId, needsReview: false });
+      } else {
+        // Truly unresolvable — mark for manual review, shown in "Unrecognised payments" section.
+        unresolvable.push(tx.id);
+      }
       continue;
     }
 

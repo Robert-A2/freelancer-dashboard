@@ -131,22 +131,22 @@ In every case, it's immediately followed by `generateForecast(userId)` (see [FOR
 
 ---
 
-## 3. `getDashboardSummary(userId)`
+## 3. `getDashboardSummary(userId, accountId?)`
 
 ```ts
-{ current: MonthlyAnalytics | null, previous: MonthlyAnalytics | null, recent: Transaction[] }
+{ current: MonthSummary | MonthlyAnalytics | null, previous: ..., recent: Transaction[] }
 ```
 
-- Finds the **latest** `MonthlyAnalytics` row (`orderBy: [{year:"desc"},{month:"desc"}]`) and treats it as `current`.
-- `previous` is the calendar month immediately before it (handling year rollover: if `currMonth === 1`, previous is December of `currYear - 1`).
-- `recent` is the 10 most recent transactions (by `transactionDate desc`), regardless of month — used for the "Recent transactions" widget.
-- If the user has **no** `MonthlyAnalytics` rows at all (brand new user with zero transactions), returns `{ current: null, previous: null, recent: [] }` — the Dashboard page renders its empty state in this case.
+- When `accountId` is **null/omitted** (All-accounts view): reads `MonthlyAnalytics` (pre-aggregated, fast path). `recent` includes an `account` relation for displaying the account badge.
+- When `accountId` is **set** (single-account view): aggregates directly from raw `Transaction` rows for that account (bypasses `MonthlyAnalytics`, which is user-wide). Returns plain `{ totalIncome, totalExpenses, totalSavings, netCashflow }` objects rather than Prisma records.
+- In both paths: `previous` is the calendar month immediately before `current` (handles year rollover). `recent` is the 10 most recent transactions with `account: { name, color }` included.
+- Returns `{ current: null, previous: null, recent: [] }` for a brand-new user or an empty account.
 
-Used by: `/api/dashboard` and the Dashboard page's summary cards, margin %, and risk-level calculation (see [FORECAST_ENGINE.md](./FORECAST_ENGINE.md) for the shared risk formula).
+Used by: the Dashboard page's summary cards, margin %, and risk-level calculation.
 
 ---
 
-## 4. `getHistoricalData(userId, months)` — the chart timeline
+## 4. `getHistoricalData(userId, months, accountId?)` — the chart timeline
 
 ```ts
 interface MonthPoint {
@@ -174,7 +174,9 @@ Month labels are localized via `Intl.DateTimeFormat` using `INTL_LOCALES[locale]
 
 ---
 
-## 5. `getMonthlyComparison(userId)` — "What changed" widget
+When `accountId` is set, bypasses `MonthlyAnalytics` and aggregates directly from raw transactions for that account (same pattern as `getDashboardSummary`). The `verifiedRevenue`/`likelyRevenue`/`reviewRevenue` fields are `0` in per-account mode since payer confidence is not stored per-account.
+
+## 5. `getMonthlyComparison(userId, accountId?)` — "What changed" widget
 
 ```ts
 {

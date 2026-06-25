@@ -101,14 +101,6 @@ export default async function DemoDashboardPage() {
             <h1 className="text-2xl font-bold">
               {t("welcomeBack", { name: personaFirstName })}
             </h1>
-            <Link href="/demo/forecast" className={`hidden sm:inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full transition-opacity hover:opacity-80 ${
-              intel.healthStatus === "healthy" ? "bg-[#4CC4A415] text-[#4CC4A4]" :
-              intel.healthStatus === "at-risk" ? "bg-[#D9707015] text-[#D97070]" :
-                                                 "bg-[#D4A25415] text-[#D4A254]"
-            }`}>
-              <span className="w-1.5 h-1.5 rounded-full bg-current" />
-              {intel.healthStatus === "healthy" ? t("health.healthy") : intel.healthStatus === "watch" ? t("health.watch") : t("health.atRisk")}
-            </Link>
           </div>
           <p className="text-[#7BA8C4] text-sm">
             {coverage.latest

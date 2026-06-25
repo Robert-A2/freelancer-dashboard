@@ -1,6 +1,6 @@
 import { getTranslations, getLocale } from "next-intl/server";
 import { INTL_LOCALES, type Locale } from "@/i18n/locales";
-import { getDemoDataset } from "@/lib/demo";
+import { getDemoDataset, DEMO_TRANSACTIONS } from "@/lib/demo";
 import { generateDashboardIntelligence } from "@/lib/intelligence-engine";
 import { formatCurrency } from "@/utils/finance";
 import TrendsChart from "@/components/dashboard/TrendsChart";
@@ -59,8 +59,25 @@ export default async function DemoForecastPage() {
     intentBreakdown.hasEnoughDataForDisplay ? intentBreakdown : null,
   );
 
+  const taxByMonthKey = new Map<string, number>();
+  for (const tx of DEMO_TRANSACTIONS) {
+    if (tx.intent === "tax_payment" && tx.transactionType === "expense") {
+      const y = tx.transactionDate.getUTCFullYear();
+      const m = tx.transactionDate.getUTCMonth() + 1;
+      const key = `${y}-${m}`;
+      taxByMonthKey.set(key, (taxByMonthKey.get(key) ?? 0) + tx.amount);
+    }
+  }
+
   const activeMonths  = chartData.filter(d => d.income > 0 || d.expenses > 0);
-  const positiveCount = activeMonths.filter(d => d.cashflow >= 0).length;
+  const positiveCount = activeMonths.filter(d => {
+    const taxAdj = taxByMonthKey.get(`${d.year}-${d.monthNum}`) ?? 0;
+    return d.cashflow + taxAdj >= 0;
+  }).length;
+  const taxAdjustedCount = activeMonths.filter(d => {
+    const taxAdj = taxByMonthKey.get(`${d.year}-${d.monthNum}`) ?? 0;
+    return d.cashflow < 0 && taxAdj > 0 && d.cashflow + taxAdj >= 0;
+  }).length;
   const negativeCount = activeMonths.length - positiveCount;
   const posRatio      = activeMonths.length > 0 ? positiveCount / activeMonths.length : 0;
 
@@ -71,16 +88,17 @@ export default async function DemoForecastPage() {
   const incTrend = avgPrev6 > 0  ? (avgLast6 - avgPrev6) / avgPrev6 : 0;
   const incPct   = Math.round(incTrend * 100);
 
-  const cashflowScore = Math.round(posRatio * 40);
-  const trendScore    = incTrend > 0.05 ? 25 : incTrend > -0.05 ? 15 : 5;
-  const depthScore    = activeMonths.length >= 12 ? 20 : activeMonths.length >= 6 ? 12 : 5;
-  const statusScore   = intel.healthStatus === "healthy" ? 15 : intel.healthStatus === "watch" ? 8 : 0;
-  const healthScore   = Math.min(100, cashflowScore + trendScore + depthScore + statusScore);
-
   const cashflowRisk: "low" | "medium" | "high" | "critical" =
     posRatio >= 0.85 && incTrend > -0.05 ? "low" :
     posRatio >= 0.65 ? "medium" :
     posRatio >= 0.40 ? "high" : "critical";
+
+  const totalHistoricIncome = activeMonths.reduce((s, d) => s + d.income, 0);
+  const totalMatchedRevenue = activeMonths.reduce((s, d) => s + d.verifiedRevenue + d.likelyRevenue, 0);
+  const payerEngineHasRun   = activeMonths.some(d => d.verifiedRevenue > 0 || d.likelyRevenue > 0);
+  const revenueMatchPct     = payerEngineHasRun && totalHistoricIncome > 0
+    ? Math.round((totalMatchedRevenue / totalHistoricIncome) * 100)
+    : null;
 
   const keyDrivers: { label: string; detail: React.ReactNode; positive: boolean }[] = [];
   if (avgPrev6 > 0) {
@@ -109,8 +127,6 @@ export default async function DemoForecastPage() {
 
   const health     = HEALTH[intel.healthStatus];
   const trend      = TREND[intel.businessTrendDirection];
-  const scoreLevel: "healthy" | "watch" | "at-risk" = healthScore >= 80 ? "healthy" : healthScore >= 50 ? "watch" : "at-risk";
-  const scoreColor = HEALTH[scoreLevel];
   const risk       = RISK_CONFIG[cashflowRisk];
 
   const fmtDate = (d: Date) => d.toLocaleDateString(INTL_LOCALES[locale], { month: "long", year: "numeric", timeZone: "UTC" });
@@ -128,28 +144,14 @@ export default async function DemoForecastPage() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="card">
           <p className="label mb-3">{t("healthScore.label")}</p>
-          <div className="flex items-end gap-2 mb-3">
-            <span className={`text-4xl font-bold tabular-nums ${scoreColor.text}`}>{healthScore}</span>
-            <span className="text-[#475569] text-sm mb-1">{t("healthScore.outOf100")}</span>
-          </div>
-          <div className="h-2 bg-[#243F5E] rounded-full overflow-hidden mb-3">
-            <div className={`h-full rounded-full ${scoreColor.bar}`} style={{ width: `${healthScore}%` }} />
-          </div>
-          <p className={`text-xs font-semibold mb-3 ${health.text}`}>{health.label}</p>
-          <div className="space-y-1.5 pt-3">
-            <p className="text-xs text-[#6A97B4] font-semibold uppercase tracking-wide mb-2">{t("healthScore.howCalculated")}</p>
-            {[
-              { key: "cashflowConsistency", label: t("healthScore.rows.cashflowConsistency"), score: cashflowScore, max: 40, detail: t("monthsPositive", { positive: positiveCount, total: activeMonths.length }) },
-              { key: "incomeTrend",         label: t("healthScore.rows.incomeTrend"),         score: trendScore,    max: 25, detail: incPct > 3 ? t("healthScore.trendUp", { pct: String(incPct) }) : incPct < -3 ? t("healthScore.trendDown", { pct: String(Math.abs(incPct)) }) : t("healthScore.trendStable") },
-              { key: "dataDepth",           label: t("healthScore.rows.dataDepth"),           score: depthScore,    max: 20, detail: t("healthScore.monthsOfHistory", { count: activeMonths.length }) },
-              { key: "healthStatus",        label: t("healthScore.rows.healthStatus"),        score: statusScore,   max: 15, detail: health.label },
-            ].map(row => (
-              <div key={row.key} className="flex items-center justify-between gap-2 text-xs">
-                <span className="text-[#7BA8C4] truncate">{row.label}</span>
-                <span className="text-[#A8C6E0] flex-shrink-0 tabular-nums">{row.score}/{row.max}</span>
-              </div>
-            ))}
-          </div>
+          <span className={`text-sm font-semibold px-3 py-1.5 rounded-lg inline-block mb-3 ${health.bg} ${health.text}`}>
+            {health.label}
+          </span>
+          {intel.healthStatusExplanation && (
+            <p className={`text-xs leading-relaxed ${health.text}`}>
+              <InsightText insight={intel.healthStatusExplanation} />
+            </p>
+          )}
         </div>
 
         <div className={`card ${risk.bg} ${risk.border}`}>
@@ -157,6 +159,11 @@ export default async function DemoForecastPage() {
           <p className={`text-2xl font-bold mb-2 ${risk.text}`}>{risk.label}</p>
           <p className="text-xs text-[#7BA8C4] leading-relaxed">{risk.desc}</p>
           <p className="text-xs text-[#6A97B4] mt-2">{t("monthsPositive", { positive: positiveCount, total: activeMonths.length })}</p>
+          {taxAdjustedCount > 0 && (
+            <p className="text-xs text-[#6A97B4] mt-1.5 italic">
+              {t("cashflowRisk.taxAdjustmentNote", { count: taxAdjustedCount })}
+            </p>
+          )}
         </div>
 
         <div className="card">
@@ -171,14 +178,6 @@ export default async function DemoForecastPage() {
           )}
         </div>
       </div>
-
-      {intel.healthStatusExplanation && (
-        <div className={`rounded-2xl px-5 py-4 border ${health.bg} ${health.border}`}>
-          <p className={`text-sm leading-relaxed ${health.text}`}>
-            <InsightText insight={intel.healthStatusExplanation} />
-          </p>
-        </div>
-      )}
 
       {/* ── 2. Year-End Projection ──────────────────────────────────────────── */}
       <div className="card">
@@ -301,6 +300,13 @@ export default async function DemoForecastPage() {
         <div className="text-xs text-[#6A97B4] space-y-2 pt-4 leading-relaxed">
           <p>· {t("howBuilt.weightingNote")}</p>
           <p>· {t(`confidenceDescriptions.${forecast?.confidence ?? "low"}`)}. {t("howBuilt.moreHistoryNote")}</p>
+          {revenueMatchPct !== null && (
+            <p className={revenueMatchPct < 80 ? "text-[#D4A254]" : ""}>
+              · {revenueMatchPct >= 90
+                ? t("howBuilt.revenueMatchRateHigh", { pct: String(revenueMatchPct) })
+                : t("howBuilt.revenueMatchRate", { pct: String(revenueMatchPct) })}
+            </p>
+          )}
         </div>
       </div>
 
@@ -358,8 +364,8 @@ export default async function DemoForecastPage() {
           <p className="text-xs text-[#6A97B4] mb-4">{t("recommendedActions.subtitle")}</p>
           <div className="space-y-3">
             {intel.forecastImprovements.slice(0, 4).map((action, i) => (
-              <div key={i} className="flex items-start gap-4 bg-[#1A3048] rounded-xl p-3 md:p-4">
-                <span className="text-xs font-bold text-[#3AB5A0] bg-[#3AB5A020] w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0">{i + 1}</span>
+              <div key={i} className="flex items-start gap-3 bg-[#1A3048] rounded-xl p-3 md:p-4">
+                <span className="text-base text-[#3AB5A0] flex-shrink-0 mt-0.5">→</span>
                 <p className="text-sm text-[#A8C6E0] leading-relaxed"><InsightText insight={action} /></p>
               </div>
             ))}

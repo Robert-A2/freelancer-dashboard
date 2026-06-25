@@ -63,7 +63,7 @@ export default async function AnalyticsPage() {
   // Exactly 12 months ending at the last data month — UTC midnight
   const incSince = new Date(Date.UTC(dataYear, dataMonthMax - 12, 1));
 
-  const [chartData, categoryInsights, categoryBreakdown, incomeBySource, ytdThis, ytdPrev, clientInsights, coverage, concentration, categorizationHealth] =
+  const [chartData, categoryInsights, categoryBreakdown, incomeBySource, ytdThis, ytdPrev, clientInsights, coverage, concentration, categorizationHealth, ytdMonthsWithData] =
     await Promise.all([
       getHistoricalData(user.id, 999),
       getCategoryInsights(user.id),
@@ -93,6 +93,13 @@ export default async function AnalyticsPage() {
       getDataCoverage(user.id),
       getIncomeConcentration(user.id),
       getCategorizationHealth(user.id),
+      // Months within the YTD window that have no income or expense data
+      prisma.monthlyAnalytics.count({
+        where: {
+          userId: user.id, year: dataYear, month: { lte: dataMonthMax },
+          OR: [{ totalIncome: { gt: 0 } }, { totalExpenses: { gt: 0 } }],
+        },
+      }),
     ]);
 
   const hasData = chartData.some(d => d.income > 0 || d.expenses > 0);
@@ -106,6 +113,9 @@ export default async function AnalyticsPage() {
     concentration,
     locale
   );
+
+  // How many months in the YTD window have no data at all
+  const ytdMissingMonths = dataMonthMax - ytdMonthsWithData;
 
   const ytdInc  = Number(ytdThis._sum.totalIncome   ?? 0);
   const ytdExp  = Number(ytdThis._sum.totalExpenses  ?? 0);
@@ -170,6 +180,14 @@ export default async function AnalyticsPage() {
             <div className="card">
               {!showPrevYearComparison && (
                 <p className="text-xs text-[#6A97B4] mb-4">{t("ytdSection.noComparisonYet")}</p>
+              )}
+              {ytdMissingMonths > 0 && (
+                <div className="flex items-start gap-2 mb-4 px-3 py-2.5 bg-[#D4A2540A] border border-[#D4A25430] rounded-lg">
+                  <span className="text-[#D4A254] flex-shrink-0 text-xs mt-0.5">◈</span>
+                  <p className="text-xs text-[#A8C6E0]">
+                    {t("ytdSection.missingMonthsNote", { count: ytdMissingMonths })}
+                  </p>
+                </div>
               )}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                 {[
@@ -264,6 +282,9 @@ export default async function AnalyticsPage() {
                 }}
               />
             </div>
+            <p className="text-[11px] text-[#475569] leading-relaxed mt-4">
+              {t("breakdownsSection.revenueSourceNote")}
+            </p>
           </CollapsibleSection>
 
           {/* ── 3b. Categorization health ─────────────────────────────────── */}

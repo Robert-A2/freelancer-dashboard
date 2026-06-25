@@ -69,11 +69,76 @@ export async function recalculateMonthlyAnalytics(userId: string): Promise<void>
   }
 }
 
+// ── computeByMonthForAccount ──────────────────────────────────────────────────
+// Aggregates raw transactions into a per-month map for a single account.
+// Used by getDashboardSummary, getHistoricalData, and getMonthlyComparison
+// when the user is viewing a single account.
+async function computeByMonthForAccount(
+  userId: string,
+  accountId: string,
+): Promise<Record<string, { month: number; year: number; income: number; expenses: number; savings: number }>> {
+  const txs = await prisma.transaction.findMany({
+    where: { userId, accountId },
+    select: { transactionDate: true, amount: true, transactionType: true },
+  });
+
+  const byMonth: Record<string, { month: number; year: number; income: number; expenses: number; savings: number }> = {};
+
+  for (const tx of txs) {
+    const d     = new Date(tx.transactionDate);
+    const month = d.getUTCMonth() + 1;
+    const year  = d.getUTCFullYear();
+    const key   = `${year}-${month}`;
+    if (!byMonth[key]) byMonth[key] = { month, year, income: 0, expenses: 0, savings: 0 };
+    const amount = Number(tx.amount);
+    if (tx.transactionType === "income")        byMonth[key].income   += amount;
+    else if (tx.transactionType === "expense")  byMonth[key].expenses += amount;
+    else if (tx.transactionType === "savings")  byMonth[key].savings  += amount;
+  }
+
+  return byMonth;
+}
+
 // ── getDashboardSummary ────────────────────────────────────────────────────────
 // Uses the MOST RECENT month with actual data as "current", not the wall-clock
 // current month. This prevents the dashboard from showing zeros when a user's
 // most recent upload doesn't extend to today.
-export async function getDashboardSummary(userId: string) {
+export async function getDashboardSummary(userId: string, accountId?: string | null) {
+  // ── Per-account path ────────────────────────────────────────────────────────
+  if (accountId) {
+    const byMonth = await computeByMonthForAccount(userId, accountId);
+
+    let latestYear = 0, latestMonth = 0;
+    for (const e of Object.values(byMonth)) {
+      if (e.year > latestYear || (e.year === latestYear && e.month > latestMonth)) {
+        latestYear = e.year; latestMonth = e.month;
+      }
+    }
+
+    const recentTxs = await prisma.transaction.findMany({
+      where: { userId, accountId },
+      orderBy: { transactionDate: "desc" },
+      take: 10,
+      include: { account: { select: { name: true, color: true } } },
+    });
+
+    if (latestYear === 0) return { current: null, previous: null, recent: recentTxs };
+
+    const currMonth = latestMonth, currYear = latestYear;
+    const prevMonth = currMonth === 1 ? 12 : currMonth - 1;
+    const prevYear  = currMonth === 1 ? currYear - 1 : currYear;
+
+    const makeSummary = (e: { income: number; expenses: number; savings: number } | undefined) =>
+      e ? { totalIncome: e.income, totalExpenses: e.expenses, totalSavings: e.savings, netCashflow: e.income - e.expenses } : null;
+
+    return {
+      current:  makeSummary(byMonth[`${currYear}-${currMonth}`]),
+      previous: makeSummary(byMonth[`${prevYear}-${prevMonth}`]),
+      recent:   recentTxs,
+    };
+  }
+
+  // ── All-accounts path (MonthlyAnalytics) ───────────────────────────────────
   const latestRecord = await prisma.monthlyAnalytics.findFirst({
     where: { userId },
     orderBy: [{ year: "desc" }, { month: "desc" }],
@@ -84,6 +149,7 @@ export async function getDashboardSummary(userId: string) {
       where: { userId },
       orderBy: { transactionDate: "desc" },
       take: 10,
+      include: { account: { select: { name: true, color: true } } },
     });
     return { current: null, previous: null, recent };
   }
@@ -104,6 +170,7 @@ export async function getDashboardSummary(userId: string) {
       where: { userId },
       orderBy: { transactionDate: "desc" },
       take: 10,
+      include: { account: { select: { name: true, color: true } } },
     }),
   ]);
 
@@ -127,9 +194,50 @@ export interface MonthPoint {
 // Builds a monthly timeline from the first data point to the LAST data point
 // (not to today). This prevents trailing zero-value months that distort charts
 // and mislead the intelligence engine into thinking income collapsed.
-export async function getHistoricalData(userId: string, months: number): Promise<MonthPoint[]> {
+export async function getHistoricalData(userId: string, months: number, accountId?: string | null): Promise<MonthPoint[]> {
   const locale = (await getLocale()) as Locale;
 
+  // ── Per-account path ────────────────────────────────────────────────────────
+  if (accountId) {
+    const byMonth = await computeByMonthForAccount(userId, accountId);
+    const entries = Object.values(byMonth).sort((a, b) =>
+      a.year !== b.year ? a.year - b.year : a.month - b.month,
+    );
+    if (entries.length === 0) return [];
+
+    const first = entries[0];
+    const last  = entries[entries.length - 1];
+    const end        = new Date(Date.UTC(last.year,  last.month  - 1, 1));
+    const firstStart = new Date(Date.UTC(first.year, first.month - 1, 1));
+    const startAgo   = months < 999
+      ? new Date(Date.UTC(end.getUTCFullYear(), end.getUTCMonth() - months + 1, 1))
+      : firstStart;
+    const since = startAgo > firstStart ? startAgo : firstStart;
+
+    const recordMap = new Map(entries.map(e => [`${e.year}-${e.month}`, e]));
+    const result: MonthPoint[] = [];
+    const cursor = new Date(since);
+
+    while (cursor <= end) {
+      const m   = cursor.getUTCMonth() + 1;
+      const y   = cursor.getUTCFullYear();
+      const lbl = cursor.toLocaleDateString(INTL_LOCALES[locale], { month: "short", year: "2-digit", timeZone: "UTC" });
+      const rec = recordMap.get(`${y}-${m}`);
+      const inc = rec ? rec.income   : 0;
+      const exp = rec ? rec.expenses : 0;
+      result.push({
+        month: lbl, year: y, monthNum: m,
+        income: inc, expenses: exp,
+        savings: rec ? rec.savings : 0,
+        cashflow: inc - exp,
+        verifiedRevenue: 0, likelyRevenue: 0, reviewRevenue: 0,
+      });
+      cursor.setUTCMonth(cursor.getUTCMonth() + 1);
+    }
+    return result;
+  }
+
+  // ── All-accounts path (MonthlyAnalytics) ───────────────────────────────────
   // Find the boundaries of actual data
   const [firstRecord, lastRecord] = await Promise.all([
     prisma.monthlyAnalytics.findFirst({
@@ -200,9 +308,58 @@ export async function getHistoricalData(userId: string, months: number): Promise
 // ── getMonthlyComparison ───────────────────────────────────────────────────────
 // Uses most-recent-data month as "current", not wall-clock month.
 // Also returns the actual month labels so the UI displays the right dates.
-export async function getMonthlyComparison(userId: string) {
+export async function getMonthlyComparison(userId: string, accountId?: string | null) {
   const locale = (await getLocale()) as Locale;
 
+  // ── Per-account path ────────────────────────────────────────────────────────
+  if (accountId) {
+    const byMonth = await computeByMonthForAccount(userId, accountId);
+    const zero = { totalIncome: 0, totalExpenses: 0, totalSavings: 0, netCashflow: 0, verifiedRevenue: 0, likelyRevenue: 0, reviewRevenue: 0 };
+
+    let latestYear = 0, latestMonth = 0;
+    for (const e of Object.values(byMonth)) {
+      if (e.year > latestYear || (e.year === latestYear && e.month > latestMonth)) {
+        latestYear = e.year; latestMonth = e.month;
+      }
+    }
+
+    if (latestYear === 0) return { current: null, previous: null, changes: null, currLabel: "", prevLabel: "", currMonth: 0, currYear: 0, isPartialMonth: false };
+
+    const currMonth = latestMonth, currYear = latestYear;
+    const prevMonth = currMonth === 1 ? 12 : currMonth - 1;
+    const prevYear  = currMonth === 1 ? currYear - 1 : currYear;
+
+    const makeSummary = (e: { income: number; expenses: number; savings: number } | undefined) =>
+      e ? { totalIncome: e.income, totalExpenses: e.expenses, totalSavings: e.savings, netCashflow: e.income - e.expenses, verifiedRevenue: e.income, likelyRevenue: 0, reviewRevenue: 0 }
+        : zero;
+
+    const curr = makeSummary(byMonth[`${currYear}-${currMonth}`]);
+    const prev = makeSummary(byMonth[`${prevYear}-${prevMonth}`]);
+
+    function changePctA(c: number, p: number): number {
+      if (p === 0) return c > 0 ? 100 : 0;
+      return Math.round(((c - p) / Math.abs(p)) * 100);
+    }
+
+    const currLabel = new Date(Date.UTC(currYear, currMonth - 1, 1)).toLocaleDateString(INTL_LOCALES[locale], { month: "short", year: "numeric", timeZone: "UTC" });
+    const prevLabel = new Date(Date.UTC(prevYear, prevMonth - 1, 1)).toLocaleDateString(INTL_LOCALES[locale], { month: "short", year: "numeric", timeZone: "UTC" });
+    const today = new Date();
+    const isPartialMonth = currMonth === today.getUTCMonth() + 1 && currYear === today.getUTCFullYear();
+
+    return {
+      current: curr, previous: prev, currLabel, prevLabel, currMonth, currYear, isPartialMonth,
+      changes: {
+        income:          changePctA(curr.totalIncome,   prev.totalIncome),
+        expenses:        changePctA(curr.totalExpenses, prev.totalExpenses),
+        savings:         changePctA(curr.totalSavings,  prev.totalSavings),
+        cashflow:        changePctA(curr.netCashflow,   prev.netCashflow),
+        verifiedRevenue: changePctA(curr.totalIncome,   prev.totalIncome),
+        likelyRevenue:   0,
+      },
+    };
+  }
+
+  // ── All-accounts path (MonthlyAnalytics) ───────────────────────────────────
   const latestRecord = await prisma.monthlyAnalytics.findFirst({
     where: { userId },
     orderBy: [{ year: "desc" }, { month: "desc" }],
@@ -262,11 +419,23 @@ export async function getMonthlyComparison(userId: string) {
   const currLabel = new Date(Date.UTC(currYear, currMonth - 1, 1)).toLocaleDateString(INTL_LOCALES[locale], { month: "short", year: "numeric", timeZone: "UTC" });
   const prevLabel = new Date(Date.UTC(prevYear, prevMonth - 1, 1)).toLocaleDateString(INTL_LOCALES[locale], { month: "short", year: "numeric", timeZone: "UTC" });
 
+  // A month is partial when it matches the current calendar month — it's not
+  // over yet, so any comparison to last month will be apples-to-oranges until
+  // the month ends. Past months (where the data month ≠ today's month) are
+  // treated as complete: the user's bank export captured the full picture.
+  const today = new Date();
+  const isPartialMonth =
+    currMonth === today.getUTCMonth() + 1 &&
+    currYear === today.getUTCFullYear();
+
   return {
     current: curr,
     previous: prev,
     currLabel,
     prevLabel,
+    currMonth,
+    currYear,
+    isPartialMonth,
     changes: {
       // income change is always based on verified revenue, not raw bank inflows
       income:          changePct(curr.verifiedRevenue, prev.verifiedRevenue),
@@ -315,7 +484,107 @@ export interface CategoryInsights {
   seasonality: MonthlySeasonality[];
 }
 
-export async function getCategoryInsights(userId: string): Promise<CategoryInsights> {
+export async function getCategoryInsights(userId: string, accountId?: string | null): Promise<CategoryInsights> {
+  const MONTH_NAMES_LOCAL = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+  // ── Per-account path ────────────────────────────────────────────────────────
+  if (accountId) {
+    const [latestTx, allTxs] = await Promise.all([
+      prisma.transaction.findFirst({
+        where: { userId, accountId },
+        orderBy: { transactionDate: "desc" },
+        select: { transactionDate: true },
+      }),
+      prisma.transaction.findMany({
+        where: { userId, accountId },
+        select: { category: true, amount: true, transactionDate: true, transactionType: true },
+      }),
+    ]);
+
+    const anchorDate = latestTx?.transactionDate ?? new Date();
+    const currMonth  = anchorDate.getUTCMonth() + 1;
+    const currYear   = anchorDate.getUTCFullYear();
+    const prevMonth  = currMonth === 1 ? 12 : currMonth - 1;
+    const prevYear   = currMonth === 1 ? currYear - 1 : currYear;
+
+    // Category trends from expenses only
+    const catMap: Record<string, { total: number; yearly: Record<number, number>; currentMonth: number; previousMonth: number }> = {};
+    // Yearly + seasonal data from all transaction types
+    const yearData: Record<number, { income: number; expenses: number; savings: number; months: Set<number> }> = {};
+    const monthYearData: Record<string, { income: number; expenses: number }> = {};
+
+    for (const tx of allTxs) {
+      const amount = Number(tx.amount);
+      const d      = new Date(tx.transactionDate);
+      const year   = d.getUTCFullYear();
+      const month  = d.getUTCMonth() + 1;
+      const mk     = `${year}-${month}`;
+
+      if (!yearData[year]) yearData[year] = { income: 0, expenses: 0, savings: 0, months: new Set() };
+      yearData[year].months.add(month);
+      if (!monthYearData[mk]) monthYearData[mk] = { income: 0, expenses: 0 };
+
+      if (tx.transactionType === "income") {
+        yearData[year].income += amount;
+        monthYearData[mk].income += amount;
+      } else if (tx.transactionType === "expense") {
+        yearData[year].expenses += amount;
+        monthYearData[mk].expenses += amount;
+
+        const cat = tx.category || "uncategorized";
+        if (!catMap[cat]) catMap[cat] = { total: 0, yearly: {}, currentMonth: 0, previousMonth: 0 };
+        catMap[cat].total += amount;
+        catMap[cat].yearly[year] = (catMap[cat].yearly[year] ?? 0) + amount;
+        if (year === currYear && month === currMonth) catMap[cat].currentMonth += amount;
+        if (year === prevYear && month === prevMonth) catMap[cat].previousMonth += amount;
+      } else if (tx.transactionType === "savings") {
+        yearData[year].savings += amount;
+      }
+    }
+
+    const topExpenseCategories: CategoryTrend[] = Object.entries(catMap)
+      .filter(([, d]) => d.total > 0)
+      .map(([category, data]) => {
+        const years = Object.keys(data.yearly).map(Number).sort();
+        let yearOverYearTrend: CategoryTrend["yearOverYearTrend"] = "stable";
+        if (years.length >= 2) {
+          const last = data.yearly[years[years.length - 1]] ?? 0;
+          const prev = data.yearly[years[years.length - 2]] ?? 0;
+          const pctYoY = prev > 0 ? ((last - prev) / prev) * 100 : 0;
+          if (pctYoY > 10)       yearOverYearTrend = "growing";
+          else if (pctYoY < -10) yearOverYearTrend = "declining";
+        }
+        const changeAmount = data.currentMonth - data.previousMonth;
+        const changePct    = data.previousMonth > 0 ? Math.round(((data.currentMonth - data.previousMonth) / data.previousMonth) * 100) : 0;
+        return { category, totalAllTime: data.total, yearlyTotals: data.yearly, currentMonthTotal: data.currentMonth, previousMonthTotal: data.previousMonth, changeAmount, changePct, yearOverYearTrend };
+      })
+      .sort((a, b) => b.totalAllTime - a.totalAllTime)
+      .slice(0, 10);
+
+    const yearlySnapshots: YearlySnapshot[] = Object.entries(yearData).map(([y, d]) => ({
+      year: Number(y), income: d.income, expenses: d.expenses, savings: d.savings,
+      cashflow: d.income - d.expenses, monthCount: d.months.size,
+    })).sort((a, b) => a.year - b.year);
+
+    // Build seasonality: average income/expenses per calendar month across all years
+    const seasonMap: Record<number, { income: number; expenses: number; count: number }> = {};
+    for (const [mk, vals] of Object.entries(monthYearData)) {
+      const m = Number(mk.split("-")[1]);
+      if (!seasonMap[m]) seasonMap[m] = { income: 0, expenses: 0, count: 0 };
+      seasonMap[m].income += vals.income;
+      seasonMap[m].expenses += vals.expenses;
+      seasonMap[m].count += 1;
+    }
+    const seasonality: MonthlySeasonality[] = Array.from({ length: 12 }, (_, i) => {
+      const m = i + 1;
+      const d = seasonMap[m];
+      return { monthOfYear: m, monthName: MONTH_NAMES_LOCAL[i], avgIncome: d && d.count > 0 ? d.income / d.count : 0, avgExpenses: d && d.count > 0 ? d.expenses / d.count : 0, sampleCount: d?.count ?? 0 };
+    });
+
+    return { topExpenseCategories, yearlySnapshots, seasonality };
+  }
+
+  // ── All-accounts path (MonthlyAnalytics) ───────────────────────────────────
   const latestRecord = await prisma.monthlyAnalytics.findFirst({
     where: { userId },
     orderBy: [{ year: "desc" }, { month: "desc" }],
@@ -393,11 +662,10 @@ export async function getCategoryInsights(userId: string): Promise<CategoryInsig
     seasonMapFull[r.month].count    += 1;
   }
 
-  const MONTH_NAMES = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
   const seasonality: MonthlySeasonality[] = Array.from({ length: 12 }, (_, i) => {
     const m = i + 1;
     const d = seasonMapFull[m];
-    return { monthOfYear: m, monthName: MONTH_NAMES[i], avgIncome: d ? d.income / d.count : 0, avgExpenses: d ? d.expenses / d.count : 0, sampleCount: d?.count ?? 0 };
+    return { monthOfYear: m, monthName: MONTH_NAMES_LOCAL[i], avgIncome: d ? d.income / d.count : 0, avgExpenses: d ? d.expenses / d.count : 0, sampleCount: d?.count ?? 0 };
   });
 
   return { topExpenseCategories, yearlySnapshots, seasonality };
@@ -468,11 +736,13 @@ export interface IncomeConcentration {
   isHighConcentration: boolean;
 }
 
-export async function getIncomeConcentration(userId: string): Promise<IncomeConcentration> {
+export async function getIncomeConcentration(userId: string, accountId?: string | null): Promise<IncomeConcentration> {
+  const acctFilter = accountId ? { accountId } : {};
+
   // Use payer-identity data: concentration is measured over verified payers only.
   // Anchored to the most recent income transaction, not to wall-clock today.
   const latestTx = await prisma.transaction.findFirst({
-    where:   { userId, transactionType: "income", payerId: { not: null } },
+    where:   { userId, ...acctFilter, transactionType: "income", payerId: { not: null } },
     orderBy: { transactionDate: "desc" },
     select:  { transactionDate: true },
   });
@@ -487,6 +757,7 @@ export async function getIncomeConcentration(userId: string): Promise<IncomeConc
   const incomeTxs = await prisma.transaction.findMany({
     where: {
       userId,
+      ...acctFilter,
       transactionType: "income",
       transactionDate: { gte: since },
       payerId:         { not: null },
@@ -700,11 +971,11 @@ function fmtUTCMonth(date: Date, locale: Locale): string {
   return date.toLocaleDateString(INTL_LOCALES[locale], { month: "long", year: "numeric", timeZone: "UTC" });
 }
 
-export async function getDataCoverage(userId: string): Promise<DataCoverage> {
+export async function getDataCoverage(userId: string, accountId?: string | null): Promise<DataCoverage> {
   const locale = (await getLocale()) as Locale;
 
   const agg = await prisma.transaction.aggregate({
-    where: { userId },
+    where: { userId, ...(accountId ? { accountId } : {}) },
     _count: { id: true },
     _min:   { transactionDate: true },
     _max:   { transactionDate: true },
@@ -734,6 +1005,78 @@ export async function getDataCoverage(userId: string): Promise<DataCoverage> {
     months: Math.round(span / msPerMonth),
     rangeLabel,
   };
+}
+
+// ── Gap detection ─────────────────────────────────────────────────────────────
+// Finds months within the user's data range that have zero income AND expenses.
+// These are likely missing bank statements rather than genuinely empty months.
+
+export interface DataGap {
+  month: number;
+  year:  number;
+  label: string;
+}
+
+export async function detectDataGaps(userId: string): Promise<DataGap[]> {
+  const locale = (await getLocale()) as Locale;
+
+  const [first, last] = await Promise.all([
+    prisma.monthlyAnalytics.findFirst({
+      where: { userId },
+      orderBy: [{ year: "asc" }, { month: "asc" }],
+    }),
+    prisma.monthlyAnalytics.findFirst({
+      where: { userId },
+      orderBy: [{ year: "desc" }, { month: "desc" }],
+    }),
+  ]);
+
+  if (!first || !last) return [];
+
+  // Need at least a 2-month span to report gaps meaningfully
+  const span = (last.year - first.year) * 12 + (last.month - first.month);
+  if (span < 2) return [];
+
+  const records = await prisma.monthlyAnalytics.findMany({
+    where: { userId },
+    select: { month: true, year: true, totalIncome: true, totalExpenses: true },
+  });
+
+  const monthsWithData = new Set(
+    records
+      .filter(r => Number(r.totalIncome) > 0 || Number(r.totalExpenses) > 0)
+      .map(r => `${r.year}-${r.month}`)
+  );
+
+  const gaps: DataGap[] = [];
+
+  // Walk from first+1 to last-1 (boundaries are anchor points, not gaps)
+  const cursor = new Date(Date.UTC(first.year, first.month, 1)); // first.month is 1-indexed, +1 here skips it
+  const end    = new Date(Date.UTC(last.year,  last.month - 1, 1)); // stop before last month
+
+  while (cursor < end) {
+    const m = cursor.getUTCMonth() + 1;
+    const y = cursor.getUTCFullYear();
+
+    if (!monthsWithData.has(`${y}-${m}`)) {
+      gaps.push({
+        month: m,
+        year:  y,
+        label: cursor.toLocaleDateString(INTL_LOCALES[locale], { month: "long", year: "numeric", timeZone: "UTC" }),
+      });
+    }
+
+    cursor.setUTCMonth(cursor.getUTCMonth() + 1);
+    if (gaps.length >= 12) break;
+  }
+
+  // If more than half the interior months are gaps, the user likely only
+  // uploaded selective months (not a continuous history with missing pieces).
+  // In that case report no gaps — we can't distinguish "missing" from "not yet uploaded".
+  const interiorMonths = span - 1;
+  if (interiorMonths > 0 && gaps.length / interiorMonths > 0.5) return [];
+
+  return gaps;
 }
 
 // ── Intent breakdown ──────────────────────────────────────────────────────────
@@ -821,6 +1164,7 @@ export async function getIntentBreakdown(
   userId: string,
   year?: number,
   month?: number,
+  accountId?: string | null,
 ): Promise<IntentBreakdown> {
   // Build date range filter — UTC-consistent with how parseDate() stores dates.
   const dateFilter =
@@ -830,7 +1174,7 @@ export async function getIntentBreakdown(
       ? { transactionDate: { gte: new Date(Date.UTC(year, 0, 1)), lt: new Date(Date.UTC(year + 1, 0, 1)) } }
       : {};
 
-  const base = { userId, ...dateFilter };
+  const base = { userId, ...(accountId ? { accountId } : {}), ...dateFilter };
 
   // Run all queries in parallel — independent of each other.
   const [
