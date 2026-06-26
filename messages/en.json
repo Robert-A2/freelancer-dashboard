@@ -647,6 +647,10 @@
       "message": "Your data is {days, plural, one {# day} other {# days}} old. Upload last month's statement to keep insights accurate.",
       "cta": "Upload →"
     },
+    "coverageStale": {
+      "message": "Your most recent data is from {month}. Upload recent months so the forecast and your insights reflect where you actually stand today.",
+      "cta": "Upload recent months"
+    },
     "emptyState": {
       "heading": "Built for freelancers",
       "body": "Upload your bank statement CSV to get cashflow clarity, intelligent insights, and forecasts designed specifically for freelance income patterns.",
@@ -924,6 +928,9 @@
       "moreHistoryNote": "More history produces a more reliable forecast.",
       "revenueMatchRate": "{pct}% of your income has been matched to a known client or income source — the rest came from payments we couldn't identify. Visit the Clients page to review.",
       "revenueMatchRateHigh": "{pct}% of your income has been matched to a known client or income source.",
+      "basedOnPayerRevenue": "Income projection is based on payments from verified and likely clients only — bank transfers, refunds, and unverified single payments are excluded.",
+      "basedOnTotalIncome": "Income projection is based on all bank inflows. Upload more transactions so the payer engine can identify your clients and produce a more accurate forecast.",
+      "excludedReviewRevenue": "{amount} in single-payment inflows excluded — these appear only once and cannot be reliably projected. Visit the Clients page to review.",
       "confidenceScore": "Confidence Score",
       "recurringExpensesLabel": "Recurring Expenses Detected",
       "recurringExpensesBody": "{amount}/month in stable, recurring costs identified. The expense projection will not drop below this floor.",

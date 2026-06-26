@@ -702,6 +702,9 @@ export function computeForecast(): ForecastResult | null {
     incompleteDataHistoricAvg,
     incompleteDataRecentMonths,
     incompleteDataHistoricMonths,
+    // Demo always uses real transaction data — no raw bank inflows mixed in
+    usedPayerRevenue:      true,
+    excludedReviewRevenue: 0,
   };
 }
 

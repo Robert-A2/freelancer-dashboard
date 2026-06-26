@@ -55,6 +55,11 @@ export interface ForecastResult {
   incompleteDataHistoricAvg:    number | null;
   incompleteDataRecentMonths:   number | null;
   incompleteDataHistoricMonths: number | null;
+
+  // Payer revenue basis — whether forecast used verified+likely client payments
+  // (true) or fell back to raw totalIncome (false, payer engine not run yet)
+  usedPayerRevenue:      boolean;
+  excludedReviewRevenue: number;   // single-payment inflows excluded from projection
 }
 
 // ── Intent group constants ────────────────────────────────────────────────────
@@ -292,6 +297,8 @@ interface StoredBreakdown {
   incompleteDataHistoricAvg:    number | null;
   incompleteDataRecentMonths:   number | null;
   incompleteDataHistoricMonths: number | null;
+  usedPayerRevenue:       boolean;
+  excludedReviewRevenue:  number;
 }
 
 // ── generateForecast ──────────────────────────────────────────────────────────
@@ -320,14 +327,26 @@ export async function generateForecast(userId: string): Promise<ForecastResult |
   }
   const savings  = records.map(r => Number(r.totalSavings));
 
-  let projectedIncome   = weightedAvg(incomes);
+  // Payer-derived income series: verified (3+ payments / cadence) + likely (2+ payments).
+  // Excludes bank transfers, government payments, refund sources, and single-payment
+  // unknowns (reviewRevenue) — none of those can be reliably projected forward.
+  // Falls back to totalIncome only when the payer engine hasn't run yet (all zeros).
+  const payerIncomes = records.map(r => Number(r.verifiedRevenue) + Number(r.likelyRevenue));
+  const usedPayerRevenue = payerIncomes.some(v => v > 0);
+  const activeIncomes = usedPayerRevenue ? payerIncomes : incomes;
+  // Single-payment inflows excluded from projection — surfaced to the user for transparency
+  const excludedReviewRevenue = usedPayerRevenue
+    ? records.reduce((s, r) => s + Number(r.reviewRevenue), 0)
+    : 0;
+
+  let projectedIncome   = weightedAvg(activeIncomes);
   let projectedExpenses = weightedAvg(expenses);
   const projectedSavings  = weightedAvg(savings);
   let seasonallyAdjusted  = false;
 
   // Weighted-average breakdown for income — stored so the UI can show
   // exactly how each tier contributed, making the weighting fully auditable.
-  const incomeBreakdown = computeWeightBreakdown(incomes);
+  const incomeBreakdown = computeWeightBreakdown(activeIncomes);
 
   // ── 1. Recurring expense floor ─────────────────────────────────────────────
   const recurringResult  = await detectRecurringExpenses(userId, records);
@@ -353,10 +372,10 @@ export async function generateForecast(userId: string): Promise<ForecastResult |
     const nextDate    = new Date(Date.UTC(lastDate.getUTCFullYear(), lastDate.getUTCMonth() + 1, 1));
     const nextMonthNum = nextDate.getUTCMonth() + 1; // 1–12
 
-    const incSeasonMap  = buildSeasonalMap(records.map(r => ({ month: r.month, value: Number(r.totalIncome) })));
+    const incSeasonMap  = buildSeasonalMap(records.map((r, i) => ({ month: r.month, value: activeIncomes[i] })));
     const expSeasonMap  = buildSeasonalMap(records.map(r => ({ month: r.month, value: Number(r.totalExpenses) })));
 
-    const avgIncome   = simpleAvg(incomes);
+    const avgIncome   = simpleAvg(activeIncomes);
     const avgExpenses = simpleAvg(expenses);
     const blend       = records.length >= 24 ? 0.5 : 0.3;
 
@@ -407,7 +426,7 @@ export async function generateForecast(userId: string): Promise<ForecastResult |
   const classifiedPct = totalTxCount > 0 ? (classifiedTxCount / totalTxCount) * 100 : 0;
 
   // ── 5. Confidence score ───────────────────────────────────────────────────
-  const confidenceResult = computeConfidence(n, incomes, expenses, gapFraction, classifiedPct);
+  const confidenceResult = computeConfidence(n, activeIncomes, expenses, gapFraction, classifiedPct);
   const confidence = confidenceResult.level;
 
   // ── 6. Incomplete data detection ─────────────────────────────────────────
@@ -419,9 +438,9 @@ export async function generateForecast(userId: string): Promise<ForecastResult |
   let incompleteDataRecentMonths:   number | null = null;
   let incompleteDataHistoricMonths: number | null = null;
 
-  if (incomes.length >= 3) {
-    const recentSlice  = incomes.slice(-2);
-    const historicSlice = incomes.slice(0, -2);
+  if (activeIncomes.length >= 3) {
+    const recentSlice  = activeIncomes.slice(-2);
+    const historicSlice = activeIncomes.slice(0, -2);
     const recentAvg    = simpleAvg(recentSlice);
     const historicAvg  = simpleAvg(historicSlice);
 
@@ -436,7 +455,7 @@ export async function generateForecast(userId: string): Promise<ForecastResult |
     }
   }
   // Single recent zero month after non-zero history
-  if (incomes.length >= 2 && incomes[incomes.length - 1] === 0 && simpleAvg(incomes.slice(0, -1)) > 200) {
+  if (activeIncomes.length >= 2 && activeIncomes[activeIncomes.length - 1] === 0 && simpleAvg(activeIncomes.slice(0, -1)) > 200) {
     hasIncompleteDataWarning = true;
     // Override the computed averages to reflect the actual trigger
     if (incompleteDataRecentAvg === null) {
@@ -538,6 +557,8 @@ export async function generateForecast(userId: string): Promise<ForecastResult |
     incompleteDataHistoricAvg,
     incompleteDataRecentMonths,
     incompleteDataHistoricMonths,
+    usedPayerRevenue,
+    excludedReviewRevenue,
   };
 
   const forecastValues = {
@@ -596,6 +617,8 @@ export async function generateForecast(userId: string): Promise<ForecastResult |
     incompleteDataHistoricAvg,
     incompleteDataRecentMonths,
     incompleteDataHistoricMonths,
+    usedPayerRevenue,
+    excludedReviewRevenue,
   };
 }
 
@@ -663,5 +686,7 @@ export async function getLatestForecast(userId: string): Promise<ForecastResult 
     incompleteDataHistoricAvg:    ib?.incompleteDataHistoricAvg    ?? null,
     incompleteDataRecentMonths:   ib?.incompleteDataRecentMonths   ?? null,
     incompleteDataHistoricMonths: ib?.incompleteDataHistoricMonths ?? null,
+    usedPayerRevenue:      ib?.usedPayerRevenue      ?? false,
+    excludedReviewRevenue: ib?.excludedReviewRevenue ?? 0,
   };
 }

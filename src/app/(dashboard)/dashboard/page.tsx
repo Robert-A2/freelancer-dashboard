@@ -201,6 +201,19 @@ export default async function DashboardPage({
     : null;
   const dataIsStale = daysSinceImport !== null && daysSinceImport > 28;
 
+  // Coverage staleness: detects when the transaction data itself ends many months
+  // before today — regardless of when the user last imported. A user who uploaded
+  // three years of old statements would have a recent import date but stale coverage.
+  const _now = new Date();
+  const coverageMonthsAgo = coverage.latest != null
+    ? (_now.getFullYear() - coverage.latest.getUTCFullYear()) * 12 +
+      (_now.getMonth() - coverage.latest.getUTCMonth())
+    : null;
+  const coverageIsStale = coverageMonthsAgo !== null && coverageMonthsAgo >= 2 && hasData;
+  const coverageLatestLabel = coverage.latest != null
+    ? coverage.latest.toLocaleDateString(INTL_LOCALES[locale], { month: "long", year: "numeric", timeZone: "UTC" })
+    : null;
+
   // Fix 3: First-upload detection — show welcome banner on first arrival after upload
   const isFirstUpload = params.firstUpload === "true" && hasData;
 
@@ -245,8 +258,18 @@ export default async function DashboardPage({
         )}
       </div>
 
-      {/* Data freshness prompt */}
-      {dataIsStale && (
+      {/* Data freshness — coverage stale (data ends months ago) takes priority over
+          import-date stale (haven't imported recently but data itself is current) */}
+      {coverageIsStale && coverageLatestLabel ? (
+        <div className="flex items-center justify-between gap-4 px-4 py-3 bg-[#D4A25412] border border-[#D4A25432] rounded-xl">
+          <p className="text-sm text-[#D4A254]">
+            {t("coverageStale.message", { month: coverageLatestLabel })}
+          </p>
+          <Link href="/upload" className="text-xs font-semibold text-[#D4A254] hover:text-[#E8F0F8] transition-colors flex-shrink-0 bg-[#D4A25420] px-3 py-1.5 rounded-lg">
+            {t("coverageStale.cta")}
+          </Link>
+        </div>
+      ) : dataIsStale ? (
         <div className="flex items-center justify-between gap-4 px-4 py-3 bg-[#D4A25412] border border-[#D4A25432] rounded-xl">
           <p className="text-sm text-[#D4A254]">
             {t("staleData.message", { days: daysSinceImport ?? 0 })}
@@ -255,7 +278,7 @@ export default async function DashboardPage({
             {t("staleData.cta")}
           </Link>
         </div>
-      )}
+      ) : null}
 
       {/* Data coverage banner */}
       {hasData && <DataCoverageBar coverage={coverage} lastImportedAt={lastImport?.importedAt ?? null} />}

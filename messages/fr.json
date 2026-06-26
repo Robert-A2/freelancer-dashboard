@@ -647,6 +647,10 @@
       "message": "Vos données datent de {days, plural, one {# jour} other {# jours}}. Importez le relevé du mois dernier pour conserver des analyses fiables.",
       "cta": "Importer →"
     },
+    "coverageStale": {
+      "message": "Vos données les plus récentes datent de {month}. Importez les mois récents pour que les prévisions et vos analyses reflètent votre situation réelle aujourd'hui.",
+      "cta": "Importer les mois récents"
+    },
     "emptyState": {
       "heading": "Conçu pour les freelances",
       "body": "Importez votre relevé bancaire CSV pour obtenir une vision claire de votre trésorerie, des analyses intelligentes et des prévisions conçues spécifiquement pour les revenus de freelance.",
@@ -924,6 +928,9 @@
       "moreHistoryNote": "Plus d'historique permet une prévision plus fiable.",
       "revenueMatchRate": "{pct} % de vos revenus ont été associés à un client ou une source connue — le reste provient de paiements non identifiés. Consultez la page Clients pour vérifier.",
       "revenueMatchRateHigh": "{pct} % de vos revenus ont été associés à un client ou une source de revenus connue.",
+      "basedOnPayerRevenue": "La projection de revenus est basée uniquement sur les paiements de clients vérifiés et probables — les virements bancaires, remboursements et paiements non vérifiés sont exclus.",
+      "basedOnTotalIncome": "La projection de revenus est basée sur tous les flux entrants. Importez plus de transactions pour que le moteur de reconnaissance identifie vos clients et produise une prévision plus précise.",
+      "excludedReviewRevenue": "{amount} d'entrées à paiement unique exclus — ces montants n'apparaissent qu'une seule fois et ne peuvent pas être projetés. Consultez la page Clients pour vérifier.",
       "confidenceScore": "Score de confiance",
       "recurringExpensesLabel": "Dépenses récurrentes détectées",
       "recurringExpensesBody": "{amount}/mois en coûts récurrents stables identifiés. La projection des dépenses ne tombera pas en dessous de ce plancher.",

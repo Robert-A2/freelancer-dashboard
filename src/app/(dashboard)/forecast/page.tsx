@@ -90,6 +90,16 @@ export default async function ForecastPage() {
   // to appear instead of the empty state.
   const hasData = chartData.some(d => d.income > 0 || d.expenses > 0);
 
+  const _now = new Date();
+  const coverageMonthsAgo = coverage.latest != null
+    ? (_now.getFullYear() - coverage.latest.getUTCFullYear()) * 12 +
+      (_now.getMonth() - coverage.latest.getUTCMonth())
+    : null;
+  const coverageIsStale = coverageMonthsAgo !== null && coverageMonthsAgo >= 2 && hasData;
+  const coverageLatestLabel = coverage.latest != null
+    ? coverage.latest.toLocaleDateString(INTL_LOCALES[locale], { month: "long", year: "numeric", timeZone: "UTC" })
+    : null;
+
   // ── Tax-payment months map ──────────────────────────────────────────────────
   // Used to adjust cashflow risk so that months where taxes were paid don't
   // count as "negative cashflow months" — paying taxes correctly is not a
@@ -233,6 +243,18 @@ export default async function ForecastPage() {
 
       {/* Data coverage — always visible so the user knows exactly what was analyzed */}
       {coverage.count > 0 && <DataCoverageBar coverage={coverage} />}
+
+      {/* Coverage stale — data ends many months before today */}
+      {coverageIsStale && coverageLatestLabel && (
+        <div className="flex items-center justify-between gap-4 px-4 py-3 bg-[#D4A25412] border border-[#D4A25432] rounded-xl">
+          <p className="text-sm text-[#D4A254]">
+            {td("coverageStale.message", { month: coverageLatestLabel })}
+          </p>
+          <Link href="/upload" className="text-xs font-semibold text-[#D4A254] hover:text-[#E8F0F8] transition-colors flex-shrink-0 bg-[#D4A25420] px-3 py-1.5 rounded-lg">
+            {td("coverageStale.cta")}
+          </Link>
+        </div>
+      )}
 
       {/* Data gaps — amber callout when interior months have no transactions */}
       {dataGaps.length > 0 && (
@@ -514,6 +536,15 @@ export default async function ForecastPage() {
                     ? t("howBuilt.revenueMatchRateHigh", { pct: String(revenueMatchPct) })
                     : t("howBuilt.revenueMatchRate", { pct: String(revenueMatchPct) })}
                 </p>
+              )}
+              {forecast?.usedPayerRevenue === true && (
+                <p className="text-[#4CC4A4]">· {t("howBuilt.basedOnPayerRevenue")}</p>
+              )}
+              {forecast?.usedPayerRevenue === false && (
+                <p className="text-[#D4A254]">· {t("howBuilt.basedOnTotalIncome")}</p>
+              )}
+              {forecast?.excludedReviewRevenue != null && forecast.excludedReviewRevenue > 0 && (
+                <p className="text-[#D4A254]">· {t("howBuilt.excludedReviewRevenue", { amount: formatCurrency(forecast.excludedReviewRevenue, locale) })}</p>
               )}
             </div>
           </div>
