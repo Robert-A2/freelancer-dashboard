@@ -58,6 +58,24 @@ flowchart TD
     G --> K["return ForecastResult"]
 ```
 
+**Payer revenue sourcing (Phase 6)** — before the weighted average is applied to income, the engine checks whether the Payer Identity Engine has produced payer-tier revenue data:
+
+```ts
+const payerIncomes = records.map(r => Number(r.verifiedRevenue) + Number(r.likelyRevenue));
+const usedPayerRevenue = payerIncomes.some(v => v > 0);
+const activeIncomes = usedPayerRevenue ? payerIncomes : incomes;
+const excludedReviewRevenue = usedPayerRevenue
+  ? records.reduce((s, r) => s + Number(r.reviewRevenue), 0)
+  : 0;
+```
+
+- `verifiedRevenue` = clients with ≥3 payments (HIGH confidence tier)
+- `likelyRevenue` = clients with ≥2 payments (MEDIUM confidence tier)
+- `reviewRevenue` = single-payment inflows (LOW confidence, excluded from projection)
+- If the payer engine has not yet run (all payer fields are 0), `activeIncomes` falls back to `incomes` (plain `totalIncome`), so the projection still works for new users.
+
+All projection, seasonal, confidence, and incomplete-data checks use `activeIncomes`. The `usedPayerRevenue` flag and the `excludedReviewRevenue` amount are persisted in the `StoredBreakdown` blob so the Forecast page can show the correct disclosure ("based on verified client payments" vs "based on all bank inflows").
+
 **Where `records` comes from**: every row of `MonthlyAnalytics` for this user, oldest first — the *entire* history, not just the last N months. Older months still influence the projection via the weighted average (§3), just with a smaller weight.
 
 **Called from** (always immediately after `recalculateMonthlyAnalytics(userId)`):
@@ -319,6 +337,10 @@ export interface ForecastResult {
   incompleteDataHistoricAvg:    number | null;   // avg income of all prior months
   incompleteDataRecentMonths:   number | null;
   incompleteDataHistoricMonths: number | null;
+
+  // Payer revenue sourcing (Phase 6 — see §2 "Payer revenue sourcing")
+  usedPayerRevenue:      boolean;  // true when projection used verifiedRevenue + likelyRevenue instead of totalIncome
+  excludedReviewRevenue: number;   // sum of reviewRevenue across all months — single-payment inflows excluded from projection
 }
 ```
 

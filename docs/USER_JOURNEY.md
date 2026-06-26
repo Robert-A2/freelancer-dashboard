@@ -213,27 +213,34 @@ Once `hasData = true`, the full dashboard renders (data fetching covered in [ARC
 | Section | Component | Driven by |
 |---|---|---|
 | Account filter bar | `<AccountFilterBar>` | `prisma.account.findMany` — pill row above the header showing "All accounts" + one pill per uploaded account with a colored dot. Only renders when the user has **2 or more** accounts; new users never see it. Clicking a pill sets `?accountId=xxx` in the URL; all dashboard data functions filter to that account. Uses `?accountId` URL param — navigation is a plain `<Link>` (no JS state). |
-| Header | inline JSX | `intel.healthStatus` badge (links to `/forecast`), `transactionsMonths` subtitle |
+| Header (verdict-first) | inline JSX | `h1` = "How is my business doing?" (when `hasData`). Below the title: a colored one-line verdict (`verdictHealthy` / `verdictWatch` / `verdictAtRisk`) driven by `intel.healthStatus`. `welcomeBack` name line renders *above* the title in smaller text. Below the verdict: "Based on data through {date}" derived from `coverage.latest`. |
+| Stale coverage banner | inline JSX | Shown when `coverageIsStale` — i.e. `coverage.latest` is 2+ months before today. Amber box: "Your most recent data is from {month}. Upload recent months…" Only users whose data ends before the current period see this. |
 | Data coverage | `<DataCoverageBar>` | `getDataCoverage(userId, accountId?)` |
-| Summary cards | `<SummaryCards>` | `current`/`previous` totals, `riskLevel`, `intel.snapshotSummary`/`snapshotContext` |
+| Summary cards | `<SummaryCards>` | `current`/`previous` totals, `riskLevel`, `intel.snapshotSummary`/`snapshotContext` — the narrative block now renders **above** the number grid (verdict-first). |
 | Trends chart | `<TrendsChart>` | `chartData` (12-month `MonthPoint[]`), `intel.trajectoryInsight`/`trajectoryDetails` — **clickable**: tapping a month opens `<MonthDrawer>` with a 2-level drill-down (month totals → category → transactions) |
 | Forecast widget | `<ForecastWidget>` | `forecast` (`getLatestForecast`), `intel.forecastReasons`/`forecastImprovements`/`cashflowDeficitReason` — **hidden when `accountId` is set** (forecast is user-wide; showing it per-account would display invented data) |
-| Monthly comparison | `<MonthlyComparisonWidget>` | `comparison` (`getMonthlyComparison`), `intel.comparisonInterpretation` |
+| Monthly comparison | `<MonthlyComparisonWidget>` | `comparison` (`getMonthlyComparison`), `intel.comparisonInterpretation`. Receives `isDataRecent={!coverageIsStale}` — when `false`, the section label switches from "Should I feel better than last month?" to "Was {currMonth} better than {prevMonth}?" and verdicts use past-tense historical phrasing. |
 | Recent transactions | `<RecentTransactions>` | `recent` (last transactions from `getDashboardSummary`, including `intent`/`intentConfidence`/`needsReview` and `accountName`/`accountColor` for the account badge on each row), `intel.notableTransactions` — **clickable**: each row opens a `<TransactionDrawer>` with full intent context (no API call — data is passed from server at page load) |
 | Historical insights | `<HistoricalInsights>` | `rankedInsights` (`buildHistoricalInsights`) — only rendered if non-empty |
 
 `riskLevel` (low/medium/high/critical) is computed inline on this page using the **same formula** as the Forecast page's cashflow-risk calculation — see [FORECAST_ENGINE.md §9](./FORECAST_ENGINE.md) and [INTELLIGENCE_ENGINE.md](./INTELLIGENCE_ENGINE.md) for why these two pages are kept in lock-step.
 
-A "stale data" flag (`dataIsStale`, >28 days since the last completed import) is computed but used for a freshness hint rather than blocking anything.
+**Coverage staleness vs. data age**: two separate signals are tracked. `dataIsStale` (>28 days since the last import) is a freshness hint. `coverageIsStale` (`coverageMonthsAgo >= 2`, where `coverageMonthsAgo` = months between `coverage.latest` and today) indicates the transaction data ends before the current period — this drives both the amber stale-coverage banner and `isDataRecent` for the monthly comparison widget.
 
 ---
 
 ## 12. Analytics (`/analytics`)
 
-**File**: `src/app/(dashboard)/analytics/page.tsx` (384 lines). Same auth-check + `force-dynamic` pattern. Fetches `getHistoricalData`, `getCategoryInsights`, `getClientInsights`, `getDataCoverage`, `getIncomeConcentration`, `getCategorizationHealth`, plus `buildHistoricalInsights()` for the **"Financial Story"** section.
+**File**: `src/app/(dashboard)/analytics/page.tsx`. Same auth-check + `force-dynamic` pattern. Fetches `getHistoricalData`, `getCategoryInsights`, `getClientInsights`, `getDataCoverage`, `getIncomeConcentration`, `getCategorizationHealth`, plus `buildHistoricalInsights()` for the **"Financial Story"** section.
+
+**Page question**: "What is working and what is hurting?" (shown in `h1` when `hasData`).
+
+**Habit verdict block** — rendered immediately below the header, before any numbers. Uses `dataYear` (anchored to the user's latest data record) vs `prevYear` to compare YTD income and expenses. Four states: `growingIncomeStableExp` (green) · `growingIncomeGrowingExp` (amber) · `decliningIncome` (red) · `stableAll` (neutral). All verdict strings embed the exact years being compared (e.g. "Income in 2023 was lower than 2022") — never "last year" or "this year" — so the verdict is unambiguous regardless of when the user views it. Only shown when `showPrevYearComparison` is true (prior-year data actually covers a full comparable window).
+
+**Year-aware labels** — every label that previously said "last yr", "this year", or "last year" on this page now uses the explicit year number. `lastYr` shows "{amount} in {year}", `marginLastYr` shows "{pct}% in {year}", and client-section labels like "First-time clients who paid this year" render as "First-time clients who paid in {dataYear}". This applies to the `<ClientInsights>` component (receives `dataYear` as a prop) and all habit verdict strings. The rule: the product never implies a year — it always states it.
 
 Rendered sections (each a `<CollapsibleSection>`):
-- **YTD summary** — anchored to the user's *last data month* (`latestDataRecord`), not wall-clock "today" — consistent with the "anchor to the data" principle (see [ANALYTICS_ENGINE.md](./ANALYTICS_ENGINE.md)).
+- **YTD summary** — anchored to the user's *last data month* (`latestDataRecord`), not wall-clock "today" — consistent with the "anchor to the data" principle (see [ANALYTICS_ENGINE.md](./ANALYTICS_ENGINE.md)). Comparison tiles show "{amount} in {prevYear}" rather than "last yr".
 - **Cashflow chart** (`<CashflowChart>`, Recharts) — income/expenses/cashflow over time. **Clickable**: tapping a bar opens `<MonthDrawer>` (shared with TrendsChart) with the same 2-level drill-down (month overview with Cashflow/Expenses/Income tabs → category → transactions).
 - **Client insights** (`<ClientInsights>`) — from `getClientInsights()`, income concentration / top clients. The section footer links to `/clients` (also directly reachable via the top Navbar and mobile bottom tab since Clients was added to `NAV_LINKS`).
 - **Financial Story** (`<FinancialStory>`) — renders `rankedInsights` (the same `buildHistoricalInsights()` output used on the Dashboard, see [INTELLIGENCE_ENGINE.md §5](./INTELLIGENCE_ENGINE.md)), grouped by `InsightCategory`.
@@ -247,6 +254,10 @@ Analytics does **not** call `generateDashboardIntelligence()` — it only uses t
 
 **Files**: `src/app/(dashboard)/clients/page.tsx` (list), `src/app/(dashboard)/clients/[name]/page.tsx` (detail). Both are server components with `force-dynamic`. Data comes entirely from `getClientRiskProfiles(userId)` in `src/lib/client-risk-engine.ts`.
 
+**Page question**: "Who can I depend on?" (shown in `h1`).
+
+**Verdict line** — immediately below the title: a count-based colored verdict driven by `currentCount` and `followUpCount`. Green when all clients are reliable, amber when some need follow-up, red when all need attention.
+
 **List page** shows: total clients, reliable / watch / high-risk counts, alert bar for RED-status clients, full ranked client table with status badge, last payment date, revenue contribution bar, and total revenue. Each row links to the detail page via `/clients/[encodeURIComponent(name)]`.
 
 **Detail page** shows (in order):
@@ -259,13 +270,25 @@ Analytics does **not** call `generateDashboardIntelligence()` — it only uses t
 7. **Payment Timeline** — chronological list (oldest first, capped at 24 most recent), with gap labels between each payment, unusual-gap flagging (>1.5× average interval and >30 days), proportional amount bars, and "First", "Largest", and "Most recent" badges.
 8. **Insights and Recommended Actions** — auto-generated from actual data (reliable, delay warning, dependency, decline, single-payment) and actions (Follow up / Monitor / No action needed).
 
+**Follow-up threshold**: a client only receives a follow-up action / `risk` status if `paymentCount >= 3`. Clients with 1–2 payments have no established cadence — they may become `watch` if their gap is unusual, but never `risk` and never trigger a follow-up alert. Long-inactive clients (gap ≥ inactive threshold: `min(max(avgInterval × 3, 180 days), 548 days)`) are labeled `inactive` — no follow-up implied. Payment processors are always excluded from follow-up actions regardless of gap.
+
+**Per-client verdict**: the detail page shows a colored verdict line under the client name — e.g. "Yes — Acme Ltd is paying consistently" (green) · "Follow up needed — Acme Ltd is overdue" (red) — driven by `client.status`.
+
 **Date anchoring exception**: `client-risk-engine.ts` uses `new Date()` (real wall-clock today) for `currentGapDays` and the 6-month trend window. Every other analytics engine anchors to the user's last data point — this page is the intentional exception because client risk questions are real-world ("is this client overdue *right now*?"), not historical.
 
 ---
 
 ## 13. Forecast (`/forecast`)
 
-**File**: `src/app/(dashboard)/forecast/page.tsx` (466 lines). Calls `generateForecast(userId)` (regenerates on every page load — see [FORECAST_ENGINE.md §2](./FORECAST_ENGINE.md) for why this is cheap and idempotent) plus the same analytics-engine calls as the Dashboard, then `generateDashboardIntelligence()`.
+**File**: `src/app/(dashboard)/forecast/page.tsx`. Calls `generateForecast(userId)` (regenerates on every page load — see [FORECAST_ENGINE.md §2](./FORECAST_ENGINE.md) for why this is cheap and idempotent) plus the same analytics-engine calls as the Dashboard, then `generateDashboardIntelligence()`.
+
+**Page question**: "Should I worry about next month?" (shown in `h1` when `hasData`).
+
+**Verdict subtitle** — immediately below the title: a one-line answer colored by `cashflowRisk`. Low → "No — your cashflow is consistently positive." · Medium → "Stay alert — some months show cashflow pressure." · High → "Yes, be careful…" · Critical → "Take action now…"
+
+**Stale coverage banner** — same `coverageIsStale` logic as the Dashboard. Shown between `<DataCoverageBar>` and the main sections when data ends 2+ months before today.
+
+**Payer revenue disclosure** — when `forecast.usedPayerRevenue` is true, the "How This Forecast Was Built" panel shows a green disclosure: "Income projection is based on payments from verified and likely clients only." When false (fallback to total income), it shows an amber prompt to upload more data. If `excludedReviewRevenue > 0`, an additional line names the excluded amount: "€{amount} in single-payment inflows excluded."
 
 Rendered sections (in page order):
 1. **Health overview row** — a 3-column grid: **Business Health Score** (0–100, see [FORECAST_ENGINE.md §8](./FORECAST_ENGINE.md)) + **Cashflow Risk** badge (see [FORECAST_ENGINE.md §9](./FORECAST_ENGINE.md)) + **Business Direction** card (`intel.businessTrendDirection` + `intel.trajectoryInsight`). Followed by an optional health-status narrative banner.

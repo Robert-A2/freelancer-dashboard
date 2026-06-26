@@ -77,7 +77,7 @@ export type ReliabilityScore = "excellent" | "good" | "watch" | "risk" | "inacti
 | Avg interval | Average of (n−1) day-gaps between consecutive sorted payment dates |
 | Current gap | `floor((today - lastPaymentDate) / 86400s)` — uses real today, not data-anchor date |
 | Inactive threshold | `min(max(avgInterval × 3, 180 days), 548 days)` — avoids false alarms for quarterly / annual payers |
-| Status | `current`: gap ≤ avgInterval×1.2 · `watch`: gap ≤ avgInterval×1.5 · `risk`: gap > avgInterval×1.5 · `inactive`: gap ≥ inactive threshold |
+| Status | `inactive`: gap ≥ inactive threshold (checked first, regardless of paymentCount). For clients with `paymentCount < 3` (no established cadence — never assigned `risk`): `watch` if gap > avgInterval×1.2, else `current`. For clients with `paymentCount ≥ 3`: `risk` if gap > avgInterval×1.5 · `watch` if gap > avgInterval×1.2 · else `current`. |
 | Dependency risk | LOW: 0–25% · MEDIUM: 25–50% · HIGH: 50%+ |
 | Revenue trend | Last 3-month avg vs prev 3-month avg across a 6-month window ending today · >10% = Increasing · <−10% = Declining |
 | Reliability score | `inactive status → "inactive"` · `risk → "risk"` · `watch → "watch"` · `current + ≥6 payments + ≥4 months active + not declining → "excellent"` · `current + ≥3 payments → "good"` · else `"watch"` |

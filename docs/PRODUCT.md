@@ -66,6 +66,23 @@ From `landing.philosophy.items` — three statements that double as design princ
 
 > **Why this table matters for maintenance**: every bullet on the landing page is a *promise*. If you change or remove how `biggestRisk`/`biggestOpportunity` are computed, for example, and the landing page still says "specific recommendations… from your own financial data," the product copy and the product behavior have drifted apart. When changing an engine, check this table for a corresponding landing-page promise.
 
+### 4a. Verdict-first page design
+
+Each page in the app is structured to answer **one human question** before presenting any numbers. The question appears in the `h1`; the answer (a colored verdict) appears immediately below it; the supporting data follows as evidence. The mapping:
+
+| Page | Question answered | Verdict source |
+|---|---|---|
+| `/dashboard` | "How is my business doing?" | `intel.healthStatus` → green / amber / red verdict |
+| `<MonthlyComparison>` | "Should I feel better than last month?" (or "Was {month} better than {prev}?" for historical data) | Income + cashflow change direction |
+| `/forecast` | "Should I worry about next month?" | `cashflowRisk` level → one-line answer |
+| `/clients` | "Who can I depend on?" | Count of reliable vs. follow-up clients |
+| `/clients/[name]` | "Can I depend on this client?" | Per-client `status` → verdict sentence |
+| `/analytics` | "What is working and what is hurting?" | Year-over-year income + expense comparison |
+
+**Why this matters**: a dashboard that shows fifty numbers and labels them all equally leaves the user to form their own conclusion under cognitive load. Leading with the verdict — and colouring it — tells the user how to feel before they read the numbers. The numbers then serve as *evidence* for a conclusion already stated, rather than a puzzle to solve. Any new page or card added to the product should follow this pattern: ask yourself "what is the one question this answers?" and make that question the `h1`.
+
+**Historical data handling**: when `coverageIsStale` (data ends 2+ months before today), present-tense questions switch to past-tense. "Should I feel better than last month?" becomes "Was April 2023 better than March 2023?" — so the verdict is always accurate about *what period it describes*. See [USER_JOURNEY.md §11](./USER_JOURNEY.md) for the `isDataRecent` prop and [USER_JOURNEY.md §12](./USER_JOURNEY.md) for year-explicit labels on the Analytics page.
+
 ---
 
 ## 5. The interactive demo — landing page trust experience
