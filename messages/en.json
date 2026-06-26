@@ -977,10 +977,10 @@
     "subtitle": "Deep dive into your financial patterns",
     "subtitleHabits": "Here's what your data reveals about your habits.",
     "habitVerdict": {
-      "growingIncomeStableExp": "Your income is growing and spending is under control.",
-      "growingIncomeGrowingExp": "Income is up — but costs are rising too. Watch where the growth is going.",
-      "decliningIncome": "Income is lower than last year. Worth understanding what changed.",
-      "stableAll": "Income and spending are consistent year over year.",
+      "growingIncomeStableExp": "Income grew from {prevYear} to {dataYear}, with spending under control.",
+      "growingIncomeGrowingExp": "Income rose from {prevYear} to {dataYear} — but costs rose too. Watch where the growth is going.",
+      "decliningIncome": "Income in {dataYear} was lower than {prevYear}. Worth understanding what changed.",
+      "stableAll": "Income and spending were consistent from {prevYear} to {dataYear}.",
       "noComparison": "Upload data from more than one year to see your habit patterns."
     },
     "emptyState": {
@@ -998,8 +998,8 @@
       "subtitleCurrent": "Your totals for this period so far.",
       "noComparisonYet": "Year-over-year comparison will appear once a full year of history has been collected.",
       "missingMonthsNote": "{count, plural, one {# month} other {# months}} in this period have no data — upload those statements to make this comparison accurate.",
-      "lastYr": "{amount} last yr",
-      "marginLastYr": "{pct}% last yr",
+      "lastYr": "{amount} in {year}",
+      "marginLastYr": "{pct}% in {year}",
       "ofIncomeKept": "of income kept"
     },
     "cashflowSection": {
@@ -1112,7 +1112,7 @@
         "title": "Client growth",
         "subtitle": "Year-over-year revenue change by client",
         "noDirectClients": "No direct client data. Income from payment processors only.",
-        "thisYear": "{amount} this year"
+        "thisYear": "{amount} in {dataYear}"
       },
       "activity": {
         "title": "Client activity alerts",
@@ -1124,9 +1124,9 @@
       },
       "newClients": {
         "title": "New client acquisition",
-        "subtitle": "First-time clients who paid this year",
-        "noneDetected": "No new direct clients detected this year.",
-        "summary": "<b>{count, plural, one {# new client} other {# new clients}} ·</b> {amount} in new revenue this year"
+        "subtitle": "First-time clients who paid in {dataYear}",
+        "noneDetected": "No new direct clients detected in {dataYear}.",
+        "summary": "<b>{count, plural, one {# new client} other {# new clients}} ·</b> {amount} in new revenue in {dataYear}"
       },
       "strongest": {
         "title": "Strongest client relationship",

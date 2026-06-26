@@ -4,9 +4,9 @@ import type { ClientInsightsData } from "@/lib/analytics-engine";
 import { formatCurrency } from "@/utils/finance";
 import Link from "next/link";
 
-interface Props { data: ClientInsightsData; }
+interface Props { data: ClientInsightsData; dataYear: number; }
 
-export default async function ClientInsights({ data }: Props) {
+export default async function ClientInsights({ data, dataYear }: Props) {
   const {
     clients, topClientShare, hasConcentrationRisk,
     activeClients, avgClientsPerMonth, newClientsThisYear,
@@ -146,7 +146,7 @@ export default async function ClientInsights({ data }: Props) {
                   <div className="min-w-0">
                     <p className="text-sm text-[#E8F0F8] truncate">{c.name}</p>
                     {c.currentYearRevenue > 0 && (
-                      <p className="text-xs text-[#6A97B4]">{t("growth.thisYear", { amount: formatCurrency(c.currentYearRevenue, locale) })}</p>
+                      <p className="text-xs text-[#6A97B4]">{t("growth.thisYear", { amount: formatCurrency(c.currentYearRevenue, locale), dataYear: String(dataYear) })}</p>
                     )}
                   </div>
                   {yoyChip(c.yoyGrowth)}
@@ -197,9 +197,9 @@ export default async function ClientInsights({ data }: Props) {
         {/* New clients this year */}
         <div className="card">
           <p className="label mb-1">{t("newClients.title")}</p>
-          <p className="text-[13px] text-[#6A97B4] mb-4">{t("newClients.subtitle")}</p>
+          <p className="text-[13px] text-[#6A97B4] mb-4">{t("newClients.subtitle", { dataYear: String(dataYear) })}</p>
           {newClientsThisYear.length === 0 ? (
-            <p className="text-sm text-[#6A97B4]">{t("newClients.noneDetected")}</p>
+            <p className="text-sm text-[#6A97B4]">{t("newClients.noneDetected", { dataYear: String(dataYear) })}</p>
           ) : (
             <div className="space-y-3">
               {newClientsThisYear.slice(0, 5).map(c => (
@@ -216,6 +216,7 @@ export default async function ClientInsights({ data }: Props) {
                   {t.rich("newClients.summary", {
                     count: newClientsThisYear.length,
                     amount: formatCurrency(newClientsThisYear.reduce((s, c) => s + c.totalRevenue, 0), locale),
+                    dataYear: String(dataYear),
                     b: (chunks) => <span className="text-[#E8F0F8] font-medium">{chunks}</span>,
                   })}
                 </p>

@@ -977,10 +977,10 @@
     "subtitle": "Analyse approfondie de vos habitudes financières",
     "subtitleHabits": "Voici ce que vos données révèlent sur vos habitudes.",
     "habitVerdict": {
-      "growingIncomeStableExp": "Vos revenus augmentent et vos dépenses sont maîtrisées.",
-      "growingIncomeGrowingExp": "Les revenus augmentent — mais les coûts aussi. Surveillez où va cette croissance.",
-      "decliningIncome": "Les revenus sont inférieurs à l'an dernier. Essayez de comprendre ce qui a changé.",
-      "stableAll": "Revenus et dépenses sont stables d'une année sur l'autre.",
+      "growingIncomeStableExp": "Les revenus ont augmenté de {prevYear} à {dataYear}, avec des dépenses maîtrisées.",
+      "growingIncomeGrowingExp": "Les revenus ont augmenté de {prevYear} à {dataYear} — mais les coûts aussi. Surveillez où va cette croissance.",
+      "decliningIncome": "Les revenus en {dataYear} étaient inférieurs à {prevYear}. Essayez de comprendre ce qui a changé.",
+      "stableAll": "Revenus et dépenses étaient stables de {prevYear} à {dataYear}.",
       "noComparison": "Importez des données sur plus d'un an pour voir vos tendances."
     },
     "emptyState": {
@@ -998,8 +998,8 @@
       "subtitleCurrent": "Vos totaux pour cette période.",
       "noComparisonYet": "La comparaison sur un an apparaîtra une fois qu'un historique complet d'un an aura été collecté.",
       "missingMonthsNote": "{count, plural, one {# mois} other {# mois}} de cette période n'ont pas de données — importez ces relevés pour rendre cette comparaison précise.",
-      "lastYr": "{amount} l'an dernier",
-      "marginLastYr": "{pct} % l'an dernier",
+      "lastYr": "{amount} en {year}",
+      "marginLastYr": "{pct} % en {year}",
       "ofIncomeKept": "des revenus conservés"
     },
     "cashflowSection": {
@@ -1122,7 +1122,7 @@
         "title": "Croissance des clients",
         "subtitle": "Évolution des revenus par client, d'une année sur l'autre",
         "noDirectClients": "Aucune donnée client directe. Revenus issus uniquement de processeurs de paiement.",
-        "thisYear": "{amount} cette année"
+        "thisYear": "{amount} en {dataYear}"
       },
       "activity": {
         "title": "Alertes d'activité client",
@@ -1134,9 +1134,9 @@
       },
       "newClients": {
         "title": "Acquisition de nouveaux clients",
-        "subtitle": "Clients ayant payé pour la première fois cette année",
-        "noneDetected": "Aucun nouveau client direct détecté cette année.",
-        "summary": "<b>{count, plural, one {# nouveau client} other {# nouveaux clients}} ·</b> {amount} de nouveaux revenus cette année"
+        "subtitle": "Clients ayant payé pour la première fois en {dataYear}",
+        "noneDetected": "Aucun nouveau client direct détecté en {dataYear}.",
+        "summary": "<b>{count, plural, one {# nouveau client} other {# nouveaux clients}} ·</b> {amount} de nouveaux revenus en {dataYear}"
       },
       "strongest": {
         "title": "Relation client la plus solide",

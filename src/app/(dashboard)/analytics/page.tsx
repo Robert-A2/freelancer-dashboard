@@ -181,12 +181,12 @@ export default async function AnalyticsPage() {
             {!showPrevYearComparison
               ? t("habitVerdict.noComparison")
               : pctChange(ytdInc, prevInc) > 0 && pctChange(ytdExp, prevExp) <= pctChange(ytdInc, prevInc)
-              ? t("habitVerdict.growingIncomeStableExp")
+              ? t("habitVerdict.growingIncomeStableExp", { prevYear: String(prevYear), dataYear: String(dataYear) })
               : pctChange(ytdInc, prevInc) > 0
-              ? t("habitVerdict.growingIncomeGrowingExp")
+              ? t("habitVerdict.growingIncomeGrowingExp", { prevYear: String(prevYear), dataYear: String(dataYear) })
               : pctChange(ytdInc, prevInc) < -5
-              ? t("habitVerdict.decliningIncome")
-              : t("habitVerdict.stableAll")}
+              ? t("habitVerdict.decliningIncome", { prevYear: String(prevYear), dataYear: String(dataYear) })
+              : t("habitVerdict.stableAll", { prevYear: String(prevYear), dataYear: String(dataYear) })}
           </p>
         </div>
       )}
@@ -234,7 +234,7 @@ export default async function AnalyticsPage() {
                 ].map((item) => {
                   const change = showPrevYearComparison ? pctChange(item.curr, item.prev) : null;
                   const displayVal    = formatCurrency(item.curr, locale);
-                  const prevDisplayVal = t("ytdSection.lastYr", { amount: formatCurrency(item.prev, locale) });
+                  const prevDisplayVal = t("ytdSection.lastYr", { amount: formatCurrency(item.prev, locale), year: String(prevYear) });
                   return (
                     <div key={item.key} className="bg-[#1A3048] rounded-xl p-4">
                       <p className="label mb-1">{item.label}</p>
@@ -262,7 +262,7 @@ export default async function AnalyticsPage() {
                       <ChangeChip value={ytdMargin - prevMargin} />
                     )}
                     {prevMargin !== null && showPrevYearComparison && (
-                      <span className="text-xs text-[#6A97B4]">{t("ytdSection.marginLastYr", { pct: String(prevMargin) })}</span>
+                      <span className="text-xs text-[#6A97B4]">{t("ytdSection.marginLastYr", { pct: String(prevMargin), year: String(prevYear) })}</span>
                     )}
                     {ytdMargin !== null && !showPrevYearComparison && (
                       <span className="text-xs text-[#6A97B4]">{t("ytdSection.ofIncomeKept")}</span>
@@ -394,7 +394,7 @@ export default async function AnalyticsPage() {
               title={t("clientSection.title")}
               subtitle={t("clientSection.subtitle")}
             >
-              <ClientInsights data={clientInsights} />
+              <ClientInsights data={clientInsights} dataYear={dataYear} />
               <div className="mt-4">
                 <Link href="/clients" className="inline-flex items-center gap-1.5 text-sm text-[#3AB5A0] hover:text-[#4CC4A4] font-medium transition-colors">
                   {t("clientSection.trustCenter")}
