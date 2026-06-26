@@ -41,11 +41,26 @@ export default async function ClientsPage() {
   return (
     <div className="space-y-8">
 
-      {/* Header */}
+      {/* Header — question first, verdict count below */}
       <div>
         <p className="label mb-1">{t("label")}</p>
         <h1 className="text-2xl font-bold">{t("title")}</h1>
-        <p className="text-[#7BA8C4] text-sm mt-0.5">{t("subtitle")}</p>
+        {clients.length > 0 ? (
+          <p className={`text-sm font-medium mt-0.5 ${
+            followUpCount === 0 ? "text-[#4CC4A4]" :
+            followUpCount < currentCount ? "text-[#D4A254]" :
+            "text-[#D97070]"
+          }`}>
+            {followUpCount === 0 && currentCount > 0
+              ? t("verdictAllReliable", { n: currentCount })
+              : currentCount > 0
+              ? t("verdictMixed", { current: currentCount, followUp: followUpCount })
+              : t("verdictAllNeedAttention", { n: clients.length })}
+          </p>
+        ) : (
+          <p className="text-[#7BA8C4] text-sm mt-0.5">{t("verdictNone")}</p>
+        )}
+        <p className="text-xs text-[#4A7A9B] mt-1">{t("subtitle")}</p>
       </div>
 
       {/* Intent data notice */}

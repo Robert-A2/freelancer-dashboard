@@ -635,7 +635,11 @@
     },
     "welcomeBack": "Bon retour, {name}.",
     "title": "Tableau de bord",
-    "showingDataThrough": "Données affichées jusqu'au {date}",
+    "questionTitle": "Comment va mon activité ?",
+    "verdictHealthy": "Tout va bien.",
+    "verdictWatch": "Quelques points méritent votre attention.",
+    "verdictAtRisk": "Votre activité est sous pression.",
+    "showingDataThrough": "D'après les données jusqu'au {date}",
     "noDataYet": "Aucune donnée importée pour l'instant",
     "transactionsMonths": "{transactions, plural, one {# transaction} other {# transactions}} · {months, plural, one {# mois} other {# mois}}",
     "health": {
@@ -714,14 +718,18 @@
       "weightedNote": "Les 3 derniers mois sont pondérés 3× plus que l'historique ancien"
     },
     "monthlyComparison": {
-      "label": "Comparaison mensuelle",
+      "label": "Dois-je me sentir mieux que le mois dernier ?",
       "needMoreData": "Au moins 2 mois de données sont nécessaires pour comparer.",
       "monthlySummary": "Résumé mensuel",
       "uploadAnotherMonth": "Importer un autre mois",
       "toStartComparing": "pour commencer à comparer les périodes et voir ce qui a changé.",
       "whatChanged": "Qu'est-ce qui a changé ?",
-      "whatHappened": "Ce qui s'est passé",
-      "yourNextMove": "À examiner"
+      "whatHappened": "Pourquoi",
+      "yourNextMove": "Quoi faire ensuite",
+      "verdictYes": "Oui — plus de revenus et une trésorerie améliorée.",
+      "verdictPartly": "En partie — les revenus ont progressé mais les coûts ont augmenté plus vite.",
+      "verdictSlightly": "Légèrement mieux — les coûts ont baissé malgré des revenus plus faibles.",
+      "verdictNo": "Ce mois était plus difficile — revenus et trésorerie tous deux en baisse."
     },
     "recentTransactions": {
       "label": "Activité récente",
@@ -770,9 +778,14 @@
   },
   "forecast": {
     "title": "Prévisions",
+    "titleWithData": "Dois-je m'inquiéter pour le mois prochain ?",
     "subtitle": {
       "withData": "Perspectives financières basées sur vos données réelles",
-      "noData": "Importez un CSV pour générer votre prévision"
+      "noData": "Importez un CSV pour générer votre prévision",
+      "answerLow": "Non — vos flux de trésorerie sont régulièrement positifs. Vous êtes sur la bonne voie.",
+      "answerMedium": "Restez vigilant — certains mois montrent une pression sur la trésorerie.",
+      "answerHigh": "Oui, soyez prudent — il y a plus de mois négatifs que positifs.",
+      "answerCritical": "Agissez maintenant — la trésorerie est en territoire critique."
     },
     "emptyState": {
       "heading": "Aucune donnée à prévoir pour le moment",
@@ -955,7 +968,16 @@
   },
   "analytics": {
     "title": "Analyses",
+    "titleQuestion": "Qu'est-ce qui fonctionne et qu'est-ce qui me coûte ?",
     "subtitle": "Analyse approfondie de vos habitudes financières",
+    "subtitleHabits": "Voici ce que vos données révèlent sur vos habitudes.",
+    "habitVerdict": {
+      "growingIncomeStableExp": "Vos revenus augmentent et vos dépenses sont maîtrisées.",
+      "growingIncomeGrowingExp": "Les revenus augmentent — mais les coûts aussi. Surveillez où va cette croissance.",
+      "decliningIncome": "Les revenus sont inférieurs à l'an dernier. Essayez de comprendre ce qui a changé.",
+      "stableAll": "Revenus et dépenses sont stables d'une année sur l'autre.",
+      "noComparison": "Importez des données sur plus d'un an pour voir vos tendances."
+    },
     "emptyState": {
       "heading": "Aucune donnée pour l'instant",
       "body": "Importez votre relevé bancaire pour débloquer toutes les analyses.",
@@ -1141,8 +1163,18 @@
   },
   "clients": {
     "label": "Analyse clients",
-    "title": "Centre de suivi client",
-    "subtitle": "Comprenez qui est actif, qui nécessite un suivi, et qui fait partie de votre historique client.",
+    "title": "Sur qui puis-je compter ?",
+    "subtitle": "Voici qui paie régulièrement — et qui demande votre attention.",
+    "verdictAllReliable": "Tous vos {n} clients paient régulièrement.",
+    "verdictMixed": "{current} paient régulièrement. {followUp} {followUp, plural, one {nécessite} other {nécessitent}} un suivi.",
+    "verdictAllNeedAttention": "Tous vos {n} clients nécessitent un suivi.",
+    "verdictNone": "Aucun client actif pour le moment.",
+    "dependOnVerdict": {
+      "current": "Oui — {name} paie régulièrement.",
+      "watch": "Procédez avec prudence — les intervalles de paiement sont irréguliers.",
+      "risk": "Suivi nécessaire — {name} est en retard.",
+      "inactive": "{name} n'a pas payé récemment."
+    },
     "intentDataWarning": "La classification des intentions est incomplète. Affichage de toutes les transactions de revenus. Pour de meilleurs résultats, examinez et classifiez vos transactions dans l'Historique.",
     "emptyState": {
       "heading": "Aucune donnée client",

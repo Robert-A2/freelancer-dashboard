@@ -148,11 +148,48 @@ export default async function AnalyticsPage() {
     <div className="space-y-8 md:space-y-10">
 
       <div>
-        <h1 className="text-2xl font-bold">{t("title")}</h1>
-        <p className="text-[#7BA8C4] text-sm mt-0.5">{t("subtitle")}</p>
+        <h1 className="text-2xl font-bold">
+          {hasData ? t("titleQuestion") : t("title")}
+        </h1>
+        <p className="text-[#7BA8C4] text-sm mt-0.5">
+          {hasData ? t("subtitleHabits") : t("subtitle")}
+        </p>
       </div>
 
       {coverage.count > 0 && <DataCoverageBar coverage={coverage} />}
+
+      {/* Habit verdict — answers "What is working and what is hurting?" */}
+      {hasData && (
+        <div className={`px-5 py-4 rounded-xl border ${
+          showPrevYearComparison && pctChange(ytdInc, prevInc) > 0 && pctChange(ytdExp, prevExp) <= pctChange(ytdInc, prevInc)
+            ? "bg-[#4CC4A40A] border-[#4CC4A415]"
+            : showPrevYearComparison && pctChange(ytdInc, prevInc) < -5
+            ? "bg-[#D970700A] border-[#D9707015]"
+            : showPrevYearComparison
+            ? "bg-[#D4A2540A] border-[#D4A25415]"
+            : "bg-[#1A3048] border-[#243F5E]"
+        }`}>
+          <p className={`text-sm font-medium leading-relaxed ${
+            showPrevYearComparison && pctChange(ytdInc, prevInc) > 0 && pctChange(ytdExp, prevExp) <= pctChange(ytdInc, prevInc)
+              ? "text-[#4CC4A4]"
+              : showPrevYearComparison && pctChange(ytdInc, prevInc) < -5
+              ? "text-[#D97070]"
+              : showPrevYearComparison
+              ? "text-[#D4A254]"
+              : "text-[#7BA8C4]"
+          }`}>
+            {!showPrevYearComparison
+              ? t("habitVerdict.noComparison")
+              : pctChange(ytdInc, prevInc) > 0 && pctChange(ytdExp, prevExp) <= pctChange(ytdInc, prevInc)
+              ? t("habitVerdict.growingIncomeStableExp")
+              : pctChange(ytdInc, prevInc) > 0
+              ? t("habitVerdict.growingIncomeGrowingExp")
+              : pctChange(ytdInc, prevInc) < -5
+              ? t("habitVerdict.decliningIncome")
+              : t("habitVerdict.stableAll")}
+          </p>
+        </div>
+      )}
 
       {!hasData && (
         <div className="card text-center py-16">

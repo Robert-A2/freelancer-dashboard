@@ -220,6 +220,16 @@ export default async function ClientDetailPage({
               {t(`confidence.${client.confidence}`)}
             </span>
           )}
+          {!isUnidentified && (
+            <p className={`text-sm font-medium mt-1 ${
+              client.status === "current"  ? "text-[#4CC4A4]" :
+              client.status === "watch"    ? "text-[#D4A254]" :
+              client.status === "risk"     ? "text-[#D97070]" :
+                                             "text-[#6A97B4]"
+            }`}>
+              {t(`dependOnVerdict.${client.status}`, { name: client.name })}
+            </p>
+          )}
           {isUnidentified ? (
             <p className="text-xs text-[#4A7A9B] mt-1">{t("detail.identityUnknown")}</p>
           ) : (

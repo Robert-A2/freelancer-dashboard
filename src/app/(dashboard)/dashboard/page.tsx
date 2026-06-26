@@ -237,19 +237,33 @@ export default async function DashboardPage({
     <div className="space-y-8">
       <AccountFilterBar accounts={accounts} selectedAccountId={accountId} />
 
-      {/* Header */}
+      {/* Header — question first, verdict below, data context last */}
       <div className="flex items-start justify-between flex-wrap gap-3">
         <div>
-          <div className="flex items-center gap-2.5 mb-0.5">
-            <h1 className="text-2xl font-bold">
-              {firstName ? t("welcomeBack", { name: firstName }) : t("title")}
-            </h1>
-          </div>
-          <p className="text-[#7BA8C4] text-sm">
-            {coverage.latest
-              ? t("showingDataThrough", { date: coverage.latest.toLocaleDateString(INTL_LOCALES[locale], { month: "long", year: "numeric", timeZone: "UTC" }) })
-              : t("noDataYet")}
-          </p>
+          {firstName && (
+            <p className="text-xs text-[#6A97B4] mb-1">{t("welcomeBack", { name: firstName })}</p>
+          )}
+          <h1 className="text-2xl font-bold">
+            {hasData ? t("questionTitle") : t("title")}
+          </h1>
+          {hasData ? (
+            <p className={`text-sm font-medium mt-0.5 ${
+              intel.healthStatus === "healthy" ? "text-[#4CC4A4]" :
+              intel.healthStatus === "at-risk"  ? "text-[#D97070]" :
+                                                  "text-[#D4A254]"
+            }`}>
+              {intel.healthStatus === "healthy" ? t("verdictHealthy") :
+               intel.healthStatus === "at-risk"  ? t("verdictAtRisk") :
+                                                   t("verdictWatch")}
+            </p>
+          ) : (
+            <p className="text-[#7BA8C4] text-sm mt-0.5">{t("noDataYet")}</p>
+          )}
+          {coverage.latest && (
+            <p className="text-xs text-[#4A7A9B] mt-1">
+              {t("showingDataThrough", { date: coverage.latest.toLocaleDateString(INTL_LOCALES[locale], { month: "long", year: "numeric", timeZone: "UTC" }) })}
+            </p>
+          )}
         </div>
         {hasData && (
           <p className="text-xs text-[#6A97B4] flex-shrink-0 mt-1">

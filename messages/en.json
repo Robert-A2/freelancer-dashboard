@@ -635,7 +635,11 @@
     },
     "welcomeBack": "Welcome back, {name}.",
     "title": "Dashboard",
-    "showingDataThrough": "Showing data through {date}",
+    "questionTitle": "How is my business doing?",
+    "verdictHealthy": "You're in good shape.",
+    "verdictWatch": "Some things need your attention.",
+    "verdictAtRisk": "Your business is under pressure.",
+    "showingDataThrough": "Based on data through {date}",
     "noDataYet": "No data uploaded yet",
     "transactionsMonths": "{transactions, plural, one {# transaction} other {# transactions}} · {months, plural, one {# month} other {# months}}",
     "health": {
@@ -714,14 +718,18 @@
       "weightedNote": "Recent 3 months weighted 3× more than older history"
     },
     "monthlyComparison": {
-      "label": "Monthly Comparison",
+      "label": "Should I feel better than last month?",
       "needMoreData": "Need at least 2 months of data to compare.",
       "monthlySummary": "Monthly Summary",
       "uploadAnotherMonth": "Upload another month",
       "toStartComparing": "to start comparing periods and see what changed.",
       "whatChanged": "What changed?",
-      "whatHappened": "What happened",
-      "yourNextMove": "To review"
+      "whatHappened": "Why",
+      "yourNextMove": "What to do next",
+      "verdictYes": "Yes — more income came in and cashflow improved.",
+      "verdictPartly": "Partly — income improved but costs rose faster.",
+      "verdictSlightly": "Slightly better — costs came down despite lower income.",
+      "verdictNo": "This month was harder — income and cashflow both tightened."
     },
     "recentTransactions": {
       "label": "Recent Activity",
@@ -770,9 +778,14 @@
   },
   "forecast": {
     "title": "Forecast",
+    "titleWithData": "Should I worry about next month?",
     "subtitle": {
       "withData": "Financial outlook based on your actual data",
-      "noData": "Upload a CSV to generate your forecast"
+      "noData": "Upload a CSV to generate your forecast",
+      "answerLow": "No — your cashflow is consistently positive. You're on track.",
+      "answerMedium": "Stay alert — some months show cashflow pressure.",
+      "answerHigh": "Yes, be careful — more months are negative than positive.",
+      "answerCritical": "Take action now — cashflow is in critical territory."
     },
     "emptyState": {
       "heading": "No data to forecast yet",
@@ -955,7 +968,16 @@
   },
   "analytics": {
     "title": "Analytics",
+    "titleQuestion": "What is working and what is hurting?",
     "subtitle": "Deep dive into your financial patterns",
+    "subtitleHabits": "Here's what your data reveals about your habits.",
+    "habitVerdict": {
+      "growingIncomeStableExp": "Your income is growing and spending is under control.",
+      "growingIncomeGrowingExp": "Income is up — but costs are rising too. Watch where the growth is going.",
+      "decliningIncome": "Income is lower than last year. Worth understanding what changed.",
+      "stableAll": "Income and spending are consistent year over year.",
+      "noComparison": "Upload data from more than one year to see your habit patterns."
+    },
     "emptyState": {
       "heading": "No data yet",
       "body": "Upload your bank statement to unlock full analytics.",
@@ -1141,8 +1163,18 @@
   },
   "clients": {
     "label": "Client insights",
-    "title": "Client Lifecycle Center",
-    "subtitle": "Understand who is active, who needs attention, and who belongs to your business history.",
+    "title": "Who can I depend on?",
+    "subtitle": "Here's who is paying reliably — and who needs your attention.",
+    "verdictAllReliable": "All {n} clients are paying reliably.",
+    "verdictMixed": "{current} paying reliably. {followUp} {followUp, plural, one {needs} other {need}} follow-up.",
+    "verdictAllNeedAttention": "All {n} clients need follow-up.",
+    "verdictNone": "No active clients yet.",
+    "dependOnVerdict": {
+      "current": "Yes — {name} is paying consistently.",
+      "watch": "Proceed carefully — payment intervals are irregular.",
+      "risk": "Follow up needed — {name} is overdue.",
+      "inactive": "{name} has not paid recently."
+    },
     "intentDataWarning": "Intent classification is incomplete. Showing all income transactions. For best results, review and classify your transactions in History.",
     "emptyState": {
       "heading": "No client data yet",

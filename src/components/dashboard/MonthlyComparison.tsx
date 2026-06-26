@@ -82,11 +82,22 @@ export default function MonthlyComparison({
     );
   }
 
+  const verdictKey =
+    changes.income > 0 && changes.cashflow >= 0 ? "verdictYes" :
+    changes.income > 0 && changes.cashflow < 0  ? "verdictPartly" :
+    changes.income <= 0 && changes.cashflow >= 0 ? "verdictSlightly" :
+                                                   "verdictNo";
+
+  const verdictColor =
+    verdictKey === "verdictYes"      ? "text-[#4CC4A4]" :
+    verdictKey === "verdictNo"       ? "text-[#D97070]" :
+                                       "text-[#D4A254]";
+
   return (
     <div className="card">
       <div className="mb-4 md:mb-5">
         <p className="label mb-1">{t("label")}</p>
-        <h3 className="text-lg font-semibold text-[#E8F0F8]">{t("whatChanged")}</h3>
+        <h3 className={`text-base font-semibold leading-snug ${verdictColor}`}>{t(verdictKey)}</h3>
       </div>
 
       {/* Desktop table */}

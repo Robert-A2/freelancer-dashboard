@@ -35,6 +35,13 @@ const RISK_COLOR = {
   critical: "text-[#D97070]",
 };
 
+const VERDICT_STYLE = {
+  low:      { bg: "bg-[#4CC4A40A]", border: "border-[#4CC4A415]" },
+  medium:   { bg: "bg-[#D4A2540A]", border: "border-[#D4A25415]" },
+  high:     { bg: "bg-[#D970700A]", border: "border-[#D9707015]" },
+  critical: { bg: "bg-[#D970700A]", border: "border-[#D9707015]" },
+};
+
 function changePct(curr: number, prev: number): number {
   if (prev === 0) return curr > 0 ? 100 : 0;
   return Math.round(((curr - prev) / Math.abs(prev)) * 100);
@@ -82,6 +89,8 @@ export default function SummaryCards({
   const expenseUrl = drillBase ? `/history${drillBase}&type=expense` : "/history";
   const allTxUrl   = drillBase ? `/history${drillBase}`              : "/history";
 
+  const verdictStyle = VERDICT_STYLE[riskLevel];
+
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2 flex-wrap">
@@ -97,6 +106,26 @@ export default function SummaryCards({
           </span>
         )}
       </div>
+
+      {/* Verdict first — answer "How is my business doing?" before showing numbers */}
+      {summary && (
+        <div className={`${verdictStyle.bg} border ${verdictStyle.border} rounded-xl px-5 py-4 space-y-2.5`}>
+          <p className="text-sm font-medium text-[#E8F0F8] leading-relaxed">
+            <InsightText insight={summary} />
+          </p>
+          {context && context.length > 0 && (
+            <ul className="space-y-2">
+              {context.map((line, i) => (
+                <li key={i} className="text-sm text-[#A8C6E0] flex items-start gap-2.5 leading-relaxed">
+                  <span className="text-[#7BA8C4] opacity-60 mt-1 flex-shrink-0">·</span>
+                  <span><InsightText insight={line} /></span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4 md:gap-5 items-stretch">
 
         {/* Income */}
@@ -181,24 +210,6 @@ export default function SummaryCards({
         </div>
 
       </div>
-
-      {summary && (
-        <div className="bg-[#4CC4A40A] border border-[#4CC4A415] rounded-xl px-5 py-4 space-y-2.5">
-          <p className="text-sm font-medium text-[#E8F0F8] leading-relaxed">
-            <InsightText insight={summary} />
-          </p>
-          {context && context.length > 0 && (
-            <ul className="space-y-2">
-              {context.map((line, i) => (
-                <li key={i} className="text-sm text-[#A8C6E0] flex items-start gap-2.5 leading-relaxed">
-                  <span className="text-[#4CC4A4] opacity-60 mt-1 flex-shrink-0">·</span>
-                  <span><InsightText insight={line} /></span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      )}
     </div>
   );
 }
