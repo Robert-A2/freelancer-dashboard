@@ -22,10 +22,11 @@ interface Props {
   suggestion?: Insight | null;
   currLabel?: string;
   prevLabel?: string;
+  isDataRecent?: boolean;
 }
 
 export default function MonthlyComparison({
-  current, previous, changes, interpretation, suggestion, currLabel: currLabelProp, prevLabel: prevLabelProp,
+  current, previous, changes, interpretation, suggestion, currLabel: currLabelProp, prevLabel: prevLabelProp, isDataRecent = true,
 }: Props) {
   const t = useTranslations("dashboard.monthlyComparison");
   const tm = useTranslations("metrics");
@@ -82,22 +83,32 @@ export default function MonthlyComparison({
     );
   }
 
-  const verdictKey =
+  const verdictBase =
     changes.income > 0 && changes.cashflow >= 0 ? "verdictYes" :
     changes.income > 0 && changes.cashflow < 0  ? "verdictPartly" :
     changes.income <= 0 && changes.cashflow >= 0 ? "verdictSlightly" :
                                                    "verdictNo";
 
+  const verdictKey = isDataRecent ? verdictBase : `${verdictBase}History` as const;
+
   const verdictColor =
-    verdictKey === "verdictYes"      ? "text-[#4CC4A4]" :
-    verdictKey === "verdictNo"       ? "text-[#D97070]" :
-                                       "text-[#D4A254]";
+    verdictBase === "verdictYes"      ? "text-[#4CC4A4]" :
+    verdictBase === "verdictNo"       ? "text-[#D97070]" :
+                                        "text-[#D4A254]";
 
   return (
     <div className="card">
       <div className="mb-4 md:mb-5">
-        <p className="label mb-1">{t("label")}</p>
-        <h3 className={`text-base font-semibold leading-snug ${verdictColor}`}>{t(verdictKey)}</h3>
+        <p className="label mb-1">
+          {isDataRecent
+            ? t("label")
+            : t("labelHistorical", { currMonth: currLabel, prevMonth: prevLabel })}
+        </p>
+        <h3 className={`text-base font-semibold leading-snug ${verdictColor}`}>
+          {isDataRecent
+            ? t(verdictKey as "verdictYes" | "verdictPartly" | "verdictSlightly" | "verdictNo")
+            : t(verdictKey as "verdictYesHistory" | "verdictPartlyHistory" | "verdictSlightlyHistory" | "verdictNoHistory", { currMonth: currLabel })}
+        </h3>
       </div>
 
       {/* Desktop table */}

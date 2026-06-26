@@ -89,7 +89,7 @@ export interface ClientRiskCenterData {
 
 // ── Status computation ────────────────────────────────────────────────────────
 
-function computeStatus(avgIntervalDays: number | null, currentGapDays: number): ClientStatus {
+function computeStatus(avgIntervalDays: number | null, currentGapDays: number, paymentCount: number): ClientStatus {
   // "inactive" = relationship has concluded.
   // Threshold: 3× their usual interval, min 6 months, max 18 months.
   // This avoids false alarms for quarterly or annual payers.
@@ -99,7 +99,16 @@ function computeStatus(avgIntervalDays: number | null, currentGapDays: number): 
 
   if (currentGapDays >= inactiveThreshold) return "inactive";
 
-  // Active client — evaluate timeliness against their own historical pattern
+  // Single and dual payments: no established cadence — never classify as "risk".
+  // A client with 1-2 payments has no proven payment pattern, so we cannot
+  // say they are "overdue." Showing "follow up" for them creates false urgency.
+  if (paymentCount < 3) {
+    if (avgIntervalDays === null || avgIntervalDays === 0) return "current";
+    if (currentGapDays > avgIntervalDays * 1.2) return "watch";
+    return "current";
+  }
+
+  // 3+ payments: established cadence — full pattern assessment applies.
   if (avgIntervalDays === null || avgIntervalDays === 0) return "current";
   if (currentGapDays > avgIntervalDays * 1.5) return "risk";
   if (currentGapDays > avgIntervalDays * 1.2) return "watch";
@@ -166,8 +175,10 @@ function buildActions(p: PartialProfile): ClientAction[] {
   const actions: ClientAction[] = [];
   const isOverdue = p.avgIntervalDays !== null && p.currentGapDays > p.avgIntervalDays * 1.2;
 
-  // Inactive clients have no outstanding payment — no follow-up needed
-  if (p.status !== "inactive") {
+  // Inactive clients have no outstanding payment — no follow-up needed.
+  // Payment processors (platforms) are not individual clients — no follow-up.
+  // Clients with fewer than 3 payments have no proven cadence — no follow-up.
+  if (p.status !== "inactive" && !p.isProcessor && p.paymentCount >= 3) {
     if (p.status === "risk" || (p.status === "watch" && isOverdue)) {
       actions.push({ type: "followUp" });
     }
@@ -375,7 +386,7 @@ export async function getClientRiskProfiles(userId: string, accountId?: string |
     }));
 
     const { trend, trendPct } = computeTrend(monthlyRevenue);
-    const status = computeStatus(avgIntervalDays, currentGapDays);
+    const status = computeStatus(avgIntervalDays, currentGapDays, sorted.length);
     const lifecycle: ClientLifecycle = status === "inactive" ? "inactive" : "current";
     const dependencyRisk = computeDependencyRisk(revenueContributionPct);
 

@@ -719,6 +719,7 @@
     },
     "monthlyComparison": {
       "label": "Should I feel better than last month?",
+      "labelHistorical": "Was {currMonth} better than {prevMonth}?",
       "needMoreData": "Need at least 2 months of data to compare.",
       "monthlySummary": "Monthly Summary",
       "uploadAnotherMonth": "Upload another month",
@@ -729,7 +730,11 @@
       "verdictYes": "Yes — more income came in and cashflow improved.",
       "verdictPartly": "Partly — income improved but costs rose faster.",
       "verdictSlightly": "Slightly better — costs came down despite lower income.",
-      "verdictNo": "This month was harder — income and cashflow both tightened."
+      "verdictNo": "This month was harder — income and cashflow both tightened.",
+      "verdictYesHistory": "Yes — {currMonth} had more income and better cashflow.",
+      "verdictPartlyHistory": "Partly — income rose in {currMonth} but costs rose faster.",
+      "verdictSlightlyHistory": "Slightly — costs were lower in {currMonth} despite less income.",
+      "verdictNoHistory": "{currMonth} was harder — income and cashflow both lower."
     },
     "recentTransactions": {
       "label": "Recent Activity",

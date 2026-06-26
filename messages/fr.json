@@ -719,6 +719,7 @@
     },
     "monthlyComparison": {
       "label": "Dois-je me sentir mieux que le mois dernier ?",
+      "labelHistorical": "{currMonth} était-il meilleur que {prevMonth} ?",
       "needMoreData": "Au moins 2 mois de données sont nécessaires pour comparer.",
       "monthlySummary": "Résumé mensuel",
       "uploadAnotherMonth": "Importer un autre mois",
@@ -729,7 +730,11 @@
       "verdictYes": "Oui — plus de revenus et une trésorerie améliorée.",
       "verdictPartly": "En partie — les revenus ont progressé mais les coûts ont augmenté plus vite.",
       "verdictSlightly": "Légèrement mieux — les coûts ont baissé malgré des revenus plus faibles.",
-      "verdictNo": "Ce mois était plus difficile — revenus et trésorerie tous deux en baisse."
+      "verdictNo": "Ce mois était plus difficile — revenus et trésorerie tous deux en baisse.",
+      "verdictYesHistory": "Oui — {currMonth} avait plus de revenus et une meilleure trésorerie.",
+      "verdictPartlyHistory": "En partie — les revenus ont progressé en {currMonth} mais les coûts plus vite.",
+      "verdictSlightlyHistory": "Légèrement — les coûts étaient plus bas en {currMonth} malgré moins de revenus.",
+      "verdictNoHistory": "{currMonth} était plus difficile — revenus et trésorerie tous deux en baisse."
     },
     "recentTransactions": {
       "label": "Activité récente",

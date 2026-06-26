@@ -418,6 +418,7 @@ export default async function DashboardPage({
               suggestion={intel.comparisonSuggestion}
               currLabel={comparison.currLabel}
               prevLabel={comparison.prevLabel}
+              isDataRecent={!coverageIsStale}
             />
             <RecentTransactions
               transactions={recent}
