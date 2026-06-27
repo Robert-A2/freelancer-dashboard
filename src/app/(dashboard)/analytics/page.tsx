@@ -226,23 +226,23 @@ export default async function AnalyticsPage() {
                   </p>
                 </div>
               )}
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                 {[
                   { key: "income",   label: tm("income"),   curr: ytdInc,  prev: prevInc,  color: "text-[#4CC4A4]", invert: false },
                   { key: "expenses", label: tm("expenses"), curr: ytdExp,  prev: prevExp,  color: "text-[#D4A254]", invert: true  },
                   { key: "cashflow", label: tm("cashflow"), curr: ytdCash, prev: prevCash, color: ytdCash >= 0 ? "text-[#3AB5A0]" : "text-[#D97070]", invert: false },
                 ].map((item) => {
                   const change = showPrevYearComparison ? pctChange(item.curr, item.prev) : null;
-                  const displayVal    = formatCurrency(item.curr, locale);
+                  const displayVal     = formatCurrency(item.curr, locale);
                   const prevDisplayVal = t("ytdSection.lastYr", { amount: formatCurrency(item.prev, locale), year: String(prevYear) });
                   return (
                     <div key={item.key} className="bg-[#1A3048] rounded-xl p-4">
                       <p className="label mb-1">{item.label}</p>
                       <p className={`text-lg font-bold tabular-nums ${item.color} mb-1`}>{displayVal}</p>
-                      <div className="flex items-center gap-2">
-                        {change !== null && <ChangeChip value={change} invert={item.invert} />}
-                        {showPrevYearComparison && <span className="text-xs text-[#6A97B4]">{prevDisplayVal}</span>}
-                      </div>
+                      {change !== null && <div className="mt-0.5"><ChangeChip value={change} invert={item.invert} /></div>}
+                      {showPrevYearComparison && (
+                        <p className="text-[11px] text-[#6A97B4] mt-0.5 break-words leading-tight">{prevDisplayVal}</p>
+                      )}
                     </div>
                   );
                 })}
@@ -257,17 +257,17 @@ export default async function AnalyticsPage() {
                   }`}>
                     {ytdMargin !== null ? `${ytdMargin}%` : "—"}
                   </p>
-                  <div className="flex items-center gap-2">
-                    {ytdMargin !== null && prevMargin !== null && showPrevYearComparison && (
-                      <ChangeChip value={ytdMargin - prevMargin} />
-                    )}
-                    {prevMargin !== null && showPrevYearComparison && (
-                      <span className="text-xs text-[#6A97B4]">{t("ytdSection.marginLastYr", { pct: String(prevMargin), year: String(prevYear) })}</span>
-                    )}
-                    {ytdMargin !== null && !showPrevYearComparison && (
-                      <span className="text-xs text-[#6A97B4]">{t("ytdSection.ofIncomeKept")}</span>
-                    )}
-                  </div>
+                  {ytdMargin !== null && prevMargin !== null && showPrevYearComparison && (
+                    <div className="mt-0.5"><ChangeChip value={ytdMargin - prevMargin} /></div>
+                  )}
+                  {prevMargin !== null && showPrevYearComparison && (
+                    <p className="text-[11px] text-[#6A97B4] mt-0.5 leading-tight">
+                      {t("ytdSection.marginLastYr", { pct: String(prevMargin), year: String(prevYear) })}
+                    </p>
+                  )}
+                  {ytdMargin !== null && !showPrevYearComparison && (
+                    <p className="text-[11px] text-[#6A97B4] mt-0.5">{t("ytdSection.ofIncomeKept")}</p>
+                  )}
                 </div>
               </div>
             </div>

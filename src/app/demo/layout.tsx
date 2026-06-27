@@ -2,7 +2,7 @@ import DemoNavbar from "@/components/demo/DemoNavbar";
 
 export default function DemoLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-[#0D1B2B]">
+    <div className="min-h-screen bg-[#0D1B2B] overflow-x-hidden">
       <DemoNavbar />
 
       {/* Demo banner — persistent, below the navbar */}
