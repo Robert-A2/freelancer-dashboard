@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useTranslations } from "next-intl";
 import { formatCurrency } from "@/utils/finance";
 import type { Locale } from "@/i18n/locales";
@@ -98,6 +99,11 @@ export default function MonthDrawer({
   const [txData,    setTxData]    = useState<TxData | null>(null);
   const [txLoading, setTxLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<"expense" | "income" | "cashflow">("cashflow");
+  const [mounted, setMounted] = useState(false);
+
+  // Portal to document.body so a transformed ancestor (e.g. a hover-tilt
+  // effect) can't hijack this drawer's fixed positioning off the real viewport.
+  useEffect(() => { setMounted(true); }, []);
 
   // Fetch month breakdown
   useEffect(() => {
@@ -171,7 +177,9 @@ export default function MonthDrawer({
     ? Math.max(breakdown.totalIncome, breakdown.totalExpenses)
     : 0;
 
-  return (
+  if (!mounted) return null;
+
+  return createPortal(
     <>
       {/* Backdrop */}
       <div
@@ -466,6 +474,7 @@ export default function MonthDrawer({
           </>
         )}
       </div>
-    </>
+    </>,
+    document.body
   );
 }

@@ -28,6 +28,7 @@ import type {
 } from "@/lib/client-risk-engine";
 import { extractClientName, normalizeForAlias, UNIDENTIFIED_SOURCE } from "@/lib/client-identity";
 import type { ClientConfidence } from "@/lib/client-identity";
+import { computeEmergencyBuffer, type ReserveSummary } from "@/lib/reserve-engine";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -155,7 +156,7 @@ export function computeDashboardSummary(txs: DemoTransaction[]) {
 
   const recent = [...txs]
     .sort((a, b) => b.transactionDate.getTime() - a.transactionDate.getTime())
-    .slice(0, 10);
+    .slice(0, 5);
 
   function toMetrics(b: MonthlyBucket | undefined) {
     if (!b) return null;
@@ -175,7 +176,7 @@ export function computeDashboardSummary(txs: DemoTransaction[]) {
 export function computeMonthlyComparison(locale: Locale) {
   const buckets = computeMonthlyBuckets(DEMO_TRANSACTIONS);
   if (buckets.length === 0) {
-    return { current: null, previous: null, changes: null, currLabel: "", prevLabel: "" };
+    return { current: null, previous: null, changes: null, currLabel: "", prevLabel: "", currMonth: 0, currYear: 0 };
   }
 
   const last      = buckets[buckets.length - 1];
@@ -208,6 +209,8 @@ export function computeMonthlyComparison(locale: Locale) {
     previous: prev ? p : null,
     currLabel,
     prevLabel,
+    currMonth,
+    currYear,
     changes: {
       income:   changePct(c.totalIncome,   p.totalIncome),
       expenses: changePct(c.totalExpenses, p.totalExpenses),
@@ -1082,6 +1085,55 @@ export function computeYtdTotals() {
   return { dataYear, prevYear, dataMonthMax, ytdInc, ytdExp, ytdCash, prevInc, prevExp, prevCash };
 }
 
+// ── Financial Reserve (demo) ────────────────────────────────────────────────
+// Mirrors src/lib/reserve-engine/index.ts's getFinancialReserve() logic, but
+// reads the in-memory demo transactions instead of Prisma. Sophie never has a
+// completed financial profile (no such fields exist on demo data), so this
+// always takes the same "generic estimate, honestly labeled" path a real
+// incomplete-profile user would see — never fabricated, never hidden.
+const GENERIC_RESERVE_ESTIMATE_PCT = 25;
+
+export function computeFinancialReserve(): ReserveSummary {
+  const buckets = computeMonthlyBuckets(DEMO_TRANSACTIONS);
+
+  if (buckets.length === 0) {
+    return {
+      isProfileComplete: false,
+      countryCode: null,
+      isManualOverride: false,
+      estimatedReservePct: GENERIC_RESERVE_ESTIMATE_PCT,
+      buckets: [],
+      emergencyBufferPct: 10,
+      emergencyBufferVolatility: "unknown",
+      totalIncomeAllTime: 0,
+      incomeThisMonth: 0,
+      availableToSpendThisMonth: 0,
+    };
+  }
+
+  const last = buckets[buckets.length - 1];
+  const totalIncomeAllTime = buckets.reduce((sum, b) => sum + b.income, 0);
+  const incomeThisMonth = last.income;
+  const monthlyIncomeSamples = buckets.slice(-6).map(b => b.income);
+
+  const { pct: emergencyBufferPct, volatility: emergencyBufferVolatility } = computeEmergencyBuffer(monthlyIncomeSamples);
+  const estimatedReservePct = GENERIC_RESERVE_ESTIMATE_PCT;
+  const totalReservePct = estimatedReservePct + emergencyBufferPct;
+
+  return {
+    isProfileComplete: false,
+    countryCode: null,
+    isManualOverride: false,
+    estimatedReservePct,
+    buckets: [],
+    emergencyBufferPct,
+    emergencyBufferVolatility,
+    totalIncomeAllTime,
+    incomeThisMonth,
+    availableToSpendThisMonth: incomeThisMonth * (1 - totalReservePct / 100),
+  };
+}
+
 // ── Full demo dataset (computed once) ─────────────────────────────────────────
 
 export interface DemoDataset {
@@ -1094,6 +1146,7 @@ export interface DemoDataset {
   intentBreakdown:     ReturnType<typeof computeIntentBreakdown>;
   forecast:            ForecastResult | null;
   financialLife:       FinancialLifeIntelligence;
+  financialReserve:    ReserveSummary;
   clientData:          ClientRiskCenterData;
   rankedInsights:      RankedInsight[];
   nonZeroMonths:       number;
@@ -1117,6 +1170,7 @@ export function getDemoDataset(locale: Locale): DemoDataset {
   const intentBreakdown  = computeIntentBreakdown();
   const forecast         = computeForecast();
   const financialLife    = computeFinancialLifeIntelligence();
+  const financialReserve = computeFinancialReserve();
   const clientData       = computeClientRiskProfiles(locale);
   const nonZeroMonths    = chartData.filter(d => d.income > 0 || d.expenses > 0).length;
   const totalTx          = DEMO_TRANSACTIONS.length;
@@ -1132,7 +1186,7 @@ export function getDemoDataset(locale: Locale): DemoDataset {
 
   const dataset: DemoDataset = {
     chartData, summary, comparison, coverage, categoryInsights,
-    concentration, intentBreakdown, forecast, financialLife,
+    concentration, intentBreakdown, forecast, financialLife, financialReserve,
     clientData, rankedInsights, nonZeroMonths, totalTx,
     personaName:      DEMO_PERSONA.name,
     personaFirstName: DEMO_PERSONA.firstName,

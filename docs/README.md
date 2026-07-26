@@ -1,6 +1,6 @@
-# Freelancer OS — Documentation
+# Nonodia — Documentation
 
-This is the source of truth for how Freelancer OS works — written so a developer who has never seen the project (including a future version of you, or Claude in a brand-new session) can understand, maintain, and extend it without prior context.
+This is the source of truth for how Nonodia works — written so a developer who has never seen the project (including a future version of you, or Claude in a brand-new session) can understand, maintain, and extend it without prior context.
 
 Every doc follows the same shape:
 - **What it does** / **Why it exists** / **Where the code is** / **How to modify it safely**
@@ -16,7 +16,7 @@ Every doc follows the same shape:
 
 | Doc | What it covers |
 |---|---|
-| [PRODUCT.md](./PRODUCT.md) | What Freelancer OS *is*, who it's for, the core philosophy, and the value proposition — the "why" behind every other doc. |
+| [PRODUCT.md](./PRODUCT.md) | What Nonodia *is*, who it's for, the core philosophy, and the value proposition — the "why" behind every other doc. |
 | [USER_JOURNEY.md](./USER_JOURNEY.md) | The full walkthrough: landing → signup → first (empty) dashboard → CSV upload → insights → ongoing usage → settings. The best entry point for understanding what a user actually experiences. |
 | [ARCHITECTURE.md](./ARCHITECTURE.md) | The map of the codebase — Next.js routing, Supabase + Prisma, `src/lib` services, the two data-fetching patterns, and the three end-to-end data-flow pipelines (upload, recategorize, account deletion). |
 

@@ -41,14 +41,14 @@ flowchart TD
 
 ## 2. Landing page (`/`)
 
-**File**: `src/app/page.tsx` + `src/components/landing/DemoSection.tsx`.
+**File**: `src/app/page.tsx` + `src/components/landing/{CsvHelpPanel,AnalyticsDevices,ForecastPhone}.tsx`.
 
 - A Server Component. If `supabase.auth.getUser()` returns a user, it immediately `redirect("/dashboard")` — logged-in users never see the marketing page (middleware also enforces this, see [ARCHITECTURE.md §3](./ARCHITECTURE.md)).
-- For anonymous visitors, the page renders (in order): a sticky navbar (app name, language switcher, Sign In / Get Started), a hero section with `<DemoSection>` in the right column, an "Understand your finances" 4-card grid, a "recognition" list, a "history" tier section, a "philosophy" section, and a "privacy" section.
-- All copy comes from the `landing` translation namespace via `t.raw(...)` for arrays of `{title, body}` / `string[]` objects — see [TRANSLATIONS.md](./TRANSLATIONS.md) for how to edit this content.
-- The hero's right column `<DemoSection>` (`src/components/landing/DemoSection.tsx`) offers two paths: **Explore Sample Freelancer** → `/demo` (no login) and **Upload Sample CSV** → 4 downloadable personas in `public/samples/`. The trust note "The demo uses the exact same engine as real accounts" is intentional — see §2a below.
+- For anonymous visitors, the page renders (in order): a sticky navbar (app name, language switcher, Sign In / Get Started), a hero section (headline, subtitle, "Upload Your First CSV" CTA, and `<CsvHelpPanel>` — a collapsible "How to get my bank data?" explainer), a "Live demo" section linking to `/demo/upload`, a "Why We Exist" section, a "How It Works" 3-step section paired with `<AnalyticsDevices>`, an "Accounts" section paired with `<ForecastPhone>`, and a footer.
+- All copy comes from the `landing` translation namespace via `getTranslations()` (this is a Server Component, not `useTranslations()`), with `t.raw(...)` for the `howItWorks.steps` array — see [TRANSLATIONS.md](./TRANSLATIONS.md) for how to edit this content. `CsvHelpPanel` is a Client Component and reads the same `landing.csvHelp` keys via `useTranslations()`.
+- **`<AnalyticsDevices>` and `<ForecastPhone>` show real numbers, not invented mockup data.** Both are async Server Components that call `getDemoDataset(locale)` / `computeCategoryBreakdown()` from `src/lib/demo/engine.ts` — the exact same in-memory engine that powers `/demo/analytics` and `/demo/forecast` on Sophie Martin's dataset. The bar chart, top expense categories, next-month forecast figure, and year-end projection are all pulled live from that engine, so a visitor who clicks through to the real demo sees the same numbers the landing page showed them. This replaced an earlier version that hardcoded plausible-looking but fabricated figures (e.g. a fixed "€4,800" forecast) — the same trust problem that led to retiring `ProductWalkthrough` (see [PRODUCT.md](./PRODUCT.md) §"Why the shift"). Do not reintroduce hardcoded illustrative numbers in these two components.
 - Both CTAs (`Sign In`, `Get Started`) link to `/login` and `/signup` respectively.
-- The product narrative ("what Freelancer OS is for") is covered in [PRODUCT.md](./PRODUCT.md) — this doc only covers the page's role in the navigation flow.
+- The product narrative ("what Nonodia is for") is covered in [PRODUCT.md](./PRODUCT.md) — this doc only covers the page's role in the navigation flow.
 
 ### 2a. Demo workspace (`/demo/*`)
 

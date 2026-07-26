@@ -27,6 +27,7 @@ interface Transaction {
 interface Props {
   transactions: Transaction[];
   notable?: Insight[];
+  basePath?: string;
 }
 
 // ── Intent key set (for translation lookup) ───────────────────────────────────
@@ -78,10 +79,12 @@ function TransactionDrawer({
   tx,
   onClose,
   locale,
+  basePath = "",
 }: {
   tx: Transaction | null;
   onClose: () => void;
   locale: Locale;
+  basePath?: string;
 }) {
   const tCategories = useTranslations("categories");
   const tD          = useTranslations("dashboard.recentTransactions");
@@ -213,7 +216,7 @@ function TransactionDrawer({
         {/* Footer */}
         <div className="px-6 py-4 border-t border-[#1E3A55]">
           <Link
-            href="/history"
+            href={`${basePath}/history`}
             className="block w-full text-center text-sm font-medium text-[#3AB5A0] hover:text-[#4CC4A4]
               bg-[#0F2A3D] hover:bg-[#132F45] border border-[#1E3A55] rounded-xl py-2.5 transition-colors"
           >
@@ -227,7 +230,7 @@ function TransactionDrawer({
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-export default function RecentTransactions({ transactions, notable }: Props) {
+export default function RecentTransactions({ transactions, notable, basePath = "" }: Props) {
   const t = useTranslations("dashboard.recentTransactions");
   const tCategories = useTranslations("categories");
   const locale = useLocale() as Locale;
@@ -309,7 +312,7 @@ export default function RecentTransactions({ transactions, notable }: Props) {
 
         <div className="pt-3 mt-1 border-t border-[#243F5E]">
           <Link
-            href="/history"
+            href={`${basePath}/history`}
             className="flex items-center justify-center gap-1.5 text-sm text-[#3AB5A0] hover:text-[#2E9D8A] font-medium transition-colors py-1"
           >
             {t("viewAll")}
@@ -320,7 +323,7 @@ export default function RecentTransactions({ transactions, notable }: Props) {
         </div>
       </div>
 
-      <TransactionDrawer tx={selected} onClose={close} locale={locale} />
+      <TransactionDrawer tx={selected} onClose={close} locale={locale} basePath={basePath} />
     </>
   );
 }

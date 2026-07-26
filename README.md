@@ -1,4 +1,4 @@
-# Freelancer OS
+# Nonodia
 
 Financial clarity for freelancers and independent contractors. Upload any bank statement CSV — any bank, any format — and get automatic categorization, cashflow analytics, plain-language insights, and next-month forecasts, all without connecting to a bank API.
 

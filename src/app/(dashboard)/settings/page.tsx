@@ -1,10 +1,17 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
-import { getTranslations } from "next-intl/server";
+import { getTranslations, getLocale } from "next-intl/server";
+import type { Locale } from "@/i18n/locales";
 import { prisma } from "@/lib/prisma";
-import SignOutButton from "@/components/settings/SignOutButton";
+import { getAccountStatus } from "@/lib/stripe";
+import { getCountryRules } from "@/lib/reserve-engine/countries";
+import { getFinancialReserve } from "@/lib/reserve-engine";
 import DeleteAccountSection from "@/components/settings/DeleteAccountSection";
 import ExportDataButton from "@/components/settings/ExportDataButton";
+import StripeConnectSection from "@/components/settings/StripeConnectSection";
+import VatSettingsSection from "@/components/settings/VatSettingsSection";
+import FinancialProfileSection from "@/components/settings/FinancialProfileSection";
+import FinancialReserveCard from "@/components/dashboard/FinancialReserveCard";
 
 export const dynamic = "force-dynamic";
 
@@ -14,23 +21,60 @@ export default async function SettingsPage() {
   if (!user) redirect("/login");
 
   const t = await getTranslations("settings");
+  const locale = (await getLocale()) as Locale;
+  const financialReserve = await getFinancialReserve(user.id);
+
+  const dbUser = await prisma.user.findUnique({
+    where: { id: user.id },
+    select: {
+      stripeAccountId: true,
+      stripeAccountEnabled: true,
+      country: true,
+      businessLegalStatus: true,
+      activityType: true,
+      vatStatus: true,
+      vatNumber: true,
+      businessName: true,
+      brandLogoUrl: true,
+      brandAccentColor: true,
+      brandFont: true,
+    },
+  });
+
+  const financialProfile = {
+    country: dbUser?.country ?? null,
+    businessLegalStatus: dbUser?.businessLegalStatus ?? null,
+    activityType: dbUser?.activityType ?? null,
+    vatStatus: dbUser?.vatStatus ?? null,
+  };
+  const countryRules = getCountryRules(financialProfile.country);
+  const isFinancialProfileComplete = countryRules?.isProfileComplete(financialProfile) ?? false;
+
+  // Live-check with Stripe once per page load rather than relying only on the
+  // webhook — Connect onboarding can be finished by the user without any
+  // webhook firing back to us, so this is how "pending" flips to "connected".
+  let stripeStatus: "notConnected" | "pending" | "connected" = "notConnected";
+  if (dbUser?.stripeAccountId) {
+    stripeStatus = dbUser.stripeAccountEnabled ? "connected" : "pending";
+    if (process.env.STRIPE_SECRET_KEY) {
+      try {
+        const account = await getAccountStatus(dbUser.stripeAccountId);
+        const enabled = Boolean(account.charges_enabled && account.payouts_enabled);
+        stripeStatus = enabled ? "connected" : "pending";
+        if (enabled !== dbUser.stripeAccountEnabled) {
+          await prisma.user.update({ where: { id: user.id }, data: { stripeAccountEnabled: enabled } });
+        }
+      } catch (err) {
+        console.error("Stripe account status check failed:", err);
+      }
+    }
+  }
 
   return (
     <div className="max-w-2xl mx-auto space-y-8 md:space-y-10">
       <div>
         <h1 className="text-2xl font-bold">{t("heading")}</h1>
         <p className="text-[#7BA8C4] text-sm mt-0.5">{t("subtitle")}</p>
-      </div>
-
-      <div className="card">
-        <p className="label mb-4">{t("account")}</p>
-        <div className="flex items-center justify-between gap-4">
-          <div className="min-w-0">
-            <p className="text-xs text-[#6A97B4] mb-0.5">{t("email")}</p>
-            <p className="text-sm font-medium text-[#E8F0F8] truncate">{user.email}</p>
-          </div>
-          <SignOutButton />
-        </div>
       </div>
 
       <div className="flex items-start gap-3 px-4 py-3 bg-[#3AB5A00A] border border-[#3AB5A018] rounded-xl">
@@ -46,6 +90,23 @@ export default async function SettingsPage() {
         <p className="text-sm text-[#7BA8C4] mb-4">{t("export.body")}</p>
         <ExportDataButton />
       </div>
+
+      <StripeConnectSection status={stripeStatus} />
+
+      <FinancialProfileSection
+        country={financialProfile.country}
+        businessLegalStatus={financialProfile.businessLegalStatus}
+        activityType={financialProfile.activityType}
+        vatStatus={financialProfile.vatStatus}
+        isComplete={isFinancialProfileComplete}
+      />
+
+      <VatSettingsSection
+        vatStatus={dbUser?.vatStatus ?? null}
+        vatNumber={dbUser?.vatNumber ?? null}
+      />
+
+      <FinancialReserveCard data={financialReserve} locale={locale} />
 
       <DeleteAccountSection email={user.email ?? ""} />
     </div>

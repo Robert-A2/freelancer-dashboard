@@ -12,6 +12,8 @@ export default async function DemoHistoryPage({
   searchParams: Promise<{ page?: string; type?: string; category?: string; year?: string; month?: string; q?: string }>;
 }) {
   const t      = await getTranslations("history");
+  const tCat   = await getTranslations("categories");
+  const cat    = (slug: string) => tCat.has(slug) ? tCat(slug as Parameters<typeof tCat>[0]) : slug;
   const locale = (await getLocale()) as Locale;
   const params = await searchParams;
 
@@ -147,7 +149,7 @@ export default async function DemoHistoryPage({
                       {tx.category && (
                         <>
                           <span className="text-[#243F5E]">·</span>
-                          <span className="capitalize">{tx.category}</span>
+                          <span>{cat(tx.category)}</span>
                         </>
                       )}
                     </p>

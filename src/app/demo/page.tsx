@@ -2,7 +2,11 @@ import { getTranslations, getLocale } from "next-intl/server";
 import { INTL_LOCALES, type Locale } from "@/i18n/locales";
 import { getDemoDataset } from "@/lib/demo";
 import { generateDashboardIntelligence } from "@/lib/intelligence-engine";
+import { formatCurrency } from "@/utils/finance";
+import { getMonthlyVerdictKey } from "@/utils/monthlyVerdict";
+import CollapsibleSection from "@/components/ui/CollapsibleSection";
 import SummaryCards from "@/components/dashboard/SummaryCards";
+import ProjectsPromoCard from "@/components/dashboard/ProjectsPromoCard";
 import TrendsChart from "@/components/dashboard/TrendsChart";
 import MonthlyComparisonWidget from "@/components/dashboard/MonthlyComparison";
 import ForecastWidget from "@/components/dashboard/ForecastWidget";
@@ -82,6 +86,7 @@ export default async function DemoDashboardPage() {
   const avgLast6 = last6.length  ? last6.reduce((s, d)  => s + d.income, 0) / last6.length  : 0;
   const avgPrev6 = prev6.length  ? prev6.reduce((s, d)  => s + d.income, 0) / prev6.length  : 0;
   const incTrend = avgPrev6 > 0 ? (avgLast6 - avgPrev6) / avgPrev6 : 0;
+  const incTrendPct = Math.round(incTrend * 100);
 
   const riskLevel: "low" | "medium" | "high" | "critical" =
     posRatio >= 0.85 && incTrend > -0.05 ? "low" :
@@ -91,6 +96,20 @@ export default async function DemoDashboardPage() {
   const followUpClients = clientData.clients.filter(c => c.actions.some(a => a.type === "followUp"));
   const nudgeClients    = followUpClients.slice(0, 3);
   const nudgeExtra      = Math.max(0, followUpClients.length - 3);
+
+  // Peek subtitles — mirrors the real dashboard's collapsed-section summaries.
+  const businessIntelligencePeek = intentBreakdown.hasEnoughDataForDisplay
+    ? t("businessIntelligence.peek", {
+        margin: intentBreakdown.profitMarginPct !== null ? Math.round(intentBreakdown.profitMarginPct) : 0,
+        personalSpend: formatCurrency(intentBreakdown.personalSpend, locale),
+      })
+    : undefined;
+
+  const monthlyPreviousHasData = !!(comparison.previous && (comparison.previous.totalIncome > 0 || comparison.previous.totalExpenses > 0));
+  const monthlyVerdictKey = monthlyPreviousHasData ? getMonthlyVerdictKey(comparison.changes) : null;
+  const monthlyComparisonPeek = monthlyVerdictKey ? t(`monthlyComparison.${monthlyVerdictKey}`) : undefined;
+
+  const historicalInsightsPeek = t("historicalInsights.monthsOfHistory", { count: nonZeroMonths });
 
   return (
     <div className="space-y-8">
@@ -121,10 +140,16 @@ export default async function DemoDashboardPage() {
         riskLevel={riskLevel}
         riskPositiveMonths={riskPositiveMonths}
         riskTotalMonths={riskTotalMonths}
+        incomeTrendPct={incTrendPct}
         summary={intel.snapshotSummary}
         context={intel.snapshotContext}
         periodLabel={comparison.currLabel}
+        currentMonth={comparison.currMonth}
+        currentYear={comparison.currYear}
+        basePath="/demo"
       />
+
+      <ProjectsPromoCard basePath="/demo" />
 
       {nudgeClients.length > 0 && (
         <div className="card">
@@ -159,14 +184,20 @@ export default async function DemoDashboardPage() {
       )}
 
       {intentBreakdown.hasEnoughDataForDisplay ? (
-        <BusinessIntelligence
-          businessProfit={intentBreakdown.businessProfit}
-          profitMarginPct={intentBreakdown.profitMarginPct}
-          personalSpend={intentBreakdown.personalSpend}
-          trueNetCashflow={intentBreakdown.trueNetCashflow}
-          intentInsights={intel.intentInsights}
-          lifeInsights={intel.lifeInsights}
-        />
+        <CollapsibleSection
+          title={t("businessIntelligence.title")}
+          subtitle={businessIntelligencePeek}
+          defaultOpen={false}
+        >
+          <BusinessIntelligence
+            businessProfit={intentBreakdown.businessProfit}
+            profitMarginPct={intentBreakdown.profitMarginPct}
+            personalSpend={intentBreakdown.personalSpend}
+            trueNetCashflow={intentBreakdown.trueNetCashflow}
+            intentInsights={intel.intentInsights}
+            lifeInsights={intel.lifeInsights}
+          />
+        </CollapsibleSection>
       ) : null}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
@@ -175,6 +206,7 @@ export default async function DemoDashboardPage() {
             data={chartData}
             trajectoryInsight={intel.trajectoryInsight}
             trajectoryDetails={intel.trajectoryDetails}
+            riskLevel={riskLevel}
             apiBase="/api/demo"
           />
         </div>
@@ -186,7 +218,12 @@ export default async function DemoDashboardPage() {
         />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
+      <CollapsibleSection
+        label={t("monthlyComparison.monthlySummary")}
+        title={t("monthlyComparison.label")}
+        subtitle={monthlyComparisonPeek}
+        defaultOpen={false}
+      >
         <MonthlyComparisonWidget
           current={comparison.current ?? null}
           previous={comparison.previous ?? null}
@@ -196,17 +233,27 @@ export default async function DemoDashboardPage() {
           currLabel={comparison.currLabel}
           prevLabel={comparison.prevLabel}
         />
-        <RecentTransactions
-          transactions={recent}
-          notable={intel.notableTransactions}
-        />
-      </div>
+      </CollapsibleSection>
+
+      <RecentTransactions
+        transactions={recent}
+        notable={intel.notableTransactions}
+        basePath="/demo"
+      />
 
       {rankedInsights.length > 0 && (
-        <HistoricalInsights
-          insights={rankedInsights}
-          totalMonths={nonZeroMonths}
-        />
+        <CollapsibleSection
+          label={t("historicalInsights.label")}
+          title={t("historicalInsights.title")}
+          subtitle={historicalInsightsPeek}
+          defaultOpen={false}
+        >
+          <HistoricalInsights
+            insights={rankedInsights}
+            totalMonths={nonZeroMonths}
+            basePath="/demo"
+          />
+        </CollapsibleSection>
       )}
     </div>
   );

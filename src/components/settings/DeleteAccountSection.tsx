@@ -6,13 +6,15 @@ import { useTranslations } from "next-intl";
 
 const DELETED_ITEM_KEYS = [
   "account",
-  "uploads",
+  "importHistory",
   "transactions",
   "categories",
-  "dashboardData",
+  "projects",
+  "stripeConnection",
+  "branding",
+  "financialProfile",
   "analytics",
   "forecasts",
-  "historicalInsights",
 ] as const;
 
 type Step = "closed" | "confirming" | "deleting" | "done";
@@ -25,6 +27,7 @@ export default function DeleteAccountSection({ email }: { email: string }) {
   const [step, setStep] = useState<Step>("closed");
   const [input, setInput] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [stripeDeletionFailed, setStripeDeletionFailed] = useState(false);
 
   function close() {
     setStep("closed");
@@ -44,11 +47,15 @@ export default function DeleteAccountSection({ email }: { email: string }) {
       return;
     }
 
+    const data = await res.json().catch(() => ({}));
+    const stripeFailed = Boolean(data?.stripeDeletionFailed);
+    setStripeDeletionFailed(stripeFailed);
+
     setStep("done");
     setTimeout(() => {
       router.push("/");
       router.refresh();
-    }, 1800);
+    }, stripeFailed ? 4000 : 1800);
   }
 
   return (
@@ -77,6 +84,11 @@ export default function DeleteAccountSection({ email }: { email: string }) {
                 </div>
                 <p className="text-lg font-semibold text-[#E8F0F8] mb-1.5">{t("deletedHeading")}</p>
                 <p className="text-sm text-[#7BA8C4]">{t("deletedBody")}</p>
+                {stripeDeletionFailed && (
+                  <p className="text-xs text-[#D4A254] bg-[#D4A25415] rounded-lg px-3 py-2.5 mt-4 leading-relaxed">
+                    {t("stripeDeletionFailed")}
+                  </p>
+                )}
               </div>
             ) : (
               <>

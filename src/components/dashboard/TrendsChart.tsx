@@ -28,10 +28,23 @@ interface Props {
   data: DataPoint[];
   trajectoryInsight?: Insight | null;
   trajectoryDetails?: Insight[];
+  riskLevel?: "low" | "medium" | "high" | "critical";
   apiBase?: string;
 }
 
 // ── Constants ─────────────────────────────────────────────────────────────────
+
+// Byte-for-byte the same as SummaryCards' VERDICT_STYLE, keyed by the exact
+// same riskLevel value that colors the verdict card — not a separately
+// -computed "trend direction," which can (and did) disagree with riskLevel
+// for the same account, making the two cards contradict each other in color.
+// Using the identical input guarantees the two cards can never disagree.
+const TRAJECTORY_BOX_STYLE = {
+  low:      { bg: "bg-[#4CC4A40A]", border: "border-[#4CC4A415]" },
+  medium:   { bg: "bg-[#D4A2540A]", border: "border-[#D4A25415]" },
+  high:     { bg: "bg-[#D970700A]", border: "border-[#D9707015]" },
+  critical: { bg: "bg-[#D970700A]", border: "border-[#D9707015]" },
+} as const;
 
 const TIME_RANGES = [
   { key: "3m",  months: 3   },
@@ -39,6 +52,15 @@ const TIME_RANGES = [
   { key: "12m", months: 12  },
   { key: "all", months: 999 },
 ] as const;
+
+// trajectoryDetails is built oldest-first with a "recent momentum" bullet
+// always last, so the tail end is exactly what matters most today. For a
+// long-running account (years of history) this list otherwise grows one
+// bullet per year forever — capping keeps the card calm by default while the
+// full breakdown stays one click away. Matches CONTEXT_BULLET_CAP on
+// SummaryCards' verdict card so both "verdict + reasons" cards on the
+// dashboard cap at the same count and behave the same way.
+const TRAJECTORY_DETAILS_CAP = 2;
 
 const TOOLTIP_STYLE = {
   backgroundColor: "#132537",
@@ -51,16 +73,22 @@ const TOOLTIP_STYLE = {
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export default function TrendsChart({ data, trajectoryInsight, trajectoryDetails, apiBase = "/api" }: Props) {
+export default function TrendsChart({ data, trajectoryInsight, trajectoryDetails, riskLevel = "low", apiBase = "/api" }: Props) {
   const t      = useTranslations("dashboard.trendsChart");
   const tm     = useTranslations("metrics");
   const locale = useLocale() as Locale;
+  const boxStyle = TRAJECTORY_BOX_STYLE[riskLevel];
 
   const [range,    setRange]    = useState(999);
   const [selMonth, setSelMonth] = useState<SelectedMonth | null>(null);
+  const [detailsExpanded, setDetailsExpanded] = useState(false);
   const closeDrawer = useCallback(() => setSelMonth(null), []);
 
   const sliced = range === 999 ? data : data.slice(-range);
+
+  const allDetails = trajectoryDetails ?? [];
+  const hiddenDetailsCount = Math.max(0, allDetails.length - TRAJECTORY_DETAILS_CAP);
+  const visibleDetails = detailsExpanded ? allDetails : allDetails.slice(-TRAJECTORY_DETAILS_CAP);
 
   if (data.length === 0) {
     return (
@@ -137,19 +165,30 @@ export default function TrendsChart({ data, trajectoryInsight, trajectoryDetails
         </p>
 
         {trajectoryInsight && (
-          <div className="mt-4 bg-[#4CC4A40A] border border-[#4CC4A418] rounded-xl p-4 space-y-2">
-            <p className="text-sm font-medium text-[#E8F0F8]">
+          <div className={`mt-4 ${boxStyle.bg} border ${boxStyle.border} rounded-xl px-5 py-4 space-y-2.5`}>
+            <p className="text-sm font-medium text-[#E8F0F8] leading-relaxed">
               <InsightText insight={trajectoryInsight} />
             </p>
-            {trajectoryDetails && trajectoryDetails.length > 0 && (
-              <ul className="space-y-1">
-                {trajectoryDetails.map((line, i) => (
-                  <li key={i} className="text-sm text-[#A8C6E0] flex items-start gap-2">
-                    <span className="text-[#4CC4A4] opacity-70 flex-shrink-0 mt-0.5">·</span>
+            {visibleDetails.length > 0 && (
+              <ul className="space-y-2">
+                {visibleDetails.map((line, i) => (
+                  <li key={i} className="text-sm text-[#A8C6E0] flex items-start gap-2.5 leading-relaxed">
+                    <span className="text-[#7BA8C4] opacity-60 flex-shrink-0 mt-1">·</span>
                     <span><InsightText insight={line} /></span>
                   </li>
                 ))}
               </ul>
+            )}
+            {hiddenDetailsCount > 0 && (
+              <button
+                onClick={() => setDetailsExpanded(!detailsExpanded)}
+                className="flex items-center gap-1 text-xs font-medium text-[#7BA8C4] hover:text-[#A8C6E0] transition-colors"
+              >
+                {detailsExpanded ? t("showFewerDetails") : t("showMoreDetails", { count: hiddenDetailsCount })}
+                <svg className={`w-3.5 h-3.5 transition-transform ${detailsExpanded ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                </svg>
+              </button>
             )}
           </div>
         )}

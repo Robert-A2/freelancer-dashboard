@@ -37,13 +37,6 @@ export default function BusinessIntelligence({
 
   return (
     <div className="card space-y-5">
-      <div className="flex items-center justify-between">
-        <span className="label">{t("title")}</span>
-        <span className="text-[11px] font-medium text-[#6A97B4] bg-[#0D1B2B] px-2.5 py-1 rounded-md">
-          {t("allTime")}
-        </span>
-      </div>
-
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="bg-[#0D1B2B] border border-[#1E3550] rounded-xl p-4 space-y-1.5">
           <p className="label">{t("businessProfit")}</p>

@@ -103,6 +103,11 @@ async function computeByMonthForAccount(
 // Uses the MOST RECENT month with actual data as "current", not the wall-clock
 // current month. This prevents the dashboard from showing zeros when a user's
 // most recent upload doesn't extend to today.
+
+// The Dashboard's Recent Activity card shows a short, scannable peek — the
+// "View all transactions" link is right there for anyone who wants more.
+const RECENT_ACTIVITY_LIMIT = 5;
+
 export async function getDashboardSummary(userId: string, accountId?: string | null) {
   // ── Per-account path ────────────────────────────────────────────────────────
   if (accountId) {
@@ -118,7 +123,7 @@ export async function getDashboardSummary(userId: string, accountId?: string | n
     const recentTxs = await prisma.transaction.findMany({
       where: { userId, accountId },
       orderBy: { transactionDate: "desc" },
-      take: 10,
+      take: RECENT_ACTIVITY_LIMIT,
       include: { account: { select: { name: true, color: true } } },
     });
 
@@ -148,7 +153,7 @@ export async function getDashboardSummary(userId: string, accountId?: string | n
     const recent = await prisma.transaction.findMany({
       where: { userId },
       orderBy: { transactionDate: "desc" },
-      take: 10,
+      take: RECENT_ACTIVITY_LIMIT,
       include: { account: { select: { name: true, color: true } } },
     });
     return { current: null, previous: null, recent };
@@ -169,7 +174,7 @@ export async function getDashboardSummary(userId: string, accountId?: string | n
     prisma.transaction.findMany({
       where: { userId },
       orderBy: { transactionDate: "desc" },
-      take: 10,
+      take: RECENT_ACTIVITY_LIMIT,
       include: { account: { select: { name: true, color: true } } },
     }),
   ]);

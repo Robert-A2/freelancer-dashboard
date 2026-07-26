@@ -1,7 +1,7 @@
 {
   "common": {
-    "appName": "Freelancer OS",
-    "tagline": "Financial clarity built for freelancers",
+    "appName": "Nonodia",
+    "tagline": "Financial Operating System for Freelancers",
     "nav": {
       "dashboard": "Dashboard",
       "dashboardMobile": "Home",
@@ -15,7 +15,13 @@
       "forecastMobile": "Forecast",
       "clients": "Clients",
       "clientsMobile": "Clients",
-      "settings": "Settings"
+      "projects": "Projects",
+      "projectsMobile": "Projects",
+      "reports": "Reports",
+      "reportsMobile": "Reports",
+      "settings": "Settings",
+      "profile": "Profile",
+      "account": "Account"
     },
     "buttons": {
       "cancel": "Cancel",
@@ -30,6 +36,7 @@
       "signIn": "Sign in",
       "signUp": "Sign up",
       "signOut": "Sign out",
+      "signingOut": "Signing out…",
       "getStarted": "Get started",
       "createAccount": "Create account"
     },
@@ -52,197 +59,113 @@
     }
   },
   "landing": {
+    "nav": {
+      "signIn": "Sign in",
+      "getStarted": "Get started"
+    },
     "hero": {
-      "badge": "Made by a freelancer, for freelancers",
-      "title": "Finally understand where your money goes.",
-      "subtitle": "Freelance income doesn't arrive on a schedule. Most finance tools assume it does. Freelancer OS reads your bank statement and shows you what actually happened, what's coming next, and what to do about it.",
-      "cta": "Upload your first CSV →",
-      "alreadyHaveAccount": "Already have an account? Sign in",
-      "tagline": "Free · Any bank · Any CSV format",
-      "trust": {
-        "encrypted": "Encrypted",
-        "neverSold": "Never sold",
-        "deleteAnytime": "Delete anytime"
-      }
+      "titleLead": "Stop managing bureaucracy.",
+      "titleMain": "Start understanding your survival.",
+      "bodyLight": "A financial operating system built for freelance income — not steady paychecks.",
+      "bodyDark": "Nonodia helps you analyze your CSV and cashflow, send milestone invoice links paid via Stripe, and instantly see your true cash runway.",
+      "cta": "Get started free"
     },
-    "understand": {
-      "eyebrow": "After one upload",
-      "title": "Real answers. Not just numbers.",
-      "subtitle": "Freelancer OS explains your finances in plain language. The questions you actually ask, answered automatically.",
-      "cards": [
-        {
-          "title": "What happened this month",
-          "body": "Income vs expenses vs your historical average. Know immediately if this was a strong month or a difficult one."
-        },
-        {
-          "title": "Where your money is going",
-          "body": "Every transaction categorised automatically. Subscriptions, tools, travel, taxes, visible in one clear view."
-        },
-        {
-          "title": "What is coming next",
-          "body": "Cashflow forecasts built from your actual patterns. Know if next month looks tight before it arrives."
-        },
-        {
-          "title": "What to do about it",
-          "body": "Specific recommendations based on your real numbers. Not generic advice. Actions from your own financial data."
-        }
-      ]
+    "forecastShowcase": {
+      "healthExplanation": "Worth watching — a mixed picture, with 11 positive and 3 negative months out of the last 14.",
+      "directionInsight": "Over the past 14 months (Jun 2025 – Jul 2026), income fell 86%, from €5,600 to €800. Meanwhile, Taxes spending has been growing."
     },
-    "recognition": {
-      "eyebrow": "If this sounds familiar",
-      "title": "Most months don't look like the last one.",
-      "body": "One month feels comfortable. The next, a client pays late and everything feels tight. You've got a spreadsheet you update sometimes. You're fairly sure things are okay, but fairly sure isn't the same as knowing.",
-      "items": [
-        "I don't know if this month was actually good, or just felt good.",
-        "I have no idea where 400 euros a month quietly disappears to.",
-        "I can't tell if my business is growing, or I'm just busier.",
-        "The only time I really look at this properly is at tax time."
-      ]
-    },
-    "walkthrough": {
-      "eyebrow": "What happens after you upload",
-      "title": "From bank statement to financial clarity in under a minute.",
-      "caption": "This is what happens in about 30 seconds.",
+    "csvHelp": {
+      "trigger": "How to get my bank data?",
+      "heading": "Three simple steps",
       "steps": [
         {
-          "label": "Upload",
-          "title": "Upload your statement",
-          "body": "Export a CSV from any bank. Revolut, Monzo, AIB, HSBC, Wise, or any bank worldwide."
+          "title": "Log into your bank",
+          "body": "Go to your bank's website or app and open your account, then go to Documents & Statements."
         },
         {
-          "label": "Detect",
-          "title": "Transactions detected",
-          "body": "Every row is read automatically. Dates, amounts and descriptions, all in one place."
+          "title": "Find the options",
+          "body": "Select the account you want — personal, business, or any account type — then click Account Statement."
         },
         {
-          "label": "Categorise",
-          "title": "Automatically categorised",
-          "body": "Software, client payments, travel, taxes. Tagged for you, and you can correct anything in one click."
-        },
-        {
-          "label": "Insights",
-          "title": "Plain language insights",
-          "body": "What changed this month and why, explained in words you'd use yourself."
-        },
-        {
-          "label": "Forecast",
-          "title": "What's coming next",
-          "body": "A cashflow forecast built from your own patterns, not industry averages."
-        },
-        {
-          "label": "Recommend",
-          "title": "What to do about it",
-          "body": "Specific suggestions based on your numbers, not generic advice."
+          "title": "Download",
+          "body": "Choose the years you wish to include, then click Download, Generate, or Export. Come back here and upload it, and we'll give you clarity."
         }
       ],
-      "sample": {
-        "transactions": [
-          { "desc": "Acme Ltd payment", "amount": "+€2,400.00", "category": "Client payment" },
-          { "desc": "Adobe Creative Cloud", "amount": "-€59.99", "category": "Software" },
-          { "desc": "Train ticket to Lyon", "amount": "-€84.00", "category": "Travel" },
-          { "desc": "Transfer to savings", "amount": "-€500.00", "category": "Savings" }
-        ],
-        "income": "Income",
-        "expenses": "Expenses",
-        "cashflow": "Cashflow",
-        "incomeValue": "€2,400.00",
-        "expensesValue": "€143.99",
-        "cashflowValue": "€2,256.01",
-        "insightTitle": "Software costs are up 14% this month",
-        "insightBody": "Mainly a new Adobe plan added in March.",
-        "forecastLabel": "Next month",
-        "forecastValue": "Cashflow around €1,890",
-        "recommendationTitle": "Suggestion",
-        "recommendationBody": "Software subscriptions are running at about €984/year — worth checking whether all are still needed."
+      "footer": "Every major bank supports CSV export. If you run into any difficulties, ask your bank for help."
+    },
+    "liveDemo": {
+      "badge": "See in action",
+      "title": "View a real\nfreelance business",
+      "subtitle": "Explore three years of Sophie Martin's freelance business. Discover how Nonodia uncovers income and expense trends, client concentration, cash flow, and forecasts.",
+      "cta": "Explore Interactive Demo",
+      "ctaNote": "No account required. Opens in seconds."
+    },
+    "problem": {
+      "title": "Worry less.\nNonodia gives you real answers.",
+      "body": "Most finance tools bury you in administrative busywork — asking: \"Did you categorize this receipt?\" or \"Did you log this utility bill?\"",
+      "questionsIntro": "They never answer the critical, late-night questions that actually keep independent creators awake:",
+      "questions": [
+        "Is my business genuinely healthy right now?",
+        "If my current client project delays for three weeks, when do I run out of money?",
+        "How much of this invoice payment is actually mine to spend, and how much belongs to the tax collector?"
+      ]
+    },
+    "valueProp": {
+      "title": "We understand the reality\nof your inconsistent income",
+      "items": [
+        {
+          "title": "Free-forever white-labeling, no \"brand tax\"",
+          "body": "Other platforms charge a separate monthly fee just to remove their watermark from your client-facing pages. We think that's ridiculous. Your brand belongs to you. Customize your invoices and client portals with your own logo, fonts, and colors for €0. Forever."
+        },
+        {
+          "title": "Live milestone runway forecasting",
+          "body": "Milestone payments are volatile and high-ticket, not steady. We pair your monthly burn rate with your upcoming milestones, so your dashboard shows exactly how many months of runway you have — live."
+        },
+        {
+          "title": "The visual tax shield",
+          "body": "See your gross payout versus your true net spendable cash instantly. Your estimated tax bracket is isolated right on your screen, so you never accidentally spend money that belongs to the tax collector."
+        }
+      ],
+      "demo": {
+        "cta": "See example",
+        "invoiceHeading": "Milestone Timeline",
+        "project": "Acme Co. — Website Redesign",
+        "milestones": [
+          { "label": "Milestone 1 — Deposit", "status": "Paid", "state": "paid", "amount": "€3,200", "due": "Jan 10" },
+          { "label": "Milestone 2 — Design", "status": "Paid", "state": "paid", "amount": "€4,200", "due": "Mar 14" },
+          { "label": "Milestone 3 — Launch", "status": "Upcoming", "state": "upcoming", "amount": "€2,600", "due": "Due October 2" }
+        ]
+      },
+      "taxDemo": {
+        "cta": "See example",
+        "heading": "Payout Breakdown",
+        "subtitle": "Acme Co. — Website Redesign",
+        "grossLabel": "Gross payout (all 3 milestones)",
+        "gross": "€10,000",
+        "taxLabel": "Estimated tax reserve (25%)",
+        "taxAmount": "−€2,500",
+        "netLabel": "Net spendable",
+        "net": "€7,500"
       }
     },
-    "history": {
-      "eyebrow": "Deep history",
-      "title": "The more history you upload, the smarter it gets.",
-      "body": "Upload 1 year, 5 years, or 10+ years of bank statements. Freelancer OS builds one continuous financial timeline and automatically identifies patterns, seasonal income cycles, spending habits, and long-term changes, far more than you could ever spot manually.",
-      "points": [
-        "Seasonal income patterns and quiet periods",
-        "Year-over-year business growth or decline",
-        "Your strongest quarters and your weakest",
-        "Long-term spending trends by category",
-        "Recurring expense cycles you may not have noticed"
-      ],
-      "tiers": [
-        {
-          "label": "1 year",
-          "title": "Monthly patterns",
-          "body": "Income trends, expense categories, cashflow health, and your first forecast."
-        },
-        {
-          "label": "5 years",
-          "title": "Seasonal cycles",
-          "body": "Which months are consistently strong. Which are slow. How your business has grown year by year."
-        },
-        {
-          "label": "10+ years",
-          "title": "Your complete financial journey",
-          "body": "Long-term trends, major financial shifts, and patterns that only become visible across a decade of data."
-        }
-      ]
-    },
-    "philosophy": {
-      "eyebrow": "Why this exists",
-      "title": "Financial clarity shouldn't be a luxury.",
-      "subtitle": "A few things we believe, and why Freelancer OS works the way it does.",
-      "items": [
-        {
-          "title": "You shouldn't need an accountant to understand your own business.",
-          "body": "Your bank statement already has the answers. We just make them visible."
-        },
-        {
-          "title": "Irregular income doesn't mean uninformed decisions.",
-          "body": "Forecasts and insights built for how freelancers actually get paid, not how salaried tools assume everyone gets paid."
-        },
-        {
-          "title": "Your data is yours.",
-          "body": "Upload it, learn from it, make better decisions, make improvements, and stop stressing."
-        }
-      ]
-    },
-    "privacy": {
-      "eyebrow": "Your data",
-      "title": "Private. Secure. Yours.",
-      "subtitle": "Your financial data is personal. We treat it that way.",
-      "items": [
-        {
-          "title": "Bank-level encryption",
-          "body": "All data encrypted in transit and at rest."
-        },
-        {
-          "title": "Never sold",
-          "body": "We never sell, share, or use your data for advertising."
-        },
-        {
-          "title": "You're always in control",
-          "body": "Recategorise any transaction and everything updates instantly: totals, forecasts and insights."
-        },
-        {
-          "title": "Delete anytime",
-          "body": "Remove your account and all data permanently with one click."
-        },
-        {
-          "title": "No third-party tracking",
-          "body": "Your financial data stays on our servers only."
-        },
-        {
-          "title": "Early days, real numbers",
-          "body": "Categorisation won't be perfect on day one. Correct anything and it learns for next time."
-        }
-      ]
+    "pricing": {
+      "eyebrow": "How we make money",
+      "title": "We only win when you get paid.",
+      "body1": "We don't charge a flat monthly fee, because we don't think you should pay for software during dry periods.",
+      "body2": "Our core operating platform is completely free to use. Create unlimited projects, run your business, and customize your branding without ever entering a credit card. We only make money by collecting a lean 0.3% fee when your client successfully clears a milestone invoice through your secure payment link — deducted automatically from your payout, never added to what your client pays.",
+      "highlight": "If you aren't earning, our tool costs you absolutely nothing."
     },
     "finalCta": {
-      "title": "Start understanding your finances today.",
-      "body": "Upload your first bank statement in under a minute. No setup. No spreadsheets. Just clarity.",
-      "cta": "Get started free →",
-      "tagline": "Free · Delete your data anytime · Takes about a minute"
+      "title": "Take control of your business's financial life today.",
+      "body": "Every hour lost to complicated software is an hour stolen from your craft. Nonodia is built simple, different from traditional tools, so developers, designers, video editors, and consultants can reclaim that time now.",
+      "cta": "Get started"
     },
     "footer": {
-      "tagline": "Financial clarity built for freelancers"
+      "tagline": "Financial Operating System for Freelancers",
+      "privacyPolicy": "Privacy Policy",
+      "termsOfService": "Terms of Service",
+      "dataPrivacy": "Data Privacy",
+      "copyright": "© 2026 Nonodia"
     }
   },
   "auth": {
@@ -346,7 +269,7 @@
     "email": "Email",
     "dataNotice": {
       "title": "Your data belongs to you.",
-      "body": "Freelancer OS never sells or shares your financial data. You can leave at any time, and permanently remove every record we hold about you — no questions asked."
+      "body": "Nonodia never sells or shares your financial data. You can leave at any time, and permanently remove every record we hold about you — no questions asked."
     },
     "signingOut": "Signing out…",
     "export": {
@@ -355,29 +278,127 @@
       "cta": "Download CSV",
       "downloading": "Preparing download…"
     },
+    "payments": {
+      "label": "Payments",
+      "notConnectedBody": "Connect Stripe to send milestone payment links to clients. Payments go straight to your own Stripe account — Nonodia takes a flat 0.3% fee per milestone, automatically, nothing else.",
+      "connect": "Connect Stripe",
+      "connecting": "Connecting…",
+      "pendingBody": "You started connecting Stripe but setup isn't finished yet. Finish setup to start accepting payments.",
+      "finishSetup": "Finish setup",
+      "connectedLabel": "Connected",
+      "connectedBody": "Milestone payments go straight to your Stripe account. Nonodia takes a flat 0.3% fee per milestone, automatically, nothing else."
+    },
+    "financialProfile": {
+      "label": "Financial profile",
+      "body": "Optional — completing this makes your Financial Reserve breakdown exact instead of an estimate. Nonodia works fine without it.",
+      "country": "Country",
+      "countryUnselected": "Select your country",
+      "countryFrance": "France",
+      "countryOther": "Other (not yet supported — you'll keep using the general estimate)",
+      "legalStatus": "Business legal status",
+      "legalStatusUnselected": "Select your status",
+      "legalStatusMicroEntrepreneur": "Micro-entrepreneur / Auto-entrepreneur",
+      "legalStatusOther": "Other (not yet supported)",
+      "activityType": "Activity type",
+      "activityTypeUnselected": "Select your activity",
+      "activityTypeBnc": "Liberal profession (design, dev, consulting, writing…)",
+      "activityTypeBicServices": "Commercial or craft services",
+      "activityTypeBicVente": "Selling goods",
+      "vatStatus": "VAT status",
+      "vatStatusUnselected": "Select your VAT status",
+      "vatStatusExempt": "Exempt (below the threshold)",
+      "vatStatusRegistered": "Registered for VAT",
+      "vatStatusUnknown": "Not sure",
+      "save": "Save",
+      "saved": "Saved",
+      "complete": "Your profile is complete — your Financial Reserve is now calculated exactly.",
+      "incomplete": "Incomplete — the Financial Reserve card is showing a general estimate until this is filled in."
+    },
+    "branding": {
+      "label": "Branding",
+      "body": "Free, forever — your logo, color, and font on the payment page your clients see. No Nonodia branding forced on them.",
+      "businessName": {
+        "label": "Business name",
+        "placeholder": "e.g. Jane Doe Design Studio Ltd."
+      },
+      "logo": {
+        "label": "Logo",
+        "upload": "Upload logo",
+        "replace": "Replace logo",
+        "uploading": "Uploading…",
+        "uploadError": "Couldn't upload that file. Try a PNG, JPG, SVG, or WebP."
+      },
+      "color": {
+        "label": "Accent color"
+      },
+      "font": {
+        "label": "Font"
+      },
+      "save": "Save",
+      "saved": "Saved",
+      "saveError": "Couldn't save your branding. Try again.",
+      "footer": "Applied automatically to every payment link you send a client."
+    },
+    "vat": {
+      "label": "VAT / Tax",
+      "body": "Charging VAT you're not registered for is illegal — this stays off by default. Turn it on only if you're actually registered.",
+      "toggle": {
+        "label": "I am registered for VAT / GST / Sales tax",
+        "body": "When on, you can add your VAT number and set a tax rate on new invoices."
+      },
+      "vatNumber": {
+        "label": "VAT / Tax registration number",
+        "placeholder": "e.g. GB123456789"
+      },
+      "save": "Save",
+      "saved": "Saved",
+      "saveError": "Couldn't save. Try again.",
+      "footer": "Shown on invoices only when you're registered. We calculate an estimated tax reserve for everyone else — see Financial Profile below."
+    },
     "deleteAccount": {
       "dangerZone": "Danger Zone",
-      "warning": "Permanently delete your account and every record associated with it — uploads, transactions, categories, analytics, and forecasts. This cannot be undone.",
+      "warning": "Permanently delete your account and every record associated with it — imports, transactions, projects, your Stripe connection, and branding. This cannot be undone.",
       "button": "Delete Account",
       "heading": "Delete Account",
       "permanentNotice": "This action is permanent and cannot be undone",
       "willRemove": "Deleting <b>{email}</b> will permanently remove the following:",
       "items": {
         "account": "Account",
-        "uploads": "Uploaded CSV files",
+        "importHistory": "Import history",
         "transactions": "Transactions",
         "categories": "Categories and corrections",
-        "dashboardData": "Dashboard data",
+        "projects": "Projects and milestones",
+        "stripeConnection": "Your Stripe payment connection",
+        "branding": "Uploaded logo and branding",
+        "financialProfile": "Financial and tax profile",
         "analytics": "Analytics",
-        "forecasts": "Forecasts",
-        "historicalInsights": "Historical insights"
+        "forecasts": "Forecasts"
       },
       "confirmWord": "DELETE",
       "confirmPrompt": "To confirm, type <b>{word}</b> below:",
       "deleting": "Deleting…",
       "deletedHeading": "Account successfully deleted",
       "deletedBody": "Taking you back to the homepage…",
+      "stripeDeletionFailed": "Everything in Nonodia is deleted. Your Stripe payment account couldn't be closed automatically — usually because it still has a balance or pending payout. Contact us and we'll help you close it.",
       "error": "Something went wrong while deleting your account. Please try again."
+    }
+  },
+  "profile": {
+    "heading": "Profile",
+    "subtitle": "Your personal details and how you appear to clients",
+    "personalDetails": {
+      "label": "Personal details",
+      "body": "Your name identifies you across Nonodia. It's not shown to clients unless you also set it as your business name.",
+      "name": {
+        "label": "Full name"
+      },
+      "email": {
+        "label": "Email",
+        "note": "Contact support to change the email on your account."
+      },
+      "save": "Save",
+      "saved": "Saved",
+      "saveError": "Couldn't save. Try again."
     }
   },
   "accountTypes": {
@@ -564,16 +585,20 @@
   },
   "history": {
     "heading": "History",
+    "subheading": "Every transaction, searchable and filterable.",
     "transactionCount": "{count, plural, one {# transaction} other {# transactions}}",
+    "showing": "{count, plural, one {# transaction} other {# transactions}}",
     "noResults": "No transactions match these filters.",
     "reconciliation": {
       "backToDashboard": "← Back to dashboard",
       "incomeTotal": "Your {period} income is {amount} across {count, plural, one {# transaction} other {# transactions}}. Every row below is included in this number.",
       "expenseTotal": "Your {period} expenses are {amount} across {count, plural, one {# transaction} other {# transactions}}. Every row below is included in this number.",
-      "allTotal": "All transactions for {period}: {count, plural, one {# transaction} other {# transactions}}. Income minus expenses equals your cashflow for this period."
+      "allTotal": "All transactions for {period}: {count, plural, one {# transaction} other {# transactions}}. Income minus expenses equals your cashflow for this period.",
+      "cashflowTotal": "Your {period} cashflow is {amount} — {income} income minus {expenses} expenses, across {count, plural, one {# transaction} other {# transactions}}. Every row below is included in this number."
     },
     "pagination": {
       "previous": "← Previous",
+      "prev": "← Previous",
       "next": "Next →",
       "pageOf": "Page {page} of {pages}"
     },
@@ -594,8 +619,11 @@
     },
     "filters": {
       "searchPlaceholder": "Search transactions…",
+      "search": "Search transactions…",
       "all": "All",
+      "allTypes": "All types",
       "income": "Income",
+      "expense": "Expense",
       "expenses": "Expenses",
       "savings": "Savings",
       "internal": "Internal",
@@ -603,6 +631,8 @@
       "allCategories": "All categories",
       "allYears": "All years",
       "allMonths": "All months",
+      "apply": "Apply",
+      "clear": "Clear",
       "clearAll": "Clear all filters"
     },
     "recategorize": {
@@ -641,6 +671,7 @@
     "verdictAtRisk": "Your business is under pressure.",
     "showingDataThrough": "Based on data through {date}",
     "noDataYet": "No data uploaded yet",
+    "projectsOnlyYet": "Your projects are live.",
     "transactionsMonths": "{transactions, plural, one {# transaction} other {# transactions}} · {months, plural, one {# month} other {# months}}",
     "health": {
       "healthy": "Healthy",
@@ -658,11 +689,90 @@
     "emptyState": {
       "heading": "Built for freelancers",
       "body": "Upload your bank statement CSV to get cashflow clarity, intelligent insights, and forecasts designed specifically for freelance income patterns.",
-      "cta": "Upload CSV"
+      "cta": "Upload CSV",
+      "ctaProjects": "Or create a project to send your first invoice →"
+    },
+    "noCsvYet": {
+      "title": "Full cashflow insights need a bank statement",
+      "body": "Your projects and expected income are already tracked below. Upload a CSV to add spending analytics, trends, and forecasts on top.",
+      "cta": "Upload CSV →"
+    },
+    "expectedIncome": {
+      "label": "Expected income",
+      "thisMonth": "Expected this month",
+      "fromMilestones": "{count, plural, one {From # project milestone} other {From # project milestones}}",
+      "taxNote": "{gross} gross, after ~{pct}% estimated tax",
+      "beforeTax": "Before tax reserve",
+      "showingOf": "Showing {shown} of {total}",
+      "overdueNote": "{count, plural, one {# is overdue} other {# are overdue}} · {amount} still outstanding",
+      "viewAll": "View projects",
+      "emptyState": {
+        "title": "Get paid without an invoice",
+        "body": "Create a project, split it into milestones, and see expected income the moment you create it — before any payment happens.",
+        "cta": "Start a project",
+        "ctaDemo": "Sign up to start a project"
+      }
+    },
+    "financialReserveCard": {
+      "label": "Financial reserve",
+      "estimatedHeading": "Estimated Reserve",
+      "estimatedDisclaimer": "This estimate is based on a typical freelancer profile. Complete your profile for a more accurate calculation.",
+      "manualOverrideNote": "Using your own rate of {rate}%.",
+      "adjustEstimate": "Adjust estimate",
+      "completeProfile": "Complete your profile above for an exact calculation",
+      "reserveThisMonth": "Reserve this month: {amount} ({rate}% of {income})",
+      "availableToSpend": "Available to spend this month",
+      "buckets": {
+        "socialContributions": "Social contributions",
+        "incomeTax": "Income tax",
+        "vat": "VAT",
+        "emergencyBuffer": "Emergency buffer"
+      },
+      "notes": {
+        "socialContributionsUnsupportedStatus": "Not supported for your legal status yet",
+        "incomeTaxVariesByBracket": "Varies by your personal tax bracket — not included",
+        "vatBelowThreshold": "Below the VAT threshold — none due",
+        "vatOverThreshold": "May be over the VAT threshold — rate varies, not included",
+        "vatRegisteredRateVaries": "Registered for VAT — exact rate varies by activity, not included",
+        "emergencyBufferLow": "Your income has been steady over the last 6 months",
+        "emergencyBufferMedium": "Your income has varied moderately over the last 6 months",
+        "emergencyBufferHigh": "Your income has varied significantly over the last 6 months",
+        "emergencyBufferUnknown": "Not enough history yet to measure — using a conservative default"
+      },
+      "footer": "Reference rates, not tax advice. Verify with an accountant.",
+      "adjustPanel": {
+        "label": "Your reserve rate",
+        "placeholder": "e.g. 25",
+        "save": "Save",
+        "cancel": "Cancel"
+      }
+    },
+    "runwayCard": {
+      "label": "Cash runway",
+      "months": "{count, plural, one {# month} other {# months}}",
+      "body": "{net} in net outstanding milestones ({count, plural, one {# milestone} other {# milestones}}) ÷ an average spend of {burn}/month.",
+      "taxNote": "{gross} gross, after ~{pct}% estimated tax",
+      "noPipeline": "No pipeline outstanding right now",
+      "noPipelineBody": "Everything you've invoiced through Projects has been paid — nothing currently lined up as expected income.",
+      "notEnoughHistory": "Not enough expense history yet to calculate coverage."
+    },
+    "projectsPromo": {
+      "title": "Get paid without an invoice",
+      "body": "Create a project, split it into milestones, and Nonodia automatically tracks expected income and how many months of work you have lined up — before any payment happens.",
+      "cta": "Start a project",
+      "ctaDemo": "Sign up to start a project"
+    },
+    "paymentReceived": {
+      "heading": "Payment received",
+      "detail": "{clientName} paid {amount} for {label} — {projectName}.",
+      "sourceStripe": "Paid via Stripe",
+      "sourceBank": "Confirmed by bank statement",
+      "dismiss": "Dismiss"
     },
     "businessIntelligence": {
       "title": "Business Intelligence",
       "allTime": "All-time totals",
+      "peek": "{margin}% profit margin · {personalSpend} personal spend",
       "coverageGate": {
         "title": "Business Intelligence",
         "body": "Intent analysis activates at 80% coverage — you're at {pct}%. Reviewing flagged transactions unlocks profit tracking, true cashflow, and personal burn rate.",
@@ -670,7 +780,7 @@
       },
       "businessProfit": "Business Profit",
       "businessProfitNote": "Based on categorized expenses — not a tax figure",
-      "margin": "{margin}% margin",
+      "margin": "{margin}% profit margin",
       "trueNetCashflow": "True Net Cashflow",
       "trueNetCashflowNote": "After costs, personal spend & debt",
       "personalBurnRate": "Personal Burn Rate",
@@ -680,7 +790,6 @@
       "showing": "Period",
       "risk": "Risk",
       "totalThisMonth": "total this month",
-      "viewTransactions": "View transactions",
       "partialMonth": "Month in progress — % changes are not final",
       "incomeAboveExpenses": "income above expenses",
       "expensesExceedIncome": "expenses exceed income",
@@ -694,13 +803,17 @@
       "monthsPositive": "{positive} of {total, plural, one {# month} other {# months}} positive",
       "noHistory": "No history yet",
       "cashflowSavingsNote": "Savings transfers not included · does not account for tax owed",
-      "riskSeeBreakdown": "See full breakdown →"
+      "riskTrendNote": "Income down {pct}% recently, even though cashflow stayed positive",
+      "showMoreReasons": "Show {count, plural, one {# more reason} other {# more reasons}}",
+      "showFewerReasons": "Show fewer reasons"
     },
     "trendsChart": {
       "uploadPrompt": "Upload a CSV to see your financial trends.",
       "label": "Financial Outlook",
       "title": "Income vs Expenses",
       "tapHint": "Tap any month to see the breakdown",
+      "showMoreDetails": "Show {count, plural, one {# more detail} other {# more details}}",
+      "showFewerDetails": "Show fewer details",
       "ranges": {
         "3m": "3M",
         "6m": "6M",
@@ -791,6 +904,14 @@
       "answerMedium": "Stay alert — some months show cashflow pressure.",
       "answerHigh": "Yes, be careful — more months are negative than positive.",
       "answerCritical": "Take action now — cashflow is in critical territory."
+    },
+    "expectedFromProjects": {
+      "label": "Expected from projects",
+      "subtitle": "Money you've requested through project milestones but haven't received yet — separate from the CSV-based forecast above, which only counts confirmed transactions.",
+      "overdue": "Overdue",
+      "notSentYet": "Not sent yet",
+      "total": "Total expected",
+      "viewAll": "View all projects"
     },
     "emptyState": {
       "heading": "No data to forecast yet",
@@ -912,7 +1033,8 @@
       "subtitle": "Based on your data — only you know what's actually worth changing."
     },
     "seasonalPatterns": {
-      "label": "Seasonal Patterns"
+      "label": "Seasonal Patterns",
+      "subtitle": "{count, plural, one {# pattern found} other {# patterns found}}"
     },
     "incompleteDataWarning": {
       "title": "Recent income appears lower than usual",
@@ -926,6 +1048,8 @@
     },
     "howBuilt": {
       "label": "How This Forecast Was Built",
+      "methodologyLabel": "The math behind it",
+      "methodologySubtitle": "Confidence, weighting, and assumptions",
       "dataAnalyzed": "Data analyzed",
       "monthsOfHistory": "Months of history",
       "monthsValue": "{count, plural, one {# month} other {# months}}",
@@ -1054,6 +1178,7 @@
       "last12Months": "Last 12 months of your data, by category",
       "noIncomeData": "No income data",
       "expenseBreakdown": "Expense breakdown",
+      "topExpenseCategories": "Top expense categories",
       "allTime": "All time, share of total spending",
       "noExpenseData": "No expense data",
       "revenueSourceNote": "Income sources are identified from bank description patterns. The same platform (e.g. Stripe, PayPal) may appear under multiple entries if payout descriptions vary — and some payouts may be miscategorised if your bank uses generic descriptions."
@@ -1097,7 +1222,9 @@
       "topClients": {
         "title": "Top clients by revenue",
         "subtitle": "Ranked by total revenue, all time",
-        "ofIncome": "{pct}% of income"
+        "ofIncome": "{pct}% of income",
+        "showAll": "Show all {count} clients",
+        "showLess": "Show less"
       },
       "processor": "processor",
       "new": "new",
@@ -1172,7 +1299,8 @@
     "subtitle": "Here's who is paying reliably — and who needs your attention.",
     "verdictAllReliable": "All {n} clients are paying reliably.",
     "verdictMixed": "{current} paying reliably. {followUp} {followUp, plural, one {needs} other {need}} follow-up.",
-    "verdictAllNeedAttention": "All {n} clients need follow-up.",
+    "verdictAllNeedAttention": "{n} {n, plural, one {client needs} other {clients need}} follow-up.",
+    "verdictAllInactive": "{n} {n, plural, one {client has} other {clients have}} gone quiet — nothing urgent, but worth a check-in.",
     "verdictNone": "No active clients yet.",
     "dependOnVerdict": {
       "current": "Yes — {name} is paying consistently.",
@@ -1373,6 +1501,7 @@
       },
       "timeline": {
         "title": "Payment Timeline",
+        "peek": "{count, plural, one {# payment} other {# payments}} · {first} → {last}",
         "gapDays": "{days, plural, one {# day} other {# days}}",
         "unusualGap": "Unusual gap",
         "largestPayment": "Largest",
@@ -1390,6 +1519,132 @@
       "identityUnknownNote": "One or more income transactions could not be matched to a specific client. The bank description did not contain enough information to extract a reliable name. The payment data and timeline below are accurate.",
       "identityTimelineNote": "These transactions are grouped because their bank descriptions share a common pattern — but the source cannot be identified with confidence."
     }
+  },
+  "projects": {
+    "label": "Projects",
+    "title": "Projects & Milestones",
+    "subtitle": "Get paid without writing an invoice.",
+    "emptyState": {
+      "heading": "No projects yet",
+      "body": "Create a project, split it into milestones, and send a payment link — no CSV required.",
+      "cta": "New project"
+    },
+    "newProject": {
+      "cta": "New project",
+      "heading": "New project",
+      "clientName": "Client name",
+      "clientNamePlaceholder": "e.g. Acme Corp",
+      "projectName": "Project name",
+      "projectNamePlaceholder": "e.g. Website redesign",
+      "totalValue": "Total value",
+      "feePreview": "You'll receive {amount} after Nonodia's 0.3% fee",
+      "paymentSplit": "Payment split",
+      "splitFull": "Full amount now",
+      "splitHalf": "50% now, 50% on completion",
+      "splitCustom": "Custom milestones",
+      "milestoneLabelPlaceholder": "Milestone label",
+      "addMilestone": "Add milestone",
+      "removeMilestone": "Remove",
+      "dueDate": "Due date",
+      "reverseCharge": {
+        "label": "This client is an international business (B2B)",
+        "body": "No VAT is charged — the invoice will state that the reverse charge mechanism applies."
+      },
+      "vatRate": {
+        "label": "Tax rate (%)",
+        "hint": "Optional. Leave blank to charge no VAT on this invoice."
+      },
+      "submit": "Create project",
+      "submitting": "Creating…",
+      "cancel": "Cancel",
+      "depositLabel": "Deposit (50%)",
+      "finalLabel": "Final payment (50%)",
+      "fullLabel": "Full payment",
+      "splitMismatch": "Milestones must add up to the total value ({total})",
+      "genericError": "Something went wrong. Please try again."
+    },
+    "milestoneStatus": {
+      "pending": "Not sent",
+      "sent": "Sent",
+      "paid": "Paid",
+      "overdue": "Overdue",
+      "cleared": "Cleared"
+    },
+    "copyLink": "Copy payment link",
+    "copyLinkManually": "Couldn't copy automatically — copy this link:",
+    "resendLink": "Resend link",
+    "linkCopied": "Link copied",
+    "markSent": "Mark as sent",
+    "totalValue": "Total value",
+    "milestones": "{count, plural, one {# milestone} other {# milestones}}",
+    "dueDate": "Due {date}",
+    "vatCaption": "+ {pct}% VAT = {gross}",
+    "reverseChargeBadge": "Reverse charge — no VAT",
+    "completedBadge": "Completed",
+    "archivedBadge": "Archived",
+    "edit": "Edit",
+    "save": "Save",
+    "delete": "Delete",
+    "cancel": "Cancel",
+    "editMilestoneHeading": "Edit milestone",
+    "deleteMilestoneConfirm": "Delete this milestone? This can't be undone.",
+    "deletePermanently": "Delete permanently",
+    "archive": "Archive",
+    "unarchive": "Unarchive",
+    "deleteProject": "Delete project",
+    "deleteProjectConfirm": "Delete this project and its milestones? This can't be undone.",
+    "genericError": "Something went wrong. Please try again.",
+    "noStripeBanner": {
+      "title": "Connect Stripe to get paid",
+      "body": "You can create projects now, but clients can't pay until you connect Stripe. Payments go straight to your own account.",
+      "cta": "Go to Settings"
+    },
+    "brandingNudge": {
+      "title": "Make payment links look like yours",
+      "body": "Add your logo, color, and font once in Settings — every payment link you send from here will use them automatically.",
+      "cta": "Customize branding"
+    },
+    "overdueSummary": {
+      "heading": "{count, plural, one {# payment needs} other {# payments need}} attention",
+      "body": "{amount} overdue across {count, plural, one {# milestone} other {# milestones}}."
+    }
+  },
+  "pay": {
+    "poweredBy": "Powered by Nonodia",
+    "vatId": "VAT ID: {number}",
+    "invoiceMeta": "{number} · {date}",
+    "vatBreakdown": {
+      "net": "Net total",
+      "vat": "VAT ({pct}%)",
+      "gross": "Gross amount due",
+      "reverseChargeNote": "Outside the scope of domestic tax — reverse charge mechanism applies."
+    },
+    "scheduleLabel": "Payment schedule",
+    "milestoneNote": "Staged payments protect you both — a deposit gets the work started, and later payments confirm each stage has actually been delivered.",
+    "amountDue": "Amount due",
+    "payButton": "Pay {amount}",
+    "processing": "Redirecting to secure checkout…",
+    "paidBadge": "Paid",
+    "dueBadge": "Due",
+    "paidOn": "Paid {date}",
+    "dueOn": "Due {date}",
+    "alreadyPaid": {
+      "heading": "This milestone is already paid",
+      "body": "Thank you — this payment has already been received."
+    },
+    "successBanner": {
+      "heading": "Payment received",
+      "body": "Thank you! You're all set — this update is reflected automatically."
+    },
+    "notReady": {
+      "heading": "This project isn't ready to accept payments yet",
+      "body": "The link is valid, but payments haven't been set up on the other end yet. Please check back soon."
+    },
+    "notFound": {
+      "heading": "Payment link not found",
+      "body": "This link may have expired or been mistyped. Please ask for a new link."
+    },
+    "secureNotice": "Payments are processed securely by Stripe. Nonodia never sees or stores your card details."
   },
   "intent": {
     "noIntent": "No intent",
@@ -1542,7 +1797,7 @@
     },
     "trajectory": {
       "moreDataNeeded": "Upload a few more months of data to see your financial trajectory.",
-      "multiYear": "Over {years, plural, one {the past # year} other {the past # years}}, your income has {direction, select, grew {grown <b>{pct}%</b>} declined {declined <b>{pct}%</b>} other {stayed broadly stable}} — from <b>{fromAmount}</b> in {fromYear} to <b>{toAmount}</b> in {toYear}, averaging <b>{avgAmount}</b> per month.",
+      "multiYear": "Over {years, plural, one {the past # year} other {the past # years}}, your income has {direction, select, grew {grown <b>{pct}%</b>} weakeningGrowth {grown <b>{pct}%</b>, but expenses grew even faster (<b>{expPct}%</b>) — which is why this counts as weakening overall} declined {declined <b>{pct}%</b>} other {stayed broadly stable}} — from <b>{fromAmount}</b> in {fromYear} to <b>{toAmount}</b> in {toYear}, averaging <b>{avgAmount}</b> per month.",
       "yearSummaryPartial": "{year}: <b>{income}</b> in income and <b>{expenses}</b> in expenses (partial year).",
       "yearOverYear": "{year}: income {direction, select, up {rose <b>{pct}%</b>} down {fell <b>{pct}%</b>} other {stayed stable}} to <b>{income}</b>.{expNote, select, faster { Expenses grew even faster, by <b>{expPct}%</b>.} fell { Expenses fell <b>{expPct}%</b>.} other {}}",
       "growthWithExpenseNote": "Over {months, plural, one {the past # month} other {the past # months}} ({startMonth} – {endMonth}), income grew <b>{pct}%</b>, from <b>{fromAmount}</b> to <b>{toAmount}</b>.{expNote, select, rose { Expenses also rose, by <b>{expPct}%</b>.} other { Expenses stayed under control.}}",
@@ -1561,9 +1816,9 @@
       "recentMomentum": "Recent momentum: income averaged <b>{recentAvg}</b> ({recentStart} – {recentEnd}), {sign, select, pos {up} other {down}} <b>{pct}%</b> from <b>{priorAvg}</b> the previous 3 months ({priorStart} – {priorEnd})."
     },
     "health": {
-      "healthyGrowing": "Healthy and growing — <b>{posMo}</b> of the last <b>{totalMo}</b> months had positive cashflow, and income is trending up.",
+      "healthyGrowing": "Healthy and growing — <b>{posMo}</b> of the last <b>{totalMo}</b> months had positive cashflow, and income has picked up recently.",
       "healthyStable": "Healthy and stable — <b>{posMo}</b> of the last <b>{totalMo}</b> months had positive cashflow.",
-      "atRiskSqueeze": "At risk — income is trending down while expenses are trending up, squeezing your cashflow.",
+      "atRiskSqueeze": "At risk — income has been trending down recently while expenses have been trending up, squeezing your cashflow.",
       "atRiskNegative": "At risk — <b>{negMo}</b> of the last <b>{totalMo}</b> months had negative cashflow.",
       "watchMixed": "Worth watching — a mixed picture, with <b>{posMo}</b> positive and <b>{negMo}</b> negative months out of the last <b>{totalMo}</b>.",
       "watchIncomeSlowing": "Worth watching — cashflow has stayed positive in all <b>{posMo}</b> of the last <b>{totalMo}</b> months, but income has slowed recently. Keep an eye on this trend.",
@@ -1634,6 +1889,66 @@
       "revenueUp": "Business revenue <b>up {pct}%</b> vs the previous 3-month period.",
       "revenueDown": "Business revenue <b>down {pct}%</b> vs the previous 3-month period.",
       "avgIncome12m": "Average monthly income over the last 12 months: <b>{amount}</b>."
+    }
+  },
+  "reports": {
+    "heading": "Reports",
+    "title": "Annual financial summary",
+    "subtitle": "Three years of Sophie's business — 2023–2025",
+    "overview": {
+      "label": "Overview",
+      "title": "Income, expenses and cashflow",
+      "metric": "Metric",
+      "vsPriorYear": "vs prior yr"
+    },
+    "rows": {
+      "income": "Income",
+      "expenses": "Expenses",
+      "net": "Net",
+      "saved": "Saved",
+      "margin": "Margin"
+    },
+    "taxes": {
+      "label": "Taxes",
+      "title": "Estimated social contributions paid",
+      "ofIncome": "% of income",
+      "note": "URSSAF quarterly contributions only. Does not include income tax (IR)."
+    },
+    "clients": {
+      "label": "Clients",
+      "title": "Revenue by client",
+      "totalAllTime": "Total all-time: {amount}",
+      "client": "Client",
+      "viewProfiles": "View client risk profiles"
+    },
+    "expenses": {
+      "label": "Expenses",
+      "title": "Top categories by year",
+      "yearTotal": "{amount} total"
+    },
+    "income": {
+      "label": "Income",
+      "title": "Income sources by year",
+      "yearTotal": "{amount} total"
+    },
+    "footer": "This is demo data. Sophie Martin — Freelance UX Designer — Paris — 2023–2025"
+  },
+  "demo": {
+    "banner": {
+      "text": "Demo Account — All data shown is fictional. This is Sophie Martin, Freelance UX Designer.",
+      "cta": "Use your own data →"
+    },
+    "uploadProgress": {
+      "steps": {
+        "reading": "Reading statement.csv",
+        "parsing": "Parsing 847 transactions",
+        "detecting": "Detecting income & clients",
+        "categorizing": "Categorizing expenses",
+        "building": "Building your dashboard"
+      },
+      "ready": "Ready — loading your dashboard",
+      "preparing": "Preparing…",
+      "footer": "Sophie Martin — Freelance UX Designer — Paris — 2023–2025"
     }
   }
 }

@@ -1,9 +1,9 @@
 # Database
 
-This document describes every table in the Freelancer OS database, what each field is for, how the tables relate to each other, and how to make safe schema changes.
+This document describes every table in the Nonodia database, what each field is for, how the tables relate to each other, and how to make safe schema changes.
 
 - **What it does**: Stores users, their imported transactions, computed analytics, forecasts, and the merchant-recognition data that powers categorization.
-- **Why it exists**: Freelancer OS is fundamentally a CSV-in, insights-out product. Almost every feature is a query (or a precomputed aggregate) over this schema.
+- **Why it exists**: Nonodia is fundamentally a CSV-in, insights-out product. Almost every feature is a query (or a precomputed aggregate) over this schema.
 - **Where the code is**: [`prisma/schema.prisma`](../prisma/schema.prisma) — the single source of truth for the schema. Prisma generates the TypeScript client from this file (`npm run db:generate`).
 - **How to modify it safely**: see [Making schema changes](#making-schema-changes) at the bottom.
 
@@ -182,6 +182,13 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
+  // Financial profile — drives the Financial Reserve Engine (src/lib/reserve-engine/)
+  country                  String?
+  businessLegalStatus      String?
+  activityType             String?
+  vatStatus                String?
+  manualReservePctOverride Decimal? @db.Decimal(5, 2)
+
   csvImports          CsvImport[]
   transactions        Transaction[]
   monthlyAnalytics    MonthlyAnalytics[]
@@ -199,6 +206,8 @@ model User {
 | `fullName` | Display name, used for greetings ("Welcome back, Robert") and for the self-transfer heuristics in the categorization engine (matching "To Robert Arthur" style descriptions). |
 | `email` | Unique. Mirrors the Supabase Auth email. |
 | `createdAt` / `updatedAt` | Standard audit timestamps. |
+| `country`, `businessLegalStatus`, `activityType`, `vatStatus` | Optional financial profile, set from Settings. Regulatory/personal facts the app can't derive from transaction history. Feeds the pluggable country-rule engine in `src/lib/reserve-engine/countries/` (only France implemented so far — see [PRODUCT.md §8](./PRODUCT.md)). |
+| `manualReservePctOverride` | Optional user-set override (0–100) for the total reserve %, usable at any time but especially before the profile above is complete — lets the user correct the generic 25% estimate without filling in a full profile. |
 
 ### Why a separate `User` table when Supabase Auth already has `auth.users`?
 

@@ -6,11 +6,12 @@ import InsightCard from "./InsightCard";
 interface Props {
   insights: RankedInsight[];
   totalMonths: number;
+  basePath?: string;
 }
 
 const VISIBLE_COUNT = 5;
 
-export default async function HistoricalInsights({ insights, totalMonths }: Props) {
+export default async function HistoricalInsights({ insights, totalMonths, basePath = "" }: Props) {
   if (insights.length === 0) return null;
 
   const t = await getTranslations("dashboard.historicalInsights");
@@ -18,16 +19,6 @@ export default async function HistoricalInsights({ insights, totalMonths }: Prop
 
   return (
     <div className="card">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-2">
-        <div>
-          <p className="label mb-1">{t("label")}</p>
-          <h3 className="text-lg font-semibold text-[#E8F0F8]">{t("title")}</h3>
-        </div>
-        <span className="text-xs text-[#7BA8C4] bg-[#1A3048] px-2 py-1 rounded-lg self-start sm:flex-shrink-0">
-          {t("monthsOfHistory", { count: totalMonths })}
-        </span>
-      </div>
-
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {visible.map((insight, i) => (
           <InsightCard key={i} insight={insight} />
@@ -35,7 +26,7 @@ export default async function HistoricalInsights({ insights, totalMonths }: Prop
       </div>
 
       <Link
-        href="/analytics#financial-story"
+        href={`${basePath}/analytics#financial-story`}
         className="mt-4 flex items-center gap-1.5 text-sm text-[#3AB5A0] hover:text-[#2E9D8A] font-medium transition-colors w-full justify-center py-1"
       >
         {t("viewFull")}

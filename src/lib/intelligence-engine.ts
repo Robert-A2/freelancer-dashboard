@@ -88,6 +88,16 @@ function trendDir(values: number[]): "up" | "down" | "stable" {
   return "stable";
 }
 
+// Single source of truth for "is the business improving/stable/weakening" —
+// used to set businessTrendDirection from the exact same income/expense change
+// figures that produced the trajectoryInsight text shown right next to it in
+// the UI, so the badge and its own caption can never disagree.
+function classifyTrend(incomeChangePct: number, expenseChangePct: number): "improving" | "stable" | "weakening" {
+  if (incomeChangePct > 5 && incomeChangePct > expenseChangePct) return "improving";
+  if (expenseChangePct > incomeChangePct + 5 || incomeChangePct < -5) return "weakening";
+  return "stable";
+}
+
 interface StreakResult {
   length: number;
   startYear: number;
@@ -916,6 +926,9 @@ export function generateDashboardIntelligence(
 
   let trajectoryInsight: Insight | null = null;
   const trajectoryDetails: Insight[] = [];
+  // Set alongside trajectoryInsight in each branch below, from the exact same
+  // income/expense change figures — see classifyTrend().
+  let businessTrendDirection: "improving" | "stable" | "weakening" = "stable";
 
   const spanMonths = active.length;
   const firstPoint = active[0];
@@ -931,6 +944,10 @@ export function generateDashboardIntelligence(
     const overallExpChange = pct(lastPoint.expenses, firstPoint.expenses);
     const avgMonthlyInc = avg(active.map((h) => h.income));
     const avgMonthlyExp = avg(active.map((h) => h.expenses));
+    // Default for the 3-23 month branches below — the multi-year branch
+    // overrides this with a more robust year-over-year figure that matches
+    // its own trajectoryInsight text exactly.
+    businessTrendDirection = classifyTrend(overallIncChange, overallExpChange);
 
     if (spanMonths >= 24 && yearlySnapshots.length >= 2) {
       // ── MULTI-YEAR: show year-by-year journey ─────────────────────────────
@@ -940,12 +957,25 @@ export function generateDashboardIntelligence(
       const reliableBase = yearlySnapshots.find((y) => y.monthCount >= 6) ?? yearlySnapshots[0];
       const yearSpan = lastYear.year - reliableBase.year;
       const totalIncGrowth = pct(lastYear.income, reliableBase.income);
+      const totalExpGrowth = pct(lastYear.expenses, reliableBase.expenses);
+      businessTrendDirection = classifyTrend(totalIncGrowth, totalExpGrowth);
+
+      // Income can grow in absolute terms while still counting as "weakening"
+      // overall, if expenses grew even faster over the same years — that's a
+      // real margin-compression signal, but it needs to be said explicitly or
+      // "grown 16%" reads as a flat contradiction next to a Weakening badge.
+      const direction =
+        businessTrendDirection === "weakening" && totalIncGrowth > 5 ? "weakeningGrowth"
+        : totalIncGrowth > 10 ? "grew"
+        : totalIncGrowth < -10 ? "declined"
+        : "stable";
 
       trajectoryInsight = {
         key: "insights.trajectory.multiYear",
         values: {
-          direction: totalIncGrowth > 10 ? "grew" : totalIncGrowth < -10 ? "declined" : "stable",
+          direction,
           pct: String(Math.abs(totalIncGrowth)),
+          expPct: String(Math.abs(totalExpGrowth)),
           years: yearSpan,
           fromYear: String(reliableBase.year),
           fromAmount: fmtAmt(reliableBase.income, locale),
@@ -1188,31 +1218,6 @@ export function generateDashboardIntelligence(
         ? { key: "insights.health.watchIncomeSlowing", values: { posMo, totalMo } }
         : { key: "insights.health.watchMixed", values: { posMo, totalMo, negMo } };
     }
-  }
-
-  // ── BUSINESS TREND DIRECTION ──────────────────────────────────────────────
-
-  let businessTrendDirection: "improving" | "stable" | "weakening" = "stable";
-
-  if (active.length >= 6) {
-    const mid = Math.floor(active.length / 2);
-    const fh = active.slice(0, mid);
-    const sh = active.slice(mid);
-    const fhInc = avg(fh.map((h) => h.income));
-    const shInc = avg(sh.map((h) => h.income));
-    const fhExp = avg(fh.map((h) => h.expenses));
-    const shExp = avg(sh.map((h) => h.expenses));
-    const incCh = pct(shInc, fhInc);
-    const expCh = pct(shExp, fhExp);
-    if (incCh > 5 && incCh > expCh) businessTrendDirection = "improving";
-    else if (expCh > incCh + 5 || incCh < -5) businessTrendDirection = "weakening";
-  } else if (yearlySnapshots.length >= 2) {
-    const relBase = yearlySnapshots.find((y) => y.monthCount >= 6) ?? yearlySnapshots[0];
-    const lastSnap = yearlySnapshots[yearlySnapshots.length - 1];
-    const incG = pct(lastSnap.income, relBase.income);
-    const expG = pct(lastSnap.expenses, relBase.expenses);
-    if (incG > 5 && incG > expG) businessTrendDirection = "improving";
-    else if (expG > incG + 5 || incG < -5) businessTrendDirection = "weakening";
   }
 
   // ── BIGGEST RISK / OPPORTUNITY — declared here, populated below ───────────

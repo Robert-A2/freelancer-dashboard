@@ -28,12 +28,11 @@ function ChangeChip({ value, invert = false }: { value: number; invert?: boolean
 }
 
 export default async function DemoAnalyticsPage() {
-  const t          = await getTranslations("analytics");
-  const tm         = await getTranslations("metrics");
-  const tCategories = await getTranslations("categories");
-  const locale     = (await getLocale()) as Locale;
+  const t      = await getTranslations("analytics");
+  const tm     = await getTranslations("metrics");
+  const locale = (await getLocale()) as Locale;
 
-  const { chartData, coverage, categoryInsights, concentration, rankedInsights, nonZeroMonths } = getDemoDataset(locale);
+  const { chartData, coverage, categoryInsights, rankedInsights, nonZeroMonths } = getDemoDataset(locale);
   const categoryBreakdown = computeCategoryBreakdown();
   const incomeBySource    = computeIncomeBySource();
   const ytd               = computeYtdTotals();
@@ -43,30 +42,63 @@ export default async function DemoAnalyticsPage() {
   const { dataYear, prevYear, dataMonthMax, ytdInc, ytdExp, ytdCash, prevInc, prevExp, prevCash } = ytd;
   const ytdMargin  = ytdInc  > 0 ? Math.round((ytdCash  / ytdInc)  * 100) : null;
   const prevMargin = prevInc > 0 ? Math.round((prevCash / prevInc) * 100) : null;
-  const showPrevYearComparison = prevInc > 0;
 
-  const now = new Date();
-  const ytdSectionLabel = dataYear === now.getUTCFullYear() ? t("ytdSection.yearToDate") : t("ytdSection.annualComparison");
+  const prevYearStart = new Date(Date.UTC(prevYear, 0, 1));
+  const showPrevYearComparison =
+    prevInc > 0 && !!coverage.earliest && coverage.earliest <= prevYearStart;
+
+  const ytdSectionLabel = dataYear === new Date().getUTCFullYear()
+    ? t("ytdSection.yearToDate")
+    : t("ytdSection.annualComparison");
 
   const ytdStartMonthLabel = new Date(Date.UTC(dataYear, 0, 1)).toLocaleDateString(INTL_LOCALES[locale], { month: "long", timeZone: "UTC" });
   const ytdEndMonthLabel   = new Date(Date.UTC(dataYear, dataMonthMax - 1, 1)).toLocaleDateString(INTL_LOCALES[locale], { month: "long", timeZone: "UTC" });
 
   const totalExpenses = categoryBreakdown.reduce((s, c) => s + c.total, 0);
-  const totalIncSrc   = incomeBySource.reduce((s, c) => s + c.total, 0);
-
   const incSinceLabel = new Date(Date.UTC(dataYear, dataMonthMax - 12, 1)).toISOString();
 
   return (
     <div className="space-y-8 md:space-y-10">
       <div>
-        <h1 className="text-2xl font-bold">{t("title")}</h1>
-        <p className="text-[#7BA8C4] text-sm mt-0.5">{t("subtitle")}</p>
+        <h1 className="text-2xl font-bold">{hasData ? t("titleQuestion") : t("title")}</h1>
+        <p className="text-[#7BA8C4] text-sm mt-0.5">{hasData ? t("subtitleHabits") : t("subtitle")}</p>
       </div>
 
       {coverage.count > 0 && <DataCoverageBar coverage={coverage} />}
 
       {hasData && (
         <>
+          {/* Habit verdict */}
+          <div className={`px-5 py-4 rounded-xl border ${
+            showPrevYearComparison && pctChange(ytdInc, prevInc) > 0 && pctChange(ytdExp, prevExp) <= pctChange(ytdInc, prevInc)
+              ? "bg-[#4CC4A40A] border-[#4CC4A415]"
+              : showPrevYearComparison && pctChange(ytdInc, prevInc) < -5
+              ? "bg-[#D970700A] border-[#D9707015]"
+              : showPrevYearComparison
+              ? "bg-[#D4A2540A] border-[#D4A25415]"
+              : "bg-[#1A3048] border-[#243F5E]"
+          }`}>
+            <p className={`text-sm font-medium leading-relaxed ${
+              showPrevYearComparison && pctChange(ytdInc, prevInc) > 0 && pctChange(ytdExp, prevExp) <= pctChange(ytdInc, prevInc)
+                ? "text-[#4CC4A4]"
+                : showPrevYearComparison && pctChange(ytdInc, prevInc) < -5
+                ? "text-[#D97070]"
+                : showPrevYearComparison
+                ? "text-[#D4A254]"
+                : "text-[#7BA8C4]"
+            }`}>
+              {!showPrevYearComparison
+                ? t("habitVerdict.noComparison")
+                : pctChange(ytdInc, prevInc) > 0 && pctChange(ytdExp, prevExp) <= pctChange(ytdInc, prevInc)
+                ? t("habitVerdict.growingIncomeStableExp", { prevYear: String(prevYear), dataYear: String(dataYear) })
+                : pctChange(ytdInc, prevInc) > 0
+                ? t("habitVerdict.growingIncomeGrowingExp", { prevYear: String(prevYear), dataYear: String(dataYear) })
+                : pctChange(ytdInc, prevInc) < -5
+                ? t("habitVerdict.decliningIncome", { prevYear: String(prevYear), dataYear: String(dataYear) })
+                : t("habitVerdict.stableAll", { prevYear: String(prevYear), dataYear: String(dataYear) })}
+            </p>
+          </div>
+
           {/* ── Year-to-date comparison ────────────────────────────────────── */}
           <CollapsibleSection
             label={ytdSectionLabel}
@@ -135,11 +167,12 @@ export default async function DemoAnalyticsPage() {
           </CollapsibleSection>
 
           {/* ── Income sources + Expense breakdown ────────────────────────── */}
-          <CollapsibleSection label={t("breakdownsSection.label")} title={t("breakdownsSection.title")}>
+          <CollapsibleSection label={t("breakdownsSection.label")} title={t("breakdownsSection.title")} defaultOpen={false}>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 md:gap-6">
               <ExpenseBreakdown
                 type="income"
                 since={incSinceLabel}
+                apiBase="/api/demo"
                 breakdown={incomeBySource.map((src): BreakdownItem => ({
                   category: src.category,
                   total: src.total,
@@ -154,6 +187,7 @@ export default async function DemoAnalyticsPage() {
               />
 
               <ExpenseBreakdown
+                apiBase="/api/demo"
                 breakdown={categoryBreakdown.map((cat): BreakdownItem => {
                   const trend = categoryInsights.topExpenseCategories.find(c => c.category === cat.category);
                   return {

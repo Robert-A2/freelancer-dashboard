@@ -47,7 +47,7 @@
   }
 
   .card-sm {
-    @apply bg-[#132537] border border-[#1E3550] rounded-xl p-5 md:p-6;
+    @apply bg-[#132537] border border-[#1E3550] rounded-xl p-4;
   }
 
   /* Section header — uppercase, tracked, clearly labels a block without competing with content */
@@ -78,4 +78,37 @@
   .positive { @apply text-[#4CC4A4]; }
   .negative { @apply text-[#D97070]; }
   .neutral  { @apply text-[#7BA8C4]; }
+
+  /* ── Premium light surface ──────────────────────────────────────────────
+     For pages that deliberately step outside the dark dashboard shell —
+     Projects (building a client engagement) and the public /pay page (what a
+     client actually sees). Same brand accent (#2FA393, a slightly deepened
+     take on the dashboard's #3AB5A0 for AA contrast on white), same
+     typographic voice, different surface: calm, paper-like, unmistakably
+     "serious business," never the same navy as the analytics dashboard. */
+  .bg-premium { @apply bg-[#F4F6F8]; }
+
+  .card-light {
+    @apply bg-white border border-[#E3E8EE] rounded-2xl p-6 md:p-8 shadow-[0_1px_2px_rgba(15,40,60,0.04),0_8px_20px_rgba(15,40,60,0.05)];
+  }
+
+  .card-light-sm {
+    @apply bg-white border border-[#E3E8EE] rounded-xl p-5 md:p-6 shadow-[0_1px_2px_rgba(15,40,60,0.04),0_8px_20px_rgba(15,40,60,0.05)];
+  }
+
+  .label-light {
+    @apply text-[12px] font-medium text-[#8A9BAC] uppercase tracking-widest;
+  }
+
+  .input-light {
+    @apply bg-[#F9FAFB] border border-[#DCE3EA] rounded-xl px-4 py-3 text-[#16283B] placeholder-[#9AACBC] focus:outline-none focus:border-[#2FA393] transition-colors duration-150 w-full text-base min-h-[48px];
+  }
+
+  .btn-secondary-light {
+    @apply bg-[#F1F4F7] hover:bg-[#E7ECF1] text-[#42586B] font-medium px-6 py-3 rounded-xl transition-colors duration-150 min-h-[48px];
+  }
+
+  .btn-ghost-light {
+    @apply text-[#5B7185] hover:text-[#16283B] font-medium px-3 py-2 rounded-lg transition-colors duration-150 min-h-[44px];
+  }
 }

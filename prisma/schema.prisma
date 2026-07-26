@@ -16,6 +16,41 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
+  // ── Stripe Connect — lets a freelancer receive milestone payments directly
+  // into their own Stripe account. Both nullable/defaulted so every existing
+  // user row is valid the moment this column exists; no backfill required.
+  stripeAccountId      String?  @unique
+  stripeAccountEnabled Boolean  @default(false)
+
+  // ── Financial profile ──────────────────────────────────────────────────────
+  // Drives the Financial Reserve Engine (src/lib/reserve-engine/) — none of
+  // this is derivable from transaction history, it's regulatory/personal
+  // fact only the freelancer knows. All nullable: an incomplete profile still
+  // gets a clearly-labeled generic estimate, never a silent guess presented
+  // as precise. Completing these lets the country-specific rule set (only
+  // France implemented so far) compute a real breakdown instead.
+  country                  String?  // ISO 3166-1 alpha-2, e.g. "FR"
+  businessLegalStatus      String?  // e.g. "micro_entrepreneur", "sole_trader", "llc"
+  activityType             String?  // country-specific key — France: "bnc_liberal" | "bic_services" | "bic_vente"
+  vatStatus                String?  // "exempt" | "registered" | "unknown"
+  manualReservePctOverride Decimal? @db.Decimal(5, 2) // optional override of the total reserve %, usable any time, especially before the profile is complete
+
+  // ── VAT / invoicing identity ────────────────────────────────────────────────
+  // vatStatus === "registered" doubles as the "I am registered for VAT/GST/
+  // Sales tax" toggle: charging VAT is illegal for anyone not actually
+  // registered, so every VAT field on an invoice is driven off this single
+  // flag rather than a separate boolean that could drift out of sync with it.
+  vatNumber    String? // e.g. "GB123456789" — shown on invoices only when vatStatus === "registered"
+  businessName String? // invoice issuer name, e.g. "DESIGNSTUDIO LTD." — falls back to fullName when unset
+
+  // ── Client-facing branding ─────────────────────────────────────────────────
+  // Applied to the public Pay page — what a client actually sees when sent a
+  // payment link. All optional: an unbranded page already looks calm and
+  // professional (see /pay/[token]), this only ever adds to it, never blocks it.
+  brandLogoUrl     String? // public Supabase Storage URL, shown above the client name
+  brandAccentColor String? // hex, e.g. "#2FA393" — replaces the default teal accent
+  brandFont        String? // key into src/lib/brand-font-options.ts, e.g. "inter"
+
   accounts            Account[]
   csvImports          CsvImport[]
   transactions        Transaction[]
@@ -25,6 +60,8 @@ model User {
   categoryCorrections CategoryCorrection[]
   userIntentRules     UserIntentRule[]
   payers              Payer[]
+  projects            Project[]
+  milestones          Milestone[]
 
   @@map("users")
 }
@@ -173,6 +210,9 @@ model Transaction {
   csvImport CsvImport? @relation(fields: [csvImportId], references: [id], onDelete: SetNull)
   account   Account?   @relation(fields: [accountId], references: [id], onDelete: SetNull)
   payer     Payer?     @relation(fields: [payerId], references: [id], onDelete: SetNull)
+  // Back-relation only — the foreign key lives on Milestone.transactionId.
+  // Set once a Stripe payment (or a matched CSV import row) clears this milestone.
+  milestone Milestone?
 
   // Deduplication is per-account when an account is set, cross-account otherwise.
   // Two partial unique indexes (created via raw SQL after prisma db push) enforce this:
@@ -361,4 +401,120 @@ model UncategorizedMerchantReport {
 
   @@index([status, occurrenceCount])
   @@map("uncategorized_merchant_reports")
+}
+
+// ── Project Milestone Tracker ────────────────────────────────────────────────
+// Not an invoicing tool: no PDFs, no line items, no "Accounts Receivable"
+// screen. A Project is three fields (client, project, total value) split into
+// Milestones. Each Milestone gets a payment URL; a confirmed Stripe payment
+// writes a real Transaction row (intent: "freelance_income") — the exact same
+// row shape the CSV importer produces — so forecast, cashflow, runway, tax
+// shield and health score all pick it up automatically with zero new logic.
+// A Milestone in "pending"/"sent" state is never counted as real income
+// anywhere; it is only ever surfaced as "expected", read separately from
+// confirmed money.
+
+enum ProjectStatus {
+  active
+  completed
+  archived
+}
+
+// pending  — created, no payment link generated yet
+// sent     — payment URL generated/shared with the client
+// paid     — Stripe webhook confirmed payment (source of truth: Stripe, not the client)
+// overdue  — sent + past dueDate, still unpaid (derived at read time, not stored transition)
+// cleared  — the resulting Transaction was later matched to a real bank deposit
+//            from a CSV import, confirming the money actually landed
+enum MilestoneStatus {
+  pending
+  sent
+  paid
+  overdue
+  cleared
+}
+
+model Project {
+  id          String        @id @default(uuid())
+  userId      String
+  clientName  String
+  projectName String
+  totalValue  Decimal       @db.Decimal(12, 2)
+  currency    String        @default("EUR")
+  status      ProjectStatus @default(active)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  milestones Milestone[]
+
+  @@index([userId])
+  @@map("projects")
+}
+
+model Milestone {
+  id          String          @id @default(uuid())
+  projectId   String
+  userId      String          // denormalized — lets every dashboard query filter by userId alone
+  label       String          // e.g. "Deposit (50%)", "Final payment"
+  amount      Decimal         @db.Decimal(12, 2)
+  currency    String          @default("EUR")
+  dueDate     DateTime?
+  status      MilestoneStatus @default(pending)
+
+  // A project's milestones are created together in one batched insert, so
+  // `createdAt` (DB-level `now()`) is identical across all of them — ties
+  // that make `orderBy: createdAt` non-deterministic and can silently
+  // display "Final payment" before "Deposit". sortOrder is set explicitly
+  // from the milestone's position at creation time so display order always
+  // matches creation intent.
+  sortOrder Int @default(0)
+
+  // Public payment URL identity — a random opaque token, never the row id,
+  // so the payment link can be shared without exposing sequential/guessable ids.
+  paymentUrlToken String @unique @default(cuid())
+
+  // Sequential per-user invoice number (displayed as "INV-0001") — assigned
+  // once at creation from a simple count of the user's prior milestones.
+  // Every milestone IS an invoice to a client, so every milestone gets one.
+  // Default(0) only exists so this can be added to a table with existing
+  // rows; those get backfilled once, every new milestone sets a real value.
+  invoiceNumber Int @default(0)
+
+  // ── VAT (set once, at creation, never retroactively recalculated — an
+  // issued invoice's tax treatment must stay fixed even if the freelancer's
+  // settings change later) ─────────────────────────────────────────────────
+  // `amount` above always stays the NET contract value the freelancer
+  // actually earns — every existing calculation (runway, expected income,
+  // forecast, the Transaction recorded on payment) keeps working unchanged.
+  // VAT is purely additive on top, computed only for display and for the
+  // actual Stripe charge. null = no VAT (not registered, or registered but
+  // this milestone predates the feature).
+  vatRatePct      Decimal? @db.Decimal(5, 2)
+  // Cross-border B2B reverse charge (client is a business outside the
+  // freelancer's country): VAT rate is 0 and a legal note is shown instead
+  // of a tax line — flagged separately from a plain 0% rate so the correct
+  // wording always shows even if the rate itself happens to be 0 for another reason.
+  isReverseCharge Boolean  @default(false)
+
+  // Stripe linkage — set when a Checkout Session is created, confirmed by webhook only.
+  stripeCheckoutSessionId String?
+  stripePaymentIntentId   String?
+  paidAt                  DateTime?
+
+  // Set once the webhook (or a later CSV match) creates/links the real Transaction —
+  // this is the single seam that plugs milestone income into every existing
+  // dashboard calculation without duplicating any of their logic.
+  transactionId String?      @unique
+  transaction   Transaction? @relation(fields: [transactionId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@index([projectId])
+  @@map("milestones")
 }

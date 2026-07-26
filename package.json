@@ -4,9 +4,10 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && next build",
+    "build": "npm run check:i18n && prisma generate && next build",
     "start": "next start",
     "lint": "next lint",
+    "check:i18n": "tsx scripts/check-i18n.ts",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
@@ -28,7 +29,8 @@
     "papaparse": "^5.4.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "recharts": "^2.13.0"
+    "recharts": "^2.13.0",
+    "stripe": "^22.3.1"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

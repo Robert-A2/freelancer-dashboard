@@ -31,7 +31,12 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const { pathname } = request.nextUrl;
-  const publicPaths = ["/login", "/signup", "/reset-password", "/demo", "/api/demo"];
+  // "/pay" is the client-facing milestone payment page — the person opening it
+  // is a client of the freelancer, not a Nonodia account holder, so it must
+  // never require login. "/api/pay" is its matching public checkout-session API.
+  // "/api/webhooks" is called directly by Stripe's servers — no user session
+  // exists at all, and Stripe verifies its own request via signature, not cookies.
+  const publicPaths = ["/login", "/signup", "/reset-password", "/demo", "/api/demo", "/pay", "/api/pay", "/api/webhooks", "/data-privacy", "/terms-of-service"];
 
   // Pages an already-authenticated user should be bounced away from.
   // "/reset-password" is deliberately NOT included here: exchanging the

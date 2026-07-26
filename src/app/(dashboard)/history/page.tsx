@@ -44,23 +44,35 @@ export default async function HistoryPage({ searchParams }: { searchParams: Prom
 
   // For income/expense reconciliation: aggregate the exact same rows that make up
   // the dashboard card total so the user can confirm the numbers match.
-  const reconWhere = (isReconciliation && (type === "income" || type === "expense"))
-    ? {
-        userId: user.id,
-        transactionType: type,
-        transactionDate: {
-          gte: new Date(Date.UTC(year!, month! - 1, 1)),
-          lt: new Date(Date.UTC(year!, month!, 1)),
-        },
-      }
+  const reconMonthRange = isReconciliation
+    ? { gte: new Date(Date.UTC(year!, month! - 1, 1)), lt: new Date(Date.UTC(year!, month!, 1)) }
     : null;
 
-  const reconAggregate = reconWhere
-    ? await prisma.transaction.aggregate({
-        where: reconWhere,
-        _sum: { amount: true },
-        _count: { _all: true },
-      })
+  const reconWhere = (isReconciliation && (type === "income" || type === "expense"))
+    ? { userId: user.id, transactionType: type, transactionDate: reconMonthRange! }
+    : null;
+
+  // For the Cashflow card specifically (arrives with year+month but no type
+  // filter): compute the same income-minus-expenses figure the card showed,
+  // so this page confirms the number instead of just restating the formula.
+  const reconCashflowWhere = (isReconciliation && !type)
+    ? { userId: user.id, transactionDate: reconMonthRange!, transactionType: { in: ["income", "expense"] } }
+    : null;
+
+  const [reconAggregate, reconCashflowGroups] = await Promise.all([
+    reconWhere
+      ? prisma.transaction.aggregate({ where: reconWhere, _sum: { amount: true }, _count: { _all: true } })
+      : Promise.resolve(null),
+    reconCashflowWhere
+      ? prisma.transaction.groupBy({ by: ["transactionType"], where: reconCashflowWhere, _sum: { amount: true } })
+      : Promise.resolve(null),
+  ]);
+
+  const reconCashflow = reconCashflowGroups
+    ? {
+        income: Number(reconCashflowGroups.find((g) => g.transactionType === "income")?._sum.amount ?? 0),
+        expenses: Number(reconCashflowGroups.find((g) => g.transactionType === "expense")?._sum.amount ?? 0),
+      }
     : null;
 
   let dateFilter: { gte?: Date; lt?: Date } | undefined;
@@ -156,6 +168,16 @@ export default async function HistoryPage({ searchParams }: { searchParams: Prom
                     amount: formatCurrency(Number(reconAggregate._sum.amount ?? 0), locale),
                     count: reconAggregate._count._all,
                   })}
+            </p>
+          ) : reconCashflow ? (
+            <p className="text-sm text-[#C8DCF0] leading-relaxed">
+              {t("reconciliation.cashflowTotal", {
+                period: periodLabel,
+                amount: formatCurrency(reconCashflow.income - reconCashflow.expenses, locale),
+                income: formatCurrency(reconCashflow.income, locale),
+                expenses: formatCurrency(reconCashflow.expenses, locale),
+                count: displayTotal,
+              })}
             </p>
           ) : (
             <p className="text-sm text-[#C8DCF0] leading-relaxed">

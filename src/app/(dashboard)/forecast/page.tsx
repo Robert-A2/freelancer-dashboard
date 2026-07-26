@@ -9,10 +9,14 @@ import {
 } from "@/lib/analytics-engine";
 import { generateForecast } from "@/lib/forecast-engine";
 import { generateDashboardIntelligence } from "@/lib/intelligence-engine";
+import { getExpectedIncome } from "@/lib/milestone-engine";
 import { prisma } from "@/lib/prisma";
 import TrendsChart from "@/components/dashboard/TrendsChart";
 import DataCoverageBar from "@/components/dashboard/DataCoverage";
 import InsightText from "@/components/ui/InsightText";
+import CollapsibleSection from "@/components/ui/CollapsibleSection";
+import YearEndProjectionCard from "@/components/forecast/YearEndProjectionCard";
+import ExpectedFromProjectsCard from "@/components/forecast/ExpectedFromProjectsCard";
 import { formatCurrency } from "@/utils/finance";
 import Link from "next/link";
 
@@ -49,7 +53,7 @@ export default async function ForecastPage() {
     critical: { label: t("cashflowRisk.critical.label"), desc: t("cashflowRisk.critical.desc"), bg: "bg-[#D970700A]", border: "border-[#D9707025]", text: "text-[#D97070]" },
   };
 
-  const [forecast, chartData, monthCount, summary, comparison, categoryInsights, concentration, coverage, intentBreakdown, dataGaps, taxPaymentTxs] =
+  const [forecast, chartData, monthCount, summary, comparison, categoryInsights, concentration, coverage, intentBreakdown, dataGaps, taxPaymentTxs, expectedIncome] =
     await Promise.all([
       generateForecast(user.id),
       getHistoricalData(user.id, 999),
@@ -65,6 +69,7 @@ export default async function ForecastPage() {
         where: { userId: user.id, intent: "tax_payment", transactionType: "expense" },
         select: { transactionDate: true, amount: true },
       }),
+      getExpectedIncome(user.id),
     ]);
 
   const current = summary.current
@@ -212,17 +217,6 @@ export default async function ForecastPage() {
     ? Math.round((totalMatchedRevenue / totalHistoricIncome) * 100)
     : null;
 
-  // Annual projections — cashflow = forecast.projectedCashflow (Income − Expenses),
-  // the same definition used everywhere else (see forecast-engine.ts).
-  const annualIncome    = forecast ? forecast.projectedIncome   * 12 : 0;
-  const annualExpenses  = forecast ? forecast.projectedExpenses * 12 : 0;
-  const annualCashflow  = forecast ? forecast.projectedCashflow * 12 : 0;
-
-  // Projected cashflow margin: what % of projected income is kept after expenses
-  const projMarginPct = forecast && forecast.projectedIncome > 0
-    ? Math.round((forecast.projectedCashflow / forecast.projectedIncome) * 100)
-    : null;
-
   const health = HEALTH[intel.healthStatus];
   const trend  = TREND[intel.businessTrendDirection];
 
@@ -347,61 +341,7 @@ export default async function ForecastPage() {
           </div>
 
           {/* ── 2. Year-End Projection ────────────────────────────────────── */}
-          <div className="card">
-            <div className="flex items-start justify-between flex-wrap gap-2 mb-4">
-              <div>
-                <p className="label mb-1">{t("yearEndProjection.label")}</p>
-                <p className="text-[13px] text-[#6A97B4]">
-                  {t("yearEndProjection.subtitle")}
-                </p>
-              </div>
-              {forecast?.confidence && (
-                <span className={`text-xs font-medium px-2.5 py-1 rounded-full bg-[#1A3048] ${
-                  forecast.confidence === "high" ? "text-[#4CC4A4]" :
-                  forecast.confidence === "medium" ? "text-[#D4A254]" : "text-[#D97070]"
-                }`}>
-                  {t("confidenceLabel", { level: forecast.confidence })}
-                </span>
-              )}
-            </div>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-              {[
-                { key: "income",   label: t("yearEndProjection.items.income"),   value: `~${formatCurrency(annualIncome, locale)}`,   sub: forecast ? t("yearEndProjection.perMonthAvg", { amount: formatCurrency(forecast.projectedIncome, locale) }) : null,   color: "text-[#4CC4A4]",  border: "border-[#4CC4A415]" },
-                { key: "expenses", label: t("yearEndProjection.items.expenses"), value: `~${formatCurrency(annualExpenses, locale)}`,  sub: forecast ? t("yearEndProjection.perMonthAvg", { amount: formatCurrency(forecast.projectedExpenses, locale) }) : null,  color: "text-[#D4A254]",  border: "border-[#D4A25415]" },
-                { key: "cashflow", label: t("yearEndProjection.items.cashflow"), value: `~${formatCurrency(annualCashflow, locale)}`,  sub: forecast ? t("yearEndProjection.perMonthAvg", { amount: formatCurrency(forecast.projectedCashflow, locale) }) : null, color: annualCashflow >= 0 ? "text-[#3AB5A0]" : "text-[#D97070]", border: "border-[#243F5E]" },
-                {
-                  key: "margin",
-                  label: t("yearEndProjection.items.margin"),
-                  // At high confidence: color-coded clean %. At medium/low: show with ~ prefix
-                  // in neutral blue — the margin is doubly uncertain (income estimate ÷ expense
-                  // estimate) and color-coding it at low confidence creates false precision.
-                  value: projMarginPct !== null
-                    ? forecast?.confidence === "high"
-                      ? t("yearEndProjection.marginValue", { pct: String(projMarginPct) })
-                      : t("yearEndProjection.marginApprox", { pct: String(projMarginPct) })
-                    : t("yearEndProjection.noValue"),
-                  sub: projMarginPct !== null && forecast?.confidence !== "high"
-                    ? t("yearEndProjection.ofIncomeKeptApprox")
-                    : t("yearEndProjection.ofIncomeKept"),
-                  color: projMarginPct === null ? "text-[#6A97B4]"
-                    : forecast?.confidence !== "high" ? "text-[#7BA8C4]"
-                    : projMarginPct >= 30 ? "text-[#4CC4A4]"
-                    : projMarginPct >= 10 ? "text-[#D4A254]"
-                    : "text-[#D97070]",
-                  border: "border-[#243F5E]",
-                },
-              ].map((item) => (
-                <div key={item.key} className={`bg-[#1A3048] rounded-xl p-3 border ${item.border}`}>
-                  <p className="text-xs text-[#6A97B4] uppercase tracking-wide mb-1">{item.label}</p>
-                  <p className={`text-xl font-bold tabular-nums ${item.color}`}>{item.value}</p>
-                  {item.sub && <p className="text-xs text-[#6A97B4] mt-1">{item.sub}</p>}
-                </div>
-              ))}
-            </div>
-            <p className="text-xs text-[#475569] mt-3 leading-relaxed">
-              {t("yearEndProjection.extrapolationNote")}
-            </p>
-          </div>
+          <YearEndProjectionCard forecast={forecast} />
 
           {/* ── 3. How This Forecast Was Built ────────────────────────── */}
           <div className="card">
@@ -442,6 +382,11 @@ export default async function ForecastPage() {
               ))}
             </div>
 
+            <CollapsibleSection
+              title={t("howBuilt.methodologyLabel")}
+              subtitle={t("howBuilt.methodologySubtitle")}
+              defaultOpen={false}
+            >
             {/* Confidence score bar */}
             {forecast?.confidenceScore !== undefined && (
               <div className="mb-5">
@@ -557,6 +502,7 @@ export default async function ForecastPage() {
                 <p className="text-[#D4A254]">· {t("howBuilt.excludedReviewRevenue", { amount: formatCurrency(forecast.excludedReviewRevenue, locale) })}</p>
               )}
             </div>
+            </CollapsibleSection>
           </div>
 
           {/* ── 4. Key Drivers ────────────────────────────────────────────── */}
@@ -628,19 +574,24 @@ export default async function ForecastPage() {
 
           {/* ── 6. Seasonal Insights ──────────────────────────────────────── */}
           {intel.seasonalInsights.length > 0 && (
-            <div className="card">
-              <p className="label mb-4">{t("seasonalPatterns.label")}</p>
-              <div className="space-y-2">
-                {intel.seasonalInsights.map((insight, i) => (
-                  <div key={i} className="flex items-start gap-3 bg-[#1A3048] rounded-xl px-4 py-3">
-                    <span className="text-[#3AB5A0] text-sm mt-0.5 flex-shrink-0">◆</span>
-                    <p className="text-sm text-[#A8C6E0]">
-                      <InsightText insight={insight} />
-                    </p>
-                  </div>
-                ))}
+            <CollapsibleSection
+              title={t("seasonalPatterns.label")}
+              subtitle={t("seasonalPatterns.subtitle", { count: intel.seasonalInsights.length })}
+              defaultOpen={false}
+            >
+              <div className="card">
+                <div className="space-y-2">
+                  {intel.seasonalInsights.map((insight, i) => (
+                    <div key={i} className="flex items-start gap-3 bg-[#1A3048] rounded-xl px-4 py-3">
+                      <span className="text-[#3AB5A0] text-sm mt-0.5 flex-shrink-0">◆</span>
+                      <p className="text-sm text-[#A8C6E0]">
+                        <InsightText insight={insight} />
+                      </p>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
+            </CollapsibleSection>
           )}
 
           {/* ── Incomplete data warning ───────────────────────────────────── */}
@@ -664,6 +615,8 @@ export default async function ForecastPage() {
               </div>
             </div>
           )}
+
+          <ExpectedFromProjectsCard data={expectedIncome} locale={locale} />
 
           <TrendsChart data={chartData} />
         </>

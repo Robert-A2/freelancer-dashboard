@@ -2,7 +2,7 @@ import { getTranslations, getLocale } from "next-intl/server";
 import { INTL_LOCALES, type Locale } from "@/i18n/locales";
 import type { ClientInsightsData } from "@/lib/analytics-engine";
 import { formatCurrency } from "@/utils/finance";
-import Link from "next/link";
+import TopClientsList from "./TopClientsList";
 
 interface Props { data: ClientInsightsData; dataYear: number; }
 
@@ -87,48 +87,7 @@ export default async function ClientInsights({ data, dataYear }: Props) {
       )}
 
       {/* ── Top clients table ──────────────────────────────────────────────────── */}
-      <div className="card">
-        <div className="mb-4">
-          <p className="label mb-1">{t("topClients.title")}</p>
-          <p className="text-[13px] text-[#6A97B4]">{t("topClients.subtitle")}</p>
-        </div>
-
-        <div className="space-y-3">
-          {clients.map((c, i) => (
-            <div key={c.name} className="space-y-1">
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <span className="text-xs font-bold text-[#6A97B4] w-5 flex-shrink-0">{i + 1}</span>
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <Link
-                        href={`/clients/${encodeURIComponent(c.name)}`}
-                        className="text-sm font-medium text-[#E8F0F8] hover:text-[#3AB5A0] transition-colors truncate"
-                      >
-                        {c.name}
-                      </Link>
-                      {c.isPaymentProcessor && (
-                        <span className="text-xs text-[#6A97B4] bg-[#1A3048] px-1.5 py-0.5 rounded flex-shrink-0">{t("processor")}</span>
-                      )}
-                      {c.isNew && (
-                        <span className="text-xs text-[#4CC4A4] bg-[#4CC4A415] px-1.5 py-0.5 rounded flex-shrink-0">{t("new")}</span>
-                      )}
-                    </div>
-                    <p className="text-xs text-[#6A97B4]">
-                      {t("payments", { count: c.paymentCount })}
-                      {" · "}{t("active", { duration: durationLabel(c.monthsActive) })}
-                    </p>
-                  </div>
-                </div>
-                <div className="text-right flex-shrink-0">
-                  <p className="text-sm font-bold text-[#4CC4A4]">{formatCurrency(c.totalRevenue, locale)}</p>
-                  <p className="text-xs text-[#6A97B4]">{t("topClients.ofIncome", { pct: String(c.revenueShare) })}</p>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
+      <TopClientsList clients={clients} />
 
       {/* ── Client growth + Inactive ───────────────────────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">

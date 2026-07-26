@@ -279,7 +279,7 @@ export default async function AnalyticsPage() {
           </CollapsibleSection>
 
           {/* ── 3. Income sources + Expense breakdown ─────────────────────── */}
-          <CollapsibleSection label={t("breakdownsSection.label")} title={t("breakdownsSection.title")}>
+          <CollapsibleSection label={t("breakdownsSection.label")} title={t("breakdownsSection.title")} defaultOpen={false}>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 md:gap-6">
               <ExpenseBreakdown
                 type="income"
@@ -329,6 +329,7 @@ export default async function AnalyticsPage() {
             label={t("categorizationSection.label")}
             title={t("categorizationSection.title")}
             subtitle={t("categorizationSection.subtitle")}
+            defaultOpen={false}
           >
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 md:gap-6">
               <div className="card lg:col-span-1">
@@ -393,6 +394,7 @@ export default async function AnalyticsPage() {
               label={t("clientSection.label")}
               title={t("clientSection.title")}
               subtitle={t("clientSection.subtitle")}
+              defaultOpen={false}
             >
               <ClientInsights data={clientInsights} dataYear={dataYear} />
               <div className="mt-4">

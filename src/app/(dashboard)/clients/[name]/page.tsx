@@ -9,6 +9,7 @@ import { formatCurrency } from "@/utils/finance";
 import { INTL_LOCALES, type Locale } from "@/i18n/locales";
 import Link from "next/link";
 import RenameClientForm from "@/components/clients/RenameClientForm";
+import CollapsibleSection from "@/components/ui/CollapsibleSection";
 
 export const dynamic = "force-dynamic";
 
@@ -434,15 +435,12 @@ export default async function ClientDetailPage({
 
       {/* ── 4. Client Momentum — only for identified clients ────────────────── */}
       {!isUnidentified && (
+        <CollapsibleSection
+          title={t("detail.momentum.title")}
+          subtitle={`${momentumIcon} ${t(`detail.momentum.${momentumDir}`)}${client.revenueTrendPct !== null ? ` ${client.revenueTrendPct}%` : ""}`}
+          defaultOpen={false}
+        >
         <div className="card">
-          <div className="flex items-center justify-between gap-3 mb-3">
-            <p className="label">{t("detail.momentum.title")}</p>
-            <span className={`text-sm font-bold ${momentumColor}`}>
-              {momentumIcon} {t(`detail.momentum.${momentumDir}`)}
-              {client.revenueTrendPct !== null && ` ${client.revenueTrendPct}%`}
-            </span>
-          </div>
-
           {hasPriorActivity && hasRecentActivity ? (
             <div className="space-y-3">
               <div className="flex items-stretch gap-3">
@@ -483,12 +481,17 @@ export default async function ClientDetailPage({
             <p className="text-sm text-[#6A97B4]">{t("detail.momentum.noHistory")}</p>
           )}
         </div>
+        </CollapsibleSection>
       )}
 
       {/* ── 5. Dependency Simulator — only for identified active clients ─────── */}
       {!isUnidentified && client.lifecycle === "current" && (
+        <CollapsibleSection
+          title={t("detail.simulator.title", { name: client.name })}
+          subtitle={`${t(`detail.simulator.${impact}`)} · ${client.revenueContributionPct}%`}
+          defaultOpen={false}
+        >
         <div className={`card border ${impactStyle.border}`}>
-          <p className="label mb-1">{t("detail.simulator.title", { name: client.name })}</p>
           <p className="text-[13px] text-[#6A97B4] mb-5">{t("detail.dependencyRisk.subtitle")}</p>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
@@ -550,12 +553,21 @@ export default async function ClientDetailPage({
             </p>
           </div>
         </div>
+        </CollapsibleSection>
       )}
 
       {/* ── 6. Payment Timeline ─────────────────────────────────────────────── */}
+      <CollapsibleSection
+        title={t("detail.timeline.title")}
+        subtitle={t("detail.timeline.peek", {
+          count: chronoPayments.length,
+          first: fmtDate(chronoPayments[0]?.date ?? client.firstPayment),
+          last: fmtDate(chronoPayments[chronoPayments.length - 1]?.date ?? client.lastPayment),
+        })}
+        defaultOpen={false}
+      >
       <div className="card">
         <div className="flex items-center justify-between mb-1 gap-3">
-          <p className="label">{t("detail.timeline.title")}</p>
           <span className="text-xs text-[#6A97B4]">
             {chronoPayments.length > TIMELINE_LIMIT
               ? t("detail.timeline.showingRecent", { count: TIMELINE_LIMIT })
@@ -625,6 +637,7 @@ export default async function ClientDetailPage({
           ))}
         </div>
       </div>
+      </CollapsibleSection>
 
       {/* ── 7. Insights ────────────────────────────────────────────────────── */}
       {!isUnidentified && client.insights.length > 0 && (

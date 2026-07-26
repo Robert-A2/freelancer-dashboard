@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { createPortal } from "react-dom";
 import { useTranslations, useLocale } from "next-intl";
 import { formatCurrency } from "@/utils/finance";
 import { INTL_LOCALES, type Locale } from "@/i18n/locales";
@@ -75,6 +76,7 @@ function CategoryDrawer({
   onClose,
   locale,
   accent,
+  apiBase = "/api",
 }: {
   category: string | null;
   type: "expense" | "income";
@@ -82,6 +84,7 @@ function CategoryDrawer({
   onClose: () => void;
   locale: Locale;
   accent: { text: string; bar: string };
+  apiBase?: string;
 }) {
   const tCategories = useTranslations("categories");
   const tDrawer = useTranslations("analytics.categoryDrawer");
@@ -95,6 +98,11 @@ function CategoryDrawer({
   const [data, setData]       = useState<ApiResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false);
+
+  // Portal to document.body so a transformed ancestor (e.g. a hover-tilt
+  // effect) can't hijack this drawer's fixed positioning off the real viewport.
+  useEffect(() => { setMounted(true); }, []);
 
   // Focus close button when drawer opens for keyboard/screen-reader users
   useEffect(() => {
@@ -109,7 +117,7 @@ function CategoryDrawer({
     const failedMsg = tDrawer("failed");
     const params = new URLSearchParams({ category, type });
     if (since) params.set("since", since);
-    fetch(`/api/analytics/category-transactions?${params}`)
+    fetch(`${apiBase}/analytics/category-transactions?${params}`)
       .then((r) => r.json())
       .then((d) => { setData(d); setLoading(false); })
       .catch(() => { setError(failedMsg); setLoading(false); });
@@ -133,7 +141,9 @@ function CategoryDrawer({
     : "";
   const drawerLabel = type === "income" ? tDrawer("incomeSource") : tDrawer("expenseBreakdown");
 
-  return (
+  if (!mounted) return null;
+
+  return createPortal(
     <>
       {/* Backdrop */}
       <div
@@ -234,7 +244,8 @@ function CategoryDrawer({
           </a>
         </div>
       </div>
-    </>
+    </>,
+    document.body
   );
 }
 
@@ -248,11 +259,13 @@ export default function ExpenseBreakdown({
   labels,
   type = "expense",
   since,
+  apiBase = "/api",
 }: {
   breakdown: BreakdownItem[];
   labels: { title: string; subtitle: string; empty: string };
   type?: "expense" | "income";
   since?: string;
+  apiBase?: string;
 }) {
   const locale = useLocale() as Locale;
   const tCategories = useTranslations("categories");
@@ -311,7 +324,7 @@ export default function ExpenseBreakdown({
                   </div>
                   <div className="h-1.5 bg-[#243F5E] rounded-full overflow-hidden">
                     <div
-                      className={`h-full ${accent.bar} rounded-full opacity-70 group-hover:opacity-100 transition-opacity`}
+                      className={`h-full ${accent.bar} rounded-full opacity-70 group-hover:opacity-100 transition-[width,opacity] duration-700 ease-out`}
                       style={{ width: `${item.pct}%` }}
                     />
                   </div>
@@ -329,6 +342,7 @@ export default function ExpenseBreakdown({
         onClose={close}
         locale={locale}
         accent={accent}
+        apiBase={apiBase}
       />
     </>
   );

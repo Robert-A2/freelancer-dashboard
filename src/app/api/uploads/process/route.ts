@@ -6,6 +6,7 @@ import type { NormalizedTransaction } from "@/lib/csv-processor";
 import { recalculateMonthlyAnalytics } from "@/lib/analytics-engine";
 import { generateForecast } from "@/lib/forecast-engine";
 import { resolvePayers, recomputeVerifiedRevenue } from "@/lib/payer-engine";
+import { matchMilestonesToTransactions } from "@/lib/milestone-engine";
 import { loadMerchantIndex, reportUncategorizedMerchants } from "@/lib/merchant-reports";
 import { detectCrossAccountTransfers } from "@/lib/transfer-detector";
 import { Decimal } from "@prisma/client/runtime/library";
@@ -221,14 +222,21 @@ export async function POST(request: NextRequest) {
     const txsSnap   = transactions; // closure over parsed transactions
 
     after(async () => {
+      let newTxIds: { id: string }[] = [];
       try {
-        const newTxIds = await prisma.transaction.findMany({
+        newTxIds = await prisma.transaction.findMany({
           where:  { csvImportId: importId },
           select: { id: true },
         });
         await resolvePayers(userId, newTxIds.map((t) => t.id));
       } catch (err) {
         console.error("[Upload/bg] resolvePayers failed:", err);
+      }
+
+      try {
+        await matchMilestonesToTransactions(userId, newTxIds.map((t) => t.id));
+      } catch (err) {
+        console.error("[Upload/bg] milestone matching failed:", err);
       }
 
       try {

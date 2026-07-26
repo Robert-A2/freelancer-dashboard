@@ -14,9 +14,18 @@ import {
 import { getLatestForecast } from "@/lib/forecast-engine";
 import { getFinancialLifeIntelligence } from "@/lib/financial-life-engine";
 import { getClientRiskProfiles } from "@/lib/client-risk-engine";
+import { getExpectedIncome, getRecentlyPaidMilestones } from "@/lib/milestone-engine";
+import { getRunway } from "@/lib/runway-engine";
 import { generateDashboardIntelligence, buildHistoricalInsights } from "@/lib/intelligence-engine";
 import { prisma } from "@/lib/prisma";
+import { formatCurrency } from "@/utils/finance";
+import { getMonthlyVerdictKey } from "@/utils/monthlyVerdict";
+import CollapsibleSection from "@/components/ui/CollapsibleSection";
 import SummaryCards from "@/components/dashboard/SummaryCards";
+import PaymentReceivedBanner from "@/components/dashboard/PaymentReceivedBanner";
+import ExpectedIncomeCard from "@/components/dashboard/ExpectedIncomeCard";
+import RunwayCard from "@/components/dashboard/RunwayCard";
+import ProjectsPromoCard from "@/components/dashboard/ProjectsPromoCard";
 import TrendsChart from "@/components/dashboard/TrendsChart";
 import MonthlyComparisonWidget from "@/components/dashboard/MonthlyComparison";
 import ForecastWidget from "@/components/dashboard/ForecastWidget";
@@ -48,7 +57,7 @@ export default async function DashboardPage({
   const [[
     summary, forecast, chartData, comparison, totalTx, coverage,
     categoryInsights, concentration, dbUser, lastImport, intentBreakdown,
-    financialLife, clientData,
+    financialLife, clientData, expectedIncome, recentPayments, runway,
   ], accounts] = await Promise.all([
     Promise.all([
       getDashboardSummary(user.id, accountId),
@@ -70,9 +79,16 @@ export default async function DashboardPage({
       getIntentBreakdown(user.id, undefined, undefined, accountId),
       getFinancialLifeIntelligence(user.id, accountId),
       getClientRiskProfiles(user.id, accountId),
+      getExpectedIncome(user.id),
+      getRecentlyPaidMilestones(user.id),
+      getRunway(user.id),
     ]),
+    // An account whose last transaction was removed (e.g. its only CSV import
+    // got deleted) has no data left to filter by — showing it as a live tab
+    // makes deleted data look like it's still there. transactions: { some: {} }
+    // excludes any account with zero remaining transactions.
     prisma.account.findMany({
-      where: { userId: user.id, isArchived: false },
+      where: { userId: user.id, isArchived: false, transactions: { some: {} } },
       select: { id: true, name: true, color: true },
       orderBy: { createdAt: "asc" },
     }),
@@ -169,6 +185,14 @@ export default async function DashboardPage({
   );
 
   const hasData = totalTx > 0;
+  // A user who has only ever created Projects/milestones (no CSV upload, no
+  // paid milestone yet) has zero Transaction rows and would otherwise hit the
+  // pure "Upload CSV" empty state below — hiding the projects they actually
+  // created. Runway is computed straight from Project/Milestone rows (see
+  // runway-engine.ts), so runway !== null is exactly "has used the invoicing
+  // side of the platform," independent of CSV data.
+  const hasProjects = runway !== null;
+  const hasAnyActivity = hasData || hasProjects;
   const nonZeroMonths = chartData.filter((d) => d.income > 0 || d.expenses > 0).length;
 
   // Risk computed from historical data — mirrors forecast/page.tsx's cashflow risk
@@ -185,6 +209,7 @@ export default async function DashboardPage({
   const avgLast6 = last6.length ? last6.reduce((s, d) => s + d.income, 0) / last6.length : 0;
   const avgPrev6 = prev6.length ? prev6.reduce((s, d) => s + d.income, 0) / prev6.length : 0;
   const incTrend = avgPrev6 > 0 ? (avgLast6 - avgPrev6) / avgPrev6 : 0;
+  const incTrendPct = Math.round(incTrend * 100);
 
   const riskLevel: "low" | "medium" | "high" | "critical" =
     posRatio >= 0.85 && incTrend > -0.05 ? "low" :
@@ -233,6 +258,26 @@ export default async function DashboardPage({
     locale
   );
 
+  // Peek subtitles — the headline number for each collapsed-by-default section,
+  // computed here so it's visible even before the user expands the section.
+  const businessIntelligencePeek = intentBreakdown.hasEnoughDataForDisplay
+    ? t("businessIntelligence.peek", {
+        margin: intentBreakdown.profitMarginPct !== null ? Math.round(intentBreakdown.profitMarginPct) : 0,
+        personalSpend: formatCurrency(intentBreakdown.personalSpend, locale),
+      })
+    : undefined;
+
+  const monthlyPreviousHasData = !!(comparison.previous && (comparison.previous.totalIncome > 0 || comparison.previous.totalExpenses > 0));
+  const monthlyVerdictBase = monthlyPreviousHasData ? getMonthlyVerdictKey(comparison.changes) : null;
+  const monthlyVerdictKey = monthlyVerdictBase
+    ? (coverageIsStale ? `${monthlyVerdictBase}History` : monthlyVerdictBase)
+    : null;
+  const monthlyComparisonPeek = monthlyVerdictKey
+    ? t(`monthlyComparison.${monthlyVerdictKey}`, coverageIsStale ? { currMonth: comparison.currLabel } : undefined)
+    : undefined;
+
+  const historicalInsightsPeek = t("historicalInsights.monthsOfHistory", { count: nonZeroMonths });
+
   return (
     <div className="space-y-8">
       <AccountFilterBar accounts={accounts} selectedAccountId={accountId} />
@@ -256,6 +301,8 @@ export default async function DashboardPage({
                intel.healthStatus === "at-risk"  ? t("verdictAtRisk") :
                                                    t("verdictWatch")}
             </p>
+          ) : hasProjects ? (
+            <p className="text-[#7BA8C4] text-sm mt-0.5">{t("projectsOnlyYet")}</p>
           ) : (
             <p className="text-[#7BA8C4] text-sm mt-0.5">{t("noDataYet")}</p>
           )}
@@ -271,6 +318,8 @@ export default async function DashboardPage({
           </p>
         )}
       </div>
+
+      {recentPayments.length > 0 && <PaymentReceivedBanner payments={recentPayments} locale={locale} />}
 
       {/* Data freshness — coverage stale (data ends months ago) takes priority over
           import-date stale (haven't imported recently but data itself is current) */}
@@ -307,33 +356,66 @@ export default async function DashboardPage({
         />
       )}
 
-      {/* Empty state */}
-      {!hasData ? (
+      {/* Empty state — only when the user has used neither side of the
+          platform yet (no CSV import AND no project ever created) */}
+      {!hasAnyActivity ? (
         <div className="card text-center py-16">
           <div className="text-5xl mb-4">📊</div>
           <h2 className="text-xl font-semibold mb-2">{t("emptyState.heading")}</h2>
           <p className="text-[#6A97B4] mb-6 max-w-sm mx-auto">
             {t("emptyState.body")}
           </p>
-          <Link href="/upload" className="btn-primary inline-block">
-            {t("emptyState.cta")}
-          </Link>
+          <div className="flex items-center justify-center gap-4 flex-wrap">
+            <Link href="/upload" className="btn-primary inline-block">
+              {t("emptyState.cta")}
+            </Link>
+            <Link href="/projects" className="text-sm font-semibold text-[#3AB5A0] hover:text-[#4CC4A4] transition-colors">
+              {t("emptyState.ctaProjects")}
+            </Link>
+          </div>
         </div>
       ) : (
         <>
-          <SummaryCards
-            current={current}
-            previous={previous}
-            riskLevel={riskLevel}
-            riskPositiveMonths={riskPositiveMonths}
-            riskTotalMonths={riskTotalMonths}
-            summary={intel.snapshotSummary}
-            context={intel.snapshotContext}
-            periodLabel={comparison.currLabel}
-            currentMonth={comparison.currMonth}
-            currentYear={comparison.currYear}
-            isPartialMonth={comparison.isPartialMonth}
-          />
+          {hasData && (
+            <SummaryCards
+              current={current}
+              previous={previous}
+              riskLevel={riskLevel}
+              riskPositiveMonths={riskPositiveMonths}
+              riskTotalMonths={riskTotalMonths}
+              incomeTrendPct={incTrendPct}
+              summary={intel.snapshotSummary}
+              context={intel.snapshotContext}
+              periodLabel={comparison.currLabel}
+              currentMonth={comparison.currMonth}
+              currentYear={comparison.currYear}
+              isPartialMonth={comparison.isPartialMonth}
+            />
+          )}
+
+          {runway === null ? (
+            <ProjectsPromoCard />
+          ) : (
+            <>
+              {/* Full-width, not paired in a grid — this is the number freelancers
+                  actually check daily, it gets the visual weight to match. */}
+              <RunwayCard data={runway} locale={locale} />
+              <ExpectedIncomeCard data={expectedIncome} locale={locale} />
+            </>
+          )}
+
+          {hasProjects && !hasData && (
+            <div className="flex items-start gap-4 px-5 py-4 bg-[#1A3048] border border-[#243F5E] rounded-2xl">
+              <span className="text-[#6A97B4] text-xl flex-shrink-0 mt-0.5">◎</span>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-[#A8C6E0] mb-1">{t("noCsvYet.title")}</p>
+                <p className="text-sm text-[#6A97B4] leading-relaxed">{t("noCsvYet.body")}</p>
+                <Link href="/upload" className="inline-block mt-2 text-xs font-semibold text-[#3AB5A0] hover:text-[#4CC4A4] transition-colors">
+                  {t("noCsvYet.cta")}
+                </Link>
+              </div>
+            </div>
+          )}
 
           {nudgeClients.length > 0 && (
             <div className="card">
@@ -367,15 +449,21 @@ export default async function DashboardPage({
             </div>
           )}
 
-          {intentBreakdown.hasEnoughDataForDisplay ? (
-            <BusinessIntelligence
-              businessProfit={intentBreakdown.businessProfit}
-              profitMarginPct={intentBreakdown.profitMarginPct}
-              personalSpend={intentBreakdown.personalSpend}
-              trueNetCashflow={intentBreakdown.trueNetCashflow}
-              intentInsights={intel.intentInsights}
-              lifeInsights={intel.lifeInsights}
-            />
+          {hasData && (intentBreakdown.hasEnoughDataForDisplay ? (
+            <CollapsibleSection
+              title={t("businessIntelligence.title")}
+              subtitle={businessIntelligencePeek}
+              defaultOpen={false}
+            >
+              <BusinessIntelligence
+                businessProfit={intentBreakdown.businessProfit}
+                profitMarginPct={intentBreakdown.profitMarginPct}
+                personalSpend={intentBreakdown.personalSpend}
+                trueNetCashflow={intentBreakdown.trueNetCashflow}
+                intentInsights={intel.intentInsights}
+                lifeInsights={intel.lifeInsights}
+              />
+            </CollapsibleSection>
           ) : intentBreakdown.totalTransactions > 0 && (
             <div className="flex items-start gap-4 px-5 py-4 bg-[#1A3048] border border-[#243F5E] rounded-2xl">
               <span className="text-[#6A97B4] text-xl flex-shrink-0 mt-0.5">◎</span>
@@ -391,46 +479,67 @@ export default async function DashboardPage({
                 </Link>
               </div>
             </div>
+          ))}
+
+          {hasData && (
+            <div className={`grid grid-cols-1 gap-6 md:gap-8 ${!accountId ? "lg:grid-cols-3" : ""}`}>
+              <div className={!accountId ? "lg:col-span-2" : ""}>
+                <TrendsChart
+                  data={chartData}
+                  trajectoryInsight={intel.trajectoryInsight}
+                  trajectoryDetails={intel.trajectoryDetails}
+                  riskLevel={riskLevel}
+                />
+              </div>
+              {!accountId && <ForecastWidget
+                forecast={forecast}
+                reasons={intel.forecastReasons}
+                improvements={intel.forecastImprovements}
+                deficitReason={intel.cashflowDeficitReason}
+              />}
+            </div>
           )}
 
-          <div className={`grid grid-cols-1 gap-6 md:gap-8 ${!accountId ? "lg:grid-cols-3" : ""}`}>
-            <div className={!accountId ? "lg:col-span-2" : ""}>
-              <TrendsChart
-                data={chartData}
-                trajectoryInsight={intel.trajectoryInsight}
-                trajectoryDetails={intel.trajectoryDetails}
+          {hasData && (
+            <CollapsibleSection
+              label={t("monthlyComparison.monthlySummary")}
+              title={coverageIsStale
+                ? t("monthlyComparison.labelHistorical", { currMonth: comparison.currLabel ?? "", prevMonth: comparison.prevLabel ?? "" })
+                : t("monthlyComparison.label")}
+              subtitle={monthlyComparisonPeek}
+              defaultOpen={false}
+            >
+              <MonthlyComparisonWidget
+                current={comparison.current ?? null}
+                previous={comparison.previous ?? null}
+                changes={comparison.changes ?? null}
+                interpretation={intel.comparisonInterpretation}
+                suggestion={intel.comparisonSuggestion}
+                currLabel={comparison.currLabel}
+                prevLabel={comparison.prevLabel}
               />
-            </div>
-            {!accountId && <ForecastWidget
-              forecast={forecast}
-              reasons={intel.forecastReasons}
-              improvements={intel.forecastImprovements}
-              deficitReason={intel.cashflowDeficitReason}
-            />}
-          </div>
+            </CollapsibleSection>
+          )}
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
-            <MonthlyComparisonWidget
-              current={comparison.current ?? null}
-              previous={comparison.previous ?? null}
-              changes={comparison.changes ?? null}
-              interpretation={intel.comparisonInterpretation}
-              suggestion={intel.comparisonSuggestion}
-              currLabel={comparison.currLabel}
-              prevLabel={comparison.prevLabel}
-              isDataRecent={!coverageIsStale}
-            />
+          {hasData && (
             <RecentTransactions
               transactions={recent}
               notable={intel.notableTransactions}
             />
-          </div>
+          )}
 
-          {rankedInsights.length > 0 && (
-            <HistoricalInsights
-              insights={rankedInsights}
-              totalMonths={nonZeroMonths}
-            />
+          {hasData && rankedInsights.length > 0 && (
+            <CollapsibleSection
+              label={t("historicalInsights.label")}
+              title={t("historicalInsights.title")}
+              subtitle={historicalInsightsPeek}
+              defaultOpen={false}
+            >
+              <HistoricalInsights
+                insights={rankedInsights}
+                totalMonths={nonZeroMonths}
+              />
+            </CollapsibleSection>
           )}
         </>
       )}

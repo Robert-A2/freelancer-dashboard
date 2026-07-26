@@ -5,9 +5,9 @@ export default function DashboardLoading() {
     <div className="space-y-8 md:space-y-10">
 
       {/* Summary cards */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 md:gap-5">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         {Array.from({ length: 5 }).map((_, i) => (
-          <div key={i} className="card-sm flex flex-col gap-3">
+          <div key={i} className="card-sm flex flex-col gap-2">
             <Sk h="h-3" w="w-16" />
             <Sk h="h-8" w="w-28" rounded="rounded-xl" />
             <Sk h="h-3" w="w-20" />

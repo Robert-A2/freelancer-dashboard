@@ -22,6 +22,33 @@ export function formatNumber(value: number): string {
   return value.toFixed(2);
 }
 
+// "INV-0001" — a milestone's invoice number, zero-padded for a consistent
+// professional look regardless of how many invoices a freelancer has sent.
+export function formatInvoiceNumber(invoiceNumber: number): string {
+  return `INV-${String(invoiceNumber).padStart(4, "0")}`;
+}
+
+// A milestone's `amount` is always the net contract value — VAT is purely
+// additive on top, computed here rather than stored, so every existing
+// earnings calculation (runway, expected income, forecast) keeps reading
+// `amount` as real income unchanged. `vatRatePct` is null for anyone not
+// VAT-registered, or for a milestone created before this feature existed.
+export function computeVatBreakdown(netAmount: number, vatRatePct: number | null): { net: number; vat: number; gross: number } {
+  const rate = vatRatePct ?? 0;
+  const vat = Math.round(netAmount * (rate / 100) * 100) / 100;
+  return { net: netAmount, vat, gross: netAmount + vat };
+}
+
+// Nonodia's platform fee — a flat 0.3% of the milestone's net contract value
+// (the same figure `amount` already represents: net of VAT). Deducted from
+// the freelancer's payout via Stripe's application_fee_amount; the client is
+// never charged more because of it. Long-term rate, not introductory.
+export const PLATFORM_FEE_PCT = 0.3;
+
+export function computePlatformFee(netAmount: number): number {
+  return Math.round(netAmount * (PLATFORM_FEE_PCT / 100) * 100) / 100;
+}
+
 export function pct(value: number, total: number): number {
   if (total === 0) return 0;
   return Math.round((value / total) * 100);

@@ -1,7 +1,7 @@
 # CSV Import
 
 - **What it does**: Takes an arbitrary bank-exported CSV file — in *any* bank's column layout, date format, amount format, or delimiter — and turns it into a clean list of `{ date, description, amount, transactionType, category, confidence, source }` records ready to insert as `Transaction` rows.
-- **Why it exists**: Freelancer OS's core promise is "upload your bank statement, any bank, anywhere" (see [PRODUCT.md](./PRODUCT.md)). Banks do not agree on column names, date formats, number formats, or even whether a transaction has one signed `Amount` column or separate `Debit`/`Credit` columns. This module is the single place that absorbs all of that variation so every downstream engine can assume a uniform `NormalizedTransaction` shape.
+- **Why it exists**: Nonodia's core promise is "upload your bank statement, any bank, anywhere" (see [PRODUCT.md](./PRODUCT.md)). Banks do not agree on column names, date formats, number formats, or even whether a transaction has one signed `Amount` column or separate `Debit`/`Credit` columns. This module is the single place that absorbs all of that variation so every downstream engine can assume a uniform `NormalizedTransaction` shape.
 - **Where the code is**: `src/lib/csv-processor.ts` (410 lines) — one file, no external dependencies besides PapaParse (CSV parsing) and the categorization engine.
 - **How to modify it safely**: see [How to modify](#how-to-modify-safely) at the bottom.
 
@@ -180,7 +180,7 @@ If nothing matches, `parseDate()` returns `null` and the row is **skipped**.
 
 ### Why pattern 2 (DD/MM/YYYY) is tried before pattern 3 (MM/DD/YYYY)
 
-Freelancer OS's primary user base skews European/French (see [PRODUCT.md](./PRODUCT.md)), so **day-first** is the priority assumption — `"05/03/2024"` is read as 5 March, not May 3rd. The month-range validation (`+mm >= 1 && +mm <= 12`) is what allows genuinely US-formatted dates like `"01/13/2024"` (month 13 is invalid as DD/MM) to correctly fall through to the MM/DD/YYYY branch. **Ambiguous dates where both day and month are ≤ 12** (e.g. `"03/05/2024"`) are *always* read as DD/MM — there is no way to disambiguate from the date string alone, so this is a deliberate, documented assumption.
+Nonodia's primary user base skews European/French (see [PRODUCT.md](./PRODUCT.md)), so **day-first** is the priority assumption — `"05/03/2024"` is read as 5 March, not May 3rd. The month-range validation (`+mm >= 1 && +mm <= 12`) is what allows genuinely US-formatted dates like `"01/13/2024"` (month 13 is invalid as DD/MM) to correctly fall through to the MM/DD/YYYY branch. **Ambiguous dates where both day and month are ≤ 12** (e.g. `"03/05/2024"`) are *always* read as DD/MM — there is no way to disambiguate from the date string alone, so this is a deliberate, documented assumption.
 
 ---
 

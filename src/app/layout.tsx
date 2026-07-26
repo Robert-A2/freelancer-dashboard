@@ -11,8 +11,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Freelancer OS: Financial Clarity",
-  description: "Your financial operating system. Understand, track, and forecast your freelance income.",
+  title: "Nonodia — Financial Operating System for Freelancers",
+  description: "Nonodia transforms your bank statements into clear financial insights. Understand your business, make better decisions, and grow.",
   icons: {
     icon: "/favicon.svg",
     shortcut: "/favicon.svg",

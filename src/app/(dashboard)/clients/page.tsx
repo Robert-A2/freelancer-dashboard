@@ -2,31 +2,14 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { getTranslations, getLocale } from "next-intl/server";
 import { getClientRiskProfiles } from "@/lib/client-risk-engine";
-import type { ClientStatus } from "@/lib/client-risk-engine";
 import NameSourceButton from "@/components/clients/NameSourceButton";
-import { UNIDENTIFIED_SOURCE } from "@/lib/client-identity";
 import { formatCurrency } from "@/utils/finance";
-import { INTL_LOCALES, type Locale } from "@/i18n/locales";
+import type { Locale } from "@/i18n/locales";
 import Link from "next/link";
+import ClientSummaryBar from "@/components/clients/ClientSummaryBar";
+import ClientListRows from "@/components/clients/ClientListRows";
 
 export const dynamic = "force-dynamic";
-
-const STATUS_STYLES: Record<ClientStatus, { dot: string; text: string; bg: string }> = {
-  current:  { dot: "bg-[#4CC4A4]", text: "text-[#4CC4A4]", bg: "bg-[#4CC4A415]" },
-  watch:    { dot: "bg-[#D4A254]", text: "text-[#D4A254]", bg: "bg-[#D4A25415]" },
-  risk:     { dot: "bg-[#D97070]", text: "text-[#D97070]", bg: "bg-[#D9707015]" },
-  inactive: { dot: "bg-[#4A7A9B]", text: "text-[#6A97B4]", bg: "bg-[#1A304880]" },
-};
-
-function StatusBadge({ status, label }: { status: ClientStatus; label: string }) {
-  const s = STATUS_STYLES[status];
-  return (
-    <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-semibold ${s.bg} ${s.text}`}>
-      <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${s.dot}`} />
-      {label}
-    </span>
-  );
-}
 
 export default async function ClientsPage() {
   const supabase = await createClient();
@@ -53,9 +36,11 @@ export default async function ClientsPage() {
           }`}>
             {followUpCount === 0 && currentCount > 0
               ? t("verdictAllReliable", { n: currentCount })
-              : currentCount > 0
+              : followUpCount > 0 && currentCount > 0
               ? t("verdictMixed", { current: currentCount, followUp: followUpCount })
-              : t("verdictAllNeedAttention", { n: clients.length })}
+              : followUpCount > 0
+              ? t("verdictAllNeedAttention", { n: followUpCount })
+              : t("verdictAllInactive", { n: clients.length })}
           </p>
         ) : (
           <p className="text-[#7BA8C4] text-sm mt-0.5">{t("verdictNone")}</p>
@@ -83,20 +68,12 @@ export default async function ClientsPage() {
 
       {clients.length > 0 && (
         <>
-          {/* Summary bar */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {[
-              { label: t("summary.totalClients"), value: clients.length, color: "text-[#E8F0F8]" },
-              { label: t("summary.current"),      value: currentCount,   color: "text-[#4CC4A4]" },
-              { label: t("summary.followUp"),     value: followUpCount,  color: "text-[#D4A254]" },
-              { label: t("summary.inactive"),     value: inactiveCount,  color: "text-[#6A97B4]" },
-            ].map(m => (
-              <div key={m.label} className="bg-[#1A3048] rounded-xl p-4">
-                <p className="label mb-1">{m.label}</p>
-                <p className={`text-2xl font-bold tabular-nums ${m.color}`}>{m.value}</p>
-              </div>
-            ))}
-          </div>
+          <ClientSummaryBar
+            totalClients={clients.length}
+            currentCount={currentCount}
+            followUpCount={followUpCount}
+            inactiveCount={inactiveCount}
+          />
 
           {/* Follow-up alerts — only for genuinely overdue active clients */}
           {followUpCount > 0 && (() => {
@@ -135,58 +112,7 @@ export default async function ClientsPage() {
           <div className="card">
             <p className="label mb-1">{t("list.title")}</p>
             <p className="text-[13px] text-[#6A97B4] mb-5">{t("list.subtitle")}</p>
-
-            <div className="space-y-1">
-              {clients.map((c, i) => {
-                const isUnidentified = c.name === UNIDENTIFIED_SOURCE;
-                return (
-                  <Link
-                    key={c.name}
-                    href={`/clients/${encodeURIComponent(c.name)}`}
-                    className="flex items-center gap-3 py-3 rounded-xl hover:bg-[#1A3048] -mx-2 px-2 transition-colors group"
-                  >
-                    <span className="text-xs font-bold text-[#6A97B4] w-5 flex-shrink-0 tabular-nums">{i + 1}</span>
-
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap mb-1">
-                        <p className={`text-sm font-medium truncate ${isUnidentified ? "text-[#6A97B4] italic" : "text-[#E8F0F8]"}`}>
-                          {c.name}
-                        </p>
-                        {!isUnidentified && (
-                          <StatusBadge status={c.status} label={t(`status.${c.status}`)} />
-                        )}
-                        {!isUnidentified && (c.confidence === "medium" || c.confidence === "low") && (
-                          <span className="text-[11px] font-medium text-[#D4A254] bg-[#D4A25410] border border-[#D4A25425] px-1.5 py-0.5 rounded-full">
-                            {t(`confidence.${c.confidence}`)}
-                          </span>
-                        )}
-                        {isUnidentified && (
-                          <span className="text-[11px] text-[#4A7A9B] bg-[#1A304880] px-1.5 py-0.5 rounded">
-                            {t("status.unidentified")}
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-xs text-[#6A97B4]">
-                        {t("list.lastPayment", {
-                          date: new Date(c.lastPayment).toLocaleDateString(INTL_LOCALES[locale], {
-                            day: "numeric", month: "short", year: "numeric", timeZone: "UTC",
-                          }),
-                        })}
-                      </p>
-                    </div>
-
-                    <div className="text-right flex-shrink-0">
-                      <p className="text-sm font-bold text-[#4CC4A4] tabular-nums">{formatCurrency(c.totalRevenue, locale)}</p>
-                      <p className="text-xs text-[#6A97B4]">{t("list.ofIncome", { pct: c.revenueContributionPct })}</p>
-                    </div>
-
-                    <svg className="w-4 h-4 text-[#6A97B4] group-hover:text-[#3AB5A0] flex-shrink-0 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                    </svg>
-                  </Link>
-                );
-              })}
-            </div>
+            <ClientListRows clients={clients} basePath="/clients" />
             <p className="text-[11px] text-[#475569] leading-relaxed mt-4 px-1">
               {t("list.multiProcessorNote")}
             </p>

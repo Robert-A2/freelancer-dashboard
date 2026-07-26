@@ -288,11 +288,33 @@ export function generateDemoTransactions(): DemoTransaction[] {
   return txs.sort((a, b) => a.transactionDate.getTime() - b.transactionDate.getTime());
 }
 
-// Singleton — generated once at module load
-export const DEMO_TRANSACTIONS: DemoTransaction[] = generateDemoTransactions();
+// The narrative above is authored on a fixed calendar (Jan 2023 – Dec 2025,
+// "today" = Jan 1 2026) so the story reads naturally (August dips, price
+// rises over the years, Nova's final payment, etc). To keep the demo from
+// drifting into the past as real time moves on, shift every date forward by
+// whole months so the last month of data is always last calendar month —
+// same numbers, same story, just relabeled onto the current calendar.
+function shiftByMonths(date: Date, months: number): Date {
+  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + months, date.getUTCDate()));
+}
+
+const NARRATIVE_LAST_DATA_MONTH = 2025 * 12 + 12; // Dec 2025, absolute month units
+function monthsToShiftToPresent(): number {
+  const now = new Date();
+  const lastCompleteMonth = now.getUTCFullYear() * 12 + (now.getUTCMonth() + 1) - 1;
+  return lastCompleteMonth - NARRATIVE_LAST_DATA_MONTH;
+}
+
+const MONTH_SHIFT = monthsToShiftToPresent();
+
+// Singleton — generated once at module load, shifted onto the current calendar
+export const DEMO_TRANSACTIONS: DemoTransaction[] = generateDemoTransactions().map(tx => ({
+  ...tx,
+  transactionDate: shiftByMonths(tx.transactionDate, MONTH_SHIFT),
+}));
 
 // Demo reference date — the day after the last transaction
-export const DEMO_REF_DATE = new Date(Date.UTC(2026, 0, 1)); // Jan 1, 2026
+export const DEMO_REF_DATE = shiftByMonths(new Date(Date.UTC(2026, 0, 1)), MONTH_SHIFT);
 
 // Demo persona
 export const DEMO_PERSONA = {

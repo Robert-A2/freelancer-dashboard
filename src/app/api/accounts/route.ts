@@ -13,8 +13,12 @@ export async function GET() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  // Same reasoning as the Dashboard's account query: an account with zero
+  // remaining transactions (e.g. its only CSV import was deleted) shouldn't
+  // be offered back as an "existing account" to reuse — there's nothing left
+  // behind it.
   const accounts = await prisma.account.findMany({
-    where: { userId: user.id, isArchived: false },
+    where: { userId: user.id, isArchived: false, transactions: { some: {} } },
     orderBy: { createdAt: "asc" },
     select: {
       id: true,

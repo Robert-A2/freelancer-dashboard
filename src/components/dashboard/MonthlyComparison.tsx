@@ -22,11 +22,10 @@ interface Props {
   suggestion?: Insight | null;
   currLabel?: string;
   prevLabel?: string;
-  isDataRecent?: boolean;
 }
 
 export default function MonthlyComparison({
-  current, previous, changes, interpretation, suggestion, currLabel: currLabelProp, prevLabel: prevLabelProp, isDataRecent = true,
+  current, previous, changes, interpretation, suggestion, currLabel: currLabelProp, prevLabel: prevLabelProp,
 }: Props) {
   const t = useTranslations("dashboard.monthlyComparison");
   const tm = useTranslations("metrics");
@@ -83,34 +82,8 @@ export default function MonthlyComparison({
     );
   }
 
-  const verdictBase =
-    changes.income > 0 && changes.cashflow >= 0 ? "verdictYes" :
-    changes.income > 0 && changes.cashflow < 0  ? "verdictPartly" :
-    changes.income <= 0 && changes.cashflow >= 0 ? "verdictSlightly" :
-                                                   "verdictNo";
-
-  const verdictKey = isDataRecent ? verdictBase : `${verdictBase}History` as const;
-
-  const verdictColor =
-    verdictBase === "verdictYes"      ? "text-[#4CC4A4]" :
-    verdictBase === "verdictNo"       ? "text-[#D97070]" :
-                                        "text-[#D4A254]";
-
   return (
     <div className="card">
-      <div className="mb-4 md:mb-5">
-        <p className="label mb-1">
-          {isDataRecent
-            ? t("label")
-            : t("labelHistorical", { currMonth: currLabel, prevMonth: prevLabel })}
-        </p>
-        <h3 className={`text-base font-semibold leading-snug ${verdictColor}`}>
-          {isDataRecent
-            ? t(verdictKey as "verdictYes" | "verdictPartly" | "verdictSlightly" | "verdictNo")
-            : t(verdictKey as "verdictYesHistory" | "verdictPartlyHistory" | "verdictSlightlyHistory" | "verdictNoHistory", { currMonth: currLabel })}
-        </h3>
-      </div>
-
       {/* Desktop table */}
       <div className="hidden md:grid grid-cols-[1fr_auto_auto_auto] gap-x-5 gap-y-0">
         <div className="pb-2 border-b border-[#243F5E]" />
