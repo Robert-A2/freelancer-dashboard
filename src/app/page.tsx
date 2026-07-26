@@ -147,7 +147,7 @@ export default async function LandingPage() {
             </div>
           </div>
 
-          <div className="flex justify-end pr-12">
+          <div className="flex justify-center lg:justify-end pr-0 lg:pr-12">
             <PhoneNavShowcase />
           </div>
         </div>

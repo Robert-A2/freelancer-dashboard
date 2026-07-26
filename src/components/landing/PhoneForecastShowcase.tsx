@@ -102,45 +102,22 @@ function useEnteredOnce<T extends HTMLElement>() {
   return { ref, entered };
 }
 
-// The popups only fire (and the wrapper only reserves room for them) once
-// there's real space around the phone — narrower viewports just show the
-// static phone with all four cards inside, no popups, no clipping.
-function useCanPop() {
-  const [can, setCan] = useState(false);
-  useEffect(() => {
-    const mq = window.matchMedia("(min-width: 1220px)");
-    setCan(mq.matches);
-    const onChange = () => setCan(mq.matches);
-    mq.addEventListener("change", onChange);
-    return () => mq.removeEventListener("change", onChange);
-  }, []);
-  return can;
-}
-
-// Two different treatments share the same phase timer:
-// - `canPop` (real desktop space beside the phone): the in-phone card dims
-//   once its popup has appeared, since attention has moved to the bubble.
-// - Below that width (phones, tablets, most laptops): there's no bubble, so
-//   the card briefly highlights in place instead — a spotlight, not a fade —
-//   then returns to normal once the sequence moves past it.
-function cardTreatment(cardPhase: number, phase: number, canPop: boolean): string {
-  if (canPop) {
-    return phase >= cardPhase ? "blur-[2px] opacity-40" : "";
-  }
-  return phase === cardPhase
-    ? "border-[#3AB5A0] shadow-[0_0_0_1px_rgba(58,181,160,0.5),0_0_10px_rgba(58,181,160,0.4)]"
-    : "";
+// The in-phone card dims once its popup has appeared, on every screen size —
+// attention has moved to the bubble, same as desktop.
+function cardTreatment(cardPhase: number, phase: number): string {
+  return phase >= cardPhase ? "blur-[2px] opacity-40" : "";
 }
 
 // A notification-style popup anchored to the phone's edge — like a
 // WhatsApp message bubble popping up over a phone mockup. It overlaps the
 // phone slightly (the phone stays fully intact behind it) and lands with a
-// bouncy overshoot instead of a plain fade.
+// bouncy overshoot instead of a plain fade. Narrower on phones, where there's
+// less room beside the phone for it to sit in.
 function Popup({ visible, side, style, children }: { visible: boolean; side: "left" | "right"; style: React.CSSProperties; children: ReactNode }) {
   return (
     <div
       style={style}
-      className={`absolute z-20 w-[200px] transition-[opacity,transform] duration-[550ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] motion-reduce:transition-none motion-reduce:duration-0 ${
+      className={`absolute z-20 w-[150px] sm:w-[200px] transition-[opacity,transform] duration-[550ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] motion-reduce:transition-none motion-reduce:duration-0 ${
         visible
           ? "opacity-100 scale-100"
           : `opacity-0 scale-50 pointer-events-none ${side === "right" ? "-translate-x-4" : "translate-x-4"}`
@@ -159,7 +136,6 @@ function Popup({ visible, side, style, children }: { visible: boolean; side: "le
 // settles, never loops.
 export default function PhoneForecastShowcase({ appName, health, cashflowRisk, direction, howBuilt, navLabels }: Props) {
   const { ref, entered } = useEnteredOnce<HTMLDivElement>();
-  const canPop = useCanPop();
   const [phase, setPhase] = useState(0);
 
   useEffect(() => {
@@ -172,11 +148,8 @@ export default function PhoneForecastShowcase({ appName, health, cashflowRisk, d
       return;
     }
 
-    // Runs on every screen size now — on `canPop` screens this drives the
-    // side popups (and dims the in-phone card behind them); below that width
-    // there's no room for popups, so the same phase steps instead drive a
-    // brief in-place highlight per card (see the animated cards below),
-    // settling to phase 4 (all normal, nothing highlighted) at the end.
+    // Same sequence on every screen size now: each step pops a card out to
+    // the phone's edge and dims that card's in-phone copy behind it.
     const timers: ReturnType<typeof setTimeout>[] = [];
     timers.push(setTimeout(() => setPhase(1), 1000));
     timers.push(setTimeout(() => setPhase(2), 2600));
@@ -186,7 +159,7 @@ export default function PhoneForecastShowcase({ appName, health, cashflowRisk, d
   }, [entered]);
 
   return (
-    <div ref={ref} className={`relative inline-block py-10 scale-[0.92] ${canPop ? "px-[160px]" : ""}`}>
+    <div ref={ref} className="relative inline-block py-10 scale-[0.92] px-[40px] sm:px-[160px]">
       <PhoneFrame>
         <div className="pointer-events-none select-none flex flex-col h-full">
           {/* Status bar — the phone's own chrome: time left, signal/wifi/battery right */}
@@ -231,7 +204,7 @@ export default function PhoneForecastShowcase({ appName, health, cashflowRisk, d
           <div className="flex-1 px-2.5 py-1.5 overflow-hidden flex flex-col gap-1">
 
             <div
-              className={`bg-[#132537] border border-[#1E3550] rounded-lg p-1.5 transition-[filter,opacity,border-color,box-shadow] duration-700 motion-reduce:transition-none ${cardTreatment(1, phase, canPop)}`}
+              className={`bg-[#132537] border border-[#1E3550] rounded-lg p-1.5 transition-[filter,opacity,border-color,box-shadow] duration-700 motion-reduce:transition-none ${cardTreatment(1, phase)}`}
             >
               <p className="text-[7px] font-medium text-[#6A97B4] uppercase tracking-wide mb-0.5">{health.label}</p>
               <span className={`text-[8.5px] font-semibold px-1.5 py-0.5 rounded-md inline-block mb-0.5 ${health.badgeClass}`}>
@@ -241,7 +214,7 @@ export default function PhoneForecastShowcase({ appName, health, cashflowRisk, d
             </div>
 
             <div
-              className={`bg-[#D4A2540A] border border-[#D4A25425] rounded-lg p-1.5 transition-[filter,opacity,border-color,box-shadow] duration-700 motion-reduce:transition-none ${cardTreatment(2, phase, canPop)}`}
+              className={`bg-[#D4A2540A] border border-[#D4A25425] rounded-lg p-1.5 transition-[filter,opacity,border-color,box-shadow] duration-700 motion-reduce:transition-none ${cardTreatment(2, phase)}`}
             >
               <p className="text-[7px] font-medium text-[#6A97B4] uppercase tracking-wide mb-0.5">{cashflowRisk.label}</p>
               <p className="text-[12px] font-bold text-[#D4A254] mb-0.5 leading-none">{cashflowRisk.title}</p>
@@ -250,7 +223,7 @@ export default function PhoneForecastShowcase({ appName, health, cashflowRisk, d
             </div>
 
             <div
-              className={`bg-[#132537] border border-[#1E3550] rounded-lg p-1.5 transition-[filter,opacity,border-color,box-shadow] duration-700 motion-reduce:transition-none ${cardTreatment(3, phase, canPop)}`}
+              className={`bg-[#132537] border border-[#1E3550] rounded-lg p-1.5 transition-[filter,opacity,border-color,box-shadow] duration-700 motion-reduce:transition-none ${cardTreatment(3, phase)}`}
             >
               <p className="text-[7px] font-medium text-[#6A97B4] uppercase tracking-wide mb-0.5">{direction.label}</p>
               <span className={`text-[8.5px] font-semibold px-1.5 py-0.5 rounded-md inline-block mb-0.5 ${direction.badgeClass}`}>
@@ -314,41 +287,37 @@ export default function PhoneForecastShowcase({ appName, health, cashflowRisk, d
         </div>
       </PhoneFrame>
 
-      {canPop && (
-        <>
-          {/* Health — pops over the phone's right edge first */}
-          <Popup visible={phase >= 1} side="right" style={{ top: "70px", right: "10px" }}>
-            <div className="bg-[#0D1B2B] border border-[#1E3550] rounded-xl p-4 shadow-2xl shadow-black/40">
-              <p className="text-[10px] font-medium text-[#6A97B4] uppercase tracking-wide mb-2">{health.label}</p>
-              <span className={`text-[11px] font-semibold px-2 py-1 rounded-md inline-block mb-2 ${health.badgeClass}`}>
-                {health.badge}
-              </span>
-              <p className={`text-[11px] leading-relaxed ${health.bodyClass ?? "text-[#7BA8C4]"}`}>{health.body}</p>
-            </div>
-          </Popup>
+      {/* Health — pops over the phone's right edge first */}
+      <Popup visible={phase >= 1} side="right" style={{ top: "70px", right: "10px" }}>
+        <div className="bg-[#0D1B2B] border border-[#1E3550] rounded-xl p-3 sm:p-4 shadow-2xl shadow-black/40">
+          <p className="text-[9px] sm:text-[10px] font-medium text-[#6A97B4] uppercase tracking-wide mb-2">{health.label}</p>
+          <span className={`text-[10px] sm:text-[11px] font-semibold px-2 py-1 rounded-md inline-block mb-2 ${health.badgeClass}`}>
+            {health.badge}
+          </span>
+          <p className={`text-[10px] sm:text-[11px] leading-relaxed ${health.bodyClass ?? "text-[#7BA8C4]"}`}>{health.body}</p>
+        </div>
+      </Popup>
 
-          {/* Cashflow Risk — pops over the phone's left edge second */}
-          <Popup visible={phase >= 2} side="left" style={{ top: "190px", left: "10px" }}>
-            <div className="bg-[#0D1B2B] border border-[#D4A25425] rounded-xl p-4 shadow-2xl shadow-black/40">
-              <p className="text-[10px] font-medium text-[#6A97B4] uppercase tracking-wide mb-2">{cashflowRisk.label}</p>
-              <p className="text-lg font-bold text-[#D4A254] mb-1.5 leading-none">{cashflowRisk.title}</p>
-              <p className="text-[11px] text-[#7BA8C4] leading-relaxed mb-2">{cashflowRisk.desc}</p>
-              <p className="text-[10px] text-[#6A97B4]">{cashflowRisk.monthsPositive}</p>
-            </div>
-          </Popup>
+      {/* Cashflow Risk — pops over the phone's left edge second */}
+      <Popup visible={phase >= 2} side="left" style={{ top: "190px", left: "10px" }}>
+        <div className="bg-[#0D1B2B] border border-[#D4A25425] rounded-xl p-3 sm:p-4 shadow-2xl shadow-black/40">
+          <p className="text-[9px] sm:text-[10px] font-medium text-[#6A97B4] uppercase tracking-wide mb-2">{cashflowRisk.label}</p>
+          <p className="text-base sm:text-lg font-bold text-[#D4A254] mb-1.5 leading-none">{cashflowRisk.title}</p>
+          <p className="text-[10px] sm:text-[11px] text-[#7BA8C4] leading-relaxed mb-2">{cashflowRisk.desc}</p>
+          <p className="text-[9px] sm:text-[10px] text-[#6A97B4]">{cashflowRisk.monthsPositive}</p>
+        </div>
+      </Popup>
 
-          {/* Business Direction — pops over the phone's right edge third, below Health */}
-          <Popup visible={phase >= 3} side="right" style={{ top: "280px", right: "10px" }}>
-            <div className="bg-[#0D1B2B] border border-[#1E3550] rounded-xl p-4 shadow-2xl shadow-black/40">
-              <p className="text-[10px] font-medium text-[#6A97B4] uppercase tracking-wide mb-2">{direction.label}</p>
-              <span className={`text-[11px] font-semibold px-2 py-1 rounded-md inline-block mb-2 ${direction.badgeClass}`}>
-                {direction.badge}
-              </span>
-              <p className={`text-[11px] leading-relaxed ${direction.bodyClass ?? "text-[#7BA8C4]"}`}>{direction.body}</p>
-            </div>
-          </Popup>
-        </>
-      )}
+      {/* Business Direction — pops over the phone's right edge third, below Health */}
+      <Popup visible={phase >= 3} side="right" style={{ top: "280px", right: "10px" }}>
+        <div className="bg-[#0D1B2B] border border-[#1E3550] rounded-xl p-3 sm:p-4 shadow-2xl shadow-black/40">
+          <p className="text-[9px] sm:text-[10px] font-medium text-[#6A97B4] uppercase tracking-wide mb-2">{direction.label}</p>
+          <span className={`text-[10px] sm:text-[11px] font-semibold px-2 py-1 rounded-md inline-block mb-2 ${direction.badgeClass}`}>
+            {direction.badge}
+          </span>
+          <p className={`text-[10px] sm:text-[11px] leading-relaxed ${direction.bodyClass ?? "text-[#7BA8C4]"}`}>{direction.body}</p>
+        </div>
+      </Popup>
     </div>
   );
 }
