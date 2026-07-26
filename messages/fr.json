@@ -65,7 +65,7 @@
     },
     "hero": {
       "titleLead": "Arrêtez de gérer la paperasse.",
-      "titleMain": "Commencez à comprendre votre survie.",
+      "titleMain": "Commencez à comprendre votre trésorerie.",
       "bodyLight": "Un système d'exploitation financier conçu pour les revenus freelance — pas pour un salaire fixe.",
       "bodyDark": "Nonodia vous aide à analyser votre CSV et votre trésorerie, à envoyer des liens de facture par étape payés via Stripe, et à voir instantanément votre véritable autonomie de trésorerie.",
       "cta": "Commencer gratuitement"
@@ -101,7 +101,7 @@
       "ctaNote": "Aucun compte requis. S'ouvre en quelques secondes."
     },
     "problem": {
-      "title": "Inquiétez-vous moins.\nNonodia vous donne de vraies réponses.",
+      "title": "Inquiétez-vous moins.\nNonodia vous donne les réponses.",
       "body": "La plupart des outils financiers vous submergent de tâches administratives — vous demandant : « Avez-vous catégorisé ce reçu ? » ou « Avez-vous enregistré cette facture d'électricité ? »",
       "questionsIntro": "Elles ne répondent jamais aux questions critiques, celles qui vous tiennent éveillé tard le soir :",
       "questions": [

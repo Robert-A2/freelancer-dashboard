@@ -91,7 +91,7 @@ export default async function LandingPage() {
               <span className="block text-2xl sm:text-[1.75rem] font-medium leading-[1.4] tracking-tight text-[#7189A3] mb-4">
                 {t("hero.titleLead")}
               </span>
-              <span className="block text-3xl sm:text-4xl lg:text-[2.875rem] font-bold leading-[1.85] tracking-tight text-[#0D1B2B]">
+              <span className="block text-3xl sm:text-4xl lg:text-[2.875rem] font-bold leading-[1.25] sm:leading-[1.85] tracking-tight text-[#0D1B2B]">
                 {t("hero.titleMain")}
               </span>
             </h1>

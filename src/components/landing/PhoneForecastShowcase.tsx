@@ -159,7 +159,7 @@ export default function PhoneForecastShowcase({ appName, health, cashflowRisk, d
   }, [entered]);
 
   return (
-    <div ref={ref} className="relative inline-block py-10 scale-[0.92] px-[40px] sm:px-[160px]">
+    <div ref={ref} className="relative inline-block py-10 scale-100 px-[40px] sm:px-[160px]">
       <PhoneFrame>
         <div className="pointer-events-none select-none flex flex-col h-full">
           {/* Status bar — the phone's own chrome: time left, signal/wifi/battery right */}

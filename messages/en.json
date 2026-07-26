@@ -65,7 +65,7 @@
     },
     "hero": {
       "titleLead": "Stop managing bureaucracy.",
-      "titleMain": "Start understanding your survival.",
+      "titleMain": "Start understanding your runway.",
       "bodyLight": "A financial operating system built for freelance income — not steady paychecks.",
       "bodyDark": "Nonodia helps you analyze your CSV and cashflow, send milestone invoice links paid via Stripe, and instantly see your true cash runway.",
       "cta": "Get started free"
@@ -101,7 +101,7 @@
       "ctaNote": "No account required. Opens in seconds."
     },
     "problem": {
-      "title": "Worry less.\nNonodia gives you real answers.",
+      "title": "Worry less.\nNonodia gives you the answers.",
       "body": "Most finance tools bury you in administrative busywork — asking: \"Did you categorize this receipt?\" or \"Did you log this utility bill?\"",
       "questionsIntro": "They never answer the critical, late-night questions that actually keep independent creators awake:",
       "questions": [
