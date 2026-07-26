@@ -107,7 +107,7 @@ export default function Navbar({ fullName, email }: { fullName: string; email: s
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <LanguageSwitcher className="hidden sm:flex" />
+            <LanguageSwitcher />
             <FeedbackButton />
             <AccountDrawer fullName={fullName} email={email} />
           </div>

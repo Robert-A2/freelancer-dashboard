@@ -117,6 +117,21 @@ function useCanPop() {
   return can;
 }
 
+// Two different treatments share the same phase timer:
+// - `canPop` (real desktop space beside the phone): the in-phone card dims
+//   once its popup has appeared, since attention has moved to the bubble.
+// - Below that width (phones, tablets, most laptops): there's no bubble, so
+//   the card briefly highlights in place instead — a spotlight, not a fade —
+//   then returns to normal once the sequence moves past it.
+function cardTreatment(cardPhase: number, phase: number, canPop: boolean): string {
+  if (canPop) {
+    return phase >= cardPhase ? "blur-[2px] opacity-40" : "";
+  }
+  return phase === cardPhase
+    ? "border-[#3AB5A0] shadow-[0_0_0_1px_rgba(58,181,160,0.5),0_0_10px_rgba(58,181,160,0.4)]"
+    : "";
+}
+
 // A notification-style popup anchored to the phone's edge — like a
 // WhatsApp message bubble popping up over a phone mockup. It overlaps the
 // phone slightly (the phone stays fully intact behind it) and lands with a
@@ -148,21 +163,27 @@ export default function PhoneForecastShowcase({ appName, health, cashflowRisk, d
   const [phase, setPhase] = useState(0);
 
   useEffect(() => {
-    if (!entered || !canPop) return;
+    if (!entered) return;
 
     // Respect reduced-motion: skip straight to the settled end state instead
-    // of animating the pop-out sequence.
+    // of animating the reveal sequence, on any screen size.
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      setPhase(3);
+      setPhase(4);
       return;
     }
 
+    // Runs on every screen size now — on `canPop` screens this drives the
+    // side popups (and dims the in-phone card behind them); below that width
+    // there's no room for popups, so the same phase steps instead drive a
+    // brief in-place highlight per card (see the animated cards below),
+    // settling to phase 4 (all normal, nothing highlighted) at the end.
     const timers: ReturnType<typeof setTimeout>[] = [];
     timers.push(setTimeout(() => setPhase(1), 1000));
     timers.push(setTimeout(() => setPhase(2), 2600));
     timers.push(setTimeout(() => setPhase(3), 4200));
+    timers.push(setTimeout(() => setPhase(4), 5800));
     return () => timers.forEach(clearTimeout);
-  }, [entered, canPop]);
+  }, [entered]);
 
   return (
     <div ref={ref} className={`relative inline-block py-10 scale-[0.92] ${canPop ? "px-[160px]" : ""}`}>
@@ -210,7 +231,7 @@ export default function PhoneForecastShowcase({ appName, health, cashflowRisk, d
           <div className="flex-1 px-2.5 py-1.5 overflow-hidden flex flex-col gap-1">
 
             <div
-              className={`bg-[#132537] border border-[#1E3550] rounded-lg p-1.5 transition-[filter,opacity] duration-700 motion-reduce:transition-none ${phase >= 1 ? "blur-[2px] opacity-40" : ""}`}
+              className={`bg-[#132537] border border-[#1E3550] rounded-lg p-1.5 transition-[filter,opacity,border-color,box-shadow] duration-700 motion-reduce:transition-none ${cardTreatment(1, phase, canPop)}`}
             >
               <p className="text-[7px] font-medium text-[#6A97B4] uppercase tracking-wide mb-0.5">{health.label}</p>
               <span className={`text-[8.5px] font-semibold px-1.5 py-0.5 rounded-md inline-block mb-0.5 ${health.badgeClass}`}>
@@ -220,7 +241,7 @@ export default function PhoneForecastShowcase({ appName, health, cashflowRisk, d
             </div>
 
             <div
-              className={`bg-[#D4A2540A] border border-[#D4A25425] rounded-lg p-1.5 transition-[filter,opacity] duration-700 motion-reduce:transition-none ${phase >= 2 ? "blur-[2px] opacity-40" : ""}`}
+              className={`bg-[#D4A2540A] border border-[#D4A25425] rounded-lg p-1.5 transition-[filter,opacity,border-color,box-shadow] duration-700 motion-reduce:transition-none ${cardTreatment(2, phase, canPop)}`}
             >
               <p className="text-[7px] font-medium text-[#6A97B4] uppercase tracking-wide mb-0.5">{cashflowRisk.label}</p>
               <p className="text-[12px] font-bold text-[#D4A254] mb-0.5 leading-none">{cashflowRisk.title}</p>
@@ -229,7 +250,7 @@ export default function PhoneForecastShowcase({ appName, health, cashflowRisk, d
             </div>
 
             <div
-              className={`bg-[#132537] border border-[#1E3550] rounded-lg p-1.5 transition-[filter,opacity] duration-700 motion-reduce:transition-none ${phase >= 3 ? "blur-[2px] opacity-40" : ""}`}
+              className={`bg-[#132537] border border-[#1E3550] rounded-lg p-1.5 transition-[filter,opacity,border-color,box-shadow] duration-700 motion-reduce:transition-none ${cardTreatment(3, phase, canPop)}`}
             >
               <p className="text-[7px] font-medium text-[#6A97B4] uppercase tracking-wide mb-0.5">{direction.label}</p>
               <span className={`text-[8.5px] font-semibold px-1.5 py-0.5 rounded-md inline-block mb-0.5 ${direction.badgeClass}`}>

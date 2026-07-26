@@ -64,7 +64,7 @@ export default async function LandingPage() {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 flex items-center justify-between h-16">
           <span className="font-bold text-[#E8F0F8] text-lg tracking-tight">Nonodia</span>
           <div className="flex items-center gap-1 sm:gap-2">
-            <LanguageSwitcher className="hidden sm:flex" />
+            <LanguageSwitcher />
             <Link
               href="/login"
               className="hidden sm:inline-block text-sm text-[#7BA8C4] hover:text-[#E8F0F8] transition-colors px-4 py-2"
@@ -107,13 +107,12 @@ export default async function LandingPage() {
           </div>
 
           {/* Live product screen — right-aligned flush to the container's
-              right edge (no dead space at the border), wide enough to read
-              as a landscape PC monitor rather than a narrow phone screen.
-              Hidden below sm: the desktop screen's internal layout (5-card
-              grid, etc.) has no mobile-responsive breakpoints of its own —
-              showing it squeezed into a phone width reads as broken, not
-              "responsive." Phones get a clean text+CTA hero instead. */}
-          <div className="hidden sm:block w-full max-w-[860px] ml-auto -mt-4">
+              right edge on desktop (no dead space at the border), wide
+              enough to read as a landscape PC monitor. Below lg it stacks
+              full-width under the text instead. DashboardShowcase's own
+              internal grid collapses to 2 columns below `sm` so the mockup
+              stays legible at phone width instead of being hidden. */}
+          <div className="w-full max-w-[860px] mt-10 lg:ml-auto lg:mt-0 lg:-mt-4">
             <ProductExperience />
           </div>
         </div>
