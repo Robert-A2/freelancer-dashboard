@@ -1,5 +1,14 @@
+import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import DemoNavbar from "@/components/demo/DemoNavbar";
+
+// The interactive demo is a feature of the marketing site, not a page of its
+// own — it must never be indexed or shown as a separate search result next
+// to the homepage. `follow: true` still lets crawlers pass through it to
+// /signup rather than treating it as a dead end.
+export const metadata: Metadata = {
+  robots: { index: false, follow: true },
+};
 
 export default async function DemoLayout({ children }: { children: React.ReactNode }) {
   const t = await getTranslations("demo");

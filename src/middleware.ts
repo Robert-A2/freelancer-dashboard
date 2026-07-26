@@ -36,7 +36,7 @@ export async function middleware(request: NextRequest) {
   // never require login. "/api/pay" is its matching public checkout-session API.
   // "/api/webhooks" is called directly by Stripe's servers — no user session
   // exists at all, and Stripe verifies its own request via signature, not cookies.
-  const publicPaths = ["/login", "/signup", "/reset-password", "/demo", "/api/demo", "/pay", "/api/pay", "/api/webhooks", "/data-privacy", "/terms-of-service"];
+  const publicPaths = ["/login", "/signup", "/reset-password", "/demo", "/api/demo", "/pay", "/api/pay", "/api/webhooks", "/data-privacy", "/terms-of-service", "/robots.txt", "/sitemap.xml"];
 
   // Pages an already-authenticated user should be bounced away from.
   // "/reset-password" is deliberately NOT included here: exchanging the
