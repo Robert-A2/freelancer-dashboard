@@ -64,9 +64,10 @@ export default async function DashboardShowcase() {
     <div className="pointer-events-none select-none space-y-2.5 text-[#E8F0F8]">
 
       {/* ── 5 summary cards ───────────────────────────────────────────── */}
-      {/* 2 columns below `sm` (phone width) so each card stays wide enough
-          to read; 5 columns from `sm` up, where the mockup has real room. */}
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5">
+      {/* Always 5 columns — this is one fixed composition, scaled down as a
+          whole on narrow screens (see the wrapper in page.tsx), not
+          reflowed into a different layout the way a live UI grid would be. */}
+      <div className="grid grid-cols-5 gap-1.5">
         <div className="bg-[#132537] border border-[#1E3550] rounded-lg p-1.5 flex flex-col gap-0.5">
           <p className="text-[8px] font-medium text-[#6A97B4] uppercase tracking-wide">{tm("income")}</p>
           <p className="text-[12px] font-bold text-[#4CC4A4] leading-none tabular-nums">{formatCurrency(DATA.income, locale)}</p>
@@ -95,7 +96,7 @@ export default async function DashboardShowcase() {
           <Chip value={DATA.marginChangePct} />
         </div>
 
-        <div className="col-span-2 sm:col-span-1 bg-[#132537] border border-[#1E3550] rounded-lg p-1.5 flex flex-col gap-0.5">
+        <div className="bg-[#132537] border border-[#1E3550] rounded-lg p-1.5 flex flex-col gap-0.5">
           <p className="text-[8px] font-medium text-[#6A97B4] uppercase tracking-wide">{t("risk")}</p>
           <p className={`text-[12px] font-bold leading-none ${RISK_COLOR}`}>{t("riskLevels.medium")}</p>
           <p className="text-[8.5px] text-[#6A97B4] leading-tight">{t("monthsPositive", { positive: DATA.riskPositiveMonths, total: DATA.riskTotalMonths })}</p>

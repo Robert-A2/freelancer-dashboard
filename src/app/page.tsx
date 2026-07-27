@@ -91,7 +91,7 @@ export default async function LandingPage() {
               <span className="block text-2xl sm:text-[1.75rem] font-medium leading-[1.4] tracking-tight text-[#7189A3] mb-4">
                 {t("hero.titleLead")}
               </span>
-              <span className="block text-3xl sm:text-4xl lg:text-[2.875rem] font-bold leading-[1.25] sm:leading-[1.85] tracking-tight text-[#0D1B2B]">
+              <span className="block text-3xl sm:text-4xl lg:text-[2.875rem] font-bold leading-[1.15] tracking-tight text-[#0D1B2B]">
                 {t("hero.titleMain")}
               </span>
             </h1>
@@ -106,14 +106,38 @@ export default async function LandingPage() {
             </Link>
           </div>
 
-          {/* Live product screen — right-aligned flush to the container's
-              right edge on desktop (no dead space at the border), wide
-              enough to read as a landscape PC monitor. Below lg it stacks
-              full-width under the text instead. DashboardShowcase's own
-              internal grid collapses to 2 columns below `sm` so the mockup
-              stays legible at phone width instead of being hidden. */}
-          <div className="w-full max-w-[860px] mt-10 lg:ml-auto lg:mt-0 lg:-mt-4">
-            <ProductExperience />
+          {/* Live product screen — one fixed 800px-wide composition (matching
+              its 5-column internal grid, which never reflows) shrunk down as
+              a whole using `zoom` rather than reflowed per breakpoint. zoom
+              (unlike transform) actually shrinks the layout box too, so this
+              behaves like a real screenshot scaling down, not a live grid
+              restructuring itself.
+
+              The zoom steps are NOT monotonically "bigger at bigger
+              breakpoints" — that's intentional. Below `lg` this sits in a
+              single-column stack with the full viewport width to itself
+              (minus the page's own px-6). At `lg` (1024px) the grid switches
+              to two columns and the text column claims up to 480px + a 64px
+              gap, so the space actually available to this column *drops*
+              sharply right at that breakpoint even though the viewport got
+              bigger — from ~720px just before `lg` to as little as ~430px
+              right at it. The zoom value has to drop to match, then climb
+              back up as the viewport keeps growing and there's real room
+              again. min-w-0 + overflow-hidden is the hard backstop: even if
+              this math is ever slightly off at some in-between width, it
+              clips instead of overlapping the text column.
+
+              Deliberately NOT `ml-auto`: once zoom shrinks this smaller than
+              its 1fr track (true at every width except >=1440px), ml-auto
+              pushes it flush against the page's outer edge instead — which
+              looks fine on its own, but leaves the *leftover track space*
+              sitting between the text and the image, right where the eye
+              expects them to be close together. Left-aligned, it just sits
+              directly next to the grid gap instead. */}
+          <div className="min-w-0 overflow-hidden mt-10 lg:mt-0 lg:-mt-4 [zoom:0.38] sm:[zoom:0.6] md:[zoom:0.85] lg:[zoom:0.5] min-[1150px]:[zoom:0.65] min-[1280px]:[zoom:0.8] min-[1440px]:[zoom:1]">
+            <div className="w-[800px]">
+              <ProductExperience />
+            </div>
           </div>
         </div>
       </section>
