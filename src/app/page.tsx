@@ -133,8 +133,20 @@ export default async function LandingPage() {
               looks fine on its own, but leaves the *leftover track space*
               sitting between the text and the image, right where the eye
               expects them to be close together. Left-aligned, it just sits
-              directly next to the grid gap instead. */}
-          <div className="min-w-0 overflow-hidden mt-10 lg:mt-0 lg:-mt-4 [zoom:0.38] sm:[zoom:0.6] md:[zoom:0.85] lg:[zoom:0.5] min-[1150px]:[zoom:0.65] min-[1280px]:[zoom:0.8] min-[1440px]:[zoom:1]">
+              directly next to the grid gap instead.
+
+              Below `lg` (single-column stack), the opposite problem showed
+              up: this sits in a full-width grid track, but the zoomed
+              content is narrower than that track and — as a plain block
+              child with no width of its own — hugs the left edge, dumping
+              all the leftover slack on the right (confirmed on a real
+              phone: text reached further right than the mockup did).
+              w-fit + mx-auto below `lg` makes this box hug its own (zoomed)
+              content size and centers *that* within the column, so
+              whatever slack exists splits evenly instead of collecting on
+              one side. Reset to the flush-left, next-to-text behavior at
+              `lg`+ where it's beside the text, not stacked under it. */}
+          <div className="w-fit mx-auto lg:w-auto lg:mx-0 min-w-0 overflow-hidden mt-10 lg:mt-0 lg:-mt-4 [zoom:0.39] sm:[zoom:0.6] md:[zoom:0.85] lg:[zoom:0.5] min-[1150px]:[zoom:0.65] min-[1280px]:[zoom:0.8] min-[1440px]:[zoom:1]">
             <div className="w-[800px]">
               <ProductExperience />
             </div>
