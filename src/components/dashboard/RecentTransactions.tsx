@@ -54,7 +54,7 @@ const TYPE_PREFIX: Record<string, string> = {
 const TYPE_BADGE: Record<string, string> = {
   income:   "bg-[#0F3028] text-[#4CC4A4]",
   expense:  "bg-[#3D2800] text-[#D4A254]",
-  savings:  "bg-[#1A3048] text-[#7BA8C4]",
+  savings:  "bg-[#1E3446] text-[#7BA8C4]",
   transfer: "bg-[#1A2D40] text-[#6A97B4]",
 };
 
@@ -110,7 +110,7 @@ function TransactionDrawer({
   const intentLabel = intentKey
     ? (KNOWN_INTENTS.has(intentKey) ? tIntent(`labels.${intentKey}` as never) : intentKey.replace(/_/g, " "))
     : null;
-  const intentColor = intentKey ? (INTENT_COLOR[intentKey] ?? "bg-[#1A3048] text-[#7BA8C4]") : "";
+  const intentColor = intentKey ? (INTENT_COLOR[intentKey] ?? "bg-[#1E3446] text-[#7BA8C4]") : "";
   const intentWhy   = intentKey && KNOWN_INTENTS.has(intentKey)
     ? tIntent(`why.${intentKey}` as never)
     : null;
@@ -147,7 +147,7 @@ function TransactionDrawer({
           </div>
           <button onClick={onClose} aria-label="Close"
             className="mt-0.5 flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg
-              text-[#4A7A9B] hover:text-[#E8F0F8] hover:bg-[#1A3048] transition-colors">
+              text-[#4A7A9B] hover:text-[#E8F0F8] hover:bg-[#1E3446] transition-colors">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
               <path d="M2 2l12 12M14 2L2 14" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
             </svg>
@@ -172,10 +172,10 @@ function TransactionDrawer({
 
             {/* Badges row */}
             <div className="flex flex-wrap gap-2">
-              <span className={`inline-block text-xs font-semibold px-2.5 py-1 rounded-full capitalize ${TYPE_BADGE[tx.type] ?? "bg-[#1A3048] text-[#7BA8C4]"}`}>
+              <span className={`inline-block text-xs font-semibold px-2.5 py-1 rounded-full capitalize ${TYPE_BADGE[tx.type] ?? "bg-[#1E3446] text-[#7BA8C4]"}`}>
                 {tx.type}
               </span>
-              <span className="inline-block text-xs font-medium px-2.5 py-1 rounded-full bg-[#1A3048] text-[#A8C6E0] capitalize">
+              <span className="inline-block text-xs font-medium px-2.5 py-1 rounded-full bg-[#1E3446] text-[#A8C6E0] capitalize">
                 {categoryName}
               </span>
               {intentLabel && (
@@ -255,7 +255,7 @@ export default function RecentTransactions({ transactions, notable, basePath = "
         {notable && notable.length > 0 && (
           <div className="mb-3 space-y-1">
             {notable.map((note, i) => (
-              <div key={i} className="flex items-start gap-2 px-3 py-2.5 bg-[#1A3048] rounded-lg">
+              <div key={i} className="flex items-start gap-2 px-3 py-2.5 bg-[#1E3446] rounded-lg">
                 <span className="text-[#3AB5A0] text-xs mt-0.5 flex-shrink-0">★</span>
                 <p className="text-sm text-[#A8C6E0]">
                   <InsightText insight={note} />
@@ -270,7 +270,7 @@ export default function RecentTransactions({ transactions, notable, basePath = "
             <button
               key={tx.id}
               onClick={() => setSelected(tx)}
-              className="w-full flex items-center justify-between py-3 border-b border-[#243F5E] last:border-0 gap-3 group text-left"
+              className="w-full flex items-center justify-between py-3 border-b border-[#2D4C68] last:border-0 gap-3 group text-left"
             >
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-[#E8F0F8] truncate group-hover:text-white transition-colors">
@@ -289,7 +289,7 @@ export default function RecentTransactions({ transactions, notable, basePath = "
                       {tx.accountName}
                     </span>
                   )}
-                  <span className="text-xs px-1.5 py-0.5 bg-[#1A3048] rounded text-[#7BA8C4]">
+                  <span className="text-xs px-1.5 py-0.5 bg-[#1E3446] rounded text-[#7BA8C4]">
                     {tCategories.has(tx.category) ? tCategories(tx.category) : tx.category}
                   </span>
                   {tx.needsReview && (
@@ -310,7 +310,7 @@ export default function RecentTransactions({ transactions, notable, basePath = "
           ))}
         </div>
 
-        <div className="pt-3 mt-1 border-t border-[#243F5E]">
+        <div className="pt-3 mt-1 border-t border-[#2D4C68]">
           <Link
             href={`${basePath}/history`}
             className="flex items-center justify-center gap-1.5 text-sm text-[#3AB5A0] hover:text-[#2E9D8A] font-medium transition-colors py-1"

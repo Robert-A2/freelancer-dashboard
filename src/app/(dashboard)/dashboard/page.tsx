@@ -294,7 +294,7 @@ export default async function DashboardPage({
           {hasData ? (
             <p className={`text-sm font-medium mt-0.5 ${
               intel.healthStatus === "healthy" ? "text-[#4CC4A4]" :
-              intel.healthStatus === "at-risk"  ? "text-[#D97070]" :
+              intel.healthStatus === "at-risk"  ? "text-[#E5484D]" :
                                                   "text-[#D4A254]"
             }`}>
               {intel.healthStatus === "healthy" ? t("verdictHealthy") :
@@ -324,20 +324,20 @@ export default async function DashboardPage({
       {/* Data freshness — coverage stale (data ends months ago) takes priority over
           import-date stale (haven't imported recently but data itself is current) */}
       {coverageIsStale && coverageLatestLabel ? (
-        <div className="flex items-center justify-between gap-4 px-4 py-3 bg-[#D4A25412] border border-[#D4A25432] rounded-xl">
+        <div className="flex items-center justify-between gap-4 px-4 py-3 surface-warning rounded-xl">
           <p className="text-sm text-[#D4A254]">
             {t("coverageStale.message", { month: coverageLatestLabel })}
           </p>
-          <Link href="/upload" className="text-xs font-semibold text-[#D4A254] hover:text-[#E8F0F8] transition-colors flex-shrink-0 bg-[#D4A25420] px-3 py-1.5 rounded-lg">
+          <Link href="/upload" className="text-xs font-semibold text-[#D4A254] hover:text-[#E8F0F8] transition-colors flex-shrink-0 bg-[#1E3446] px-3 py-1.5 rounded-lg">
             {t("coverageStale.cta")}
           </Link>
         </div>
       ) : dataIsStale ? (
-        <div className="flex items-center justify-between gap-4 px-4 py-3 bg-[#D4A25412] border border-[#D4A25432] rounded-xl">
+        <div className="flex items-center justify-between gap-4 px-4 py-3 surface-warning rounded-xl">
           <p className="text-sm text-[#D4A254]">
             {t("staleData.message", { days: daysSinceImport ?? 0 })}
           </p>
-          <Link href="/upload" className="text-xs font-semibold text-[#D4A254] hover:text-[#E8F0F8] transition-colors flex-shrink-0 bg-[#D4A25420] px-3 py-1.5 rounded-lg">
+          <Link href="/upload" className="text-xs font-semibold text-[#D4A254] hover:text-[#E8F0F8] transition-colors flex-shrink-0 bg-[#1E3446] px-3 py-1.5 rounded-lg">
             {t("staleData.cta")}
           </Link>
         </div>
@@ -405,7 +405,7 @@ export default async function DashboardPage({
           )}
 
           {hasProjects && !hasData && (
-            <div className="flex items-start gap-4 px-5 py-4 bg-[#1A3048] border border-[#243F5E] rounded-2xl">
+            <div className="flex items-start gap-4 px-5 py-4 bg-[#1E3446] border border-[#2D4C68] rounded-2xl">
               <span className="text-[#6A97B4] text-xl flex-shrink-0 mt-0.5">◎</span>
               <div className="min-w-0">
                 <p className="text-sm font-semibold text-[#A8C6E0] mb-1">{t("noCsvYet.title")}</p>
@@ -465,7 +465,7 @@ export default async function DashboardPage({
               />
             </CollapsibleSection>
           ) : intentBreakdown.totalTransactions > 0 && (
-            <div className="flex items-start gap-4 px-5 py-4 bg-[#1A3048] border border-[#243F5E] rounded-2xl">
+            <div className="flex items-start gap-4 px-5 py-4 bg-[#1E3446] border border-[#2D4C68] rounded-2xl">
               <span className="text-[#6A97B4] text-xl flex-shrink-0 mt-0.5">◎</span>
               <div className="min-w-0">
                 <p className="text-sm font-semibold text-[#A8C6E0] mb-1">

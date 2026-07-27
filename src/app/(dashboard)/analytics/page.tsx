@@ -28,7 +28,7 @@ function pctChange(curr: number, prev: number): number {
 function ChangeChip({ value, invert = false }: { value: number; invert?: boolean }) {
   const good = invert ? value <= 0 : value >= 0;
   return (
-    <span className={`text-xs font-semibold px-1.5 py-0.5 rounded ${good ? "bg-[#4CC4A415] text-[#4CC4A4]" : "bg-[#D9707015] text-[#D97070]"}`}>
+    <span className={`text-xs font-semibold px-1.5 py-0.5 rounded ${good ? "bg-[#4CC4A415] text-[#4CC4A4]" : "bg-[#E5484D15] text-[#E5484D]"}`}>
       {value >= 0 ? "↑" : "↓"} {Math.abs(value)}%
     </span>
   );
@@ -164,7 +164,7 @@ export default async function AnalyticsPage() {
           showPrevYearComparison && pctChange(ytdInc, prevInc) > 0 && pctChange(ytdExp, prevExp) <= pctChange(ytdInc, prevInc)
             ? "bg-[#4CC4A40A] border-[#4CC4A415]"
             : showPrevYearComparison && pctChange(ytdInc, prevInc) < -5
-            ? "bg-[#D970700A] border-[#D9707015]"
+            ? "bg-[#E5484D0A] border-[#E5484D15]"
             : showPrevYearComparison
             ? "bg-[#D4A2540A] border-[#D4A25415]"
             : "bg-[#1A3048] border-[#243F5E]"
@@ -173,7 +173,7 @@ export default async function AnalyticsPage() {
             showPrevYearComparison && pctChange(ytdInc, prevInc) > 0 && pctChange(ytdExp, prevExp) <= pctChange(ytdInc, prevInc)
               ? "text-[#4CC4A4]"
               : showPrevYearComparison && pctChange(ytdInc, prevInc) < -5
-              ? "text-[#D97070]"
+              ? "text-[#E5484D]"
               : showPrevYearComparison
               ? "text-[#D4A254]"
               : "text-[#7BA8C4]"
@@ -230,7 +230,7 @@ export default async function AnalyticsPage() {
                 {[
                   { key: "income",   label: tm("income"),   curr: ytdInc,  prev: prevInc,  color: "text-[#4CC4A4]", invert: false },
                   { key: "expenses", label: tm("expenses"), curr: ytdExp,  prev: prevExp,  color: "text-[#D4A254]", invert: true  },
-                  { key: "cashflow", label: tm("cashflow"), curr: ytdCash, prev: prevCash, color: ytdCash >= 0 ? "text-[#3AB5A0]" : "text-[#D97070]", invert: false },
+                  { key: "cashflow", label: tm("cashflow"), curr: ytdCash, prev: prevCash, color: ytdCash >= 0 ? "text-[#3AB5A0]" : "text-[#E5484D]", invert: false },
                 ].map((item) => {
                   const change = showPrevYearComparison ? pctChange(item.curr, item.prev) : null;
                   const displayVal     = formatCurrency(item.curr, locale);
@@ -253,7 +253,7 @@ export default async function AnalyticsPage() {
                     ytdMargin === null ? "text-[#6A97B4]"
                       : ytdMargin >= 30 ? "text-[#4CC4A4]"
                       : ytdMargin >= 10 ? "text-[#D4A254]"
-                      : "text-[#D97070]"
+                      : "text-[#E5484D]"
                   }`}>
                     {ytdMargin !== null ? `${ytdMargin}%` : "—"}
                   </p>

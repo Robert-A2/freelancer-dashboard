@@ -44,7 +44,7 @@ export default function PaymentReceivedBanner({ payments, locale }: { payments: 
   return (
     <div className="space-y-2">
       {visible.map((p) => (
-        <div key={p.milestoneId} className="flex items-start gap-3 px-4 py-3 bg-[#4CC4A40A] border border-[#4CC4A430] rounded-xl">
+        <div key={p.milestoneId} className="flex items-start gap-3 px-4 py-3 surface-teal rounded-xl">
           <span className="text-[#4CC4A4] text-lg flex-shrink-0 mt-0.5">✓</span>
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">

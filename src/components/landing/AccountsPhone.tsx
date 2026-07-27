@@ -160,7 +160,7 @@ export default async function AccountsPhone() {
             </div>
             <div className="px-3.5 py-2 bg-[#132537] border border-[#1E3550] rounded-xl">
               <p className="text-[10px] text-[#6A97B4] mb-1">{tMetrics("cashflow")}</p>
-              <p className={`text-sm font-medium tabular-nums ${cashflow >= 0 ? "text-[#3AB5A0]" : "text-[#D97070]"}`}>
+              <p className={`text-sm font-medium tabular-nums ${cashflow >= 0 ? "text-[#3AB5A0]" : "text-[#E5484D]"}`}>
                 {formatCurrency(cashflow, locale)}
               </p>
             </div>

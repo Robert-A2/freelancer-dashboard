@@ -4,7 +4,7 @@ import type { Locale } from "@/i18n/locales";
 import type { RunwaySummary } from "@/lib/runway-engine";
 
 function coverageColor(months: number): string {
-  if (months < 1) return "text-[#D97070]";
+  if (months < 1) return "text-[#E5484D]";
   if (months < 3) return "text-[#D4A254]";
   return "text-[#4CC4A4]";
 }

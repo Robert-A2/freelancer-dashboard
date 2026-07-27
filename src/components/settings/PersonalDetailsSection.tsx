@@ -65,7 +65,7 @@ export default function PersonalDetailsSection({ fullName, email }: Props) {
       <button onClick={handleSave} disabled={saving || !name.trim()} className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed">
         {saving ? t("save") : saved ? t("saved") : t("save")}
       </button>
-      {error && <p className="text-xs text-[#D97070] mt-2">{error}</p>}
+      {error && <p className="text-xs text-[#E5484D] mt-2">{error}</p>}
     </div>
   );
 }

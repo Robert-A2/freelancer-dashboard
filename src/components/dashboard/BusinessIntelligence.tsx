@@ -38,11 +38,11 @@ export default function BusinessIntelligence({
   return (
     <div className="card space-y-5">
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-[#0D1B2B] border border-[#1E3550] rounded-xl p-4 space-y-1.5">
+        <div className="bg-[#112232] border border-[#25405A] rounded-xl p-4 space-y-1.5">
           <p className="label">{t("businessProfit")}</p>
           <p
             className={`text-2xl font-bold leading-none tabular-nums ${
-              businessProfit >= 0 ? "text-[#4CC4A4]" : "text-[#D97070]"
+              businessProfit >= 0 ? "text-[#4CC4A4]" : "text-[#E5484D]"
             }`}
           >
             {formatCurrency(businessProfit, locale)}
@@ -53,11 +53,11 @@ export default function BusinessIntelligence({
           <p className="text-[11px] text-[#475569] leading-tight">{t("businessProfitNote")}</p>
         </div>
 
-        <div className="bg-[#0D1B2B] border border-[#1E3550] rounded-xl p-4 space-y-1.5">
+        <div className="bg-[#112232] border border-[#25405A] rounded-xl p-4 space-y-1.5">
           <p className="label">{t("trueNetCashflow")}</p>
           <p
             className={`text-2xl font-bold leading-none tabular-nums ${
-              trueNetCashflow >= 0 ? "text-[#4CC4A4]" : "text-[#D97070]"
+              trueNetCashflow >= 0 ? "text-[#4CC4A4]" : "text-[#E5484D]"
             }`}
           >
             {formatCurrency(trueNetCashflow, locale)}
@@ -65,7 +65,7 @@ export default function BusinessIntelligence({
           <p className="text-[13px] text-[#6A97B4]">{t("trueNetCashflowNote")}</p>
         </div>
 
-        <div className="bg-[#0D1B2B] border border-[#1E3550] rounded-xl p-4 space-y-1.5">
+        <div className="bg-[#112232] border border-[#25405A] rounded-xl p-4 space-y-1.5">
           <p className="label">{t("personalBurnRate")}</p>
           <p className="text-2xl font-bold leading-none tabular-nums text-[#D4A254]">
             {formatCurrency(personalSpend, locale)}
@@ -107,7 +107,7 @@ export default function BusinessIntelligence({
       )}
 
       {warningInsight && (
-        <div className="flex items-start gap-3 px-4 py-3 bg-[#D4A2540A] border border-[#D4A25425] rounded-xl">
+        <div className="flex items-start gap-3 px-4 py-3 surface-warning rounded-xl">
           <span className="text-[#D4A254] font-semibold text-sm flex-shrink-0 mt-0.5">!</span>
           <p className="text-sm text-[#D4A254] leading-relaxed">
             <InsightText insight={warningInsight} accent="#D4A254" />

@@ -3,7 +3,7 @@ import type { ClientStatus } from "@/lib/client-risk-engine";
 export const STATUS_STYLES: Record<ClientStatus, { dot: string; text: string; bg: string }> = {
   current:  { dot: "bg-[#4CC4A4]", text: "text-[#4CC4A4]", bg: "bg-[#4CC4A415]" },
   watch:    { dot: "bg-[#D4A254]", text: "text-[#D4A254]", bg: "bg-[#D4A25415]" },
-  risk:     { dot: "bg-[#D97070]", text: "text-[#D97070]", bg: "bg-[#D9707015]" },
+  risk:     { dot: "bg-[#E5484D]", text: "text-[#E5484D]", bg: "bg-[#E5484D15]" },
   inactive: { dot: "bg-[#4A7A9B]", text: "text-[#6A97B4]", bg: "bg-[#1A304880]" },
 };
 

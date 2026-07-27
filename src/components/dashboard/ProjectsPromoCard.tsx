@@ -10,7 +10,7 @@ export default async function ProjectsPromoCard({ basePath = "" }: { basePath?: 
   const isDemo = basePath !== "";
 
   return (
-    <div className="flex items-start gap-4 px-5 py-4 bg-[#1A3048] border border-[#243F5E] rounded-2xl">
+    <div className="flex items-start gap-4 px-5 py-4 bg-[#1E3446] border border-[#2D4C68] rounded-2xl">
       <span className="text-[#3AB5A0] text-xl flex-shrink-0 mt-0.5">🤝</span>
       <div className="min-w-0 flex-1">
         <p className="text-sm font-semibold text-[#A8C6E0] mb-1">{t("title")}</p>

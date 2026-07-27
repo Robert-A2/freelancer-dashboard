@@ -13,7 +13,7 @@ export const dynamic = "force-dynamic";
 const STATUS_STYLES: Record<ClientStatus, { dot: string; text: string; bg: string; border: string }> = {
   current:  { dot: "bg-[#4CC4A4]", text: "text-[#4CC4A4]", bg: "bg-[#4CC4A415]", border: "border-[#4CC4A425]" },
   watch:    { dot: "bg-[#D4A254]", text: "text-[#D4A254]", bg: "bg-[#D4A25415]", border: "border-[#D4A25425]" },
-  risk:     { dot: "bg-[#D97070]", text: "text-[#D97070]", bg: "bg-[#D9707015]", border: "border-[#D9707025]" },
+  risk:     { dot: "bg-[#E5484D]", text: "text-[#E5484D]", bg: "bg-[#E5484D15]", border: "border-[#E5484D25]" },
   inactive: { dot: "bg-[#4A7A9B]", text: "text-[#6A97B4]", bg: "bg-[#132537]",   border: "border-[#243F5E]"   },
 };
 
@@ -21,15 +21,15 @@ const RELIABILITY_STYLES: Record<ReliabilityScore, { text: string; bg: string; b
   excellent: { text: "text-[#4CC4A4]", bg: "bg-[#4CC4A415]", border: "border-[#4CC4A430]" },
   good:      { text: "text-[#3AB5A0]", bg: "bg-[#3AB5A010]", border: "border-[#3AB5A025]" },
   watch:     { text: "text-[#D4A254]", bg: "bg-[#D4A25410]", border: "border-[#D4A25430]" },
-  risk:      { text: "text-[#D97070]", bg: "bg-[#D9707010]", border: "border-[#D9707030]" },
+  risk:      { text: "text-[#E5484D]", bg: "bg-[#E5484D10]", border: "border-[#E5484D30]" },
   inactive:  { text: "text-[#6A97B4]", bg: "bg-[#132537]",   border: "border-[#243F5E]"   },
 };
 
 const IMPACT_STYLES = {
   manageable:  { text: "text-[#4CC4A4]", bg: "bg-[#4CC4A410]", border: "border-[#4CC4A425]" },
   significant: { text: "text-[#D4A254]", bg: "bg-[#D4A25410]", border: "border-[#D4A25425]" },
-  major:       { text: "text-[#D97070]", bg: "bg-[#D9707010]", border: "border-[#D9707025]" },
-  critical:    { text: "text-[#D97070]", bg: "bg-[#D9707018]", border: "border-[#D9707035]" },
+  major:       { text: "text-[#E5484D]", bg: "bg-[#E5484D10]", border: "border-[#E5484D25]" },
+  critical:    { text: "text-[#E5484D]", bg: "bg-[#E5484D18]", border: "border-[#E5484D35]" },
 };
 
 function durationLabel(months: number, t: Awaited<ReturnType<typeof getTranslations>>): string {
@@ -107,7 +107,7 @@ export default async function DemoClientDetailPage({
 
   const momentumColor =
     momentumDir === "growing"   ? "text-[#4CC4A4]" :
-    momentumDir === "shrinking" ? "text-[#D97070]"  :
+    momentumDir === "shrinking" ? "text-[#E5484D]"  :
     momentumDir === "new"       ? "text-[#A8C6E0]"  : "text-[#A8C6E0]";
 
   const momentumIcon =
@@ -157,7 +157,7 @@ export default async function DemoClientDetailPage({
   });
 
   const ACTION_STYLES = {
-    followUp: { icon: "📬", bg: "bg-[#D9707010]", border: "border-[#D9707030]", label: "text-[#D97070]" },
+    followUp: { icon: "📬", bg: "bg-[#E5484D10]", border: "border-[#E5484D30]", label: "text-[#E5484D]" },
     monitor:  { icon: "👁",  bg: "bg-[#D4A25410]", border: "border-[#D4A25430]", label: "text-[#D4A254]" },
     noAction: { icon: "✓",  bg: "bg-[#4CC4A410]", border: "border-[#4CC4A430]", label: "text-[#4CC4A4]"  },
   };
@@ -292,7 +292,7 @@ export default async function DemoClientDetailPage({
           <div className="bg-[#1A3048] rounded-xl p-4 min-w-0">
             <p className="label mb-1 text-[11px]">{t("detail.revenueStory.ofIncome")}</p>
             <p className={`text-2xl font-bold tabular-nums leading-none ${
-              client.revenueContributionPct >= 50 ? "text-[#D97070]" :
+              client.revenueContributionPct >= 50 ? "text-[#E5484D]" :
               client.revenueContributionPct >= 25 ? "text-[#D4A254]" :
               "text-[#4CC4A4]"
             }`}>{client.revenueContributionPct}%</p>
@@ -351,7 +351,7 @@ export default async function DemoClientDetailPage({
                   <p className="text-[10px] text-[#6A97B4] mb-1">{t("detail.momentum.recentAvg")}</p>
                   <p className={`text-lg font-bold tabular-nums ${momentumColor}`}>{formatCurrency(client.recentMonthlyAvg, locale)}</p>
                   <div className="mt-2 h-1.5 bg-[#243F5E] rounded-full">
-                    <div className={`h-full rounded-full ${momentumDir === "shrinking" ? "bg-[#D97070]" : "bg-[#4CC4A4]"}`} style={{ width: `${Math.round((client.recentMonthlyAvg / Math.max(client.priorMonthlyAvg, client.recentMonthlyAvg, 1)) * 100)}%` }} />
+                    <div className={`h-full rounded-full ${momentumDir === "shrinking" ? "bg-[#E5484D]" : "bg-[#4CC4A4]"}`} style={{ width: `${Math.round((client.recentMonthlyAvg / Math.max(client.priorMonthlyAvg, client.recentMonthlyAvg, 1)) * 100)}%` }} />
                   </div>
                 </div>
               </div>
@@ -374,8 +374,8 @@ export default async function DemoClientDetailPage({
           <p className="text-[13px] text-[#6A97B4] mb-5">{t("detail.dependencyRisk.subtitle")}</p>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
             {[
-              { label: t("detail.simulator.monthlyLoss"), value: formatCurrency(monthlyClientContrib, locale), color: "text-[#D97070]" },
-              { label: t("detail.simulator.annualLoss"),  value: formatCurrency(annualClientContrib,  locale), color: "text-[#D97070]" },
+              { label: t("detail.simulator.monthlyLoss"), value: formatCurrency(monthlyClientContrib, locale), color: "text-[#E5484D]" },
+              { label: t("detail.simulator.annualLoss"),  value: formatCurrency(annualClientContrib,  locale), color: "text-[#E5484D]" },
               { label: t("detail.simulator.incomePct"),   value: `${client.revenueContributionPct}%`,          color: impactStyle.text },
               { label: t("detail.simulator.healthImpact"),value: t(`detail.simulator.${impact}`),              color: impactStyle.text },
             ].map(m => (
@@ -392,7 +392,7 @@ export default async function DemoClientDetailPage({
             </div>
             <div className="w-full h-2.5 bg-[#1E3550] rounded-full overflow-hidden">
               <div
-                className={`h-full rounded-full ${client.revenueContributionPct >= 50 ? "bg-[#D97070]" : client.revenueContributionPct >= 30 ? "bg-[#D4A254]" : "bg-[#4CC4A4]"} opacity-80`}
+                className={`h-full rounded-full ${client.revenueContributionPct >= 50 ? "bg-[#E5484D]" : client.revenueContributionPct >= 30 ? "bg-[#D4A254]" : "bg-[#4CC4A4]"} opacity-80`}
                 style={{ width: `${client.revenueContributionPct}%` }}
               />
             </div>
@@ -492,8 +492,8 @@ export default async function DemoClientDetailPage({
               const isWarning = insight.type === "delayWarning";
               const isRisk    = insight.type === "dependency" && client.revenueContributionPct >= 50;
               const isDecline = insight.type === "decline";
-              const borderColor = (isWarning || isDecline) ? "border-[#D9707025]" : isRisk ? "border-[#D4A25425]" : "border-[#4CC4A425]";
-              const iconColor   = (isWarning || isDecline) ? "text-[#D97070]"    : isRisk ? "text-[#D4A254]"   : "text-[#4CC4A4]";
+              const borderColor = (isWarning || isDecline) ? "border-[#E5484D25]" : isRisk ? "border-[#D4A25425]" : "border-[#4CC4A425]";
+              const iconColor   = (isWarning || isDecline) ? "text-[#E5484D]"    : isRisk ? "text-[#D4A254]"   : "text-[#4CC4A4]";
               const icon        = (isWarning || isDecline) ? "⚠"                 : isRisk ? "ℹ"                : "✓";
 
               let text = "";

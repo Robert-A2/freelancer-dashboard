@@ -4,11 +4,11 @@
 
 @layer base {
   :root {
-    --bg:        #0D1B2B;
-    --surface:   #132537;
-    --surface2:  #1A3048;
-    --border:    #1E3550;
-    --border2:   #243F5E;
+    --bg:        #112232;
+    --surface:   #17293C;
+    --surface2:  #1E3446;
+    --border:    #25405A;
+    --border2:   #2D4C68;
     --text:      #E8F0F8;
     --secondary: #A8C6E0;
     --muted:     #7BA8C4;
@@ -16,13 +16,13 @@
     --brand:     #3AB5A0;
     --positive:  #4CC4A4;
     --warning:   #D4A254;
-    --risk:      #D97070;
+    --risk:      #E5484D;
   }
 
   * { box-sizing: border-box; }
 
   body {
-    @apply bg-[#0D1B2B] text-[#E8F0F8] antialiased;
+    @apply bg-[#112232] text-[#E8F0F8] antialiased;
     font-family: var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     font-size: 16px;
     line-height: 1.75;
@@ -43,11 +43,11 @@
 
 @layer components {
   .card {
-    @apply bg-[#132537] border border-[#1E3550] rounded-2xl p-6 md:p-8;
+    @apply bg-[#17293C] border border-[#25405A] rounded-2xl p-6 md:p-8;
   }
 
   .card-sm {
-    @apply bg-[#132537] border border-[#1E3550] rounded-xl p-4;
+    @apply bg-[#17293C] border border-[#25405A] rounded-xl p-4;
   }
 
   /* Section header — uppercase, tracked, clearly labels a block without competing with content */
@@ -60,7 +60,7 @@
   }
 
   .btn-secondary {
-    @apply bg-[#1A3048] hover:bg-[#1F3858] text-[#A8C6E0] font-medium px-6 py-3 rounded-xl transition-colors duration-150 min-h-[48px];
+    @apply bg-[#1E3446] hover:bg-[#25405A] text-[#A8C6E0] font-medium px-6 py-3 rounded-xl transition-colors duration-150 min-h-[48px];
   }
 
   .btn-ghost {
@@ -68,7 +68,7 @@
   }
 
   .input {
-    @apply bg-[#0D1B2B] border border-[#1E3550] rounded-xl px-4 py-3 text-[#E8F0F8] placeholder-[#6A97B4] focus:outline-none focus:border-[#3AB5A0] transition-colors duration-150 w-full text-base min-h-[48px];
+    @apply bg-[#112232] border border-[#25405A] rounded-xl px-4 py-3 text-[#E8F0F8] placeholder-[#6A97B4] focus:outline-none focus:border-[#3AB5A0] transition-colors duration-150 w-full text-base min-h-[48px];
   }
 
   .stat-value {
@@ -76,8 +76,19 @@
   }
 
   .positive { @apply text-[#4CC4A4]; }
-  .negative { @apply text-[#D97070]; }
+  .negative { @apply text-[#E5484D]; }
   .neutral  { @apply text-[#7BA8C4]; }
+
+  /* ── Solid accent surfaces ───────────────────────────────────────────────
+     Replaces the old near-transparent (5-20% alpha) tinted banners — those
+     read as washed-out/barely-visible on the dark bg. A first pass made these
+     fully-saturated colored cards (dark red/brown/olive), which read as too
+     loud/unprofessional. Calmer version: same neutral surface2 tone as every
+     other inner surface, with just a thin colored left stripe to signal
+     status — accent stays in the stripe/icon/text, never the whole card. */
+  .surface-teal    { @apply bg-[#1E3446] border border-[#25405A] border-l-4 border-l-[#3AB5A0]; }
+  .surface-warning { @apply bg-[#1E3446] border border-[#25405A] border-l-4 border-l-[#D4A254]; }
+  .surface-risk    { @apply bg-[#1E3446] border border-[#25405A] border-l-4 border-l-[#E5484D]; }
 
   /* ── Premium light surface ──────────────────────────────────────────────
      For pages that deliberately step outside the dark dashboard shell —

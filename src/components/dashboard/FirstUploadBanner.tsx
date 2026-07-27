@@ -29,7 +29,7 @@ export default function FirstUploadBanner({ months, transactions, summary, first
   const bold = (chunks: React.ReactNode) => <span className="text-[#E8F0F8] font-semibold">{chunks}</span>;
 
   return (
-    <div className="bg-[#3AB5A00A] border border-[#3AB5A020] rounded-2xl p-5 md:p-6">
+    <div className="surface-teal rounded-2xl p-5 md:p-6">
       <div className="flex items-start justify-between gap-3 mb-3">
         <div>
           <p className="label mb-1">{t("ready")}</p>
@@ -50,7 +50,7 @@ export default function FirstUploadBanner({ months, transactions, summary, first
 
       <div className="flex items-center gap-4 text-sm text-[#7BA8C4] mb-3">
         <span>{t.rich("monthsOfHistory", { count: months, b: bold })}</span>
-        <span className="text-[#243F5E]">·</span>
+        <span className="text-[#2D4C68]">·</span>
         <span>{t.rich("transactionsAnalysed", { count: transactions, b: bold })}</span>
       </div>
 

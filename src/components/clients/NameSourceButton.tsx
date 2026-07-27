@@ -81,7 +81,7 @@ export default function NameSourceButton({ description, fingerprint }: Props) {
       >
         {t("cancel")}
       </button>
-      {error && <p className="text-xs text-[#D97070]">{error}</p>}
+      {error && <p className="text-xs text-[#E5484D]">{error}</p>}
     </div>
   );
 }

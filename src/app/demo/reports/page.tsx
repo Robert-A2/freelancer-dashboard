@@ -20,7 +20,7 @@ function YoyChip({ value }: { value: number }) {
   if (value === 0) return <span className="text-[10px] text-[#6A97B4]">—</span>;
   const good = value > 0;
   return (
-    <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${good ? "bg-[#4CC4A415] text-[#4CC4A4]" : "bg-[#D9707015] text-[#D97070]"}`}>
+    <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${good ? "bg-[#4CC4A415] text-[#4CC4A4]" : "bg-[#E5484D15] text-[#E5484D]"}`}>
       {value > 0 ? "↑" : "↓"}{Math.abs(value)}%
     </span>
   );

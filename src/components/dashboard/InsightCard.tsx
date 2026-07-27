@@ -6,14 +6,14 @@ export const CATEGORY_META: Record<InsightCategory, { icon: string; accent: stri
   cashflow:    { icon: "◆", accent: "#3AB5A0" },
   spending:    { icon: "●", accent: "#D4A254" },
   seasonality: { icon: "◐", accent: "#8AAEC8" },
-  clients:     { icon: "◯", accent: "#D97070" },
+  clients:     { icon: "◯", accent: "#E5484D" },
 };
 
 export default function InsightCard({ insight }: { insight: RankedInsight }) {
   const meta = CATEGORY_META[insight.category];
   return (
     <div
-      className="flex items-start gap-3 bg-[#1A3048] rounded-xl pl-[13px] pr-4 py-3 border-l-[3px]"
+      className="flex items-start gap-3 bg-[#1E3446] rounded-xl pl-[13px] pr-4 py-3 border-l-[3px]"
       style={{ borderColor: meta.accent }}
     >
       <span className="text-sm mt-0.5 flex-shrink-0" style={{ color: meta.accent }}>

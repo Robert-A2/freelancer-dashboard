@@ -32,7 +32,7 @@ export default async function ClientsPage() {
           <p className={`text-sm font-medium mt-0.5 ${
             followUpCount === 0 ? "text-[#4CC4A4]" :
             followUpCount < currentCount ? "text-[#D4A254]" :
-            "text-[#D97070]"
+            "text-[#E5484D]"
           }`}>
             {followUpCount === 0 && currentCount > 0
               ? t("verdictAllReliable", { n: currentCount })

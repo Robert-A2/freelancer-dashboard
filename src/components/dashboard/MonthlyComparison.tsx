@@ -65,7 +65,7 @@ export default function MonthlyComparison({
         </div>
         <div className="space-y-3">
           {rows.map((row) => (
-            <div key={row.key} className="flex items-center justify-between py-2 border-b border-[#243F5E] last:border-0">
+            <div key={row.key} className="flex items-center justify-between py-2 border-b border-[#2D4C68] last:border-0">
               <span className="text-sm text-[#7BA8C4]">{row.label}</span>
               <span className="text-sm font-semibold text-[#E8F0F8] tabular-nums">
                 {formatCurrency(row.curr, locale)}
@@ -73,7 +73,7 @@ export default function MonthlyComparison({
             </div>
           ))}
         </div>
-        <div className="mt-4 px-3 py-2.5 bg-[#3AB5A00A] border border-[#3AB5A018] rounded-xl">
+        <div className="mt-4 px-3 py-2.5 surface-teal rounded-xl">
           <p className="text-xs text-[#7BA8C4]">
             <span className="text-[#3AB5A0] font-medium">{t("uploadAnotherMonth")}</span> {t("toStartComparing")}
           </p>
@@ -86,18 +86,18 @@ export default function MonthlyComparison({
     <div className="card">
       {/* Desktop table */}
       <div className="hidden md:grid grid-cols-[1fr_auto_auto_auto] gap-x-5 gap-y-0">
-        <div className="pb-2 border-b border-[#243F5E]" />
-        <div className="text-xs text-[#6A97B4] text-right pb-2 border-b border-[#243F5E] whitespace-nowrap">{prevLabel}</div>
-        <div className="text-xs font-medium text-[#E8F0F8] text-right pb-2 border-b border-[#243F5E] whitespace-nowrap">{currLabel}</div>
-        <div className="text-xs text-[#6A97B4] text-right pb-2 border-b border-[#243F5E]">{tm("change")}</div>
+        <div className="pb-2 border-b border-[#2D4C68]" />
+        <div className="text-xs text-[#6A97B4] text-right pb-2 border-b border-[#2D4C68] whitespace-nowrap">{prevLabel}</div>
+        <div className="text-xs font-medium text-[#E8F0F8] text-right pb-2 border-b border-[#2D4C68] whitespace-nowrap">{currLabel}</div>
+        <div className="text-xs text-[#6A97B4] text-right pb-2 border-b border-[#2D4C68]">{tm("change")}</div>
 
         {rows.map((row, i) => {
           const changeAmt = row.curr - row.prev;
           const isGood    = row.invertBad ? row.pct <= 0 : row.pct >= 0;
           const isLast    = i === rows.length - 1;
-          const border    = isLast ? "" : "border-b border-[#243F5E]";
-          const chipCls   = isGood ? "bg-[#4CC4A415] text-[#4CC4A4]" : "bg-[#D9707015] text-[#D97070]";
-          const amtCls    = isGood ? "text-[#4CC4A4]" : "text-[#D97070]";
+          const border    = isLast ? "" : "border-b border-[#2D4C68]";
+          const chipCls   = isGood ? "bg-[#234A40] text-[#4CC4A4]" : "bg-[#4A2A2A] text-[#E5484D]";
+          const amtCls    = isGood ? "text-[#4CC4A4]" : "text-[#E5484D]";
           const arrow     = row.pct > 0 ? "↑" : row.pct < 0 ? "↓" : "→";
 
           return (
@@ -123,12 +123,12 @@ export default function MonthlyComparison({
         {rows.map((row) => {
           const changeAmt = row.curr - row.prev;
           const isGood    = row.invertBad ? row.pct <= 0 : row.pct >= 0;
-          const chipCls   = isGood ? "bg-[#4CC4A415] text-[#4CC4A4]" : "bg-[#D9707015] text-[#D97070]";
-          const amtCls    = isGood ? "text-[#4CC4A4]" : "text-[#D97070]";
+          const chipCls   = isGood ? "bg-[#234A40] text-[#4CC4A4]" : "bg-[#4A2A2A] text-[#E5484D]";
+          const amtCls    = isGood ? "text-[#4CC4A4]" : "text-[#E5484D]";
           const arrow     = row.pct > 0 ? "↑" : row.pct < 0 ? "↓" : "→";
 
           return (
-            <div key={row.key} className="bg-[#1A3048] rounded-xl p-4">
+            <div key={row.key} className="bg-[#1E3446] rounded-xl p-4">
               <p className="text-sm font-medium text-[#E8F0F8] mb-3">{row.label}</p>
               <div className="grid grid-cols-3 gap-3">
                 <div>
@@ -159,7 +159,7 @@ export default function MonthlyComparison({
       {(interpretation || suggestion) && (
         <div className="mt-4 space-y-2">
           {interpretation && (
-            <div className="px-4 py-3 bg-[#1A3048] rounded-xl">
+            <div className="px-4 py-3 bg-[#1E3446] rounded-xl">
               <p className="text-[11px] font-semibold text-[#3AB5A0] uppercase tracking-wide mb-1.5">
                 {t("whatHappened")}
               </p>
@@ -169,7 +169,7 @@ export default function MonthlyComparison({
             </div>
           )}
           {suggestion && (
-            <div className="px-4 py-3 bg-[#0D1B2B] border border-[#D4A25428] rounded-xl">
+            <div className="px-4 py-3 surface-warning rounded-xl">
               <p className="text-[11px] font-semibold text-[#D4A254] uppercase tracking-wide mb-1.5">
                 {t("yourNextMove")}
               </p>

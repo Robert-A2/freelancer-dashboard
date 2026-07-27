@@ -204,7 +204,7 @@ function CategoryDrawer({
             </div>
           )}
           {error && (
-            <div className="px-6 py-8 text-center text-[#D97070] text-sm">{error}</div>
+            <div className="px-6 py-8 text-center text-[#E5484D] text-sm">{error}</div>
           )}
           {data && data.transactions.length === 0 && (
             <div className="px-6 py-8 text-center text-[#4A7A9B] text-sm">
@@ -289,7 +289,7 @@ export default function ExpenseBreakdown({
                 item.trend === "growing"   ? "↑" :
                 item.trend === "declining" ? "↓" : "";
               const arrowColor =
-                item.trend === "growing"   ? "text-[#D97070]" : "text-[#4CC4A4]";
+                item.trend === "growing"   ? "text-[#E5484D]" : "text-[#4CC4A4]";
               const displayName = tCategories.has(item.category)
                 ? tCategories(item.category)
                 : item.category;

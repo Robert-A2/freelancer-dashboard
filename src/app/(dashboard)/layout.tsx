@@ -14,7 +14,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const email = user?.email ?? "";
 
   return (
-    <div className="min-h-screen bg-[#0D1B2B]">
+    <div className="min-h-screen bg-[#112232]">
       <Navbar fullName={fullName} email={email} />
       {/* pb-28 clears the fixed bottom nav, shown below Navbar's 1400px
           breakpoint (see comment there for why 1400 specifically);

@@ -28,7 +28,7 @@ export default async function DataCoverage({ coverage, lastImportedAt }: Props) 
   }
 
   return (
-    <div className="flex items-start gap-3 px-4 py-3 bg-[#4CC4A412] border border-[#4CC4A428] rounded-xl">
+    <div className="flex items-start gap-3 px-4 py-3 surface-teal rounded-xl">
       <div className="w-5 h-5 rounded-full bg-[#4CC4A4] flex items-center justify-center flex-shrink-0 mt-0.5">
         <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />

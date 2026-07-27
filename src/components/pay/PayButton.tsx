@@ -40,7 +40,7 @@ export default function PayButton({ token, amount, locale, accentColor }: { toke
   return (
     <div>
       {error && (
-        <p className="text-sm text-[#D97070] mb-3">{error}</p>
+        <p className="text-sm text-[#E5484D] mb-3">{error}</p>
       )}
       <button
         onClick={handlePay}

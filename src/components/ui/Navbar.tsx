@@ -73,7 +73,7 @@ export default function Navbar({ fullName, email }: { fullName: string; email: s
   return (
     <>
       {/* Top bar */}
-      <nav className="sticky top-0 z-50 border-b border-[#1E3550] bg-[#132537]">
+      <nav className="sticky top-0 z-50 border-b border-[#25405A] bg-[#17293C]">
         <div className="max-w-5xl mx-auto px-5 sm:px-6 flex items-center justify-between h-16">
           <div className="flex items-center gap-6">
             <span className="font-semibold text-[#E8F0F8] text-sm tracking-tight">
@@ -98,7 +98,7 @@ export default function Navbar({ fullName, email }: { fullName: string; email: s
                   className={`px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
                     isActive(href)
                       ? "bg-[#3AB5A012] text-[#3AB5A0]"
-                      : "text-[#7BA8C4] hover:text-[#E8F0F8] hover:bg-[#1A3048]"
+                      : "text-[#7BA8C4] hover:text-[#E8F0F8] hover:bg-[#1E3446]"
                   }`}
                 >
                   {t(`nav.${key}`)}
@@ -115,7 +115,7 @@ export default function Navbar({ fullName, email }: { fullName: string; email: s
       </nav>
 
       {/* Mobile bottom navigation */}
-      <div className="min-[1400px]:hidden fixed bottom-0 left-0 right-0 z-50 bg-[#132537] border-t border-[#243F5E]">
+      <div className="min-[1400px]:hidden fixed bottom-0 left-0 right-0 z-50 bg-[#17293C] border-t border-[#2D4C68]">
         <div className="flex items-stretch">
           {MOBILE_NAV_LINKS.map(({ href, key, Icon }) => {
             const active = isActive(href);

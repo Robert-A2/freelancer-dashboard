@@ -19,7 +19,7 @@ const EMPTY_MERCHANT_INDEX: MerchantIndex = {
 };
 
 const ACCOUNT_COLORS = [
-  "#3AB5A0", "#4A9FD4", "#D4A254", "#A78BFA", "#D97070", "#4CC4A4",
+  "#3AB5A0", "#4A9FD4", "#D4A254", "#A78BFA", "#E5484D", "#4CC4A4",
 ];
 
 const ACCOUNT_TYPES = [
@@ -843,13 +843,13 @@ export default function CsvUploader() {
   return (
     <div className="card space-y-4">
       <div className="flex items-start gap-3">
-        <div className="w-10 h-10 bg-[#D9707010] rounded-full flex items-center justify-center text-[#D97070] flex-shrink-0 mt-0.5">
+        <div className="w-10 h-10 bg-[#E5484D10] rounded-full flex items-center justify-center text-[#E5484D] flex-shrink-0 mt-0.5">
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
           </svg>
         </div>
         <div>
-          <p className="font-semibold text-[#D97070]">{err.heading}</p>
+          <p className="font-semibold text-[#E5484D]">{err.heading}</p>
           <p className="text-sm text-[#7BA8C4] mt-0.5 leading-relaxed">{err.reason}</p>
         </div>
       </div>

@@ -113,8 +113,8 @@ function ResetPasswordForm() {
 
         {!exchanging && !ready && (
           <div className="card text-center space-y-5">
-            <div className="w-14 h-14 bg-[#D9707010] rounded-full flex items-center justify-center mx-auto">
-              <svg className="w-7 h-7 text-[#D97070]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+            <div className="w-14 h-14 bg-[#E5484D10] rounded-full flex items-center justify-center mx-auto">
+              <svg className="w-7 h-7 text-[#E5484D]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
               </svg>
             </div>
@@ -204,14 +204,14 @@ function ResetPasswordForm() {
                 <p className="text-xs text-[#D4A254]">{t("passwordHint")}</p>
               )}
               {password.length >= 8 && confirm.length > 0 && password !== confirm && (
-                <p className="text-xs text-[#D97070]">{t("passwordsNoMatch")}</p>
+                <p className="text-xs text-[#E5484D]">{t("passwordsNoMatch")}</p>
               )}
               {password.length >= 8 && confirm.length > 0 && password === confirm && (
                 <p className="text-xs text-[#4CC4A4]">{t("passwordsMatch")}</p>
               )}
 
               {error && (
-                <p className="text-sm text-[#D97070] bg-[#D9707010] px-4 py-3 rounded-xl">{error}</p>
+                <p className="text-sm text-[#E5484D] bg-[#E5484D10] px-4 py-3 rounded-xl">{error}</p>
               )}
 
               <button

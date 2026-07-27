@@ -110,7 +110,7 @@ export default function CashflowChart({ data, hideHeader = false, apiBase = "/ap
       stabilityColor   = "text-[#4CC4A4]";
     } else if (secondNeg > firstNeg + 1) {
       stabilityContent = t("cashflowChart.narrative.stabilityWeakening");
-      stabilityColor   = "text-[#D97070]";
+      stabilityColor   = "text-[#E5484D]";
     } else if (firstNeg > 0 || secondNeg > 0) {
       // Only worth noting "unchanged" when there's something to compare —
       // with zero negative months in both halves, "No negative months
@@ -183,7 +183,7 @@ export default function CashflowChart({ data, hideHeader = false, apiBase = "/ap
           />
           <Bar dataKey="cashflow" name={tm("cashflow")} radius={[3, 3, 0, 0]}>
             {sliced.map((entry, i) => (
-              <Cell key={i} fill={entry.cashflow >= 0 ? "#4CC4A4" : "#D97070"} fillOpacity={0.8} />
+              <Cell key={i} fill={entry.cashflow >= 0 ? "#4CC4A4" : "#E5484D"} fillOpacity={0.8} />
             ))}
           </Bar>
         </BarChart>
@@ -199,20 +199,20 @@ export default function CashflowChart({ data, hideHeader = false, apiBase = "/ap
             </div>
             <div className="bg-[#1A3048] rounded-xl p-4">
               <p className="label mb-2">{t("cashflowChart.worstMonth")}</p>
-              <p className={`text-sm font-bold ${worstMonth && worstMonth.cashflow < 0 ? "text-[#D97070]" : "text-[#6A97B4]"}`}>
+              <p className={`text-sm font-bold ${worstMonth && worstMonth.cashflow < 0 ? "text-[#E5484D]" : "text-[#6A97B4]"}`}>
                 {worstMonth ? formatCurrency(worstMonth.cashflow, locale) : "—"}
               </p>
               {worstMonth && <p className="text-xs text-[#6A97B4] mt-1">{worstMonth.month}</p>}
             </div>
             <div className="bg-[#1A3048] rounded-xl p-4">
               <p className="label mb-2">{t("cashflowChart.monthlyAverage")}</p>
-              <p className={`text-sm font-bold ${avgCashflow >= 0 ? "text-[#3AB5A0]" : "text-[#D97070]"}`}>
+              <p className={`text-sm font-bold ${avgCashflow >= 0 ? "text-[#3AB5A0]" : "text-[#E5484D]"}`}>
                 {formatCurrency(avgCashflow, locale)}
               </p>
             </div>
             <div className="bg-[#1A3048] rounded-xl p-4">
               <p className="label mb-2">{t("cashflowChart.positiveRatio")}</p>
-              <p className={`text-sm font-bold ${posRatio >= 70 ? "text-[#4CC4A4]" : posRatio >= 50 ? "text-[#D4A254]" : "text-[#D97070]"}`}>
+              <p className={`text-sm font-bold ${posRatio >= 70 ? "text-[#4CC4A4]" : posRatio >= 50 ? "text-[#D4A254]" : "text-[#E5484D]"}`}>
                 {t("cashflowChart.ratioValue", { pct: String(posRatio) })}
               </p>
               <p className="text-xs text-[#6A97B4] mt-1">{t("cashflowChart.monthsCount", { positive: positiveMonths, total: active.length })}</p>

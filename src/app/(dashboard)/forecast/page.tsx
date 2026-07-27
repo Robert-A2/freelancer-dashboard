@@ -37,20 +37,20 @@ export default async function ForecastPage() {
   const HEALTH = {
     healthy:   { label: td("health.healthy"), bg: "bg-[#4CC4A40A]", border: "border-[#4CC4A425]", text: "text-[#4CC4A4]", bar: "bg-[#4CC4A4]" },
     watch:     { label: td("health.watch"),   bg: "bg-[#D4A2540A]", border: "border-[#D4A25425]", text: "text-[#D4A254]", bar: "bg-[#D4A254]" },
-    "at-risk": { label: td("health.atRisk"),  bg: "bg-[#D970700A]", border: "border-[#D9707025]", text: "text-[#D97070]", bar: "bg-[#D97070]" },
+    "at-risk": { label: td("health.atRisk"),  bg: "bg-[#E5484D0A]", border: "border-[#E5484D25]", text: "text-[#E5484D]", bar: "bg-[#E5484D]" },
   };
 
   const TREND = {
     improving: { label: t("trend.improving"), bg: "bg-[#4CC4A415]", text: "text-[#4CC4A4]" },
     stable:    { label: t("trend.stable"),    bg: "bg-[#1A3048]",   text: "text-[#7BA8C4]" },
-    weakening: { label: t("trend.weakening"), bg: "bg-[#D9707015]", text: "text-[#D97070]" },
+    weakening: { label: t("trend.weakening"), bg: "bg-[#E5484D15]", text: "text-[#E5484D]" },
   };
 
   const RISK_CONFIG = {
     low:      { label: t("cashflowRisk.low.label"),      desc: t("cashflowRisk.low.desc"),      bg: "bg-[#4CC4A40A]", border: "border-[#4CC4A425]", text: "text-[#4CC4A4]" },
     medium:   { label: t("cashflowRisk.medium.label"),   desc: t("cashflowRisk.medium.desc"),   bg: "bg-[#D4A2540A]", border: "border-[#D4A25425]", text: "text-[#D4A254]" },
-    high:     { label: t("cashflowRisk.high.label"),     desc: t("cashflowRisk.high.desc"),     bg: "bg-[#D970700A]", border: "border-[#D9707025]", text: "text-[#D97070]" },
-    critical: { label: t("cashflowRisk.critical.label"), desc: t("cashflowRisk.critical.desc"), bg: "bg-[#D970700A]", border: "border-[#D9707025]", text: "text-[#D97070]" },
+    high:     { label: t("cashflowRisk.high.label"),     desc: t("cashflowRisk.high.desc"),     bg: "bg-[#E5484D0A]", border: "border-[#E5484D25]", text: "text-[#E5484D]" },
+    critical: { label: t("cashflowRisk.critical.label"), desc: t("cashflowRisk.critical.desc"), bg: "bg-[#E5484D0A]", border: "border-[#E5484D25]", text: "text-[#E5484D]" },
   };
 
   const [forecast, chartData, monthCount, summary, comparison, categoryInsights, concentration, coverage, intentBreakdown, dataGaps, taxPaymentTxs, expectedIncome] =
@@ -236,7 +236,7 @@ export default async function ForecastPage() {
           <p className={`text-sm font-medium mt-0.5 ${
             cashflowRisk === "low"      ? "text-[#4CC4A4]" :
             cashflowRisk === "medium"   ? "text-[#D4A254]" :
-                                          "text-[#D97070]"
+                                          "text-[#E5484D]"
           }`}>
             {t(`subtitle.answer${cashflowRisk.charAt(0).toUpperCase()}${cashflowRisk.slice(1)}`)}
           </p>
@@ -372,7 +372,7 @@ export default async function ForecastPage() {
                     ? t(`confidenceLevels.${forecast.confidence}`)
                     : t("howBuilt.noValue"),
                   color: forecast?.confidence === "high" ? "text-[#4CC4A4]" :
-                         forecast?.confidence === "medium" ? "text-[#D4A254]" : "text-[#D97070]",
+                         forecast?.confidence === "medium" ? "text-[#D4A254]" : "text-[#E5484D]",
                 },
               ].map((item) => (
                 <div key={item.key} className="bg-[#1A3048] rounded-xl p-4">
@@ -394,14 +394,14 @@ export default async function ForecastPage() {
                   <p className="label">{t("howBuilt.confidenceScore")}</p>
                   <span className={`text-xs font-bold tabular-nums ${
                     forecast.confidence === "high" ? "text-[#4CC4A4]" :
-                    forecast.confidence === "medium" ? "text-[#D4A254]" : "text-[#D97070]"
+                    forecast.confidence === "medium" ? "text-[#D4A254]" : "text-[#E5484D]"
                   }`}>{Math.round(forecast.confidenceScore * 100)}%</span>
                 </div>
                 <div className="h-2 bg-[#1A3048] rounded-full overflow-hidden mb-3">
                   <div
                     className={`h-full rounded-full ${
                       forecast.confidence === "high" ? "bg-[#4CC4A4]" :
-                      forecast.confidence === "medium" ? "bg-[#D4A254]" : "bg-[#D97070]"
+                      forecast.confidence === "medium" ? "bg-[#D4A254]" : "bg-[#E5484D]"
                     }`}
                     style={{ width: `${Math.round(forecast.confidenceScore * 100)}%` }}
                   />
@@ -528,9 +528,9 @@ export default async function ForecastPage() {
 
           {/* ── 4. Risk + Opportunity ─────────────────────────────────────── */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-6">
-            <div className="card border-[#D9707020]">
+            <div className="card border-[#E5484D20]">
               <div className="flex items-start gap-3">
-                <span className="text-[#D97070] text-xl flex-shrink-0 mt-0.5">⚠</span>
+                <span className="text-[#E5484D] text-xl flex-shrink-0 mt-0.5">⚠</span>
                 <div>
                   <p className="label mb-2">{t("biggestRisk.label")}</p>
                   <p className="text-sm text-[#A8C6E0] leading-relaxed">

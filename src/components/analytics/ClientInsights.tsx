@@ -35,7 +35,7 @@ export default async function ClientInsights({ data, dataYear }: Props) {
     if (value === null) return <span className="text-xs text-[#6A97B4]">{t("firstYear")}</span>;
     const good = value >= 0;
     return (
-      <span className={`text-xs font-semibold px-1.5 py-0.5 rounded ${good ? "bg-[#4CC4A415] text-[#4CC4A4]" : "bg-[#D9707015] text-[#D97070]"}`}>
+      <span className={`text-xs font-semibold px-1.5 py-0.5 rounded ${good ? "bg-[#4CC4A415] text-[#4CC4A4]" : "bg-[#E5484D15] text-[#E5484D]"}`}>
         {t("yoyChange", { arrow: value >= 0 ? "↑" : "↓", pct: String(Math.abs(value)) })}
       </span>
     );
@@ -43,7 +43,7 @@ export default async function ClientInsights({ data, dataYear }: Props) {
 
 
   const diversificationConfig = {
-    concentrated: { label: t("diversification.concentrated"), color: "text-[#D97070]" },
+    concentrated: { label: t("diversification.concentrated"), color: "text-[#E5484D]" },
     moderate: { label: t("diversification.moderate"), color: "text-[#D4A254]" },
     diversified: { label: t("diversification.diversified"), color: "text-[#4CC4A4]" },
   }[diversification];
@@ -57,7 +57,7 @@ export default async function ClientInsights({ data, dataYear }: Props) {
       {/* ── Overview metrics ─────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { key: "topClientShare", label: t("metrics.topClientShare"), value: `${topClientShare}%`, color: hasConcentrationRisk ? "text-[#D97070]" : "text-[#4CC4A4]" },
+          { key: "topClientShare", label: t("metrics.topClientShare"), value: `${topClientShare}%`, color: hasConcentrationRisk ? "text-[#E5484D]" : "text-[#4CC4A4]" },
           { key: "activeClients", label: t("metrics.activeClients"), value: String(activeClients), color: "text-[#3AB5A0]" },
           { key: "avgPerMonth", label: t("metrics.avgPerMonth"), value: String(avgClientsPerMonth), color: "text-[#A8C6E0]" },
           { key: "diversification", label: t("metrics.diversification"), value: diversificationConfig.label, color: diversificationConfig.color },
@@ -71,15 +71,15 @@ export default async function ClientInsights({ data, dataYear }: Props) {
 
       {/* ── Concentration risk alert ──────────────────────────────────────────── */}
       {hasConcentrationRisk && topClient && (
-        <div className="flex items-start gap-3 px-4 py-3 bg-[#D970700A] border border-[#D9707025] rounded-xl">
-          <span className="text-[#D97070] text-base flex-shrink-0">⚠</span>
+        <div className="flex items-start gap-3 px-4 py-3 bg-[#E5484D0A] border border-[#E5484D25] rounded-xl">
+          <span className="text-[#E5484D] text-base flex-shrink-0">⚠</span>
           <p className="text-sm text-[#A8C6E0]">
             {t.rich("concentrationRisk", {
               pct: String(topClientShare),
               client: topClient.name,
               threshold: "50",
               processorNote: topClient.isPaymentProcessor ? t("processorNote") : "",
-              warn: (chunks) => <span className="text-[#D97070] font-semibold">{chunks}</span>,
+              warn: (chunks) => <span className="text-[#E5484D] font-semibold">{chunks}</span>,
               b: (chunks) => <span className="text-[#E8F0F8] font-medium">{chunks}</span>,
             })}
           </p>
@@ -214,7 +214,7 @@ export default async function ClientInsights({ data, dataYear }: Props) {
                   {t.rich("strongest.yoy", {
                     arrow: topClient.yoyGrowth >= 0 ? "↑" : "↓",
                     pct: String(Math.abs(topClient.yoyGrowth)),
-                    change: (chunks) => <span className={topClient.yoyGrowth! >= 0 ? "text-[#4CC4A4]" : "text-[#D97070]"}>{chunks}</span>,
+                    change: (chunks) => <span className={topClient.yoyGrowth! >= 0 ? "text-[#4CC4A4]" : "text-[#E5484D]"}>{chunks}</span>,
                   })}
                 </p>
               )}

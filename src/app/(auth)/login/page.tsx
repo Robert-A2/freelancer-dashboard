@@ -151,7 +151,7 @@ export default function LoginPage() {
               </div>
 
               {error && (
-                <p className="text-sm text-[#D97070] bg-[#D9707010] px-4 py-3 rounded-xl">{error}</p>
+                <p className="text-sm text-[#E5484D] bg-[#E5484D10] px-4 py-3 rounded-xl">{error}</p>
               )}
 
               <button type="submit" className="btn-primary w-full" disabled={loading}>
@@ -242,7 +242,7 @@ export default function LoginPage() {
             </div>
 
             {error && (
-              <p className="text-sm text-[#D97070] bg-[#D9707010] px-4 py-3 rounded-xl">{error}</p>
+              <p className="text-sm text-[#E5484D] bg-[#E5484D10] px-4 py-3 rounded-xl">{error}</p>
             )}
 
             <button type="submit" className="btn-primary w-full" disabled={loading}>

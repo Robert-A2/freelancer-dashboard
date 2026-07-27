@@ -98,7 +98,7 @@ export default function RenameClientForm({ payerId, currentName, canonicalName }
           {tc("resetToAuto", { name: canonicalName })}
         </button>
       )}
-      {error && <p className="text-xs text-[#D97070]">{error}</p>}
+      {error && <p className="text-xs text-[#E5484D]">{error}</p>}
     </div>
   );
 }

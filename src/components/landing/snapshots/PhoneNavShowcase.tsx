@@ -44,7 +44,7 @@ export default async function PhoneNavShowcase() {
   const direction = {
     label: tf("businessDirection"),
     badge: tf("trend.weakening"),
-    badgeClass: "bg-[#D9707015] text-[#D97070]",
+    badgeClass: "bg-[#E5484D15] text-[#E5484D]",
     body: ts("directionInsight"),
     bodyClass: "text-[#7BA8C4]",
   };

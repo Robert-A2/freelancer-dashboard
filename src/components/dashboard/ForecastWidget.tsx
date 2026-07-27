@@ -81,7 +81,7 @@ export default function ForecastWidget({ forecast, reasons, improvements, defici
         {[
           { label: tm("income"),   value: formatCurrency(projectedIncome, locale),  color: "text-[#4CC4A4]" },
           { label: tm("expenses"), value: formatCurrency(projectedExpenses, locale), color: "text-[#D4A254]" },
-          { label: tm("cashflow"), value: formatCurrency(projectedCashflow, locale), color: cashflowNegative ? "text-[#D97070]" : "text-[#3AB5A0]" },
+          { label: tm("cashflow"), value: formatCurrency(projectedCashflow, locale), color: cashflowNegative ? "text-[#E5484D]" : "text-[#3AB5A0]" },
           {
             label: tm("margin"),
             // At high confidence the margin is color-coded. At medium/low it is
@@ -95,10 +95,10 @@ export default function ForecastWidget({ forecast, reasons, improvements, defici
               : confidence === "medium" ? "text-[#7BA8C4]"
               : projectedMargin >= 30   ? "text-[#4CC4A4]"
               : projectedMargin >= 10   ? "text-[#D4A254]"
-              : "text-[#D97070]",
+              : "text-[#E5484D]",
           },
         ].map((item) => (
-          <div key={item.label} className="bg-[#1A3048] rounded-xl p-3">
+          <div key={item.label} className="bg-[#1E3446] rounded-xl p-3">
             <p className="label mb-1">{item.label}</p>
             <p className={`text-lg font-bold tabular-nums ${item.color}`}>{item.value}</p>
           </div>
@@ -107,9 +107,9 @@ export default function ForecastWidget({ forecast, reasons, improvements, defici
 
       {/* Deficit warning */}
       {cashflowNegative && (
-        <div className="flex items-center gap-2.5 px-3 py-2.5 bg-[#D970700A] border border-[#D9707020] rounded-xl">
-          <span className="text-[#D97070] text-base flex-shrink-0">⚠</span>
-          <p className="text-xs text-[#D97070]">
+        <div className="flex items-center gap-2.5 px-3 py-2.5 surface-risk rounded-xl">
+          <span className="text-[#E5484D] text-base flex-shrink-0">⚠</span>
+          <p className="text-xs text-[#E5484D]">
             {t("deficitWarning")}
           </p>
         </div>
@@ -117,12 +117,12 @@ export default function ForecastWidget({ forecast, reasons, improvements, defici
 
       {/* Intelligence zone */}
       {hasGreenSection && (
-        <div className="bg-[#4CC4A40A] border border-[#4CC4A418] rounded-xl p-4 space-y-3">
+        <div className="surface-teal rounded-xl p-4 space-y-3">
 
           {cashflowHealthText && (
             <div className="flex items-center gap-2.5">
-              <span className={`w-2 h-2 rounded-full flex-shrink-0 ${cashflowHealthIsNeg ? "bg-[#D97070]" : "bg-[#4CC4A4]"}`} />
-              <p className={`text-sm font-medium ${cashflowHealthIsNeg ? "text-[#D97070]" : "text-[#4CC4A4]"}`}>
+              <span className={`w-2 h-2 rounded-full flex-shrink-0 ${cashflowHealthIsNeg ? "bg-[#E5484D]" : "bg-[#4CC4A4]"}`} />
+              <p className={`text-sm font-medium ${cashflowHealthIsNeg ? "text-[#E5484D]" : "text-[#4CC4A4]"}`}>
                 <InsightText insight={cashflowHealthText} />
               </p>
             </div>
@@ -132,7 +132,7 @@ export default function ForecastWidget({ forecast, reasons, improvements, defici
             <p className="text-xs text-[#A8C6E0] leading-relaxed flex flex-wrap items-center gap-x-1.5 gap-y-1">
               {trendSegments.map((seg, i) => (
                 <span key={i} className="inline-flex items-center gap-1.5">
-                  {i > 0 && <span className="text-[#4CC4A440]">·</span>}
+                  {i > 0 && <span className="text-[#4CC4A4]/50">·</span>}
                   <span><InsightText insight={seg} /></span>
                 </span>
               ))}
@@ -140,7 +140,7 @@ export default function ForecastWidget({ forecast, reasons, improvements, defici
           )}
 
           {deficitReason && (
-            <div className={cashflowHealthText || trendSegments.length > 0 ? "border-t border-[#4CC4A415] pt-3" : ""}>
+            <div className={cashflowHealthText || trendSegments.length > 0 ? "border-t border-[#234A40] pt-3" : ""}>
               <p className="label mb-1.5">{t("whyNegative")}</p>
               <p className="text-sm text-[#A8C6E0] leading-relaxed">
                 <InsightText insight={deficitReason} />
@@ -149,7 +149,7 @@ export default function ForecastWidget({ forecast, reasons, improvements, defici
           )}
 
           {improvements && improvements.length > 0 && (
-            <div className={cashflowHealthText || trendSegments.length > 0 || deficitReason ? "border-t border-[#4CC4A415] pt-3" : ""}>
+            <div className={cashflowHealthText || trendSegments.length > 0 || deficitReason ? "border-t border-[#234A40] pt-3" : ""}>
               <p className="label mb-2">{t("whatToDoNext")}</p>
               <ul className="space-y-2">
                 {improvements.slice(0, 3).map((imp, i) => (

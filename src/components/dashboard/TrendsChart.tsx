@@ -40,10 +40,10 @@ interface Props {
 // for the same account, making the two cards contradict each other in color.
 // Using the identical input guarantees the two cards can never disagree.
 const TRAJECTORY_BOX_STYLE = {
-  low:      { bg: "bg-[#4CC4A40A]", border: "border-[#4CC4A415]" },
-  medium:   { bg: "bg-[#D4A2540A]", border: "border-[#D4A25415]" },
-  high:     { bg: "bg-[#D970700A]", border: "border-[#D9707015]" },
-  critical: { bg: "bg-[#D970700A]", border: "border-[#D9707015]" },
+  low:      "surface-teal",
+  medium:   "surface-warning",
+  high:     "surface-risk",
+  critical: "surface-risk",
 } as const;
 
 const TIME_RANGES = [
@@ -63,8 +63,8 @@ const TIME_RANGES = [
 const TRAJECTORY_DETAILS_CAP = 2;
 
 const TOOLTIP_STYLE = {
-  backgroundColor: "#132537",
-  border: "1px solid #243F5E",
+  backgroundColor: "#17293C",
+  border: "1px solid #2D4C68",
   borderRadius: "0.75rem",
   color: "#E8F0F8",
   fontSize: "13px",
@@ -123,8 +123,8 @@ export default function TrendsChart({ data, trajectoryInsight, trajectoryDetails
                 onClick={() => setRange(r.months)}
                 className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors min-h-[44px] ${
                   range === r.months
-                    ? "bg-[#3AB5A0] text-[#0D1B2B]"
-                    : "bg-[#1A3048] text-[#7BA8C4] hover:text-[#E8F0F8]"
+                    ? "bg-[#3AB5A0] text-[#112232]"
+                    : "bg-[#1E3446] text-[#7BA8C4] hover:text-[#E8F0F8]"
                 }`}
               >
                 {t(`ranges.${r.key}`)}
@@ -140,7 +140,7 @@ export default function TrendsChart({ data, trajectoryInsight, trajectoryDetails
             onClick={handleChartClick}
             style={{ cursor: "pointer" }}
           >
-            <CartesianGrid strokeDasharray="3 3" stroke="#243F5E" />
+            <CartesianGrid strokeDasharray="3 3" stroke="#2D4C68" />
             <XAxis dataKey="month" stroke="#6A97B4" tick={{ fontSize: 12, fill: "#6A97B4" }} />
             <YAxis
               stroke="#6A97B4"
@@ -165,7 +165,7 @@ export default function TrendsChart({ data, trajectoryInsight, trajectoryDetails
         </p>
 
         {trajectoryInsight && (
-          <div className={`mt-4 ${boxStyle.bg} border ${boxStyle.border} rounded-xl px-5 py-4 space-y-2.5`}>
+          <div className={`mt-4 ${boxStyle} rounded-xl px-5 py-4 space-y-2.5`}>
             <p className="text-sm font-medium text-[#E8F0F8] leading-relaxed">
               <InsightText insight={trajectoryInsight} />
             </p>

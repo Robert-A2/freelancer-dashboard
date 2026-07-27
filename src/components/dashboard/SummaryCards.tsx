@@ -34,15 +34,15 @@ interface Props {
 const RISK_COLOR = {
   low:      "text-[#4CC4A4]",
   medium:   "text-[#D4A254]",
-  high:     "text-[#D97070]",
-  critical: "text-[#D97070]",
+  high:     "text-[#E5484D]",
+  critical: "text-[#E5484D]",
 };
 
 const VERDICT_STYLE = {
-  low:      { bg: "bg-[#4CC4A40A]", border: "border-[#4CC4A415]" },
-  medium:   { bg: "bg-[#D4A2540A]", border: "border-[#D4A25415]" },
-  high:     { bg: "bg-[#D970700A]", border: "border-[#D9707015]" },
-  critical: { bg: "bg-[#D970700A]", border: "border-[#D9707015]" },
+  low:      "surface-teal",
+  medium:   "surface-warning",
+  high:     "surface-risk",
+  critical: "surface-risk",
 };
 
 // The verdict card can carry up to ~5 independent supporting bullets at once
@@ -62,7 +62,7 @@ function Chip({ value, invert }: { value: number; invert?: boolean }) {
   const isGood = invert ? value <= 0 : value >= 0;
   return (
     <span className={`text-[11px] font-medium px-1.5 py-0.5 rounded-full ${
-      isGood ? "bg-[#4CC4A410] text-[#4CC4A4]" : "bg-[#D9707010] text-[#D97070]"
+      isGood ? "bg-[#234A40] text-[#4CC4A4]" : "bg-[#4A2A2A] text-[#E5484D]"
     }`}>
       {value >= 0 ? "↑" : "↓"} {Math.abs(value)}%
     </span>
@@ -102,7 +102,7 @@ export default function SummaryCards({
   const marginColor   = margin === null ? "text-[#6A97B4]"
     : margin >= 30 ? "text-[#4CC4A4]"
     : margin >= 10 ? "text-[#D4A254]"
-    : "text-[#D97070]";
+    : "text-[#E5484D]";
 
   const drillBase = currentMonth && currentYear
     ? `?year=${currentYear}&month=${currentMonth}`
@@ -134,11 +134,11 @@ export default function SummaryCards({
         {periodLabel && (
           <>
             <span className="text-xs font-semibold text-[#6A97B4] uppercase tracking-wide">{t("showing")}</span>
-            <span className="text-xs font-semibold text-[#E8F0F8] bg-[#1A3048] border border-[#243F5E] px-2.5 py-0.5 rounded-md">{periodLabel}</span>
+            <span className="text-xs font-semibold text-[#E8F0F8] bg-[#1E3446] border border-[#2D4C68] px-2.5 py-0.5 rounded-md">{periodLabel}</span>
           </>
         )}
         {isPartialMonth && (
-          <span className="text-xs font-medium text-[#D4A254] bg-[#D4A25410] border border-[#D4A25430] px-2.5 py-0.5 rounded-md">
+          <span className="text-xs font-medium text-[#D4A254] surface-warning px-2.5 py-0.5 rounded-md">
             {t("partialMonth")}
           </span>
         )}
@@ -146,7 +146,7 @@ export default function SummaryCards({
 
       {/* Verdict first — answer "How is my business doing?" before showing numbers */}
       {summary && (
-        <div className={`${verdictStyle.bg} border ${verdictStyle.border} rounded-xl px-5 py-4 space-y-2.5`}>
+        <div className={`${verdictStyle} rounded-xl px-5 py-4 space-y-2.5`}>
           <p className="text-sm font-medium text-[#E8F0F8] leading-relaxed">
             <InsightText insight={summary} />
           </p>
@@ -211,7 +211,7 @@ export default function SummaryCards({
         <Link href={allTxUrl} className="group relative card-sm flex flex-col gap-2 hover:border-[#2A4A6B] transition-colors">
           <Chevron />
           <p className="label">{tm("cashflow")}</p>
-          <p className={`text-xl md:text-2xl font-bold leading-none tabular-nums ${currCashflow >= 0 ? "text-[#3AB5A0]" : "text-[#D97070]"}`}>
+          <p className={`text-xl md:text-2xl font-bold leading-none tabular-nums ${currCashflow >= 0 ? "text-[#3AB5A0]" : "text-[#E5484D]"}`}>
             {formatCurrency(currCashflow, locale)}
           </p>
           <div className="flex items-center gap-2 flex-wrap">

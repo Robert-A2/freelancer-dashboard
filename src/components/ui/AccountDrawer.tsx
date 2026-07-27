@@ -68,7 +68,7 @@ export default function AccountDrawer({ fullName, email }: { fullName: string; e
         onClick={() => setOpen(true)}
         title={t("nav.account")}
         aria-label={t("nav.account")}
-        className="w-9 h-9 rounded-full bg-[#3AB5A0] text-[#0D1B2B] font-semibold text-sm flex items-center justify-center flex-shrink-0 hover:opacity-90 transition-opacity"
+        className="w-9 h-9 rounded-full bg-[#3AB5A0] text-[#112232] font-semibold text-sm flex items-center justify-center flex-shrink-0 hover:opacity-90 transition-opacity"
       >
         {initial}
       </button>
@@ -78,9 +78,9 @@ export default function AccountDrawer({ fullName, email }: { fullName: string; e
           <div className="absolute inset-0 bg-black/40" />
           <div
             ref={panelRef}
-            className="absolute top-0 right-0 h-full w-[85vw] max-w-xs bg-[#132537] border-l border-[#243F5E] shadow-[-8px_0_24px_rgba(0,0,0,0.25)] flex flex-col"
+            className="absolute top-0 right-0 h-full w-[85vw] max-w-xs bg-[#17293C] border-l border-[#2D4C68] shadow-[-8px_0_24px_rgba(0,0,0,0.25)] flex flex-col"
           >
-            <div className="flex items-center justify-between px-5 py-4 border-b border-[#1E3550]">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-[#25405A]">
               <div className="min-w-0">
                 <p className="text-sm font-semibold text-[#E8F0F8] truncate">{fullName || email}</p>
                 <p className="text-xs text-[#6A97B4] truncate mt-0.5">{email}</p>
@@ -88,7 +88,7 @@ export default function AccountDrawer({ fullName, email }: { fullName: string; e
               <button
                 onClick={() => setOpen(false)}
                 aria-label={t("buttons.close")}
-                className="p-2 rounded-lg text-[#6A97B4] hover:text-[#E8F0F8] hover:bg-[#1A3048] transition-colors flex-shrink-0"
+                className="p-2 rounded-lg text-[#6A97B4] hover:text-[#E8F0F8] hover:bg-[#1E3446] transition-colors flex-shrink-0"
               >
                 <IconClose />
               </button>
@@ -98,7 +98,7 @@ export default function AccountDrawer({ fullName, email }: { fullName: string; e
               <Link
                 href="/profile"
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
-                  isActive("/profile") ? "bg-[#3AB5A012] text-[#3AB5A0]" : "text-[#A8C6E0] hover:text-[#E8F0F8] hover:bg-[#1A3048]"
+                  isActive("/profile") ? "bg-[#3AB5A012] text-[#3AB5A0]" : "text-[#A8C6E0] hover:text-[#E8F0F8] hover:bg-[#1E3446]"
                 }`}
               >
                 <IconUser />
@@ -107,7 +107,7 @@ export default function AccountDrawer({ fullName, email }: { fullName: string; e
               <Link
                 href="/settings"
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
-                  isActive("/settings") ? "bg-[#3AB5A012] text-[#3AB5A0]" : "text-[#A8C6E0] hover:text-[#E8F0F8] hover:bg-[#1A3048]"
+                  isActive("/settings") ? "bg-[#3AB5A012] text-[#3AB5A0]" : "text-[#A8C6E0] hover:text-[#E8F0F8] hover:bg-[#1E3446]"
                 }`}
               >
                 <IconSettings />
@@ -115,11 +115,11 @@ export default function AccountDrawer({ fullName, email }: { fullName: string; e
               </Link>
             </nav>
 
-            <div className="mt-auto p-4 border-t border-[#1E3550]">
+            <div className="mt-auto p-4 border-t border-[#25405A]">
               <button
                 onClick={handleSignOut}
                 disabled={signingOut}
-                className="w-full text-left px-3 py-2.5 rounded-xl text-sm font-medium text-[#D97070] hover:bg-[#D970701A] transition-colors disabled:opacity-50"
+                className="w-full text-left px-3 py-2.5 rounded-xl text-sm font-medium text-[#E5484D] hover:bg-[#E5484D1A] transition-colors disabled:opacity-50"
               >
                 {signingOut ? t("buttons.signingOut") : t("buttons.signOut")}
               </button>

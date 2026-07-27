@@ -51,15 +51,15 @@ export default function DeleteImportButton({ importId, fileName, importedRows }:
           step === "deleting"
             ? "bg-[#1A3048] text-[#6A97B4] opacity-60 cursor-wait"
             : step === "confirming"
-            ? "bg-[#D9707020] text-[#D97070]"
-            : "bg-[#1A3048] text-[#7BA8C4] hover:bg-[#D9707020] hover:text-[#D97070]"
+            ? "bg-[#E5484D20] text-[#E5484D]"
+            : "bg-[#1A3048] text-[#7BA8C4] hover:bg-[#E5484D20] hover:text-[#E5484D]"
         }`}
       >
         {step === "deleting" ? t("deleting") : t("delete")}
       </button>
 
       {error && (
-        <p className="absolute right-0 top-full mt-1 z-50 text-xs text-[#D97070] whitespace-nowrap">{error}</p>
+        <p className="absolute right-0 top-full mt-1 z-50 text-xs text-[#E5484D] whitespace-nowrap">{error}</p>
       )}
 
       {step === "confirming" && (
@@ -69,13 +69,13 @@ export default function DeleteImportButton({ importId, fileName, importedRows }:
               fileName,
               count: importedRows,
               b: (chunks) => <span className="font-medium">{chunks}</span>,
-              red: (chunks) => <span className="text-[#D97070] font-medium">{chunks}</span>,
+              red: (chunks) => <span className="text-[#E5484D] font-medium">{chunks}</span>,
             })}
           </p>
           <div className="flex flex-col gap-1.5 pt-1">
             <button
               onClick={confirmDelete}
-              className="text-xs text-left px-3 py-2 bg-[#D9707020] hover:bg-[#D9707030] text-[#D97070] rounded-lg transition-colors"
+              className="text-xs text-left px-3 py-2 bg-[#E5484D20] hover:bg-[#E5484D30] text-[#E5484D] rounded-lg transition-colors"
             >
               {t("deletePermanently")}
             </button>

@@ -25,8 +25,8 @@ export default async function AccountFilterBar({ accounts, selectedAccountId }: 
         href="/dashboard"
         className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full text-sm font-medium transition-colors ${
           !selectedAccountId
-            ? "bg-[#3AB5A0] text-[#0D1B2B]"
-            : "bg-[#1A3048] text-[#7BA8C4] hover:text-[#E8F0F8] hover:bg-[#1E3A58]"
+            ? "bg-[#3AB5A0] text-[#112232]"
+            : "bg-[#1E3446] text-[#7BA8C4] hover:text-[#E8F0F8] hover:bg-[#1E3A58]"
         }`}
       >
         {t("allAccounts")}
@@ -42,8 +42,8 @@ export default async function AccountFilterBar({ accounts, selectedAccountId }: 
             href={`/dashboard?accountId=${acct.id}`}
             className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full text-sm font-medium transition-colors ${
               isSelected
-                ? "bg-[#1A3048] text-[#E8F0F8] ring-1 ring-[#3AB5A0]"
-                : "bg-[#1A3048] text-[#7BA8C4] hover:text-[#E8F0F8] hover:bg-[#1E3A58]"
+                ? "bg-[#1E3446] text-[#E8F0F8] ring-1 ring-[#3AB5A0]"
+                : "bg-[#1E3446] text-[#7BA8C4] hover:text-[#E8F0F8] hover:bg-[#1E3A58]"
             }`}
           >
             <span

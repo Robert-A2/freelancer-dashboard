@@ -20,7 +20,7 @@ export default async function ExpectedFromProjectsCard({ data, locale }: { data:
               <div className="flex items-center gap-2">
                 <p className="text-sm font-medium text-[#C8DCF0] truncate">{m.clientName}</p>
                 {m.isOverdue && (
-                  <span className="text-xs font-semibold px-1.5 py-0.5 rounded-full bg-[#D970701A] text-[#D97070] flex-shrink-0">
+                  <span className="text-xs font-semibold px-1.5 py-0.5 rounded-full bg-[#E5484D1A] text-[#E5484D] flex-shrink-0">
                     {t("overdue")}
                   </span>
                 )}
@@ -35,7 +35,7 @@ export default async function ExpectedFromProjectsCard({ data, locale }: { data:
                 {m.dueDate && ` · ${monthYearLabel(`${m.dueDate.getUTCFullYear()}-${String(m.dueDate.getUTCMonth() + 1).padStart(2, "0")}`, locale)}`}
               </p>
             </div>
-            <span className={`text-sm font-bold tabular-nums flex-shrink-0 ${m.isOverdue ? "text-[#D97070]" : "text-[#D4A254]"}`}>
+            <span className={`text-sm font-bold tabular-nums flex-shrink-0 ${m.isOverdue ? "text-[#E5484D]" : "text-[#D4A254]"}`}>
               {formatCurrency(m.amount, locale)}
             </span>
           </div>

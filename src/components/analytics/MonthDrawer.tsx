@@ -61,7 +61,7 @@ function IntentBadge({ intent }: { intent: string | null }) {
   const tIntent = useTranslations("intent");
   if (!intent) return <span className="text-xs text-[#4A6B85] italic">—</span>;
   const label = KNOWN_INTENTS.has(intent) ? tIntent(`labels.${intent}` as never) : intent.replace(/_/g, " ");
-  const color = INTENT_COLOR[intent] ?? "bg-[#1A3048] text-[#7BA8C4]";
+  const color = INTENT_COLOR[intent] ?? "bg-[#1E3446] text-[#7BA8C4]";
   return (
     <span className={`inline-block text-xs font-medium px-2 py-0.5 rounded-full ${color}`}>
       {label}
@@ -207,7 +207,7 @@ export default function MonthDrawer({
               </div>
               <button onClick={onClose} aria-label="Close"
                 className="mt-0.5 flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg
-                  text-[#4A7A9B] hover:text-[#E8F0F8] hover:bg-[#1A3048] transition-colors">
+                  text-[#4A7A9B] hover:text-[#E8F0F8] hover:bg-[#1E3446] transition-colors">
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                   <path d="M2 2l12 12M14 2L2 14" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
                 </svg>
@@ -230,7 +230,7 @@ export default function MonthDrawer({
                 <div className="flex-1 text-center">
                   <p className="text-xs text-[#4A7A9B] mb-0.5">{tMetrics("cashflow")}</p>
                   <p className={`text-lg font-bold ${
-                    breakdown.totalIncome - breakdown.totalExpenses >= 0 ? "text-[#4CC4A4]" : "text-[#D97070]"
+                    breakdown.totalIncome - breakdown.totalExpenses >= 0 ? "text-[#4CC4A4]" : "text-[#E5484D]"
                   }`}>{formatCurrency(breakdown.totalIncome - breakdown.totalExpenses, locale)}</p>
                 </div>
               </div>
@@ -290,7 +290,7 @@ export default function MonthDrawer({
                             <span className="text-[#2A4F6A] group-hover:text-[#4A7A9B]">›</span>
                           </div>
                         </div>
-                        <div className="h-1.5 bg-[#243F5E] rounded-full overflow-hidden">
+                        <div className="h-1.5 bg-[#2D4C68] rounded-full overflow-hidden">
                           <div className={`h-full ${barCl} rounded-full opacity-60 group-hover:opacity-100 transition-opacity`}
                             style={{ width: `${pct}%` }} />
                         </div>
@@ -311,7 +311,7 @@ export default function MonthDrawer({
                   }`}>
                     <p className="text-xs text-[#4A7A9B] mb-0.5">{tM("netCashflow")}</p>
                     <p className={`text-2xl font-bold ${
-                      breakdown.totalIncome - breakdown.totalExpenses >= 0 ? "text-[#4CC4A4]" : "text-[#D97070]"
+                      breakdown.totalIncome - breakdown.totalExpenses >= 0 ? "text-[#4CC4A4]" : "text-[#E5484D]"
                     }`}>
                       {breakdown.totalIncome - breakdown.totalExpenses >= 0 ? "+" : ""}
                       {formatCurrency(breakdown.totalIncome - breakdown.totalExpenses, locale)}
@@ -340,7 +340,7 @@ export default function MonthDrawer({
                                   <span className="text-[#2A4F6A] group-hover:text-[#4A7A9B]">›</span>
                                 </div>
                               </div>
-                              <div className="h-1.5 bg-[#243F5E] rounded-full overflow-hidden">
+                              <div className="h-1.5 bg-[#2D4C68] rounded-full overflow-hidden">
                                 <div className="h-full bg-[#4CC4A4] rounded-full opacity-60 group-hover:opacity-100 transition-opacity"
                                   style={{ width: `${pct}%` }} />
                               </div>
@@ -373,7 +373,7 @@ export default function MonthDrawer({
                                   <span className="text-[#2A4F6A] group-hover:text-[#4A7A9B]">›</span>
                                 </div>
                               </div>
-                              <div className="h-1.5 bg-[#243F5E] rounded-full overflow-hidden">
+                              <div className="h-1.5 bg-[#2D4C68] rounded-full overflow-hidden">
                                 <div className="h-full bg-[#D4A254] rounded-full opacity-60 group-hover:opacity-100 transition-opacity"
                                   style={{ width: `${pct}%` }} />
                               </div>
@@ -397,7 +397,7 @@ export default function MonthDrawer({
               <div className="flex items-start gap-3">
                 <button onClick={backToMonth} aria-label="Back"
                   className="mt-0.5 flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg
-                    text-[#4A7A9B] hover:text-[#E8F0F8] hover:bg-[#1A3048] transition-colors">
+                    text-[#4A7A9B] hover:text-[#E8F0F8] hover:bg-[#1E3446] transition-colors">
                   <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                     <path d="M10 2L4 8l6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
@@ -411,7 +411,7 @@ export default function MonthDrawer({
               </div>
               <button onClick={onClose} aria-label="Close"
                 className="mt-0.5 flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg
-                  text-[#4A7A9B] hover:text-[#E8F0F8] hover:bg-[#1A3048] transition-colors">
+                  text-[#4A7A9B] hover:text-[#E8F0F8] hover:bg-[#1E3446] transition-colors">
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                   <path d="M2 2l12 12M14 2L2 14" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
                 </svg>

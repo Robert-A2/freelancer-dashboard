@@ -133,7 +133,7 @@ export default function BrandingSection({ brandLogoUrl, brandAccentColor, brandF
             />
           </label>
         </div>
-        {logoError && <p className="text-xs text-[#D97070] mt-2">{logoError}</p>}
+        {logoError && <p className="text-xs text-[#E5484D] mt-2">{logoError}</p>}
       </div>
 
       <div className="mb-5">
@@ -165,7 +165,7 @@ export default function BrandingSection({ brandLogoUrl, brandAccentColor, brandF
       <button onClick={handleSave} disabled={saving} className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed">
         {saving ? t("save") : saved ? t("saved") : t("save")}
       </button>
-      {saveError && <p className="text-xs text-[#D97070] mt-2">{saveError}</p>}
+      {saveError && <p className="text-xs text-[#E5484D] mt-2">{saveError}</p>}
 
       <p className="text-xs text-[#4A7A9B] mt-4">{t("footer")}</p>
     </div>

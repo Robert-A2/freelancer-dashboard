@@ -40,13 +40,13 @@ const DATA = {
 function Chip({ value }: { value: number }) {
   const isGood = value >= 0;
   return (
-    <span className={`text-[9px] font-medium px-1.5 py-0.5 rounded-full ${isGood ? "bg-[#4CC4A410] text-[#4CC4A4]" : "bg-[#D9707010] text-[#D97070]"}`}>
+    <span className={`text-[9px] font-medium px-1.5 py-0.5 rounded-full ${isGood ? "bg-[#4CC4A410] text-[#4CC4A4]" : "bg-[#E5484D10] text-[#E5484D]"}`}>
       {value >= 0 ? "↑" : "↓"} {Math.abs(value)}%
     </span>
   );
 }
 
-const MARGIN_COLOR = DATA.margin >= 30 ? "text-[#4CC4A4]" : DATA.margin >= 10 ? "text-[#D4A254]" : "text-[#D97070]";
+const MARGIN_COLOR = DATA.margin >= 30 ? "text-[#4CC4A4]" : DATA.margin >= 10 ? "text-[#D4A254]" : "text-[#E5484D]";
 const RISK_COLOR = "text-[#D4A254]"; // Medium
 
 export default async function DashboardShowcase() {
@@ -84,7 +84,7 @@ export default async function DashboardShowcase() {
 
         <div className="bg-[#132537] border border-[#1E3550] rounded-lg p-1.5 flex flex-col gap-0.5">
           <p className="text-[8px] font-medium text-[#6A97B4] uppercase tracking-wide">{tm("cashflow")}</p>
-          <p className="text-[12px] font-bold text-[#D97070] leading-none tabular-nums">{formatCurrency(DATA.cashflow, locale)}</p>
+          <p className="text-[12px] font-bold text-[#E5484D] leading-none tabular-nums">{formatCurrency(DATA.cashflow, locale)}</p>
           <p className="text-[8.5px] text-[#6A97B4]">{t("expensesExceedIncome")}</p>
           <Chip value={DATA.cashflowChangePct} />
         </div>
