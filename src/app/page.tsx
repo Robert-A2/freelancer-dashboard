@@ -83,7 +83,7 @@ export default async function LandingPage() {
 
       {/* ── Section 1: Hero — text left, live product screen right ──── */}
       <section className="pt-24 pb-14 md:pt-28 overflow-x-hidden" style={{ background: "linear-gradient(180deg, #F3F8FD 0%, #F8FBFE 55%, #FFFFFF 100%)" }}>
-        <div className="max-w-[1440px] mx-auto px-6 grid grid-cols-1 lg:grid-cols-[minmax(0,480px)_1fr] gap-14 lg:gap-16 items-start">
+        <div className="max-w-[1440px] mx-auto px-6 grid grid-cols-1 lg:grid-cols-[minmax(0,480px)_1fr] gap-y-8 gap-x-14 lg:gap-x-16 items-start">
 
           {/* Text column */}
           <div className="lg:pt-6 lg:pl-10">
@@ -165,9 +165,19 @@ export default async function LandingPage() {
               drop-shadow filter on an ancestor that isn't itself zoomed
               renders at full, unscaled strength around whatever size the
               zoomed content ends up, so the "lifted off the page" effect
-              stays visible even at the smallest sizes. */}
+              stays visible even at the smallest sizes.
+
+              Base 0.39 is the ceiling for a genuinely narrow phone (~360px
+              wide, minus this column's 48px of page padding = ~312px —
+              exactly 800*0.39). min-[390px]:0.42 gives every modern
+              standard-width phone (390px+: iPhone 12 onward, most Android)
+              a visibly bigger, easier-to-read screen once there's the
+              ~342px of room to support it, while staying comfortably under
+              that width's own overflow ceiling (~0.4275) — the narrow-phone
+              step stays untouched below 390px. mt-6 (was mt-10) tightens
+              the gap under the CTA button to match. */}
           <div className="drop-shadow-[0_20px_38px_rgba(13,27,43,0.35)]">
-            <div className="w-fit mx-auto lg:w-auto lg:mx-0 min-w-0 overflow-hidden mt-10 lg:mt-0 lg:-mt-4 [zoom:0.39] sm:[zoom:0.6] md:[zoom:0.85] lg:[zoom:0.52] min-[1080px]:[zoom:0.59] min-[1150px]:[zoom:0.68] min-[1220px]:[zoom:0.76] min-[1290px]:[zoom:0.85] min-[1360px]:[zoom:0.94] min-[1440px]:[zoom:1]">
+            <div className="w-fit mx-auto lg:w-auto lg:mx-0 min-w-0 overflow-hidden mt-6 lg:mt-0 lg:-mt-4 [zoom:0.39] min-[390px]:[zoom:0.42] sm:[zoom:0.6] md:[zoom:0.85] lg:[zoom:0.52] min-[1080px]:[zoom:0.59] min-[1150px]:[zoom:0.68] min-[1220px]:[zoom:0.76] min-[1290px]:[zoom:0.85] min-[1360px]:[zoom:0.94] min-[1440px]:[zoom:1]">
               <div className="w-[800px]">
                 <ProductExperience />
               </div>
