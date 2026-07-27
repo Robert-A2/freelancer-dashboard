@@ -299,7 +299,7 @@ export default async function LandingPage() {
           <h2 className="text-4xl sm:text-5xl font-bold tracking-[-0.03em] text-[#0D1B2B] leading-[1.14] mb-6 text-balance">
             {t("finalCta.title")}
           </h2>
-          <p className="text-lg text-[#5B5346] leading-relaxed mb-10 font-light text-balance">
+          <p className="text-lg text-[#5B5346] leading-relaxed mb-10 font-light">
             {t("finalCta.body")}
           </p>
           <Link href="/signup" className={CTA_CLASS}>
