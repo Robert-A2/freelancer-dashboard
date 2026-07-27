@@ -156,10 +156,21 @@ export default async function LandingPage() {
               a bare 3-step version left the mockup visibly not filling the
               room it had). Finer steps keep the gap between "available"
               and "used" small at every width in between, not just at the
-              breakpoints themselves. */}
-          <div className="w-fit mx-auto lg:w-auto lg:mx-0 min-w-0 overflow-hidden mt-10 lg:mt-0 lg:-mt-4 [zoom:0.39] sm:[zoom:0.6] md:[zoom:0.85] lg:[zoom:0.52] min-[1080px]:[zoom:0.59] min-[1150px]:[zoom:0.68] min-[1220px]:[zoom:0.76] min-[1290px]:[zoom:0.85] min-[1360px]:[zoom:0.94] min-[1440px]:[zoom:1]">
-            <div className="w-[800px]">
-              <ProductExperience />
+              breakpoints themselves.
+
+              This outer wrapper carries its own drop-shadow, deliberately
+              OUTSIDE the zoomed div below. zoom shrinks everything inside
+              it proportionally, box-shadow included — DeviceFrame's own
+              shadow all but disappears at mobile's ~0.39 zoom. A
+              drop-shadow filter on an ancestor that isn't itself zoomed
+              renders at full, unscaled strength around whatever size the
+              zoomed content ends up, so the "lifted off the page" effect
+              stays visible even at the smallest sizes. */}
+          <div className="drop-shadow-[0_20px_38px_rgba(13,27,43,0.35)]">
+            <div className="w-fit mx-auto lg:w-auto lg:mx-0 min-w-0 overflow-hidden mt-10 lg:mt-0 lg:-mt-4 [zoom:0.39] sm:[zoom:0.6] md:[zoom:0.85] lg:[zoom:0.52] min-[1080px]:[zoom:0.59] min-[1150px]:[zoom:0.68] min-[1220px]:[zoom:0.76] min-[1290px]:[zoom:0.85] min-[1360px]:[zoom:0.94] min-[1440px]:[zoom:1]">
+              <div className="w-[800px]">
+                <ProductExperience />
+              </div>
             </div>
           </div>
         </div>
