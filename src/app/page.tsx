@@ -145,8 +145,19 @@ export default async function LandingPage() {
               content size and centers *that* within the column, so
               whatever slack exists splits evenly instead of collecting on
               one side. Reset to the flush-left, next-to-text behavior at
-              `lg`+ where it's beside the text, not stacked under it. */}
-          <div className="w-fit mx-auto lg:w-auto lg:mx-0 min-w-0 overflow-hidden mt-10 lg:mt-0 lg:-mt-4 [zoom:0.39] sm:[zoom:0.6] md:[zoom:0.85] lg:[zoom:0.5] min-[1150px]:[zoom:0.65] min-[1280px]:[zoom:0.8] min-[1440px]:[zoom:1]">
+              `lg`+ where it's beside the text, not stacked under it.
+
+              Above `lg`, the steps are deliberately fine-grained (every
+              ~70px) rather than 3 big jumps. With only a few coarse steps,
+              the mockup stays flat between them while the actual available
+              track space keeps growing as the viewport does — right before
+              each jump there was up to ~150-200px of real, measured unused
+              space inside the mockup's own column (confirmed at 1920x900:
+              a bare 3-step version left the mockup visibly not filling the
+              room it had). Finer steps keep the gap between "available"
+              and "used" small at every width in between, not just at the
+              breakpoints themselves. */}
+          <div className="w-fit mx-auto lg:w-auto lg:mx-0 min-w-0 overflow-hidden mt-10 lg:mt-0 lg:-mt-4 [zoom:0.39] sm:[zoom:0.6] md:[zoom:0.85] lg:[zoom:0.52] min-[1080px]:[zoom:0.59] min-[1150px]:[zoom:0.68] min-[1220px]:[zoom:0.76] min-[1290px]:[zoom:0.85] min-[1360px]:[zoom:0.94] min-[1440px]:[zoom:1]">
             <div className="w-[800px]">
               <ProductExperience />
             </div>
