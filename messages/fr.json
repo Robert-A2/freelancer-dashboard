@@ -678,6 +678,23 @@
       "watch": "À surveiller",
       "atRisk": "À risque"
     },
+    "businessHealth": {
+      "label": "Santé de l'activité"
+    },
+    "cashPosition": {
+      "label": "Trésorerie cumulée",
+      "caption": "Solde net de tout ce qui est suivi — pas un solde bancaire en direct"
+    },
+    "forecastHealth": {
+      "label": "Santé des prévisions",
+      "good": "Bonne",
+      "warning": "Avertissement",
+      "critical": "Critique",
+      "unknown": "Données insuffisantes"
+    },
+    "summary": {
+      "label": "Résumé"
+    },
     "staleData": {
       "message": "Vos données datent de {days, plural, one {# jour} other {# jours}}. Importez le relevé du mois dernier pour conserver des analyses fiables.",
       "cta": "Importer →"
@@ -1129,6 +1146,11 @@
     "cashflowSection": {
       "label": "Trésorerie mensuelle",
       "title": "Revenus moins dépenses"
+    },
+    "businessSection": {
+      "label": "Intelligence d'activité",
+      "title": "Professionnel vs. personnel",
+      "subtitle": "{margin}% de marge bénéficiaire · {personalSpend} de dépenses personnelles"
     },
     "monthDrawer": {
       "title": "Détail mensuel",

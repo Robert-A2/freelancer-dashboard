@@ -14,41 +14,38 @@ import {
 import { getLatestForecast } from "@/lib/forecast-engine";
 import { getFinancialLifeIntelligence } from "@/lib/financial-life-engine";
 import { getClientRiskProfiles } from "@/lib/client-risk-engine";
-import { getExpectedIncome, getRecentlyPaidMilestones } from "@/lib/milestone-engine";
-import { getRunway } from "@/lib/runway-engine";
-import { generateDashboardIntelligence, buildHistoricalInsights } from "@/lib/intelligence-engine";
+import { generateDashboardIntelligence } from "@/lib/intelligence-engine";
 import { prisma } from "@/lib/prisma";
 import { formatCurrency } from "@/utils/finance";
-import { getMonthlyVerdictKey } from "@/utils/monthlyVerdict";
-import CollapsibleSection from "@/components/ui/CollapsibleSection";
-import SummaryCards from "@/components/dashboard/SummaryCards";
-import PaymentReceivedBanner from "@/components/dashboard/PaymentReceivedBanner";
-import ExpectedIncomeCard from "@/components/dashboard/ExpectedIncomeCard";
-import RunwayCard from "@/components/dashboard/RunwayCard";
-import ProjectsPromoCard from "@/components/dashboard/ProjectsPromoCard";
 import TrendsChart from "@/components/dashboard/TrendsChart";
 import MonthlyComparisonWidget from "@/components/dashboard/MonthlyComparison";
-import ForecastWidget from "@/components/dashboard/ForecastWidget";
-import RecentTransactions from "@/components/dashboard/RecentTransactions";
-import HistoricalInsights from "@/components/dashboard/HistoricalInsights";
-import BusinessIntelligence from "@/components/dashboard/BusinessIntelligence";
-import DataCoverageBar from "@/components/dashboard/DataCoverage";
-import FirstUploadBanner from "@/components/dashboard/FirstUploadBanner";
+import InsightText from "@/components/ui/InsightText";
 import AccountFilterBar from "@/components/dashboard/AccountFilterBar";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
+// The Dashboard has exactly one job: "what's the state of my business, in
+// under 30 seconds" — never a scroll-forever feed. Two layers only:
+//   Layer 1 (no scroll) — health score, cash position, forecast health,
+//     biggest risk, biggest opportunity, one-line summary. Done.
+//   Layer 2 (one scroll, then stop) — income/expense/cashflow trend,
+//     monthly comparison.
+// Everything else (runway, expected income, clients, business intelligence,
+// transactions, historical patterns, forecasting detail) is a different
+// question with its own dedicated page — reached by navigating there, not
+// by scrolling further down this one.
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ firstUpload?: string; accountId?: string }>;
+  searchParams: Promise<{ accountId?: string }>;
 }) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const t = await getTranslations("dashboard");
+  const t  = await getTranslations("dashboard");
+  const tf = await getTranslations("forecast");
   const locale = (await getLocale()) as Locale;
 
   const params = await searchParams;
@@ -56,8 +53,8 @@ export default async function DashboardPage({
 
   const [[
     summary, forecast, chartData, comparison, totalTx, coverage,
-    categoryInsights, concentration, dbUser, lastImport, intentBreakdown,
-    financialLife, clientData, expectedIncome, recentPayments, runway,
+    categoryInsights, concentration, dbUser, intentBreakdown,
+    financialLife, clientData,
   ], accounts] = await Promise.all([
     Promise.all([
       getDashboardSummary(user.id, accountId),
@@ -69,19 +66,9 @@ export default async function DashboardPage({
       getCategoryInsights(user.id, accountId),
       getIncomeConcentration(user.id, accountId),
       prisma.user.findUnique({ where: { id: user.id }, select: { fullName: true } }),
-      // Fix 1: use last IMPORT date for freshness, not last transaction date.
-      // Using transaction dates caused a permanent warning for any historical upload.
-      prisma.csvImport.findFirst({
-        where: { userId: user.id, status: "completed" },
-        orderBy: { importedAt: "desc" },
-        select: { importedAt: true },
-      }),
       getIntentBreakdown(user.id, undefined, undefined, accountId),
       getFinancialLifeIntelligence(user.id, accountId),
       getClientRiskProfiles(user.id, accountId),
-      getExpectedIncome(user.id),
-      getRecentlyPaidMilestones(user.id),
-      getRunway(user.id),
     ]),
     // An account whose last transaction was removed (e.g. its only CSV import
     // got deleted) has no data left to filter by — showing it as a live tab
@@ -127,8 +114,8 @@ export default async function DashboardPage({
   }));
 
   // Client concentration trend: compares top client's current-month share
-  // to their average share across the prior 5 months. Surfaced as a context
-  // insight when concentration increased by >15 percentage points.
+  // to their average share across the prior 5 months. Feeds the intelligence
+  // engine's "biggest risk" pick below (client-concentration risk branch).
   let clientConcentrationTrend: { currentPct: number; rollingAvgPct: number; topClientName: string | null } | null = null;
   if (clientData.clients.length > 0) {
     const curIdx = 5; // index 5 = current month in the 6-month window
@@ -185,21 +172,12 @@ export default async function DashboardPage({
   );
 
   const hasData = totalTx > 0;
-  // A user who has only ever created Projects/milestones (no CSV upload, no
-  // paid milestone yet) has zero Transaction rows and would otherwise hit the
-  // pure "Upload CSV" empty state below — hiding the projects they actually
-  // created. Runway is computed straight from Project/Milestone rows (see
-  // runway-engine.ts), so runway !== null is exactly "has used the invoicing
-  // side of the platform," independent of CSV data.
-  const hasProjects = runway !== null;
-  const hasAnyActivity = hasData || hasProjects;
-  const nonZeroMonths = chartData.filter((d) => d.income > 0 || d.expenses > 0).length;
 
   // Risk computed from historical data — mirrors forecast/page.tsx's cashflow risk
   // calculation exactly (including the income-trend check) so the Dashboard and
-  // Forecast pages never disagree on the same data.
-  const activeMonths      = chartData.filter(d => d.income > 0 || d.expenses > 0);
-
+  // Forecast pages never disagree on the same data. Feeds TrendsChart's own
+  // trajectory-box coloring only; not shown as a standalone tile any more.
+  const activeMonths = chartData.filter(d => d.income > 0 || d.expenses > 0);
   const riskPositiveMonths = activeMonths.filter(d => d.cashflow >= 0).length;
   const riskTotalMonths    = activeMonths.length;
   const posRatio           = riskTotalMonths > 0 ? riskPositiveMonths / riskTotalMonths : 0;
@@ -209,7 +187,6 @@ export default async function DashboardPage({
   const avgLast6 = last6.length ? last6.reduce((s, d) => s + d.income, 0) / last6.length : 0;
   const avgPrev6 = prev6.length ? prev6.reduce((s, d) => s + d.income, 0) / prev6.length : 0;
   const incTrend = avgPrev6 > 0 ? (avgLast6 - avgPrev6) / avgPrev6 : 0;
-  const incTrendPct = Math.round(incTrend * 100);
 
   const riskLevel: "low" | "medium" | "high" | "critical" =
     posRatio >= 0.85 && incTrend > -0.05 ? "low" :
@@ -219,146 +196,71 @@ export default async function DashboardPage({
   // Personalisation
   const firstName = dbUser?.fullName?.split(" ")[0] ?? user.email?.split("@")[0] ?? "";
 
-  // Fix 1: Data freshness uses last IMPORT date, not last transaction date.
-  // A user who uploaded 3 years of historical data should NOT see a permanent stale warning.
-  const daysSinceImport = lastImport
-    ? Math.floor((Date.now() - new Date(lastImport.importedAt).getTime()) / 86_400_000)
-    : null;
-  const dataIsStale = daysSinceImport !== null && daysSinceImport > 28;
-
-  // Coverage staleness: detects when the transaction data itself ends many months
-  // before today — regardless of when the user last imported. A user who uploaded
-  // three years of old statements would have a recent import date but stale coverage.
+  // Coverage staleness: the transaction data itself ends many months before
+  // today — regardless of import date. Folded into the header caption's
+  // color rather than a separate banner; a health score built on stale data
+  // deserves a visible caveat, not a whole extra section.
   const _now = new Date();
   const coverageMonthsAgo = coverage.latest != null
     ? (_now.getFullYear() - coverage.latest.getUTCFullYear()) * 12 +
       (_now.getMonth() - coverage.latest.getUTCMonth())
     : null;
   const coverageIsStale = coverageMonthsAgo !== null && coverageMonthsAgo >= 2 && hasData;
-  const coverageLatestLabel = coverage.latest != null
-    ? coverage.latest.toLocaleDateString(INTL_LOCALES[locale], { month: "long", year: "numeric", timeZone: "UTC" })
-    : null;
 
-  // Fix 3: First-upload detection — show welcome banner on first arrival after upload
-  const isFirstUpload = params.firstUpload === "true" && hasData;
+  // Layer 1, tile 2: "cash available today" has no literal bank-balance
+  // concept in this app (no live account sync) — the honest equivalent is
+  // the cumulative net cashflow across every tracked month, clearly
+  // captioned as such rather than implied to be a live balance.
+  const cashPosition = chartData.reduce((sum, d) => sum + d.cashflow, 0);
 
-  // Clients needing a follow up (RED or overdue YELLOW with a followUp action)
-  const followUpClients = clientData.clients.filter((c) =>
-    c.actions.some((a) => a.type === "followUp")
-  );
-  const nudgeClients  = followUpClients.slice(0, 3);
-  const nudgeExtra    = Math.max(0, followUpClients.length - 3);
+  // Layer 1, tile 3: a 3-state read of the existing forecast, not a new
+  // engine — negative projected cashflow is Critical regardless of
+  // confidence; a positive projection the engine itself isn't confident in
+  // is Warning, not Good.
+  const forecastHealth: "good" | "warning" | "critical" | "unknown" =
+    !forecast ? "unknown" :
+    forecast.projectedCashflow < 0 ? "critical" :
+    forecast.confidence === "low" ? "warning" :
+    "good";
 
-  const rankedInsights = buildHistoricalInsights(
-    chartData,
-    categoryInsights.topExpenseCategories,
-    categoryInsights.yearlySnapshots,
-    categoryInsights.seasonality,
-    concentration,
-    locale
-  );
+  const healthKey = intel.healthStatus === "at-risk" ? "atRisk" : intel.healthStatus;
+  const badgeClass: Record<string, string> = {
+    healthy: "text-[#4CC4A4] bg-[#234A40]",
+    watch: "text-[#D4A254] bg-[#332C1A]",
+    atRisk: "text-[#E5484D] bg-[#4A2A2A]",
+    good: "text-[#4CC4A4] bg-[#234A40]",
+    warning: "text-[#D4A254] bg-[#332C1A]",
+    critical: "text-[#E5484D] bg-[#4A2A2A]",
+    unknown: "text-[#7BA8C4] bg-[#1E3446]",
+  };
 
-  // Peek subtitles — the headline number for each collapsed-by-default section,
-  // computed here so it's visible even before the user expands the section.
-  const businessIntelligencePeek = intentBreakdown.hasEnoughDataForDisplay
-    ? t("businessIntelligence.peek", {
-        margin: intentBreakdown.profitMarginPct !== null ? Math.round(intentBreakdown.profitMarginPct) : 0,
-        personalSpend: formatCurrency(intentBreakdown.personalSpend, locale),
-      })
-    : undefined;
-
-  const monthlyPreviousHasData = !!(comparison.previous && (comparison.previous.totalIncome > 0 || comparison.previous.totalExpenses > 0));
-  const monthlyVerdictBase = monthlyPreviousHasData ? getMonthlyVerdictKey(comparison.changes) : null;
-  const monthlyVerdictKey = monthlyVerdictBase
-    ? (coverageIsStale ? `${monthlyVerdictBase}History` : monthlyVerdictBase)
-    : null;
-  const monthlyComparisonPeek = monthlyVerdictKey
-    ? t(`monthlyComparison.${monthlyVerdictKey}`, coverageIsStale ? { currMonth: comparison.currLabel } : undefined)
-    : undefined;
-
-  const historicalInsightsPeek = t("historicalInsights.monthsOfHistory", { count: nonZeroMonths });
+  const summarySurface: Record<string, string> = {
+    healthy: "surface-teal",
+    watch: "surface-warning",
+    "at-risk": "surface-risk",
+  };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <AccountFilterBar accounts={accounts} selectedAccountId={accountId} />
 
-      {/* Header — question first, verdict below, data context last */}
-      <div className="flex items-start justify-between flex-wrap gap-3">
-        <div>
-          {firstName && (
-            <p className="text-xs text-[#6A97B4] mb-1">{t("welcomeBack", { name: firstName })}</p>
-          )}
-          <h1 className="text-2xl font-bold">
-            {hasData ? t("questionTitle") : t("title")}
-          </h1>
-          {hasData ? (
-            <p className={`text-sm font-medium mt-0.5 ${
-              intel.healthStatus === "healthy" ? "text-[#4CC4A4]" :
-              intel.healthStatus === "at-risk"  ? "text-[#E5484D]" :
-                                                  "text-[#D4A254]"
-            }`}>
-              {intel.healthStatus === "healthy" ? t("verdictHealthy") :
-               intel.healthStatus === "at-risk"  ? t("verdictAtRisk") :
-                                                   t("verdictWatch")}
-            </p>
-          ) : hasProjects ? (
-            <p className="text-[#7BA8C4] text-sm mt-0.5">{t("projectsOnlyYet")}</p>
-          ) : (
-            <p className="text-[#7BA8C4] text-sm mt-0.5">{t("noDataYet")}</p>
-          )}
-          {coverage.latest && (
-            <p className="text-xs text-[#4A7A9B] mt-1">
-              {t("showingDataThrough", { date: coverage.latest.toLocaleDateString(INTL_LOCALES[locale], { month: "long", year: "numeric", timeZone: "UTC" }) })}
-            </p>
-          )}
-        </div>
-        {hasData && (
-          <p className="text-xs text-[#6A97B4] flex-shrink-0 mt-1">
-            {t("transactionsMonths", { transactions: totalTx, months: nonZeroMonths })}
+      {/* Header — no verdict sentence here any more; the health badge and
+          summary card below carry that job now, without repeating it. */}
+      <div>
+        {firstName && (
+          <p className="text-xs text-[#6A97B4] mb-1">{t("welcomeBack", { name: firstName })}</p>
+        )}
+        <h1 className="text-2xl font-bold">
+          {hasData ? t("questionTitle") : t("title")}
+        </h1>
+        {coverage.latest && (
+          <p className={`text-xs mt-1 ${coverageIsStale ? "text-[#D4A254]" : "text-[#4A7A9B]"}`}>
+            {t("showingDataThrough", { date: coverage.latest.toLocaleDateString(INTL_LOCALES[locale], { month: "long", year: "numeric", timeZone: "UTC" }) })}
           </p>
         )}
       </div>
 
-      {recentPayments.length > 0 && <PaymentReceivedBanner payments={recentPayments} locale={locale} />}
-
-      {/* Data freshness — coverage stale (data ends months ago) takes priority over
-          import-date stale (haven't imported recently but data itself is current) */}
-      {coverageIsStale && coverageLatestLabel ? (
-        <div className="flex items-center justify-between gap-4 px-4 py-3 surface-warning rounded-xl">
-          <p className="text-sm text-[#D4A254]">
-            {t("coverageStale.message", { month: coverageLatestLabel })}
-          </p>
-          <Link href="/upload" className="text-xs font-semibold text-[#D4A254] hover:text-[#E8F0F8] transition-colors flex-shrink-0 bg-[#1E3446] px-3 py-1.5 rounded-lg">
-            {t("coverageStale.cta")}
-          </Link>
-        </div>
-      ) : dataIsStale ? (
-        <div className="flex items-center justify-between gap-4 px-4 py-3 surface-warning rounded-xl">
-          <p className="text-sm text-[#D4A254]">
-            {t("staleData.message", { days: daysSinceImport ?? 0 })}
-          </p>
-          <Link href="/upload" className="text-xs font-semibold text-[#D4A254] hover:text-[#E8F0F8] transition-colors flex-shrink-0 bg-[#1E3446] px-3 py-1.5 rounded-lg">
-            {t("staleData.cta")}
-          </Link>
-        </div>
-      ) : null}
-
-      {/* Data coverage banner */}
-      {hasData && <DataCoverageBar coverage={coverage} lastImportedAt={lastImport?.importedAt ?? null} />}
-
-      {/* Fix 3: First-upload welcome banner — shown once after a user's first CSV import */}
-      {isFirstUpload && (
-        <FirstUploadBanner
-          months={nonZeroMonths}
-          transactions={totalTx}
-          summary={intel.snapshotSummary}
-          firstName={firstName}
-        />
-      )}
-
-      {/* Empty state — only when the user has used neither side of the
-          platform yet (no CSV import AND no project ever created) */}
-      {!hasAnyActivity ? (
+      {!hasData ? (
         <div className="card text-center py-16">
           <div className="text-5xl mb-4">📊</div>
           <h2 className="text-xl font-semibold mb-2">{t("emptyState.heading")}</h2>
@@ -376,171 +278,84 @@ export default async function DashboardPage({
         </div>
       ) : (
         <>
-          {hasData && (
-            <SummaryCards
-              current={current}
-              previous={previous}
+          {/* ── Layer 1 — the state of the business, in one glance ──────── */}
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="card-sm">
+              <p className="label mb-2">{t("businessHealth.label")}</p>
+              <span className={`inline-block text-sm font-bold px-3 py-1 rounded-full ${badgeClass[healthKey]}`}>
+                {t(`health.${healthKey}`)}
+              </span>
+            </div>
+            <div className="card-sm">
+              <p className="label mb-2">{t("cashPosition.label")}</p>
+              <p className="text-xl font-bold text-[#E8F0F8] tabular-nums">{formatCurrency(cashPosition, locale)}</p>
+              <p className="text-[11px] text-[#6A97B4] mt-1">{t("cashPosition.caption")}</p>
+            </div>
+            <div className="card-sm">
+              <p className="label mb-2">{t("forecastHealth.label")}</p>
+              <span className={`inline-block text-sm font-bold px-3 py-1 rounded-full ${badgeClass[forecastHealth]}`}>
+                {t(`forecastHealth.${forecastHealth}`)}
+              </span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="surface-risk rounded-2xl p-5">
+              <p className="label mb-2">{tf("biggestRisk.label")}</p>
+              <p className="text-sm text-[#E8F0F8] leading-relaxed">
+                {intel.biggestRisk ? <InsightText insight={intel.biggestRisk} accent="#E5484D" /> : tf("biggestRisk.fallback")}
+              </p>
+            </div>
+            <div className="surface-teal rounded-2xl p-5">
+              <p className="label mb-2">{tf("biggestOpportunity.label")}</p>
+              <p className="text-sm text-[#E8F0F8] leading-relaxed">
+                {intel.biggestOpportunity ? <InsightText insight={intel.biggestOpportunity} accent="#4CC4A4" /> : tf("biggestOpportunity.fallback")}
+              </p>
+            </div>
+          </div>
+
+          {intel.snapshotSummary && (
+            <div className={`${summarySurface[intel.healthStatus]} rounded-2xl p-5`}>
+              <p className="label mb-2">{t("summary.label")}</p>
+              <p className="text-sm font-medium text-[#E8F0F8] leading-relaxed">
+                <InsightText insight={intel.snapshotSummary} />
+              </p>
+            </div>
+          )}
+
+          {/* ── Layer 2 — why it changed, then stop ──────────────────────
+              Everything below this point answers "why," never "what else."
+              Runway, clients, business intelligence, transactions, and
+              historical patterns are a click away in the nav, not a
+              scroll away on this page. */}
+
+          <div className="pt-2 border-t border-[#25405A]">
+            <TrendsChart
+              data={chartData}
+              trajectoryInsight={intel.trajectoryInsight}
+              trajectoryDetails={intel.trajectoryDetails}
               riskLevel={riskLevel}
-              riskPositiveMonths={riskPositiveMonths}
-              riskTotalMonths={riskTotalMonths}
-              incomeTrendPct={incTrendPct}
-              summary={intel.snapshotSummary}
-              context={intel.snapshotContext}
-              periodLabel={comparison.currLabel}
-              currentMonth={comparison.currMonth}
-              currentYear={comparison.currYear}
-              isPartialMonth={comparison.isPartialMonth}
             />
-          )}
+          </div>
 
-          {runway === null ? (
-            <ProjectsPromoCard />
-          ) : (
-            <>
-              {/* Full-width, not paired in a grid — this is the number freelancers
-                  actually check daily, it gets the visual weight to match. */}
-              <RunwayCard data={runway} locale={locale} />
-              <ExpectedIncomeCard data={expectedIncome} locale={locale} />
-            </>
-          )}
-
-          {hasProjects && !hasData && (
-            <div className="flex items-start gap-4 px-5 py-4 bg-[#1E3446] border border-[#2D4C68] rounded-2xl">
-              <span className="text-[#6A97B4] text-xl flex-shrink-0 mt-0.5">◎</span>
-              <div className="min-w-0">
-                <p className="text-sm font-semibold text-[#A8C6E0] mb-1">{t("noCsvYet.title")}</p>
-                <p className="text-sm text-[#6A97B4] leading-relaxed">{t("noCsvYet.body")}</p>
-                <Link href="/upload" className="inline-block mt-2 text-xs font-semibold text-[#3AB5A0] hover:text-[#4CC4A4] transition-colors">
-                  {t("noCsvYet.cta")}
-                </Link>
-              </div>
-            </div>
-          )}
-
-          {nudgeClients.length > 0 && (
-            <div className="card">
-              <p className="label mb-3">{t("clientNudge.label")}</p>
-              <div className="space-y-2.5">
-                {nudgeClients.map((c) => (
-                  <div key={c.name} className="flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#D4A254] flex-shrink-0" />
-                      <span className="text-sm text-[#C8DCF0] truncate font-medium">{c.name}</span>
-                      <span className="text-xs text-[#6A97B4] flex-shrink-0">
-                        {t("clientNudge.daysSince", { days: c.currentGapDays })}
-                      </span>
-                    </div>
-                    <Link
-                      href={`/clients/${encodeURIComponent(c.name)}`}
-                      className="text-xs font-semibold text-[#3AB5A0] hover:text-[#4CC4A4] transition-colors flex-shrink-0"
-                    >
-                      {t("clientNudge.cta")}
-                    </Link>
-                  </div>
-                ))}
-                {nudgeExtra > 0 && (
-                  <div className="flex justify-end pt-1">
-                    <Link href="/clients" className="text-xs text-[#4A7A9B] hover:text-[#7BA8C4] transition-colors">
-                      {t("clientNudge.andMore", { count: nudgeExtra })}
-                    </Link>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {hasData && (intentBreakdown.hasEnoughDataForDisplay ? (
-            <CollapsibleSection
-              title={t("businessIntelligence.title")}
-              subtitle={businessIntelligencePeek}
-              defaultOpen={false}
-            >
-              <BusinessIntelligence
-                businessProfit={intentBreakdown.businessProfit}
-                profitMarginPct={intentBreakdown.profitMarginPct}
-                personalSpend={intentBreakdown.personalSpend}
-                trueNetCashflow={intentBreakdown.trueNetCashflow}
-                intentInsights={intel.intentInsights}
-                lifeInsights={intel.lifeInsights}
-              />
-            </CollapsibleSection>
-          ) : intentBreakdown.totalTransactions > 0 && (
-            <div className="flex items-start gap-4 px-5 py-4 bg-[#1E3446] border border-[#2D4C68] rounded-2xl">
-              <span className="text-[#6A97B4] text-xl flex-shrink-0 mt-0.5">◎</span>
-              <div className="min-w-0">
-                <p className="text-sm font-semibold text-[#A8C6E0] mb-1">
-                  {t("businessIntelligence.coverageGate.title")}
-                </p>
-                <p className="text-sm text-[#6A97B4] leading-relaxed">
-                  {t("businessIntelligence.coverageGate.body", { pct: Math.round(intentBreakdown.intentCoveragePct) })}
-                </p>
-                <Link href="/history" className="inline-block mt-2 text-xs font-semibold text-[#3AB5A0] hover:text-[#4CC4A4] transition-colors">
-                  {t("businessIntelligence.coverageGate.cta")}
-                </Link>
-              </div>
-            </div>
-          ))}
-
-          {hasData && (
-            <div className={`grid grid-cols-1 gap-6 md:gap-8 ${!accountId ? "lg:grid-cols-3" : ""}`}>
-              <div className={!accountId ? "lg:col-span-2" : ""}>
-                <TrendsChart
-                  data={chartData}
-                  trajectoryInsight={intel.trajectoryInsight}
-                  trajectoryDetails={intel.trajectoryDetails}
-                  riskLevel={riskLevel}
-                />
-              </div>
-              {!accountId && <ForecastWidget
-                forecast={forecast}
-                reasons={intel.forecastReasons}
-                improvements={intel.forecastImprovements}
-                deficitReason={intel.cashflowDeficitReason}
-              />}
-            </div>
-          )}
-
-          {hasData && (
-            <CollapsibleSection
-              label={t("monthlyComparison.monthlySummary")}
-              title={coverageIsStale
+          <div>
+            <p className="label mb-1">{t("monthlyComparison.monthlySummary")}</p>
+            <h2 className="text-lg font-semibold text-[#E8F0F8] mb-4">
+              {coverageIsStale
                 ? t("monthlyComparison.labelHistorical", { currMonth: comparison.currLabel ?? "", prevMonth: comparison.prevLabel ?? "" })
                 : t("monthlyComparison.label")}
-              subtitle={monthlyComparisonPeek}
-              defaultOpen={false}
-            >
-              <MonthlyComparisonWidget
-                current={comparison.current ?? null}
-                previous={comparison.previous ?? null}
-                changes={comparison.changes ?? null}
-                interpretation={intel.comparisonInterpretation}
-                suggestion={intel.comparisonSuggestion}
-                currLabel={comparison.currLabel}
-                prevLabel={comparison.prevLabel}
-              />
-            </CollapsibleSection>
-          )}
-
-          {hasData && (
-            <RecentTransactions
-              transactions={recent}
-              notable={intel.notableTransactions}
+            </h2>
+            <MonthlyComparisonWidget
+              current={comparison.current ?? null}
+              previous={comparison.previous ?? null}
+              changes={comparison.changes ?? null}
+              interpretation={intel.comparisonInterpretation}
+              suggestion={intel.comparisonSuggestion}
+              currLabel={comparison.currLabel}
+              prevLabel={comparison.prevLabel}
             />
-          )}
-
-          {hasData && rankedInsights.length > 0 && (
-            <CollapsibleSection
-              label={t("historicalInsights.label")}
-              title={t("historicalInsights.title")}
-              subtitle={historicalInsightsPeek}
-              defaultOpen={false}
-            >
-              <HistoricalInsights
-                insights={rankedInsights}
-                totalMonths={nonZeroMonths}
-              />
-            </CollapsibleSection>
-          )}
+          </div>
         </>
       )}
     </div>

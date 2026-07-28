@@ -3,12 +3,14 @@ import { redirect } from "next/navigation";
 import { getTranslations, getLocale } from "next-intl/server";
 import { prisma } from "@/lib/prisma";
 import { getExpectedIncome } from "@/lib/milestone-engine";
+import { getRunway } from "@/lib/runway-engine";
 import { getDefaultVatRatePct } from "@/lib/vat-rates";
 import { formatCurrency } from "@/utils/finance";
 import type { Locale } from "@/i18n/locales";
 import Link from "next/link";
 import NewProjectPanel from "@/components/projects/NewProjectPanel";
 import ProjectList, { type ProjectView } from "@/components/projects/ProjectList";
+import RunwayCard from "@/components/dashboard/RunwayCard";
 
 export const dynamic = "force-dynamic";
 
@@ -20,7 +22,7 @@ export default async function ProjectsPage() {
   const t = await getTranslations("projects");
   const locale = (await getLocale()) as Locale;
 
-  const [dbProjects, dbUser, expectedIncome] = await Promise.all([
+  const [dbProjects, dbUser, expectedIncome, runway] = await Promise.all([
     prisma.project.findMany({
       where: { userId: user.id },
       include: { milestones: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] } },
@@ -31,6 +33,7 @@ export default async function ProjectsPage() {
       select: { stripeAccountEnabled: true, brandLogoUrl: true, brandAccentColor: true, brandFont: true, vatStatus: true, country: true },
     }),
     getExpectedIncome(user.id),
+    getRunway(user.id),
   ]);
 
   const projects: ProjectView[] = dbProjects.map((p) => ({
@@ -73,6 +76,8 @@ export default async function ProjectsPage() {
           <NewProjectPanel locale={locale} vatRegistered={vatRegistered} defaultVatRatePct={defaultVatRatePct} />
         )}
       </div>
+
+      {projects.length > 0 && <RunwayCard data={runway!} locale={locale} />}
 
       {expectedIncome.overdueCount > 0 && (
         <div className="flex items-start gap-3 px-4 py-3 bg-[#FCEAEA] border border-[#F3C6C4] rounded-xl">

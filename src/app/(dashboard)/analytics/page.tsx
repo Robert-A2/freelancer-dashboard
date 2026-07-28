@@ -4,7 +4,7 @@ import { getTranslations, getLocale } from "next-intl/server";
 import { INTL_LOCALES, type Locale } from "@/i18n/locales";
 import {
   getHistoricalData, getCategoryInsights, getClientInsights, getDataCoverage, getIncomeConcentration,
-  getCategorizationHealth,
+  getCategorizationHealth, getIntentBreakdown,
 } from "@/lib/analytics-engine";
 import { buildHistoricalInsights } from "@/lib/intelligence-engine";
 import DataCoverageBar from "@/components/dashboard/DataCoverage";
@@ -16,6 +16,7 @@ import FinancialStory from "@/components/analytics/FinancialStory";
 import CollapsibleSection from "@/components/ui/CollapsibleSection";
 import ExpenseBreakdown from "@/components/analytics/ExpenseBreakdown";
 import type { BreakdownItem } from "@/components/analytics/ExpenseBreakdown";
+import BusinessIntelligence from "@/components/dashboard/BusinessIntelligence";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
@@ -63,10 +64,11 @@ export default async function AnalyticsPage() {
   // Exactly 12 months ending at the last data month — UTC midnight
   const incSince = new Date(Date.UTC(dataYear, dataMonthMax - 12, 1));
 
-  const [chartData, categoryInsights, categoryBreakdown, incomeBySource, ytdThis, ytdPrev, clientInsights, coverage, concentration, categorizationHealth, ytdMonthsWithData] =
+  const [chartData, categoryInsights, intentBreakdown, categoryBreakdown, incomeBySource, ytdThis, ytdPrev, clientInsights, coverage, concentration, categorizationHealth, ytdMonthsWithData] =
     await Promise.all([
       getHistoricalData(user.id, 999),
       getCategoryInsights(user.id),
+      getIntentBreakdown(user.id),
       prisma.transaction.groupBy({
         by: ["category"],
         where: { userId: user.id, transactionType: "expense" },
@@ -272,6 +274,29 @@ export default async function AnalyticsPage() {
               </div>
             </div>
           </CollapsibleSection>
+
+          {/* ── 1b. Business Intelligence — business vs. personal split. Moved
+              here from the Dashboard, which is now strictly the two-layer
+              "state of my business" view (see project_layered_ia memory). ── */}
+          {intentBreakdown.hasEnoughDataForDisplay && (
+            <CollapsibleSection
+              label={t("businessSection.label")}
+              title={t("businessSection.title")}
+              subtitle={t("businessSection.subtitle", {
+                margin: intentBreakdown.profitMarginPct !== null ? Math.round(intentBreakdown.profitMarginPct) : 0,
+                personalSpend: formatCurrency(intentBreakdown.personalSpend, locale),
+              })}
+              defaultOpen={false}
+            >
+              <BusinessIntelligence
+                businessProfit={intentBreakdown.businessProfit}
+                profitMarginPct={intentBreakdown.profitMarginPct}
+                personalSpend={intentBreakdown.personalSpend}
+                trueNetCashflow={intentBreakdown.trueNetCashflow}
+                intentInsights={[]}
+              />
+            </CollapsibleSection>
+          )}
 
           {/* ── 2. Cashflow chart with intelligence ───────────────────────── */}
           <CollapsibleSection label={t("cashflowSection.label")} title={t("cashflowSection.title")}>

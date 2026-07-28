@@ -678,6 +678,23 @@
       "watch": "Watch closely",
       "atRisk": "At Risk"
     },
+    "businessHealth": {
+      "label": "Business health"
+    },
+    "cashPosition": {
+      "label": "Cash position",
+      "caption": "Net across everything you've tracked — not a live bank balance"
+    },
+    "forecastHealth": {
+      "label": "Forecast health",
+      "good": "Good",
+      "warning": "Warning",
+      "critical": "Critical",
+      "unknown": "Not enough data"
+    },
+    "summary": {
+      "label": "Summary"
+    },
     "staleData": {
       "message": "Your data is {days, plural, one {# day} other {# days}} old. Upload last month's statement to keep insights accurate.",
       "cta": "Upload →"
@@ -1129,6 +1146,11 @@
     "cashflowSection": {
       "label": "Monthly cashflow",
       "title": "Income minus Expenses"
+    },
+    "businessSection": {
+      "label": "Business intelligence",
+      "title": "Business vs. personal",
+      "subtitle": "{margin}% profit margin · {personalSpend} personal spend"
     },
     "monthDrawer": {
       "title": "Monthly Breakdown",
