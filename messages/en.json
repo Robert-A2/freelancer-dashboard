@@ -451,8 +451,7 @@
       "header": "Date, Description, Amount",
       "example1": "2025-01-15, Client Payment - Acme Co, 2500.00",
       "example2": "2025-01-16, Adobe Creative Cloud, -54.99",
-      "example3": "2025-01-17, Savings transfer, -400.00",
-      "note": "Most bank exports work automatically. Column names are detected flexibly. Positive = income, negative = expense. Duplicates are skipped automatically."
+      "example3": "2025-01-17, Savings transfer, -400.00"
     },
     "recentImports": {
       "label": "Recent Imports",
@@ -462,8 +461,8 @@
     "dropzone": {
       "title": "Drop your CSV here",
       "subtitle": "or click to browse",
-      "privacy": "Your file is read privately in your browser — we never receive the raw CSV",
-      "hint": "Processed privately in your browser · Any size · Duplicates skipped"
+      "benefit": "See your real cash runway — not just your balance.",
+      "hint": "Any file size · Duplicates skipped automatically"
     },
     "uploading": {
       "title": "Uploading {fileName}",
@@ -517,7 +516,12 @@
       },
       "mixedCurrencies": "Multiple currencies detected ({currencies}). Totals and insights are calculated across all amounts. Results may be inaccurate if currencies were not converted before export. Consider exporting a single-currency statement for best accuracy.",
       "uploadAnother": "Upload another file",
-      "viewDashboard": "View Dashboard"
+      "viewDashboard": "View Dashboard",
+      "runwayPrompt": {
+        "title": "See your real cash runway",
+        "body": "Your transactions are in. Add a project with milestones and Nonodia shows you exactly how many months of runway you have.",
+        "cta": "Create a project"
+      }
     },
     "errors": {
       "tryDifferentFile": "Try a different file",
@@ -569,10 +573,8 @@
       }
     },
     "trust": {
-      "item1": "Your file never leaves this tab",
-      "item2": "Transaction data stored privately, never your raw file",
-      "item3": "Delete everything in one click",
-      "item4": "No bank login required"
+      "item1": "Parsed transactions stored, never the raw file",
+      "item2": "No bank login required"
     },
     "dataPrivacyLink": "How we handle your data →",
     "deleteImport": {

@@ -130,6 +130,18 @@ export default function CsvUploader() {
   const [transfersDismissed, setTransfersDismissed] = useState(false);
   const [confirmedCount,    setConfirmedCount]    = useState<number | null>(null);
 
+  // Whether the user has ever created a Project — runway is computed entirely
+  // from the Project/Milestone pipeline (see runway-engine.ts), so a CSV-only
+  // user never sees it. Fetched once on mount so it's ready by the time the
+  // "done" screen needs to decide whether to prompt for a project.
+  const [hasProjects, setHasProjects] = useState<boolean | null>(null);
+  useEffect(() => {
+    fetch("/api/projects")
+      .then(r => r.json())
+      .then(d => setHasProjects((d.projects ?? []).length > 0))
+      .catch(() => setHasProjects(null));
+  }, []);
+
   // Fetch existing accounts when we enter account-selection step
   useEffect(() => {
     if (stage.status !== "account-selection") return;
@@ -355,12 +367,12 @@ export default function CsvUploader() {
           <div className="text-4xl mb-3">📂</div>
           <p className="text-[#E8F0F8] font-semibold mb-1">{t("dropzone.title")}</p>
           <p className="text-sm text-[#7BA8C4]">{t("dropzone.subtitle")}</p>
-          <p className="text-xs text-[#6A97B4] mt-1">{t("dropzone.privacy")}</p>
-          <p className="text-xs text-[#6A97B4] mt-3">{t("dropzone.hint")}</p>
+          <p className="text-xs text-[#6A97B4] mt-1">{t("dropzone.benefit")}</p>
           <input ref={inputRef} type="file" accept=".csv" className="hidden" onChange={handleFileChange} />
         </div>
+        <p className="text-xs text-[#6A97B4] text-center mt-3">{t("dropzone.hint")}</p>
         <div className="flex flex-wrap justify-center gap-x-3 gap-y-2 mt-3">
-          {[t("trust.item1"), t("trust.item2"), t("trust.item3"), t("trust.item4")].map((label) => (
+          {[t("trust.item1"), t("trust.item2")].map((label) => (
             <span key={label} className="text-xs text-[#6A97B4] bg-[#1A3048] px-2.5 py-1 rounded-full whitespace-nowrap">
               {label}
             </span>
@@ -825,6 +837,19 @@ export default function CsvUploader() {
             <p className="text-xs text-[#D4A254] leading-relaxed">
               {t("done.mixedCurrencies", { currencies: result.currencies.join(", ") })}
             </p>
+          </div>
+        )}
+
+        {hasProjects === false && (
+          <div className="flex items-start gap-3 px-4 py-3.5 bg-[#1E3446] border border-[#2D4C68] rounded-xl">
+            <span className="text-[#3AB5A0] text-lg flex-shrink-0 mt-0.5">🤝</span>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold text-[#A8C6E0] mb-1">{t("done.runwayPrompt.title")}</p>
+              <p className="text-xs text-[#6A97B4] leading-relaxed">{t("done.runwayPrompt.body")}</p>
+              <a href="/projects" className="inline-block mt-2 text-xs font-semibold text-[#3AB5A0] hover:text-[#4CC4A4] transition-colors">
+                {t("done.runwayPrompt.cta")} →
+              </a>
+            </div>
           </div>
         )}
 

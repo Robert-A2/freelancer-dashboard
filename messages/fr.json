@@ -451,8 +451,7 @@
       "header": "Date, Description, Montant",
       "example1": "2025-01-15, Paiement client - Acme Co, 2500.00",
       "example2": "2025-01-16, Adobe Creative Cloud, -54.99",
-      "example3": "2025-01-17, Virement épargne, -400.00",
-      "note": "La plupart des exports bancaires fonctionnent automatiquement. Les noms de colonnes sont détectés de manière flexible. Positif = revenu, négatif = dépense. Les doublons sont ignorés automatiquement."
+      "example3": "2025-01-17, Virement épargne, -400.00"
     },
     "recentImports": {
       "label": "Imports récents",
@@ -462,8 +461,8 @@
     "dropzone": {
       "title": "Déposez votre CSV ici",
       "subtitle": "ou cliquez pour parcourir",
-      "privacy": "Votre fichier est lu en privé dans votre navigateur — nous ne recevons jamais le CSV brut",
-      "hint": "Traité en privé dans votre navigateur · Toute taille · Doublons ignorés"
+      "benefit": "Découvrez votre véritable autonomie de trésorerie — pas seulement votre solde.",
+      "hint": "Toute taille de fichier · Doublons ignorés automatiquement"
     },
     "uploading": {
       "title": "Import de {fileName}",
@@ -517,7 +516,12 @@
       },
       "mixedCurrencies": "Plusieurs devises détectées ({currencies}). Les totaux et analyses sont calculés sur l'ensemble des montants. Les résultats peuvent être inexacts si les devises n'ont pas été converties avant l'export. Pour une meilleure précision, exportez un relevé dans une seule devise.",
       "uploadAnother": "Importer un autre fichier",
-      "viewDashboard": "Voir le tableau de bord"
+      "viewDashboard": "Voir le tableau de bord",
+      "runwayPrompt": {
+        "title": "Découvrez votre vraie autonomie de trésorerie",
+        "body": "Vos transactions sont importées. Ajoutez un projet avec des étapes de paiement et Nonodia vous montre exactement combien de mois d'autonomie il vous reste.",
+        "cta": "Créer un projet"
+      }
     },
     "errors": {
       "tryDifferentFile": "Essayer un autre fichier",
@@ -569,10 +573,8 @@
       }
     },
     "trust": {
-      "item1": "Votre fichier ne quitte pas cet onglet",
-      "item2": "Données de transaction stockées en sécurité, jamais le fichier brut",
-      "item3": "Supprimez tout en un clic",
-      "item4": "Aucune connexion bancaire requise"
+      "item1": "Transactions extraites stockées, jamais le fichier brut",
+      "item2": "Aucune connexion bancaire requise"
     },
     "dataPrivacyLink": "Comment nous gérons vos données →",
     "deleteImport": {

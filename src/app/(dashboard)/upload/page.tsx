@@ -75,9 +75,6 @@ export default async function UploadPage() {
           <div>{t("expectedFormat.example2")}</div>
           <div>{t("expectedFormat.example3")}</div>
         </div>
-        <p className="text-xs text-[#6A97B4] mt-3">
-          {t("expectedFormat.note")}
-        </p>
       </div>
 
       {imports.length > 0 && (
