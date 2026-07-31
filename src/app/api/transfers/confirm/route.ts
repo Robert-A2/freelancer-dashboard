@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { recalculateMonthlyAnalytics } from "@/lib/analytics-engine";
 import { recomputeVerifiedRevenue } from "@/lib/payer-engine";
+import { generateForecast } from "@/lib/forecast-engine";
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
@@ -28,8 +29,23 @@ export async function POST(request: NextRequest) {
     data:  { transactionType: "transfer" },
   });
 
-  void recalculateMonthlyAnalytics(user.id).catch(() => {});
-  void recomputeVerifiedRevenue(user.id).catch(() => {});
+  // Awaited (not fire-and-forget) — the client navigates straight to the
+  // Dashboard after this responds, and the Dashboard reads the cached forecast
+  // (getLatestForecast) rather than recomputing it. If this were fire-and-forget,
+  // confirming a transfer could show no visible effect on the Dashboard at all
+  // until something unrelated happened to regenerate the forecast later.
+  try {
+    await recalculateMonthlyAnalytics(user.id);
+    await recomputeVerifiedRevenue(user.id);
+  } catch (err) {
+    console.error("[Transfers/confirm] analytics recalculation failed:", err);
+  }
+
+  try {
+    await generateForecast(user.id);
+  } catch (err) {
+    console.error("[Transfers/confirm] forecast generation failed:", err);
+  }
 
   return NextResponse.json({ success: true, updated: transactionIds.length });
 }

@@ -14,7 +14,7 @@ import {
 import { getLatestForecast } from "@/lib/forecast-engine";
 import { getFinancialLifeIntelligence } from "@/lib/financial-life-engine";
 import { getClientRiskProfiles } from "@/lib/client-risk-engine";
-import { generateDashboardIntelligence } from "@/lib/intelligence-engine";
+import { generateDashboardIntelligence, computeCashflowRisk } from "@/lib/intelligence-engine";
 import { prisma } from "@/lib/prisma";
 import { formatCurrency } from "@/utils/finance";
 import TrendsChart from "@/components/dashboard/TrendsChart";
@@ -54,7 +54,7 @@ export default async function DashboardPage({
   const [[
     summary, forecast, chartData, comparison, totalTx, coverage,
     categoryInsights, concentration, dbUser, intentBreakdown,
-    financialLife, clientData,
+    financialLife, clientData, taxPaymentTxs,
   ], accounts] = await Promise.all([
     Promise.all([
       getDashboardSummary(user.id, accountId),
@@ -69,6 +69,12 @@ export default async function DashboardPage({
       getIntentBreakdown(user.id, undefined, undefined, accountId),
       getFinancialLifeIntelligence(user.id, accountId),
       getClientRiskProfiles(user.id, accountId),
+      // Feeds computeCashflowRisk below — same tax-payment adjustment the
+      // Forecast page applies, so the two pages can't disagree on risk level.
+      prisma.transaction.findMany({
+        where: { userId: user.id, intent: "tax_payment", transactionType: "expense", ...(accountId ? { accountId } : {}) },
+        select: { transactionDate: true, amount: true },
+      }),
     ]),
     // An account whose last transaction was removed (e.g. its only CSV import
     // got deleted) has no data left to filter by — showing it as a live tab
@@ -173,25 +179,14 @@ export default async function DashboardPage({
 
   const hasData = totalTx > 0;
 
-  // Risk computed from historical data — mirrors forecast/page.tsx's cashflow risk
-  // calculation exactly (including the income-trend check) so the Dashboard and
-  // Forecast pages never disagree on the same data. Feeds TrendsChart's own
-  // trajectory-box coloring only; not shown as a standalone tile any more.
-  const activeMonths = chartData.filter(d => d.income > 0 || d.expenses > 0);
-  const riskPositiveMonths = activeMonths.filter(d => d.cashflow >= 0).length;
-  const riskTotalMonths    = activeMonths.length;
-  const posRatio           = riskTotalMonths > 0 ? riskPositiveMonths / riskTotalMonths : 0;
-
-  const last6    = activeMonths.slice(-6);
-  const prev6    = activeMonths.slice(-12, -6);
-  const avgLast6 = last6.length ? last6.reduce((s, d) => s + d.income, 0) / last6.length : 0;
-  const avgPrev6 = prev6.length ? prev6.reduce((s, d) => s + d.income, 0) / prev6.length : 0;
-  const incTrend = avgPrev6 > 0 ? (avgLast6 - avgPrev6) / avgPrev6 : 0;
-
-  const riskLevel: "low" | "medium" | "high" | "critical" =
-    posRatio >= 0.85 && incTrend > -0.05 ? "low" :
-    posRatio >= 0.65 ? "medium" :
-    posRatio >= 0.40 ? "high" : "critical";
+  // Risk level — shared with forecast/page.tsx via computeCashflowRisk (includes
+  // the tax-payment adjustment) so the Dashboard and Forecast pages, and every
+  // TrendsChart instance, can never disagree on the same data. Feeds TrendsChart's
+  // own trajectory-box coloring only; not shown as a standalone tile any more.
+  const { riskLevel } = computeCashflowRisk(
+    chartData,
+    taxPaymentTxs.map(tx => ({ transactionDate: tx.transactionDate, amount: Number(tx.amount) }))
+  );
 
   // Personalisation
   const firstName = dbUser?.fullName?.split(" ")[0] ?? user.email?.split("@")[0] ?? "";
@@ -213,14 +208,24 @@ export default async function DashboardPage({
   // captioned as such rather than implied to be a live balance.
   const cashPosition = chartData.reduce((sum, d) => sum + d.cashflow, 0);
 
-  // Layer 1, tile 3: a 3-state read of the existing forecast, not a new
-  // engine — negative projected cashflow is Critical regardless of
-  // confidence; a positive projection the engine itself isn't confident in
-  // is Warning, not Good.
+  // Layer 1, tile 3: a read of the existing forecast, not a new engine —
+  // negative projected cashflow is Critical regardless of confidence; a
+  // positive projection the engine itself isn't confident in is Warning,
+  // not Good. Margin is checked too, at the same 20% bar the forecast page's
+  // own "marginLow"/"marginHealthy" copy already uses elsewhere (see
+  // computeConfidence's caller in intelligence-engine.ts) — a razor-thin
+  // positive margin (e.g. +€1/month) is real, but calling it "Good" the same
+  // as a comfortable margin overclaims. Confirmed for real: this badge would
+  // otherwise say "Good" for any positive-cashflow, non-low-confidence
+  // forecast regardless of how thin the margin actually was.
+  const forecastCashflowMarginPct = forecast && forecast.projectedIncome > 0
+    ? (forecast.projectedCashflow / forecast.projectedIncome) * 100
+    : null;
   const forecastHealth: "good" | "warning" | "critical" | "unknown" =
     !forecast ? "unknown" :
     forecast.projectedCashflow < 0 ? "critical" :
     forecast.confidence === "low" ? "warning" :
+    forecastCashflowMarginPct !== null && forecastCashflowMarginPct < 20 ? "warning" :
     "good";
 
   const healthKey = intel.healthStatus === "at-risk" ? "atRisk" : intel.healthStatus;

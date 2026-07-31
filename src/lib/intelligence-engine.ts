@@ -98,6 +98,73 @@ function classifyTrend(incomeChangePct: number, expenseChangePct: number): "impr
   return "stable";
 }
 
+// ── Cashflow risk ──────────────────────────────────────────────────────────
+// Single source of truth for "cashflow risk level," used by both the Dashboard
+// (colors TrendsChart's trajectory box) and the Forecast page (the Cashflow
+// Risk card + TrendsChart there too). Previously each page hand-rolled its own
+// copy of this formula; the Dashboard's copy silently dropped the tax-payment
+// adjustment the Forecast page had, and Forecast's own TrendsChart call never
+// passed a riskLevel prop at all — so the same chart component could show two
+// different colors for the same account depending which page you were on, or
+// even contradict another card on the very same page. One function, called
+// from both places, makes that class of bug impossible to reintroduce.
+export interface CashflowRiskResult {
+  riskLevel: "low" | "medium" | "high" | "critical";
+  positiveCount: number;
+  negativeCount: number;
+  taxAdjustedCount: number; // months that flipped negative → positive once tax payments are added back
+  totalMonths: number;
+  incTrendPct: number;
+}
+
+export function computeCashflowRisk(
+  history: MonthPoint[],
+  taxPaymentTxs: { transactionDate: Date; amount: number }[] = []
+): CashflowRiskResult {
+  const activeMonths = history.filter((h) => h.income > 0 || h.expenses > 0);
+
+  // Taxes paid correctly are an obligation, not a sign of financial distress —
+  // a month that only went negative because of a tax payment shouldn't count
+  // as a "bad" month for risk-scoring purposes.
+  const taxByMonthKey = new Map<string, number>();
+  for (const tx of taxPaymentTxs) {
+    const key = `${tx.transactionDate.getUTCFullYear()}-${tx.transactionDate.getUTCMonth() + 1}`;
+    taxByMonthKey.set(key, (taxByMonthKey.get(key) ?? 0) + Number(tx.amount));
+  }
+
+  const positiveCount = activeMonths.filter((h) => {
+    const taxAdj = taxByMonthKey.get(`${h.year}-${h.monthNum}`) ?? 0;
+    return h.cashflow + taxAdj >= 0;
+  }).length;
+  const taxAdjustedCount = activeMonths.filter((h) => {
+    const taxAdj = taxByMonthKey.get(`${h.year}-${h.monthNum}`) ?? 0;
+    return h.cashflow < 0 && taxAdj > 0 && h.cashflow + taxAdj >= 0;
+  }).length;
+  const totalMonths = activeMonths.length;
+  const negativeCount = totalMonths - positiveCount;
+  const posRatio = totalMonths > 0 ? positiveCount / totalMonths : 0;
+
+  const last6 = activeMonths.slice(-6);
+  const prev6 = activeMonths.slice(-12, -6);
+  const avgLast6 = avg(last6.map((h) => h.income));
+  const avgPrev6 = avg(prev6.map((h) => h.income));
+  const incTrend = avgPrev6 > 0 ? (avgLast6 - avgPrev6) / avgPrev6 : 0;
+
+  const riskLevel: CashflowRiskResult["riskLevel"] =
+    posRatio >= 0.85 && incTrend > -0.05 ? "low" :
+    posRatio >= 0.65 ? "medium" :
+    posRatio >= 0.40 ? "high" : "critical";
+
+  return {
+    riskLevel,
+    positiveCount,
+    negativeCount,
+    taxAdjustedCount,
+    totalMonths,
+    incTrendPct: Math.round(incTrend * 100),
+  };
+}
+
 interface StreakResult {
   length: number;
   startYear: number;

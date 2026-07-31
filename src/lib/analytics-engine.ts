@@ -3,6 +3,7 @@ import { Decimal } from "@prisma/client/runtime/library";
 import { getLocale } from "next-intl/server";
 import { INTL_LOCALES, type Locale } from "@/i18n/locales";
 import { extractClientName as _extractClientName } from "./client-identity";
+import { getPayerProfiles, type RevenueConfidence } from "./payer-engine";
 export { extractClientName } from "./client-identity";
 
 export async function recalculateMonthlyAnalytics(userId: string): Promise<void> {
@@ -310,6 +311,45 @@ export async function getHistoricalData(userId: string, months: number, accountI
   return result;
 }
 
+// Real verified/likely/review revenue for one account in one month — reuses
+// the SAME payer-confidence data recomputeVerifiedRevenue() writes into
+// MonthlyAnalytics for the all-accounts case. MonthlyAnalytics itself has no
+// per-account rows (it's aggregated per user), so the per-account comparison
+// path used to fake this by relabeling raw income as "verifiedRevenue" —
+// meaning the "Income change" % meant a different, less rigorous calculation
+// whenever a user filtered to one account, with no disclosure of the switch.
+// A payer's trustworthiness is about the payer, not which account they paid
+// into, so scoping the existing confidence map by account (rather than
+// re-deriving confidence from scratch per account) is the correct match for
+// how confidence is computed everywhere else in the app.
+async function computeAccountRevenueTiers(
+  userId: string,
+  accountId: string,
+  year: number,
+  month: number,
+  confidenceMap: Map<string, RevenueConfidence>,
+): Promise<{ verified: number; likely: number; review: number }> {
+  const start = new Date(Date.UTC(year, month - 1, 1));
+  const end   = new Date(Date.UTC(year, month, 1));
+
+  const txs = await prisma.transaction.findMany({
+    where: { userId, accountId, transactionType: "income", transactionDate: { gte: start, lt: end } },
+    select: { amount: true, payerId: true },
+  });
+
+  let verified = 0, likely = 0, review = 0;
+  for (const tx of txs) {
+    if (!tx.payerId) continue;
+    const confidence = confidenceMap.get(tx.payerId);
+    if (!confidence || confidence === "none") continue;
+    const amt = Number(tx.amount);
+    if (confidence === "high") verified += amt;
+    else if (confidence === "medium") likely += amt;
+    else if (confidence === "low") review += amt;
+  }
+  return { verified, likely, review };
+}
+
 // ── getMonthlyComparison ───────────────────────────────────────────────────────
 // Uses most-recent-data month as "current", not wall-clock month.
 // Also returns the actual month labels so the UI displays the right dates.
@@ -334,12 +374,26 @@ export async function getMonthlyComparison(userId: string, accountId?: string | 
     const prevMonth = currMonth === 1 ? 12 : currMonth - 1;
     const prevYear  = currMonth === 1 ? currYear - 1 : currYear;
 
-    const makeSummary = (e: { income: number; expenses: number; savings: number } | undefined) =>
-      e ? { totalIncome: e.income, totalExpenses: e.expenses, totalSavings: e.savings, netCashflow: e.income - e.expenses, verifiedRevenue: e.income, likelyRevenue: 0, reviewRevenue: 0 }
+    // Same payer-confidence data the all-accounts path reads from
+    // MonthlyAnalytics — computed once here since it doesn't vary by account.
+    const profiles = await getPayerProfiles(userId);
+    const confidenceMap = new Map(profiles.map((p) => [p.payerId, p.revenueConfidence]));
+
+    const [currTiers, prevTiers] = await Promise.all([
+      computeAccountRevenueTiers(userId, accountId, currYear, currMonth, confidenceMap),
+      computeAccountRevenueTiers(userId, accountId, prevYear, prevMonth, confidenceMap),
+    ]);
+
+    const makeSummary = (
+      e: { income: number; expenses: number; savings: number } | undefined,
+      tiers: { verified: number; likely: number; review: number },
+    ) =>
+      e
+        ? { totalIncome: e.income, totalExpenses: e.expenses, totalSavings: e.savings, netCashflow: e.income - e.expenses, verifiedRevenue: tiers.verified, likelyRevenue: tiers.likely, reviewRevenue: tiers.review }
         : zero;
 
-    const curr = makeSummary(byMonth[`${currYear}-${currMonth}`]);
-    const prev = makeSummary(byMonth[`${prevYear}-${prevMonth}`]);
+    const curr = makeSummary(byMonth[`${currYear}-${currMonth}`], currTiers);
+    const prev = makeSummary(byMonth[`${prevYear}-${prevMonth}`], prevTiers);
 
     function changePctA(c: number, p: number): number {
       if (p === 0) return c > 0 ? 100 : 0;
@@ -354,12 +408,14 @@ export async function getMonthlyComparison(userId: string, accountId?: string | 
     return {
       current: curr, previous: prev, currLabel, prevLabel, currMonth, currYear, isPartialMonth,
       changes: {
-        income:          changePctA(curr.totalIncome,   prev.totalIncome),
-        expenses:        changePctA(curr.totalExpenses, prev.totalExpenses),
-        savings:         changePctA(curr.totalSavings,  prev.totalSavings),
-        cashflow:        changePctA(curr.netCashflow,   prev.netCashflow),
-        verifiedRevenue: changePctA(curr.totalIncome,   prev.totalIncome),
-        likelyRevenue:   0,
+        // Matches the all-accounts path: income change is based on
+        // payer-verified+likely revenue, not raw bank inflows.
+        income:          changePctA(curr.verifiedRevenue, prev.verifiedRevenue),
+        expenses:        changePctA(curr.totalExpenses,   prev.totalExpenses),
+        savings:         changePctA(curr.totalSavings,    prev.totalSavings),
+        cashflow:        changePctA(curr.netCashflow,     prev.netCashflow),
+        verifiedRevenue: changePctA(curr.verifiedRevenue, prev.verifiedRevenue),
+        likelyRevenue:   changePctA(curr.likelyRevenue,   prev.likelyRevenue),
       },
     };
   }

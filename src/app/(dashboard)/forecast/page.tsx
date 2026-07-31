@@ -8,7 +8,7 @@ import {
   getDataCoverage, getIntentBreakdown, detectDataGaps,
 } from "@/lib/analytics-engine";
 import { generateForecast } from "@/lib/forecast-engine";
-import { generateDashboardIntelligence } from "@/lib/intelligence-engine";
+import { generateDashboardIntelligence, computeCashflowRisk } from "@/lib/intelligence-engine";
 import { getExpectedIncome } from "@/lib/milestone-engine";
 import { prisma } from "@/lib/prisma";
 import TrendsChart from "@/components/dashboard/TrendsChart";
@@ -105,47 +105,23 @@ export default async function ForecastPage() {
     ? coverage.latest.toLocaleDateString(INTL_LOCALES[locale], { month: "long", year: "numeric", timeZone: "UTC" })
     : null;
 
-  // ── Tax-payment months map ──────────────────────────────────────────────────
-  // Used to adjust cashflow risk so that months where taxes were paid don't
-  // count as "negative cashflow months" — paying taxes correctly is not a
-  // sign of financial distress.
-  const taxByMonthKey = new Map<string, number>();
-  for (const tx of taxPaymentTxs) {
-    const y = tx.transactionDate.getUTCFullYear();
-    const m = tx.transactionDate.getUTCMonth() + 1;
-    const key = `${y}-${m}`;
-    taxByMonthKey.set(key, (taxByMonthKey.get(key) ?? 0) + Number(tx.amount));
-  }
-
   // ── Computed metrics ────────────────────────────────────────────────────────
-  const activeMonths   = chartData.filter(d => d.income > 0 || d.expenses > 0);
-  // A month counts as positive if cashflow is non-negative after adding back
-  // any tax payments that month (taxes are obligations, not operating losses).
-  const positiveCount  = activeMonths.filter(d => {
-    const taxAdj = taxByMonthKey.get(`${d.year}-${d.monthNum}`) ?? 0;
-    return d.cashflow + taxAdj >= 0;
-  }).length;
-  // How many months flipped from negative → positive due to tax adjustment
-  const taxAdjustedCount = activeMonths.filter(d => {
-    const taxAdj = taxByMonthKey.get(`${d.year}-${d.monthNum}`) ?? 0;
-    return d.cashflow < 0 && taxAdj > 0 && d.cashflow + taxAdj >= 0;
-  }).length;
-  const negativeCount  = activeMonths.length - positiveCount;
-  const posRatio       = activeMonths.length > 0 ? positiveCount / activeMonths.length : 0;
+  // Shared with the Dashboard page (computeCashflowRisk in intelligence-engine.ts)
+  // so the two pages — and TrendsChart wherever it's rendered — can never disagree.
+  const activeMonths = chartData.filter(d => d.income > 0 || d.expenses > 0);
+  const {
+    riskLevel: cashflowRisk,
+    positiveCount,
+    negativeCount,
+    taxAdjustedCount,
+    incTrendPct: incPct,
+  } = computeCashflowRisk(chartData, taxPaymentTxs.map(tx => ({ transactionDate: tx.transactionDate, amount: Number(tx.amount) })));
 
-  // Income trend: last 6 months vs previous 6 months
+  // Income trend averages — still needed here for the "incomplete data" warning fallback below.
   const last6     = activeMonths.slice(-6);
   const prev6     = activeMonths.slice(-12, -6);
   const avgLast6  = last6.length  ? last6.reduce((s, d)  => s + d.income, 0) / last6.length  : 0;
   const avgPrev6  = prev6.length  ? prev6.reduce((s, d)  => s + d.income, 0) / prev6.length  : 0;
-  const incTrend  = avgPrev6 > 0  ? (avgLast6 - avgPrev6) / avgPrev6 : 0;
-  const incPct    = Math.round(incTrend * 100);
-
-  // Cashflow risk level
-  const cashflowRisk: "low" | "medium" | "high" | "critical" =
-    posRatio >= 0.85 && incTrend > -0.05 ? "low" :
-    posRatio >= 0.65 ? "medium" :
-    posRatio >= 0.40 ? "high" : "critical";
 
   // Key Drivers
   const keyDrivers: { label: string; detail: React.ReactNode; positive: boolean }[] = [];
@@ -618,7 +594,7 @@ export default async function ForecastPage() {
 
           <ExpectedFromProjectsCard data={expectedIncome} locale={locale} />
 
-          <TrendsChart data={chartData} />
+          <TrendsChart data={chartData} riskLevel={cashflowRisk} />
         </>
       )}
     </div>
