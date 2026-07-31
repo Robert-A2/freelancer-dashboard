@@ -19,6 +19,31 @@ function friendlyError(raw: string, t: ReturnType<typeof useTranslations<"auth.s
   return t("generic");
 }
 
+// The signup flow can't roll back supabase.auth.signUp() if this fails (that
+// needs the admin/service-role client, not available client-side), so the
+// only real options are retry-then-surface or stay silent — staying silent
+// is exactly the "empty dashboard, no idea why" failure mode found in the
+// competitor complaint audit (Wave/QuickBooks users losing tax filings and
+// invoices to the same class of un-surfaced failure). Three attempts with a
+// short backoff absorbs a transient blip; a real failure is shown to the
+// user instead of leaving an orphaned auth user with no app-side record.
+async function createUserRecord(id: string, fullName: string, email: string): Promise<boolean> {
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      const res = await fetch("/api/users/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, fullName, email }),
+      });
+      if (res.ok) return true;
+    } catch {
+      // network error — fall through to retry/backoff below
+    }
+    if (attempt < 3) await new Promise((r) => setTimeout(r, attempt * 500));
+  }
+  return false;
+}
+
 function Spinner() {
   return (
     <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
@@ -66,11 +91,12 @@ export default function SignupPage() {
     }
 
     if (data.user) {
-      await fetch("/api/users/create", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: data.user.id, fullName, email }),
-      });
+      const created = await createUserRecord(data.user.id, fullName, email);
+      if (!created) {
+        setError(tErrors("accountSetupFailed"));
+        setLoading(false);
+        return;
+      }
     }
 
     if (data.session) {

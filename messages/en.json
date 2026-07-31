@@ -222,7 +222,8 @@
         "passwordTooShort": "Password must be at least 8 characters.",
         "invalidEmail": "Please enter a valid email address.",
         "rateLimit": "Too many attempts. Please wait a moment and try again.",
-        "generic": "Something went wrong. Please try again."
+        "generic": "Something went wrong. Please try again.",
+        "accountSetupFailed": "Your account was created but setup didn't finish. Please try signing in — if that doesn't work, contact robertkofi.arthur@gmail.com."
       },
       "confirm": {
         "heading": "Check your inbox",

@@ -867,7 +867,7 @@ export default function CsvUploader() {
       <div className="flex flex-col gap-2">
         <button onClick={reset} className="btn-primary w-full">{t("errors.tryDifferentFile")}</button>
         <a
-          href="mailto:support@freelanceros.app?subject=CSV Upload Issue"
+          href="mailto:robertkofi.arthur@gmail.com?subject=CSV Upload Issue"
           className="text-xs text-center text-[#6A97B4] hover:text-[#E8F0F8] transition-colors py-1"
         >
           {t("errors.stillStuck")}
