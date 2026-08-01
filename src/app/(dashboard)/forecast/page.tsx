@@ -203,11 +203,9 @@ export default async function ForecastPage() {
   return (
     <div className="space-y-8 md:space-y-10">
 
-      {/* Header — question first, direct answer below */}
+      {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold">
-          {hasData ? t("titleWithData") : t("title")}
-        </h1>
+        <h1 className="text-2xl font-bold">{t("title")}</h1>
         {hasData ? (
           <p className={`text-sm font-medium mt-0.5 ${
             cashflowRisk === "low"      ? "text-[#4CC4A4]" :

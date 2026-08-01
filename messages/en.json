@@ -19,6 +19,7 @@
       "projectsMobile": "Projects",
       "reports": "Reports",
       "reportsMobile": "Reports",
+      "more": "More",
       "settings": "Settings",
       "profile": "Profile",
       "account": "Account"
@@ -668,7 +669,6 @@
     },
     "welcomeBack": "Welcome back, {name}.",
     "title": "Dashboard",
-    "questionTitle": "How is my business doing?",
     "verdictHealthy": "You're in good shape.",
     "verdictWatch": "Some things need your attention.",
     "verdictAtRisk": "Your business is under pressure.",
@@ -851,8 +851,8 @@
       "weightedNote": "Recent 3 months weighted 3× more than older history"
     },
     "monthlyComparison": {
-      "label": "Should I feel better than last month?",
-      "labelHistorical": "Was {currMonth} better than {prevMonth}?",
+      "label": "This month vs. last month",
+      "labelHistorical": "{currMonth} vs. {prevMonth}",
       "needMoreData": "Need at least 2 months of data to compare.",
       "monthlySummary": "Monthly Summary",
       "uploadAnotherMonth": "Upload another month",
@@ -916,7 +916,6 @@
   },
   "forecast": {
     "title": "Forecast",
-    "titleWithData": "Should I worry about next month?",
     "subtitle": {
       "withData": "Financial outlook based on your actual data",
       "noData": "Upload a CSV to generate your forecast",
@@ -1117,7 +1116,6 @@
   },
   "analytics": {
     "title": "Analytics",
-    "titleQuestion": "What is working and what is hurting?",
     "subtitle": "Deep dive into your financial patterns",
     "subtitleHabits": "Here's what your data reveals about your habits.",
     "habitVerdict": {
@@ -1927,13 +1925,6 @@
       "title": "Income, expenses and cashflow",
       "metric": "Metric",
       "vsPriorYear": "vs prior yr"
-    },
-    "rows": {
-      "income": "Income",
-      "expenses": "Expenses",
-      "net": "Net",
-      "saved": "Saved",
-      "margin": "Margin"
     },
     "taxes": {
       "label": "Taxes",

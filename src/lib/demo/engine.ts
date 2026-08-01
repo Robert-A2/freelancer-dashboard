@@ -18,6 +18,10 @@ import type {
   MonthlySeasonality,
   IncomeConcentration,
   CategoryInsights,
+  ClientProfile,
+  ClientInsightsData,
+  CategorizationHealth,
+  DataGap,
 } from "@/lib/analytics-engine";
 import type { ForecastResult } from "@/lib/forecast-engine";
 import type { FinancialLifeIntelligence } from "@/lib/financial-life-engine";
@@ -137,6 +141,27 @@ export function computeHistoricalData(locale: Locale): MonthPoint[] {
   }
 
   return result;
+}
+
+// ── Data gaps (mirrors detectDataGaps) ────────────────────────────────────────
+// computeHistoricalData already walks first→last month inclusive, filling zero
+// for anything missing — so an interior gap is just a zero-income/zero-expense
+// month strictly between the first and last chartData entries (boundaries are
+// anchor points, not gaps, exactly as detectDataGaps defines it).
+
+export function computeDataGaps(locale: Locale): DataGap[] {
+  const chartData = computeHistoricalData(locale);
+  if (chartData.length < 3) return [];
+
+  const interior = chartData.slice(1, -1);
+  return interior
+    .filter(d => d.income === 0 && d.expenses === 0)
+    .map(d => ({
+      month: d.monthNum,
+      year:  d.year,
+      label: new Date(Date.UTC(d.year, d.monthNum - 1, 1))
+        .toLocaleDateString(INTL_LOCALES[locale], { month: "long", year: "numeric", timeZone: "UTC" }),
+    }));
 }
 
 // ── Dashboard summary (mirrors getDashboardSummary) ───────────────────────────
@@ -737,6 +762,120 @@ function computeTrendClient(monthly: MonthlyRevenue[]): { trend: "increasing" | 
   return { trend: "stable", trendPct: pctAbs };
 }
 
+// Ported from getClientInsights() in analytics-engine.ts — same algorithm,
+// operating on DEMO_TRANSACTIONS instead of a Prisma query. Kept as a
+// faithful port (not a simplified stand-in) so the demo Analytics page's
+// Client Insights section can use the exact same ClientInsights component
+// the real page does, with real diversification/new/inactive-client logic.
+export function computeClientInsights(): ClientInsightsData | null {
+  const allTxs = DEMO_TRANSACTIONS.filter((t) => t.intent === "freelance_income" || t.intent === "salary");
+  if (allTxs.length < 3) return null;
+
+  const sortedByDate = [...allTxs].sort((a, b) => a.transactionDate.getTime() - b.transactionDate.getTime());
+  const refDate = sortedByDate[sortedByDate.length - 1].transactionDate ?? DEMO_REF_DATE;
+  const thisYear = refDate.getUTCFullYear();
+  const prevYear = thisYear - 1;
+  const ninetyDaysAgo = new Date(refDate.getTime() - 90 * 86_400_000);
+
+  const map: Record<string, { name: string; isProcessor: boolean; txs: { amount: number; date: Date }[] }> = {};
+  for (const tx of allTxs) {
+    const { name, isProcessor } = extractClientName(tx.description, tx.category);
+    const key = name.toUpperCase();
+    if (!map[key]) map[key] = { name, isProcessor, txs: [] };
+    map[key].txs.push({ amount: tx.amount, date: tx.transactionDate });
+  }
+
+  const totalRevenue = allTxs.reduce((s, t) => s + t.amount, 0);
+
+  const profiles: ClientProfile[] = Object.values(map).map((c) => {
+    const { txs } = c;
+    const total = txs.reduce((s, t) => s + t.amount, 0);
+    const sorted = [...txs].sort((a, b) => a.date.getTime() - b.date.getTime());
+    const first = sorted[0].date;
+    const last = sorted[sorted.length - 1].date;
+    const daysSince = Math.floor((refDate.getTime() - last.getTime()) / 86_400_000);
+
+    const currYr = txs.filter((t) => t.date.getUTCFullYear() === thisYear).reduce((s, t) => s + t.amount, 0);
+    const prevYr = txs.filter((t) => t.date.getUTCFullYear() === prevYear).reduce((s, t) => s + t.amount, 0);
+    const yoyGrowth = prevYr > 0 ? Math.round(((currYr - prevYr) / prevYr) * 100) : null;
+
+    const isNew = first.getUTCFullYear() === thisYear;
+    const uniqueMonths = new Set(txs.map((t) => `${t.date.getUTCFullYear()}-${t.date.getUTCMonth()}`)).size;
+    const isInactive = txs.length >= 3 && uniqueMonths >= 2 && last < ninetyDaysAgo && !isNew;
+    const monthsActive = (last.getUTCFullYear() - first.getUTCFullYear()) * 12 + (last.getUTCMonth() - first.getUTCMonth()) + 1;
+
+    return {
+      name: c.name,
+      isPaymentProcessor: c.isProcessor,
+      totalRevenue: total,
+      revenueShare: totalRevenue > 0 ? Math.round((total / totalRevenue) * 100) : 0,
+      paymentCount: txs.length,
+      firstPayment: first.toISOString(),
+      lastPayment: last.toISOString(),
+      daysSinceLastPayment: daysSince,
+      currentYearRevenue: currYr,
+      previousYearRevenue: prevYr,
+      yoyGrowth,
+      isNew,
+      isInactive,
+      avgPaymentSize: Math.round(total / txs.length),
+      monthsActive,
+    };
+  });
+
+  profiles.sort((a, b) => b.totalRevenue - a.totalRevenue);
+
+  const topShare = profiles[0]?.revenueShare ?? 0;
+  const activeCl = profiles.filter((p) => p.daysSinceLastPayment <= 90).length;
+
+  const monthPayerMap: Record<string, Set<string>> = {};
+  for (const tx of allTxs) {
+    const mk = `${tx.transactionDate.getUTCFullYear()}-${tx.transactionDate.getUTCMonth()}`;
+    const { name } = extractClientName(tx.description, tx.category);
+    if (!monthPayerMap[mk]) monthPayerMap[mk] = new Set();
+    monthPayerMap[mk].add(name.toUpperCase());
+  }
+  const monthCounts = Object.values(monthPayerMap).map((s) => s.size);
+  const avgPerMonth = monthCounts.length
+    ? Math.round((monthCounts.reduce((a, b) => a + b, 0) / monthCounts.length) * 10) / 10
+    : 0;
+
+  const nonProc = profiles.filter((p) => !p.isPaymentProcessor);
+  const diversification: ClientInsightsData["diversification"] =
+    nonProc.length === 0 ? "concentrated" :
+    topShare >= 70 ? "concentrated" :
+    topShare >= 40 ? "moderate" : "diversified";
+
+  return {
+    clients: profiles.slice(0, 10),
+    totalRevenue,
+    topClientShare: topShare,
+    hasConcentrationRisk: topShare >= 50,
+    activeClients: activeCl,
+    avgClientsPerMonth: avgPerMonth,
+    newClientsThisYear: profiles.filter((p) => p.isNew && !p.isPaymentProcessor),
+    inactiveClients: profiles.filter((p) => p.isInactive).slice(0, 5),
+    diversification,
+  };
+}
+
+// Ported from getCategorizationHealth() in analytics-engine.ts. The demo
+// dataset has no notion of "uncategorized" or a correction history — every
+// transaction is a confidently-recognized real-world merchant by design —
+// so this is honestly 100%, not a simplified stand-in hiding a lower number.
+export function computeCategorizationHealth(): CategorizationHealth {
+  return {
+    totalCount: DEMO_TRANSACTIONS.length,
+    categorizedPct: 100,
+    uncategorizedPct: 0,
+    uncategorizedCount: 0,
+    topUncategorizedMerchants: [],
+    topCorrectedMerchants: [],
+    needsReviewCount: 0,
+    topNeedsReviewMerchants: [],
+  };
+}
+
 export function computeClientRiskProfiles(locale: Locale): ClientRiskCenterData {
   const txs = DEMO_TRANSACTIONS;
   const refDate = DEMO_REF_DATE; // Jan 1, 2026
@@ -1149,6 +1288,7 @@ export interface DemoDataset {
   financialReserve:    ReserveSummary;
   clientData:          ClientRiskCenterData;
   rankedInsights:      RankedInsight[];
+  dataGaps:            DataGap[];
   nonZeroMonths:       number;
   totalTx:             number;
   personaName:         string;
@@ -1172,6 +1312,7 @@ export function getDemoDataset(locale: Locale): DemoDataset {
   const financialLife    = computeFinancialLifeIntelligence();
   const financialReserve = computeFinancialReserve();
   const clientData       = computeClientRiskProfiles(locale);
+  const dataGaps         = computeDataGaps(locale);
   const nonZeroMonths    = chartData.filter(d => d.income > 0 || d.expenses > 0).length;
   const totalTx          = DEMO_TRANSACTIONS.length;
 
@@ -1187,7 +1328,7 @@ export function getDemoDataset(locale: Locale): DemoDataset {
   const dataset: DemoDataset = {
     chartData, summary, comparison, coverage, categoryInsights,
     concentration, intentBreakdown, forecast, financialLife, financialReserve,
-    clientData, rankedInsights, nonZeroMonths, totalTx,
+    clientData, rankedInsights, dataGaps, nonZeroMonths, totalTx,
     personaName:      DEMO_PERSONA.name,
     personaFirstName: DEMO_PERSONA.firstName,
   };

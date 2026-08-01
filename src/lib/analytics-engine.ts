@@ -1018,8 +1018,6 @@ export async function getClientInsights(userId: string): Promise<ClientInsightsD
     const uniqueMonths = new Set(txs.map(t => `${t.date.getUTCFullYear()}-${t.date.getUTCMonth()}`)).size;
     const isInactive  = txs.length >= 3 && uniqueMonths >= 2 && last < ninetyDaysAgo && !isNew;
 
-    const firstMs = first.getTime();
-    const lastMs  = last.getTime();
     const monthsActive = (last.getUTCFullYear() - first.getUTCFullYear()) * 12 + (last.getUTCMonth() - first.getUTCMonth()) + 1;
 
     return {

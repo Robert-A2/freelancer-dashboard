@@ -255,9 +255,7 @@ export default async function DashboardPage({
         {firstName && (
           <p className="text-xs text-[#6A97B4] mb-1">{t("welcomeBack", { name: firstName })}</p>
         )}
-        <h1 className="text-2xl font-bold">
-          {hasData ? t("questionTitle") : t("title")}
-        </h1>
+        <h1 className="text-2xl font-bold">{t("title")}</h1>
         {coverage.latest && (
           <p className={`text-xs mt-1 ${coverageIsStale ? "text-[#D4A254]" : "text-[#4A7A9B]"}`}>
             {t("showingDataThrough", { date: coverage.latest.toLocaleDateString(INTL_LOCALES[locale], { month: "long", year: "numeric", timeZone: "UTC" }) })}

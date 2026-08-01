@@ -150,9 +150,7 @@ export default async function AnalyticsPage() {
     <div className="space-y-8 md:space-y-10">
 
       <div>
-        <h1 className="text-2xl font-bold">
-          {hasData ? t("titleQuestion") : t("title")}
-        </h1>
+        <h1 className="text-2xl font-bold">{t("title")}</h1>
         <p className="text-[#7BA8C4] text-sm mt-0.5">
           {hasData ? t("subtitleHabits") : t("subtitle")}
         </p>

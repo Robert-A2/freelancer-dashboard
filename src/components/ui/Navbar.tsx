@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl";
 import FeedbackButton from "./FeedbackButton";
 import LanguageSwitcher from "./LanguageSwitcher";
 import AccountDrawer from "./AccountDrawer";
+import MoreNavDrawer from "./MoreNavDrawer";
 
 const IconHome = () => (
   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
@@ -48,14 +49,20 @@ const NAV_LINKS = [
   { href: "/upload",    key: "upload",    Icon: IconUpload    },
   { href: "/history",   key: "history",   Icon: IconHistory   },
   { href: "/projects",  key: "projects",  Icon: IconProjects  },
-  { href: "/clients",   key: "clients",   Icon: IconClients   },
   { href: "/analytics", key: "analytics", Icon: IconAnalytics },
   { href: "/forecast",  key: "forecast",  Icon: IconForecast  },
 ] as const;
 
 // Mobile bottom nav omits History (accessible via "View all" on dashboard)
-// so the remaining items fit cleanly across narrow screens.
+// so the remaining items fit cleanly across narrow screens — exactly 5 icons.
 const MOBILE_NAV_LINKS = NAV_LINKS.filter(l => l.key !== "history");
+
+// Clients isn't in the primary bar — it's also linked from the Analytics
+// page — so it lives in the MoreNavDrawer instead, keeping the mobile tab
+// bar to 5 icons.
+const MORE_LINKS = [
+  { href: "/clients", key: "clients", Icon: IconClients },
+];
 
 export default function Navbar({ fullName, email }: { fullName: string; email: string }) {
   const pathname = usePathname();
@@ -108,6 +115,7 @@ export default function Navbar({ fullName, email }: { fullName: string; email: s
           </div>
           <div className="flex items-center gap-2">
             <LanguageSwitcher />
+            <MoreNavDrawer links={MORE_LINKS} />
             <FeedbackButton />
             <AccountDrawer fullName={fullName} email={email} />
           </div>

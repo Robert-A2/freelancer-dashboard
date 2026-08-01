@@ -1,14 +1,16 @@
 import { getTranslations, getLocale } from "next-intl/server";
 import { INTL_LOCALES, type Locale } from "@/i18n/locales";
 import { getDemoDataset } from "@/lib/demo";
-import { computeCategoryBreakdown, computeIncomeBySource, computeYtdTotals } from "@/lib/demo/engine";
+import { computeCategoryBreakdown, computeIncomeBySource, computeYtdTotals, computeClientInsights, computeCategorizationHealth } from "@/lib/demo/engine";
 import { formatCurrency } from "@/utils/finance";
 import DataCoverageBar from "@/components/dashboard/DataCoverage";
 import CashflowChart from "@/components/analytics/CashflowChart";
+import ClientInsights from "@/components/analytics/ClientInsights";
 import FinancialStory from "@/components/analytics/FinancialStory";
 import CollapsibleSection from "@/components/ui/CollapsibleSection";
 import ExpenseBreakdown from "@/components/analytics/ExpenseBreakdown";
 import type { BreakdownItem } from "@/components/analytics/ExpenseBreakdown";
+import BusinessIntelligence from "@/components/dashboard/BusinessIntelligence";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
@@ -32,10 +34,12 @@ export default async function DemoAnalyticsPage() {
   const tm     = await getTranslations("metrics");
   const locale = (await getLocale()) as Locale;
 
-  const { chartData, coverage, categoryInsights, rankedInsights, nonZeroMonths } = getDemoDataset(locale);
-  const categoryBreakdown = computeCategoryBreakdown();
-  const incomeBySource    = computeIncomeBySource();
-  const ytd               = computeYtdTotals();
+  const { chartData, coverage, categoryInsights, rankedInsights, nonZeroMonths, intentBreakdown } = getDemoDataset(locale);
+  const categoryBreakdown  = computeCategoryBreakdown();
+  const incomeBySource     = computeIncomeBySource();
+  const ytd                = computeYtdTotals();
+  const clientInsights      = computeClientInsights();
+  const categorizationHealth = computeCategorizationHealth();
 
   const hasData = chartData.some(d => d.income > 0 || d.expenses > 0);
 
@@ -60,7 +64,7 @@ export default async function DemoAnalyticsPage() {
   return (
     <div className="space-y-8 md:space-y-10">
       <div>
-        <h1 className="text-2xl font-bold">{hasData ? t("titleQuestion") : t("title")}</h1>
+        <h1 className="text-2xl font-bold">{t("title")}</h1>
         <p className="text-[#7BA8C4] text-sm mt-0.5">{hasData ? t("subtitleHabits") : t("subtitle")}</p>
       </div>
 
@@ -161,6 +165,28 @@ export default async function DemoAnalyticsPage() {
             </div>
           </CollapsibleSection>
 
+          {/* ── Business Intelligence — business vs. personal split, moved here
+              from the Dashboard, same as the real page. ──────────────────── */}
+          {intentBreakdown.hasEnoughDataForDisplay && (
+            <CollapsibleSection
+              label={t("businessSection.label")}
+              title={t("businessSection.title")}
+              subtitle={t("businessSection.subtitle", {
+                margin: intentBreakdown.profitMarginPct !== null ? Math.round(intentBreakdown.profitMarginPct) : 0,
+                personalSpend: formatCurrency(intentBreakdown.personalSpend, locale),
+              })}
+              defaultOpen={false}
+            >
+              <BusinessIntelligence
+                businessProfit={intentBreakdown.businessProfit}
+                profitMarginPct={intentBreakdown.profitMarginPct}
+                personalSpend={intentBreakdown.personalSpend}
+                trueNetCashflow={intentBreakdown.trueNetCashflow}
+                intentInsights={[]}
+              />
+            </CollapsibleSection>
+          )}
+
           {/* ── Cashflow chart ─────────────────────────────────────────────── */}
           <CollapsibleSection label={t("cashflowSection.label")} title={t("cashflowSection.title")}>
             <CashflowChart data={chartData} hideHeader apiBase="/api/demo" />
@@ -210,15 +236,62 @@ export default async function DemoAnalyticsPage() {
             </div>
           </CollapsibleSection>
 
-          {/* ── Client section ─────────────────────────────────────────────── */}
-          <div className="flex items-center gap-2 mt-1">
-            <Link href="/demo/clients" className="inline-flex items-center gap-1.5 text-sm text-[#3AB5A0] hover:text-[#4CC4A4] font-medium transition-colors">
-              {t("clientSection.trustCenter")}
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-              </svg>
-            </Link>
-          </div>
+          {/* ── Categorization health ──────────────────────────────────────── */}
+          <CollapsibleSection
+            label={t("categorizationSection.label")}
+            title={t("categorizationSection.title")}
+            subtitle={t("categorizationSection.subtitle")}
+            defaultOpen={false}
+          >
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 md:gap-6">
+              <div className="card lg:col-span-1">
+                <p className="label mb-1">{t("categorizationSection.categorized")}</p>
+                <p className="text-3xl font-bold text-[#4CC4A4] mb-1">{categorizationHealth.categorizedPct}%</p>
+                <p className="text-xs text-[#6A97B4]">
+                  {t("categorizationSection.uncategorizedSummary", {
+                    uncategorized: categorizationHealth.uncategorizedCount,
+                    total: categorizationHealth.totalCount,
+                    pct: String(categorizationHealth.uncategorizedPct),
+                  })}
+                </p>
+                <div className="h-1.5 bg-[#243F5E] rounded-full overflow-hidden mt-4">
+                  <div className="h-full bg-[#4CC4A4] rounded-full opacity-70" style={{ width: `${categorizationHealth.categorizedPct}%` }} />
+                </div>
+              </div>
+
+              <div className="card lg:col-span-1">
+                <p className="label mb-1">{t("categorizationSection.mostCommonUncategorized")}</p>
+                <p className="text-xs text-[#6A97B4] mb-4">{t("categorizationSection.worthManualFix")}</p>
+                <p className="text-[#7BA8C4] text-sm">{t("categorizationSection.nothingUncategorized")}</p>
+              </div>
+
+              <div className="card lg:col-span-1">
+                <p className="label mb-1">{t("categorizationSection.mostCorrectedMerchants")}</p>
+                <p className="text-xs text-[#6A97B4] mb-4">{t("categorizationSection.manualFixesSubtitle")}</p>
+                <p className="text-[#7BA8C4] text-sm">{t("categorizationSection.noCorrectionsYet")}</p>
+              </div>
+            </div>
+          </CollapsibleSection>
+
+          {/* ── Client Insights ────────────────────────────────────────────── */}
+          {clientInsights && (
+            <CollapsibleSection
+              label={t("clientSection.label")}
+              title={t("clientSection.title")}
+              subtitle={t("clientSection.subtitle")}
+              defaultOpen={false}
+            >
+              <ClientInsights data={clientInsights} dataYear={dataYear} />
+              <div className="mt-4">
+                <Link href="/demo/clients" className="inline-flex items-center gap-1.5 text-sm text-[#3AB5A0] hover:text-[#4CC4A4] font-medium transition-colors">
+                  {t("clientSection.trustCenter")}
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                  </svg>
+                </Link>
+              </div>
+            </CollapsibleSection>
+          )}
 
           {/* ── Financial Story ────────────────────────────────────────────── */}
           {rankedInsights.length > 0 && (

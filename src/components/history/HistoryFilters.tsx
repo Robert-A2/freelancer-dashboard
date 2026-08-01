@@ -13,12 +13,15 @@ interface Props {
   activeMonth: string;
   activeSearch: string;
   activeConfidence: string;
+  /** Defaults to "/history" — pass "/demo/history" so filter navigation stays inside the demo, never redirecting to the auth-gated real page. */
+  basePath?: string;
 }
 
 const MONTH_KEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"] as const;
 
 export default function HistoryFilters({
   categories, years, activeType, activeCategory, activeYear, activeMonth, activeSearch, activeConfidence,
+  basePath = "/history",
 }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -35,8 +38,8 @@ export default function HistoryFilters({
     const params = new URLSearchParams(searchParams.toString());
     if (value) params.set(key, value); else params.delete(key);
     params.delete("page");
-    startTransition(() => router.push(`/history?${params.toString()}`));
-  }, [router, searchParams]);
+    startTransition(() => router.push(`${basePath}?${params.toString()}`));
+  }, [router, searchParams, basePath]);
 
   function handleSearchChange(value: string) {
     setSearchValue(value);
@@ -46,7 +49,7 @@ export default function HistoryFilters({
 
   const clearAll = () => {
     setSearchValue("");
-    startTransition(() => router.push("/history"));
+    startTransition(() => router.push(basePath));
   };
 
   const hasFilters = activeType || activeCategory || activeYear || activeMonth || activeSearch || activeConfidence;

@@ -4,10 +4,16 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import LanguageSwitcher from "@/components/ui/LanguageSwitcher";
+import MoreNavDrawer from "@/components/ui/MoreNavDrawer";
 
 const IconHome = () => (
   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
     <path strokeLinecap="round" strokeLinejoin="round" d="m3 12 2-2m0 0 7-7 7 7M5 10v10a1 1 0 001 1h3m10-11 2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+  </svg>
+);
+const IconUpload = () => (
+  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
   </svg>
 );
 const IconHistory = () => (
@@ -30,22 +36,39 @@ const IconClients = () => (
     <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
   </svg>
 );
+const IconProjects = () => (
+  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 14.15v4.25a2 2 0 01-2 2H5.75a2 2 0 01-2-2v-4.25M20.25 14.15L18.25 6.5a2 2 0 00-2-1.5H7.75a2 2 0 00-2 1.5l-2 7.65M20.25 14.15h-4.5a2 2 0 00-2 2v.1a2 2 0 01-2 2h-.5a2 2 0 01-2-2v-.1a2 2 0 00-2-2h-4.5" />
+  </svg>
+);
 const IconReports = () => (
   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
     <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
   </svg>
 );
 
+// Same order as the real app's Navbar (dashboard, upload, history, projects,
+// analytics, forecast). Clients and Reports live in MoreNavDrawer instead —
+// Clients is also linked from the Analytics page, and Reports has no
+// real-dashboard equivalent at all (see comment on the demo/reports page) —
+// keeping the mobile tab bar to exactly 5 icons, same as the real app.
 const NAV_LINKS = [
-  { href: "/demo",          key: "dashboard", Icon: IconHome      },
-  { href: "/demo/history",  key: "history",   Icon: IconHistory   },
-  { href: "/demo/clients",  key: "clients",   Icon: IconClients   },
-  { href: "/demo/analytics",key: "analytics", Icon: IconAnalytics },
-  { href: "/demo/forecast", key: "forecast",  Icon: IconForecast  },
-  { href: "/demo/reports",  key: "reports",   Icon: IconReports   },
+  { href: "/demo",           key: "dashboard", Icon: IconHome      },
+  { href: "/demo/upload",    key: "upload",    Icon: IconUpload    },
+  { href: "/demo/history",   key: "history",   Icon: IconHistory   },
+  { href: "/demo/projects",  key: "projects",  Icon: IconProjects  },
+  { href: "/demo/analytics", key: "analytics", Icon: IconAnalytics },
+  { href: "/demo/forecast",  key: "forecast",  Icon: IconForecast  },
 ] as const;
 
-const MOBILE_NAV_LINKS = NAV_LINKS;
+// Mobile bottom nav omits History, exactly like the real Navbar (accessible
+// via "View all" on the dashboard instead) — so the remaining items fit.
+const MOBILE_NAV_LINKS = NAV_LINKS.filter(l => l.key !== "history");
+
+const MORE_LINKS = [
+  { href: "/demo/clients", key: "clients", Icon: IconClients },
+  { href: "/demo/reports", key: "reports", Icon: IconReports },
+];
 
 export default function DemoNavbar() {
   const pathname = usePathname();
@@ -83,6 +106,7 @@ export default function DemoNavbar() {
           </div>
           <div className="flex items-center gap-2">
             <LanguageSwitcher />
+            <MoreNavDrawer links={MORE_LINKS} />
             <Link
               href="/signup"
               className="hidden sm:inline-flex whitespace-nowrap text-xs font-semibold text-[#3AB5A0] hover:text-[#4CC4A4] transition-colors px-3 py-2"

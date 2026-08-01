@@ -31,6 +31,7 @@ const YEARS = [2023, 2024, 2025] as const;
 export default async function DemoReportsPage() {
   const locale = (await getLocale()) as Locale;
   const t    = await getTranslations("reports");
+  const tm   = await getTranslations("metrics");
   const tCat = await getTranslations("categories");
   const cat  = (slug: string) => tCat.has(slug) ? tCat(slug as Parameters<typeof tCat>[0]) : slug.replace(/_/g, " ");
   const { chartData, clientData } = getDemoDataset(locale);
@@ -41,9 +42,8 @@ export default async function DemoReportsPage() {
     const income   = months.reduce((s, m) => s + m.income,   0);
     const expenses = months.reduce((s, m) => s + m.expenses, 0);
     const cashflow = income - expenses;
-    const savings  = months.reduce((s, m) => s + m.savings,  0);
     const margin   = income > 0 ? Math.round((cashflow / income) * 100) : 0;
-    return { year, income, expenses, cashflow, savings, margin };
+    return { year, income, expenses, cashflow, margin };
   });
 
   // ── Tax payments by year ─────────────────────────────────────────────────────
@@ -131,10 +131,9 @@ export default async function DemoReportsPage() {
           </thead>
           <tbody className="divide-y divide-[#1A3048]">
             {[
-              { label: t("rows.income"),   key: "income"   as const, color: "text-[#4CC4A4]" },
-              { label: t("rows.expenses"), key: "expenses" as const, color: "text-[#D4A254]" },
-              { label: t("rows.net"),      key: "cashflow" as const, color: "text-[#E8F0F8]" },
-              { label: t("rows.saved"),    key: "savings"  as const, color: "text-[#7BA8C4]" },
+              { label: tm("income"),   key: "income"   as const, color: "text-[#4CC4A4]" },
+              { label: tm("expenses"), key: "expenses" as const, color: "text-[#D4A254]" },
+              { label: tm("cashflow"), key: "cashflow" as const, color: "text-[#E8F0F8]" },
             ].map(row => (
               <tr key={row.key}>
                 <td className="py-3 text-[#7BA8C4]">{row.label}</td>
@@ -152,7 +151,7 @@ export default async function DemoReportsPage() {
               </tr>
             ))}
             <tr className="border-t border-[#243F5E]">
-              <td className="pt-4 text-[#7BA8C4] text-xs">{t("rows.margin")}</td>
+              <td className="pt-4 text-[#7BA8C4] text-xs">{tm("margin")}</td>
               {YEARS.map(y => {
                 const a = annual.find(a => a.year === y)!;
                 return (
