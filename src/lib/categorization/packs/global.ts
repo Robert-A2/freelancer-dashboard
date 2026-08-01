@@ -10,24 +10,31 @@ const m = (keyword: string, category: string): MerchantEntry => ({ keyword, cate
 // layer market-specific merchants — e.g. French banks, supermarkets, government
 // bodies — on top of this base list.
 const entries: MerchantEntry[] = [
-  // ── AI tools ──────────────────────────────────────────────────────────────
-  h("openai", "ai tools"), h("chatgpt", "ai tools"), h("anthropic", "ai tools"),
-  h("claude.ai", "ai tools"), h("claude pro", "ai tools"), h("midjourney", "ai tools"),
-  h("stability ai", "ai tools"), h("stable diffusion", "ai tools"), h("runwayml", "ai tools"),
-  h("runway ml", "ai tools"), h("elevenlabs", "ai tools"), h("eleven labs", "ai tools"),
-  h("perplexity", "ai tools"), h("character.ai", "ai tools"), h("replit", "ai tools"),
-  h("hugging face", "ai tools"), h("huggingface", "ai tools"), h("cohere", "ai tools"),
-  h("mistral ai", "ai tools"), h("groq", "ai tools"), h("deepseek", "ai tools"),
-  h("leonardo.ai", "ai tools"), h("ideogram", "ai tools"), h("suno ai", "ai tools"),
-  h("udio", "ai tools"), h("synthesia", "ai tools"), h("descript", "ai tools"),
-  h("otter.ai", "ai tools"), h("jasper.ai", "ai tools"), h("copy.ai", "ai tools"),
-  h("writesonic", "ai tools"), h("grammarly", "ai tools"), h("notion ai", "ai tools"),
-  h("github copilot", "ai tools"), h("copilot subscription", "ai tools"), h("cursor.sh", "ai tools"),
-  h("codeium", "ai tools"), h("tabnine", "ai tools"), h("you.com", "ai tools"),
-  h("poe.com", "ai tools"), h("gamma.app", "ai tools"), h("krea.ai", "ai tools"),
-  h("luma labs", "ai tools"), h("pika labs", "ai tools"), h("heygen", "ai tools"),
-  h("murf.ai", "ai tools"), h("play.ht", "ai tools"), h("google gemini", "ai tools"),
-  h("gemini advanced", "ai tools"),
+  // ── AI software (general AI productivity/creative tools) ──────────────────
+  // Split from the former single "ai tools" bucket (kept in the category
+  // taxonomy for backward compatibility with already-stored transactions,
+  // but no longer assigned to new matches) — this is the "use AI" side.
+  h("openai", "ai software"), h("chatgpt", "ai software"), h("anthropic", "ai software"),
+  h("claude.ai", "ai software"), h("claude pro", "ai software"), h("midjourney", "ai software"),
+  h("stability ai", "ai software"), h("stable diffusion", "ai software"), h("runwayml", "ai software"),
+  h("runway ml", "ai software"), h("elevenlabs", "ai software"), h("eleven labs", "ai software"),
+  h("perplexity", "ai software"), h("character.ai", "ai software"),
+  h("hugging face", "ai software"), h("huggingface", "ai software"), h("cohere", "ai software"),
+  h("mistral ai", "ai software"), h("groq", "ai software"), h("deepseek", "ai software"),
+  h("leonardo.ai", "ai software"), h("ideogram", "ai software"), h("suno ai", "ai software"),
+  h("udio", "ai software"), h("synthesia", "ai software"), h("descript", "ai software"),
+  h("otter.ai", "ai software"), h("jasper.ai", "ai software"), h("copy.ai", "ai software"),
+  h("writesonic", "ai software"), h("grammarly", "ai software"), h("notion ai", "ai software"),
+  h("you.com", "ai software"),
+  h("poe.com", "ai software"), h("gamma.app", "ai software"), h("krea.ai", "ai software"),
+  h("luma labs", "ai software"), h("pika labs", "ai software"), h("heygen", "ai software"),
+  h("murf.ai", "ai software"), h("play.ht", "ai software"), h("google gemini", "ai software"),
+  h("gemini advanced", "ai software"),
+
+  // ── AI development (AI coding assistants/tools) ────────────────────────────
+  h("github copilot", "ai development"), h("copilot subscription", "ai development"),
+  h("cursor.sh", "ai development"), h("codeium", "ai development"), h("tabnine", "ai development"),
+  h("replit", "ai development"),
 
   // ── Software & SaaS ───────────────────────────────────────────────────────
   h("adobe", "software"), h("adobe creative cloud", "software"), h("figma", "software"),
@@ -131,7 +138,7 @@ const entries: MerchantEntry[] = [
   h("walmart grocery", "food"), h("tesco", "food"), h("sainsburys", "food"),
   h("asda stores", "food"), h("morrisons", "food"), h("waitrose", "food"),
   h("marks and spencer food", "food"), h("aldi ", "food"), h("lidl ", "food"),
-  h("rewe ", "food"), h("edeka ", "food"), h("spar supermarket", "food"),
+  h("rewe ", "food"), h("edeka ", "food"), h("spar supermarket", "food"), h("le pain quotidien", "food"),
 
   // ── Telecommunications ────────────────────────────────────────────────────
   h("vodafone", "utilities"), h("o2 mobile", "utilities"), h("ee limited", "utilities"),
@@ -183,6 +190,7 @@ const entries: MerchantEntry[] = [
   h("netflix.com", "subscriptions"), h("disney plus", "subscriptions"), h("hbo max", "subscriptions"),
   h("hulu plus", "subscriptions"), h("amazon prime video", "subscriptions"), h("apple tv plus", "subscriptions"),
   h("spotify premium", "subscriptions"), h("apple music", "subscriptions"), h("youtube premium", "subscriptions"),
+  h("apple.com/bill", "subscriptions"), h("icloud", "subscriptions"),
   h("deezer music", "subscriptions"), h("tidal hifi", "subscriptions"), h("audible.com", "subscriptions"),
   h("kindle unlimited", "subscriptions"), h("playstation plus", "subscriptions"), h("xbox game pass", "subscriptions"),
   h("nintendo eshop", "entertainment"), h("twitch tv", "entertainment"), h("patreon membership", "entertainment"),
@@ -200,7 +208,7 @@ const entries: MerchantEntry[] = [
   h("corsair gaming", "equipment"), h("razer inc", "equipment"), h("nvidia corp", "equipment"),
 
   // ── Education ─────────────────────────────────────────────────────────────
-  h("udemy courses", "education"), h("coursera inc", "education"), h("pluralsight", "education"),
+  h("udemy courses", "education"), h("udemy", "education"), h("coursera inc", "education"), h("pluralsight", "education"),
   h("skillshare", "education"), h("linkedin learning", "education"), h("domestika", "education"),
   h("codecademy", "education"), h("openclassrooms", "education"), h("edx.org", "education"),
   h("khan academy", "education"), h("treehouse", "education"), h("codewars", "education"),

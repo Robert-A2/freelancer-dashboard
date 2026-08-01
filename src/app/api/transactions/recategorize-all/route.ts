@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { recalculateMonthlyAnalytics } from "@/lib/analytics-engine";
 import { generateForecast } from "@/lib/forecast-engine";
 import { categorizeTransaction, type LearnedRules } from "@/lib/categorization";
-import { loadMerchantIndex, reportUncategorizedMerchants } from "@/lib/merchant-reports";
+import { loadMerchantIndex, loadDecisionIndex, reportUncategorizedMerchants } from "@/lib/merchant-reports";
 import { classifyIntent, buildUserIntentRules } from "@/lib/intent-engine";
 import { Prisma } from "@prisma/client";
 
@@ -35,13 +35,13 @@ export async function POST(_request: NextRequest) {
     ]);
     const learnedRules: LearnedRules = new Map(rules.map((r) => [r.merchantKey, r.category]));
     const userIntentRules = buildUserIntentRules(intentRuleRows);
-    const merchantIndex = await loadMerchantIndex();
+    const [merchantIndex, decisionIndex] = await Promise.all([loadMerchantIndex(), loadDecisionIndex()]);
 
     const transactions = await prisma.transaction.findMany({
       where: { userId: user.id },
       select: {
         id: true, description: true, amount: true, transactionType: true,
-        category: true, categoryConfidence: true, categorySource: true,
+        category: true, categoryConfidence: true, categorySource: true, merchantId: true,
         intent: true, intentConfidence: true, intentSource: true, needsReview: true,
       },
     });
@@ -58,7 +58,7 @@ export async function POST(_request: NextRequest) {
         // existing transactionType so income/expense detection matches import-time behavior.
         const amount = Number(tx.amount);
         const signedAmount = tx.transactionType === "income" ? amount : -amount;
-        const result = categorizeTransaction(tx.description, signedAmount, learnedRules, ownerName, merchantIndex);
+        const result = categorizeTransaction(tx.description, signedAmount, learnedRules, ownerName, merchantIndex, decisionIndex);
 
         if (result.category === "uncategorized") {
           stillUncategorized.push({ description: tx.description, category: result.category });
@@ -74,7 +74,8 @@ export async function POST(_request: NextRequest) {
           result.category !== tx.category ||
           result.confidence !== tx.categoryConfidence ||
           result.source !== (tx.categorySource ?? null) ||
-          result.transactionType !== tx.transactionType;
+          result.transactionType !== tx.transactionType ||
+          (result.matchedMerchantId ?? null) !== (tx.merchantId ?? null);
 
         const intentChanged = intentResult !== null && (
           intentResult.intent           !== (tx.intent ?? null) ||
@@ -94,6 +95,8 @@ export async function POST(_request: NextRequest) {
                   categoryConfidence: result.confidence,
                   categorySource:    result.source,
                   transactionType:   result.transactionType,
+                  merchantId:        result.matchedMerchantId ?? null,
+                  categoryReason:    result.reason ?? null,
                 } : {}),
                 ...(intentResult !== null ? {
                   intent:            intentResult.intent,

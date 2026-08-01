@@ -6,8 +6,9 @@ import type { NormalizedTransaction } from "@/lib/csv-processor";
 import { recalculateMonthlyAnalytics } from "@/lib/analytics-engine";
 import { generateForecast } from "@/lib/forecast-engine";
 import { resolvePayers, recomputeVerifiedRevenue } from "@/lib/payer-engine";
+import { resolveMerchants } from "@/lib/merchant-intelligence";
 import { matchMilestonesToTransactions } from "@/lib/milestone-engine";
-import { loadMerchantIndex, reportUncategorizedMerchants } from "@/lib/merchant-reports";
+import { loadMerchantIndex, loadDecisionIndex, reportUncategorizedMerchants } from "@/lib/merchant-reports";
 import { detectCrossAccountTransfers } from "@/lib/transfer-detector";
 import { Decimal } from "@prisma/client/runtime/library";
 
@@ -42,7 +43,7 @@ export async function POST(request: NextRequest) {
     });
 
     // ── Load DB-backed merchant directory for server-side second pass ───────
-    const merchantIndex = await loadMerchantIndex();
+    const [merchantIndex, decisionIndex] = await Promise.all([loadMerchantIndex(), loadDecisionIndex()]);
 
     // ── Read pre-parsed body ───────────────────────────────────────────────
     // The browser ran parseCsv() locally and sends structured rows, not the
@@ -91,15 +92,25 @@ export async function POST(request: NextRequest) {
     }));
 
     // ── Merchant second pass ───────────────────────────────────────────────
+    // The browser ran parseCsv() with EMPTY_MERCHANT_INDEX (no DB access) — this
+    // re-runs categorization server-side with the real DB-backed merchantIndex,
+    // and upgrades the row only when the DB is what produced the match
+    // (matchedMerchantId set) — i.e. exactly the class of result the browser
+    // pass could never have found on its own.
+    // NOTE: previously checked `result.source === "merchant-db"`, a string
+    // categorizeTransaction() never actually returns — that condition was
+    // always false, so this second pass silently never upgraded anything.
     const transactions: NormalizedTransaction[] = hydrated.map((tx) => {
       if (tx.categorySource === "learned") return tx;
-      const result = categorizeTransaction(tx.description, tx.amount, new Map(), undefined, merchantIndex);
-      if (result.source === "merchant-db") {
+      const result = categorizeTransaction(tx.description, tx.amount, new Map(), undefined, merchantIndex, decisionIndex);
+      if (result.matchedMerchantId) {
         return {
           ...tx,
           category:           result.category,
           categoryConfidence: result.confidence,
           categorySource:     result.source,
+          merchantId:         result.matchedMerchantId,
+          categoryReason:     result.reason,
         };
       }
       return tx;
@@ -188,6 +199,8 @@ export async function POST(request: NextRequest) {
           category:           tx.category,
           categoryConfidence: tx.categoryConfidence,
           categorySource:     tx.categorySource,
+          merchantId:         tx.merchantId ?? null,
+          categoryReason:     tx.categoryReason ?? null,
           sourceFile:         fileName ?? null,
           intent:             tx.intent             ?? null,
           intentConfidence:   tx.intentConfidence   ?? null,
@@ -231,6 +244,12 @@ export async function POST(request: NextRequest) {
         await resolvePayers(userId, newTxIds.map((t) => t.id));
       } catch (err) {
         console.error("[Upload/bg] resolvePayers failed:", err);
+      }
+
+      try {
+        await resolveMerchants(userId, newTxIds.map((t) => t.id));
+      } catch (err) {
+        console.error("[Upload/bg] resolveMerchants failed:", err);
       }
 
       try {

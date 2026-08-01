@@ -1,7 +1,7 @@
-import type { DbMerchantRow, MerchantEntry, MerchantIndex } from "./types";
+import type { DbMerchantRow, DecisionIndex, MerchantEntry, MerchantIndex } from "./types";
 import { stripDiacritics } from "./engine";
 
-export type { DbMerchantRow, MerchantIndex };
+export type { DbMerchantRow, MerchantIndex, DecisionIndex };
 
 const EMPTY_INDEX: MerchantIndex = {
   expenseHigh: [],
@@ -33,7 +33,7 @@ export function buildMerchantIndex(rows: DbMerchantRow[]): MerchantIndex {
 
     switch (row.transactionType) {
       case "income":
-        index.incomePatterns.push({ keywords, subcategory: row.category, confidence: row.confidence });
+        index.incomePatterns.push({ keywords, subcategory: row.category, confidence: row.confidence, merchantId: row.id });
         break;
       case "savings":
         index.savingsKeywords.push(...keywords);
@@ -48,12 +48,35 @@ export function buildMerchantIndex(rows: DbMerchantRow[]): MerchantIndex {
         const bucket = row.confidence === "high" ? index.expenseHigh : index.expenseMedium;
         const confidence: MerchantEntry["confidence"] = row.confidence === "high" ? "high" : "medium";
         for (const keyword of keywords) {
-          bucket.push({ keyword, category: row.category, confidence });
+          bucket.push({ keyword, category: row.category, confidence, merchantId: row.id });
         }
         break;
       }
     }
   }
 
+  return index;
+}
+
+/**
+ * Builds the Decision Engine's per-merchant signal data (Phase 3), keyed by
+ * Merchant.id. Deliberately separate from buildMerchantIndex() — see
+ * DecisionIndex's doc comment in types.ts for why. Expense-only, matching
+ * the Decision Engine's own scope (extractMerchantCandidate/resolveMerchants
+ * are expense-only too).
+ */
+export function buildDecisionIndex(rows: DbMerchantRow[]): DecisionIndex {
+  const index: DecisionIndex = new Map();
+  for (const row of rows) {
+    if (row.transactionType !== "expense" || !row.id) continue;
+    index.set(row.id, {
+      category: row.category,
+      confidence: row.confidence,
+      popularity: row.popularity ?? 0,
+      country: row.country ?? null,
+      parentCompany: row.parentCompany ?? null,
+      feedback: row.feedback ?? [],
+    });
+  }
   return index;
 }

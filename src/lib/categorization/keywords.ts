@@ -73,6 +73,9 @@ export const KEYWORD_PATTERNS: MerchantEntry[] = [
   m("camera lens", "equipment"), m("tripod", "equipment"), m("hard drive", "equipment"),
   m("ssd ", "equipment"), m("usb hub", "equipment"), m("ring light", "equipment"),
   m("standing desk", "equipment"), m("ergonomic chair", "equipment"),
+  // Coworking (generic — named chains are in packs/*.ts; this catches
+  // independent/local coworking spaces that will never be individually listed)
+  m("coworking", "coworking"),
   // Office
   m("hot desk", "office"), m("office space", "office"), m("office supply", "office"),
   m("stationery", "office"), m("printer ink", "office"), m("paper ream", "office"),

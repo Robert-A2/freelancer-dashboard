@@ -1,6 +1,12 @@
-import type { CategorizationResult, Confidence, LearnedRules, MerchantEntry, MerchantIndex } from "./types";
+import type { CategorizationResult, Confidence, DecisionIndex, LearnedRules, MerchantEntry, MerchantIndex } from "./types";
 import { ACTIVE_PACKS } from "./packs";
 import { KEYWORD_PATTERNS } from "./keywords";
+// Imported from the submodule directly, NOT "@/lib/merchant-intelligence"
+// (that barrel also re-exports resolve.ts/confidence.ts, which import
+// Prisma) — this file runs in the browser bundle (CsvUploader.tsx), so it
+// must never transitively pull in server-only code. signals/index.ts itself
+// has zero DB imports.
+import { computeDecisionScore } from "../merchant-intelligence/signals";
 
 // ── Diacritic stripping ──────────────────────────────────────────────────────────
 // Bank exports are inconsistent about accents (e.g. "Virement épargne" vs the
@@ -137,7 +143,7 @@ const TAX_KEYWORDS = [
 // names, "medium" for generic descriptive phrases. Kept separate from the expense
 // merchant entries below — e.g. Stripe/PayPal are income sources here but expense
 // "banking fees" merchants on the negative-amount side.
-const INCOME_PATTERNS_RAW: Array<{ keywords: string[]; subcategory: string; confidence: Confidence }> = [
+const INCOME_PATTERNS_RAW: Array<{ keywords: string[]; subcategory: string; confidence: Confidence; merchantId?: string }> = [
   { keywords: ["stripe"], subcategory: "stripe", confidence: "high" },
   { keywords: ["paypal"], subcategory: "paypal", confidence: "high" },
   {
@@ -267,7 +273,8 @@ export function categorizeTransaction(
   amount: number,
   learnedRules?: LearnedRules,
   ownerName?: string,
-  merchantIndex?: MerchantIndex
+  merchantIndex?: MerchantIndex,
+  decisionIndex?: DecisionIndex
 ): CategorizationResult {
   const lower = stripDiacritics(description.toLowerCase());
 
@@ -348,6 +355,7 @@ export function categorizeTransaction(
           category: pattern.subcategory,
           confidence: pattern.confidence,
           source: pattern.confidence === "high" ? "merchant" : "keyword",
+          matchedMerchantId: pattern.merchantId,
         };
       }
     }
@@ -355,17 +363,67 @@ export function categorizeTransaction(
   }
 
   // PRIORITY 6 — Expense (negative amounts)
+  //
+  // Decision Engine (Phase 2/3 of the Decision Engine plan) — gives a known
+  // Merchant identity a chance to win on REAL signals (popularity, cross-user
+  // agreement) before falling back to pure keyword/string-length matching.
+  // Deliberately scoped to DB-backed entries only (merchantId set) — static-
+  // pack keywords have no Merchant identity or signal data behind them, so
+  // there's nothing for the Decision Engine to evaluate for them. Only
+  // returns early on a genuinely confident (high/medium) decision — anything
+  // else (no DB match, or a low-tier decision) falls through UNCHANGED to
+  // the brand/keyword matching below, exactly as it did before this existed.
+  // This is what makes the change strictly additive: nothing the old
+  // waterfall got right can get worse, but a well-corroborated merchant
+  // (high popularity, strong cross-user agreement) is no longer capped at
+  // whatever static "confidence" tier it happened to be created with.
+  if (amount < 0 && decisionIndex) {
+    const dbCandidates = [...highEntries, ...mediumEntries].filter((e) => e.merchantId);
+    const candidate = findBestMatch(lower, dbCandidates);
+    const decisionData = candidate?.merchantId ? decisionIndex.get(candidate.merchantId) : undefined;
+    if (candidate && decisionData) {
+      const decision = computeDecisionScore({
+        merchant: {
+          id: candidate.merchantId!,
+          category: decisionData.category,
+          confidence: decisionData.confidence,
+          popularity: decisionData.popularity,
+          country: decisionData.country,
+          parentCompany: decisionData.parentCompany,
+        },
+        feedback: decisionData.feedback,
+        // Same-user frequency/amount-pattern signals need per-request
+        // transaction history that no call site builds yet — left at their
+        // neutral defaults (both signals correctly no-op at 0, proven in
+        // Phase 2's tests), a deliberate, documented scope boundary rather
+        // than a bug.
+        sameDescriptionCount: 0,
+        amountConsistency: 0,
+      });
+      if (decision && (decision.tier === "high" || decision.tier === "medium")) {
+        return {
+          transactionType: "expense",
+          category: decision.category,
+          confidence: decision.tier,
+          source: "intelligence",
+          matchedMerchantId: candidate.merchantId,
+          reason: decision.reason,
+        };
+      }
+    }
+  }
+
   // Layers 1–2: exact/partial known-merchant brand match (high confidence),
   // searched across every active global + country pack (plus DB merchants) at once.
   const brandMatch = findBestMatch(lower, highEntries);
   if (brandMatch) {
-    return { transactionType: "expense", category: brandMatch.category, confidence: "high", source: "merchant" };
+    return { transactionType: "expense", category: brandMatch.category, confidence: "high", source: "merchant", matchedMerchantId: brandMatch.merchantId };
   }
   // Layer 3: generic descriptive keyword / pattern match (medium confidence) —
   // e.g. "boulangerie" -> food, "pharmacie" -> health, "tabac" -> personal spending.
   const genericMatch = findBestMatch(lower, mediumEntries);
   if (genericMatch) {
-    return { transactionType: "expense", category: genericMatch.category, confidence: "medium", source: "keyword" };
+    return { transactionType: "expense", category: genericMatch.category, confidence: "medium", source: "keyword", matchedMerchantId: genericMatch.merchantId };
   }
 
   // LAYER 5 — Structural fallback heuristics (low confidence, but a real guess

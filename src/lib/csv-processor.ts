@@ -15,6 +15,10 @@ export interface NormalizedTransaction {
   category:         string;
   categoryConfidence: Confidence;
   categorySource:   string;
+  /** Set only when categorization matched a DB-backed Merchant entry — see categorizeTransaction()'s matchedMerchantId. */
+  merchantId?:      string;
+  /** Set only when categorySource === "intelligence" — see categorizeTransaction()'s reason. */
+  categoryReason?:  string;
   intent:           FinancialIntent | null;
   intentConfidence: Confidence | null;
   intentSource:     string | null;
@@ -546,7 +550,7 @@ export function parseCsv(
 
     // ── Categorize ──────────────────────────────────────────────────────────
     const catResult = categorizeTransaction(description, amount, learnedRules, ownerName, merchantIndex);
-    const { transactionType, category, confidence, source } = catResult;
+    const { transactionType, category, confidence, source, matchedMerchantId, reason } = catResult;
 
     // ── Classify intent ─────────────────────────────────────────────────────
     const { intent, intentConfidence, intentSource, needsReview } =
@@ -560,6 +564,8 @@ export function parseCsv(
       category,
       categoryConfidence: confidence,
       categorySource:   source,
+      merchantId:       matchedMerchantId,
+      categoryReason:   reason,
       intent,
       intentConfidence,
       intentSource,

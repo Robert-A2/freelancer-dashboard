@@ -212,6 +212,7 @@ export default async function HistoryPage({ searchParams }: { searchParams: Prom
             transactionDate: tx.transactionDate.toISOString(),
             category: tx.category,
             categoryConfidence: tx.categoryConfidence,
+            categoryReason: tx.categoryReason,
             transactionType: tx.transactionType,
             amount: Number(tx.amount),
           }))}

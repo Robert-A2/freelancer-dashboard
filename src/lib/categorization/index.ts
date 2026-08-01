@@ -1,3 +1,3 @@
-export type { Confidence, CategorizationResult, LearnedRules, MerchantEntry, MerchantPack, DbMerchantRow, MerchantIndex } from "./types";
+export type { Confidence, CategorizationResult, LearnedRules, MerchantEntry, MerchantPack, DbMerchantRow, MerchantIndex, DecisionIndex, DecisionMerchantData } from "./types";
 export { categorizeTransaction, normalizeMerchantKey, stripDiacritics } from "./engine";
-export { buildMerchantIndex } from "./merchant-db";
+export { buildMerchantIndex, buildDecisionIndex } from "./merchant-db";

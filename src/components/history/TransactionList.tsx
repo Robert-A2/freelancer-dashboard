@@ -22,6 +22,8 @@ interface TxRow {
   transactionDate: string;
   category: string;
   categoryConfidence?: string;
+  /** Set only when the Decision Engine produced this category — see computeDecisionScore()'s reason. */
+  categoryReason?: string | null;
   transactionType: string;
   amount: number;
 }
@@ -52,7 +54,17 @@ export default function TransactionList({ transactions }: { transactions: TxRow[
                   currentCategory={tx.category}
                   description={tx.description}
                 />
-                {tx.categoryConfidence === "low" && (
+                {tx.categoryReason ? (
+                  // Decision Engine explanation — set whenever categorySource
+                  // is "intelligence" (medium or high tier), per the
+                  // "automatic categorization with explanation" behavior.
+                  <span
+                    className="w-4 h-4 rounded-full bg-[#4CC4A415] text-[#4CC4A4] text-[10px] font-semibold flex items-center justify-center flex-shrink-0"
+                    title={tx.categoryReason}
+                  >
+                    i
+                  </span>
+                ) : tx.categoryConfidence === "low" && (
                   <span
                     className="w-4 h-4 rounded-full bg-[#D4A25415] text-[#D4A254] text-[10px] font-semibold flex items-center justify-center flex-shrink-0"
                     title={t("lowConfidence")}

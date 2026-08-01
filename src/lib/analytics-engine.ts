@@ -788,6 +788,70 @@ export async function getCategorizationHealth(userId: string): Promise<Categoriz
   };
 }
 
+// ── Merchant intelligence health ────────────────────────────────────────────────
+// getCategorizationHealth() above measures COVERAGE — did the engine assign any
+// non-"uncategorized" category — not CORRECTNESS. A transaction categorized at
+// categoryConfidence: "low" (a heuristic guess, e.g. "personal-transfer") still
+// counts as "categorized" there. This is a materially more honest proxy: it
+// reclassifies anything categoryConfidence === "low" out of the "understood"
+// bucket, using data that already exists on every Transaction row today — no
+// dependency on the merchant-intelligence pipeline having resolved anything yet.
+// Still a proxy, not ground-truth accuracy — no labeled dataset exists anywhere
+// in this codebase.
+
+export interface MerchantIntelligenceHealth {
+  totalCount: number;
+  highConfidenceIdentifiedPct: number;    // categoryConfidence === "high"
+  mediumConfidenceIdentifiedPct: number;  // categoryConfidence === "medium"
+  lowConfidenceOrUnknownPct: number;      // categoryConfidence === "low" OR category === "uncategorized"
+  avgGlobalConfidenceScore: number;       // mean Merchant.globalConfidence across transactions with a resolved merchantId — 0 until the merchant-intelligence pipeline has resolved any
+  topLowConfidenceMerchants: { candidateName: string; count: number; globalConfidence: number }[];
+}
+
+export async function getMerchantIntelligenceHealth(userId: string): Promise<MerchantIntelligenceHealth> {
+  const [totalCount, highCount, mediumCount, lowOrUnknownTxs, resolvedForAvg] = await Promise.all([
+    prisma.transaction.count({ where: { userId } }),
+    prisma.transaction.count({ where: { userId, categoryConfidence: "high" } }),
+    prisma.transaction.count({ where: { userId, categoryConfidence: "medium" } }),
+    prisma.transaction.findMany({
+      where: { userId, OR: [{ categoryConfidence: "low" }, { category: "uncategorized" }] },
+      select: { description: true, merchant: { select: { globalConfidence: true } } },
+    }),
+    prisma.transaction.findMany({
+      where: { userId, merchantId: { not: null } },
+      select: { merchant: { select: { globalConfidence: true } } },
+    }),
+  ]);
+
+  const pct = (n: number) => totalCount > 0 ? Math.round((n / totalCount) * 1000) / 10 : 0;
+
+  const avgGlobalConfidenceScore = resolvedForAvg.length > 0
+    ? Math.round(
+        (resolvedForAvg.reduce((s, t) => s + (t.merchant?.globalConfidence ?? 0), 0) / resolvedForAvg.length) * 10
+      ) / 10
+    : 0;
+
+  const lowGroups = new Map<string, { count: number; globalConfidence: number }>();
+  for (const tx of lowOrUnknownTxs) {
+    const existing = lowGroups.get(tx.description);
+    if (existing) existing.count += 1;
+    else lowGroups.set(tx.description, { count: 1, globalConfidence: tx.merchant?.globalConfidence ?? 0 });
+  }
+  const topLowConfidenceMerchants = [...lowGroups.entries()]
+    .sort((a, b) => b[1].count - a[1].count)
+    .slice(0, 10)
+    .map(([candidateName, v]) => ({ candidateName, count: v.count, globalConfidence: v.globalConfidence }));
+
+  return {
+    totalCount,
+    highConfidenceIdentifiedPct:   pct(highCount),
+    mediumConfidenceIdentifiedPct: pct(mediumCount),
+    lowConfidenceOrUnknownPct:     pct(lowOrUnknownTxs.length),
+    avgGlobalConfidenceScore,
+    topLowConfidenceMerchants,
+  };
+}
+
 // ── Income concentration ───────────────────────────────────────────────────────
 
 export interface IncomeConcentration {

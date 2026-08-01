@@ -13,7 +13,10 @@
     "db:migrate": "prisma migrate dev",
     "db:studio": "prisma studio",
     "db:seed": "prisma db seed",
+    "db:seed:merchants": "tsx scripts/seed-static-merchants.ts",
+    "db:seed:relationships": "tsx scripts/seed-merchant-relationships.ts",
     "report:uncategorized": "tsx scripts/uncategorized-report.ts",
+    "report:merchant-intelligence": "tsx scripts/merchant-intelligence-report.ts",
     "test": "vitest run",
     "test:watch": "vitest"
   },

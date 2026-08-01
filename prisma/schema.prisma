@@ -188,6 +188,7 @@ model Transaction {
   csvImportId     String?
   accountId       String?
   payerId         String?  // resolved payer — set by payer engine after import
+  merchantId      String?  // resolved merchant identity — set by merchant-intelligence pipeline after import
   transactionDate DateTime
   description     String
   amount          Decimal  @db.Decimal(12, 2)
@@ -195,6 +196,11 @@ model Transaction {
   category        String   @default("uncategorized")
   categoryConfidence String @default("medium")
   categorySource  String?
+  // Human-readable explanation, set only when categorySource is "intelligence"
+  // (see computeDecisionScore()'s `reason` field) — the Decision Engine's own
+  // account of which signals produced this category. Null for every other
+  // source (static/keyword matches don't have one to give).
+  categoryReason  String?
   sourceFile      String?
   // ── Financial intent ─────────────────────────────────────────────────────
   // Orthogonal to transactionType (which determines analytics bucketing).
@@ -210,6 +216,7 @@ model Transaction {
   csvImport CsvImport? @relation(fields: [csvImportId], references: [id], onDelete: SetNull)
   account   Account?   @relation(fields: [accountId], references: [id], onDelete: SetNull)
   payer     Payer?     @relation(fields: [payerId], references: [id], onDelete: SetNull)
+  merchant  Merchant?  @relation(fields: [merchantId], references: [id], onDelete: SetNull)
   // Back-relation only — the foreign key lives on Milestone.transactionId.
   // Set once a Stripe payment (or a matched CSV import row) clears this milestone.
   milestone Milestone?
@@ -226,6 +233,7 @@ model Transaction {
   @@index([userId, needsReview])
   @@index([userId, accountId])
   @@index([userId, payerId])
+  @@index([userId, merchantId])
   @@map("transactions")
 }
 
@@ -306,29 +314,65 @@ model Forecast {
   @@map("forecasts")
 }
 
-// ── Merchant recognition infrastructure ────────────────────────────────────
-// Database-backed supplement to the static merchant packs in
+// ── Merchant Intelligence ────────────────────────────────────────────────
+// Global identity — no userId. One canonical row per real-world merchant,
+// shared across every user: a payer's trustworthiness is personal ("who
+// pays me" — see Payer/PayerAlias below), but a merchant's identity isn't
+// ("Adobe" is the same company for every user who pays it). Still the
+// database-backed supplement to the static merchant packs in
 // src/lib/categorization/packs/ — additive layer merged into the engine's
-// matching waterfall via buildMerchantIndex(). Lets merchants be added or
-// corrected without a code deploy.
+// matching waterfall via buildMerchantIndex(); the static packs are checked
+// first and this table never overrides that proven matching order. Lets
+// merchants be added/corrected without a code deploy, and — new — gives
+// every merchant a real identity that accumulates knowledge over time
+// (see MerchantFeedback) instead of being just a keyword row.
 model Merchant {
   id              String   @id @default(uuid())
-  name            String                          // display name, e.g. "Carrefour"
-  keyword         String                          // lowercase match string, e.g. "carrefour"
+  canonicalName   String                          // display name, e.g. "Adobe"
+  normalizedKey   String                          // stable identity key from normalizeMatchKey(), e.g. "adobe"
   transactionType String   @default("expense")    // income | expense | savings | transfer
+
+  // ── Categorization (existing behavior, unchanged) ──────────────────────
   category        String                          // e.g. "food", "taxes", "freelance platform"
-  confidence      String   @default("high")       // high | medium | low
+  subcategory     String?                         // e.g. "creative software" — unpopulated at launch
+  confidence      String   @default("high")       // high | medium | low — coarse tier; this (not globalConfidence) drives the matching waterfall bucket
+
+  // ── Rich identity — vision fields, populated incrementally ─────────────
+  industry               String?
+  businessType            String?  // e.g. "saas" | "retail" | "marketplace" | "utility" | "government"
+  parentCompany           String?
+  website                  String?
+  logoUrl                  String?
+  recurringIndicator      String?  @default("unknown") // "always" | "sometimes" | "never" | "unknown"
+  taxClassificationHint   String?  // advisory only — never used for real tax filing
+  businessFunction         String?  // short free-text, e.g. "creative software subscription"
+  knownLanguages           String[] @default([])
+  metadata                 Json?    // open-ended catch-all so future fields don't need another migration
+
+  // ── Numeric confidence engine ────────────────────────────────────────────
+  globalConfidence    Int      @default(0)  // 0-100. Reporting/UI input only in v1 — does NOT feed the matching waterfall.
+  confidenceBreakdown Json?                 // stored component signals for transparency/debugging
+  popularity          Int      @default(0)  // global hit counter, incremented on every match
+
+  // ── Provenance / future AI seam ──────────────────────────────────────────
+  source String @default("static-pack")
+  // "static-pack" | "seed-curated" | "db-manual" | "user-derived" | "cross-user-derived" | "ai-assisted"
+  // "ai-assisted" is reserved for a future fast-follow — no v1 code path writes it.
+
   country         String?                         // ISO 3166-1 alpha-2, null = international
   notes           String?
   isActive        Boolean  @default(true)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  aliases MerchantAlias[]
+  aliases      MerchantAlias[]
+  transactions Transaction[]
+  feedback     MerchantFeedback[]
 
-  @@unique([keyword, transactionType])
+  @@unique([normalizedKey, transactionType])
   @@index([country])
   @@index([category])
+  @@index([source])
   @@map("merchants")
 }
 
@@ -336,12 +380,36 @@ model MerchantAlias {
   id         String   @id @default(uuid())
   merchantId String
   keyword    String   @unique                     // alternate lowercase match string
+  hitCount   Int      @default(1)                 // popularity signal at the alias level
+  source     String   @default("static-pack")     // same enum as Merchant.source
   createdAt  DateTime @default(now())
 
   merchant Merchant @relation(fields: [merchantId], references: [id], onDelete: Cascade)
 
   @@index([merchantId])
   @@map("merchant_aliases")
+}
+
+// Anonymized cross-user learning signal — the "10,000 users classify Canva
+// as Marketing Software, global confidence increases" mechanism. Aggregate
+// counts ONLY. Hard privacy invariant: this table must never gain a userId,
+// description, or amount column — that's what keeps it safe to aggregate
+// across tenants in a multi-tenant app holding private financial data.
+// Written only from the recategorize route, gated to at most one increment
+// per correction event (see recategorize/route.ts) so one user's repeated
+// corrections can't skew the cross-user signal.
+model MerchantFeedback {
+  id            String   @id @default(uuid())
+  merchantId    String
+  category      String
+  agreeCount    Int      @default(0)
+  disagreeCount Int      @default(0)
+  updatedAt     DateTime @updatedAt
+
+  merchant Merchant @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+
+  @@unique([merchantId, category])
+  @@map("merchant_feedback")
 }
 
 // ── Intent classification infrastructure ────────────────────────────────────

@@ -34,7 +34,7 @@ const entries: MerchantEntry[] = [
   // ── Transport (FR) ────────────────────────────────────────────────────────
   h("sncf connect", "transport"), h("sncf voyageurs", "transport"), h("trainline.fr", "transport"),
   h("ouigo", "transport"), h("ratp paris", "transport"), h("transilien", "transport"),
-  h("navigo pass", "transport"), h("velib metropole", "transport"), h("blablacar bus", "transport"),
+  h("navigo pass", "transport"), h("navigo mensuel", "transport"), h("velib metropole", "transport"), h("blablacar bus", "transport"),
   h("flixbus france", "transport"), h("autolib", "transport"), h("citymapper", "transport"),
   h("uber france", "transport"), h("bolt france", "transport"), h("free-floating", "transport"),
   h("autoroutes du sud", "transport"), h("vinci autoroutes", "transport"), h("aprr peage", "transport"),
@@ -44,8 +44,8 @@ const entries: MerchantEntry[] = [
   // ── Telecom (FR) — qualified to avoid collisions with bare English words ──
   h("orange.fr", "utilities"), h("orange telecom", "utilities"), h("facture orange", "utilities"),
   h("orange sa", "utilities"),
-  h("sosh mobile", "utilities"), h("sfr.fr", "utilities"), h("sfr telecom", "utilities"),
-  h("free mobile", "utilities"), h("free.fr", "utilities"), h("freebox", "utilities"),
+  h("sosh mobile", "utilities"), h("sfr.fr", "utilities"), h("sfr telecom", "utilities"), h("sfr mobile", "utilities"),
+  h("free mobile", "utilities"), h("free.fr", "utilities"), h("freebox", "utilities"), h("free telecom", "utilities"),
   h("bouygues telecom", "utilities"), h("b&you mobile", "utilities"), h("la poste mobile", "utilities"),
   h("edf energie", "utilities"), h("engie energie", "utilities"), h("totalenergies electricite", "utilities"),
   h("veolia eau", "utilities"), h("suez eau", "utilities"), h("eau de paris", "utilities"),
@@ -79,7 +79,7 @@ const entries: MerchantEntry[] = [
 
   // ── Health & insurance (FR) ───────────────────────────────────────────────
   h("pharmacie de garde", "health"), h("doctolib", "health"), h("mutuelle harmonie", "health"),
-  h("alan assurance sante", "health"), h("maaf assurances", "health"), h("macif assurance", "health"),
+  h("alan assurance sante", "health"), h("mutuelle alan", "health"), h("maaf assurances", "health"), h("macif assurance", "health"),
   h("matmut assurance", "health"), h("maif assurance", "health"), h("axa france", "health"),
   h("malakoff humanis", "health"), h("april assurance", "health"), h("mgen mutuelle", "health"),
   h("groupama assurance", "health"), h("allianz france", "health"), h("generali france", "health"),
@@ -107,7 +107,7 @@ const entries: MerchantEntry[] = [
 
   // ── Generic France-specific keywords (Layer 3) ────────────────────────────
   m("autoentrepreneur", "taxes"), m("micro-entreprise", "taxes"), m("cotisation sociale", "taxes"),
-  m("loyer appartement", "housing"), m("charges copropriete", "housing"), m("assurance habitation", "housing"),
+  m("loyer appartement", "housing"), m("virement loyer", "housing"), m("charges copropriete", "housing"), m("assurance habitation", "housing"),
   m("expert comptable", "business services"), m("huissier", "business services"),
   // Bare-brand aliases — bank statements often show just the brand name
   m("café", "food"),

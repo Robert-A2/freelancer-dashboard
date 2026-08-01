@@ -4,13 +4,18 @@ import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 
+// "ai tools" and "tax" are deliberately excluded: "ai tools" is deprecated
+// (kept in messages/*.json only so transactions categorized before the
+// ai software / ai development split still render a valid label — nothing
+// should be newly assigned to it); "tax" is an orphaned duplicate of "taxes"
+// that no categorization logic anywhere ever assigns.
 const ALL_CATEGORIES = [
   "income", "stripe", "paypal", "client payment", "invoice payment",
   "freelance platform", "card payment", "bank transfer", "salary", "refund",
-  "ai tools", "software", "marketing", "advertising", "education",
-  "equipment", "office", "banking fees", "transport", "travel",
+  "ai software", "ai development", "software", "marketing", "advertising", "education",
+  "equipment", "office", "banking fees", "transport", "telecom", "coworking", "travel",
   "food", "health", "housing", "utilities", "subscriptions", "taxes",
-  "business services", "entertainment", "personal spending", "retail", "sports",
+  "business services", "professional services", "entertainment", "personal spending", "retail", "sports",
   "uncategorized", "savings", "transfer",
 ].sort();
 
