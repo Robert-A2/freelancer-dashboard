@@ -7,7 +7,6 @@ import { useTranslations } from "next-intl";
 import FeedbackButton from "./FeedbackButton";
 import LanguageSwitcher from "./LanguageSwitcher";
 import AccountDrawer from "./AccountDrawer";
-import MoreNavDrawer from "./MoreNavDrawer";
 
 const IconHome = () => (
   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
@@ -34,11 +33,6 @@ const IconForecast = () => (
     <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.941" />
   </svg>
 );
-const IconClients = () => (
-  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
-  </svg>
-);
 const IconProjects = () => (
   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
     <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 14.15v4.25a2 2 0 01-2 2H5.75a2 2 0 01-2-2v-4.25M20.25 14.15L18.25 6.5a2 2 0 00-2-1.5H7.75a2 2 0 00-2 1.5l-2 7.65M20.25 14.15h-4.5a2 2 0 00-2 2v.1a2 2 0 01-2 2h-.5a2 2 0 01-2-2v-.1a2 2 0 00-2-2h-4.5" />
@@ -55,14 +49,9 @@ const NAV_LINKS = [
 
 // Mobile bottom nav omits History (accessible via "View all" on dashboard)
 // so the remaining items fit cleanly across narrow screens — exactly 5 icons.
+// Clients isn't here either — it's in AccountDrawer instead (also linked
+// from the Analytics page), keeping the mobile tab bar to 5 icons.
 const MOBILE_NAV_LINKS = NAV_LINKS.filter(l => l.key !== "history");
-
-// Clients isn't in the primary bar — it's also linked from the Analytics
-// page — so it lives in the MoreNavDrawer instead, keeping the mobile tab
-// bar to 5 icons.
-const MORE_LINKS = [
-  { href: "/clients", key: "clients", Icon: IconClients },
-];
 
 export default function Navbar({ fullName, email }: { fullName: string; email: string }) {
   const pathname = usePathname();
@@ -115,7 +104,6 @@ export default function Navbar({ fullName, email }: { fullName: string; email: s
           </div>
           <div className="flex items-center gap-2">
             <LanguageSwitcher />
-            <MoreNavDrawer links={MORE_LINKS} />
             <FeedbackButton />
             <AccountDrawer fullName={fullName} email={email} />
           </div>
