@@ -226,13 +226,30 @@ export async function POST(request: NextRequest) {
       `File range: ${parsedEarliest?.slice(0, 10) ?? "n/a"} to ${parsedLatest?.slice(0, 10) ?? "n/a"}`
     );
 
+    // ── Core analytics recalculation (synchronous) ─────────────────────────
+    // MUST finish before the response is sent: the Dashboard's "View Dashboard"
+    // button navigates immediately after this response, and every core number
+    // it shows (cash position, health score, forecast, trend chart, monthly
+    // comparison) is read from MonthlyAnalytics/Forecast, not from Transaction
+    // rows directly. Previously these ran inside the deferred after() block
+    // below — a real race: the raw Transaction rows existed (so the empty
+    // state correctly didn't show), but MonthlyAnalytics was still stale, so
+    // the dashboard rendered its "has data" branch with null/zero everything.
+    // Both functions are pure aggregation over already-inserted Transaction /
+    // MonthlyAnalytics rows (no per-transaction external calls), so they're
+    // cheap enough to await here.
+    const userId = user.id;
+    await recalculateMonthlyAnalytics(userId);
+    await generateForecast(userId);
+
     // ── Post-import enrichment pipeline (deferred) ─────────────────────────
     // Runs after the response is sent so the user sees "Upload complete"
     // immediately. Each step is isolated — a failure here never affects the
-    // already-saved import record.
-    const importId  = csvImport.id;
-    const userId    = user.id;
-    const txsSnap   = transactions; // closure over parsed transactions
+    // already-saved import record. These are secondary/enrichment fields
+    // (payer attribution, merchant confidence, milestone auto-match) that the
+    // rest of the app already degrades gracefully around while pending.
+    const importId = csvImport.id;
+    const txsSnap  = transactions; // closure over parsed transactions
 
     after(async () => {
       let newTxIds: { id: string }[] = [];
@@ -259,16 +276,9 @@ export async function POST(request: NextRequest) {
       }
 
       try {
-        await recalculateMonthlyAnalytics(userId);
         await recomputeVerifiedRevenue(userId);
       } catch (err) {
-        console.error("[Upload/bg] analytics recalculation failed:", err);
-      }
-
-      try {
-        await generateForecast(userId);
-      } catch (err) {
-        console.error("[Upload/bg] forecast generation failed:", err);
+        console.error("[Upload/bg] verified revenue recompute failed:", err);
       }
 
       try {
