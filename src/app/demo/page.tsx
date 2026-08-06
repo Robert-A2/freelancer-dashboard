@@ -113,16 +113,6 @@ export default async function DemoDashboardPage() {
 
   const cashPosition = chartData.reduce((sum, d) => sum + d.cashflow, 0);
 
-  const forecastCashflowMarginPct = forecast && forecast.projectedIncome > 0
-    ? (forecast.projectedCashflow / forecast.projectedIncome) * 100
-    : null;
-  const forecastHealth: "good" | "warning" | "critical" | "unknown" =
-    !forecast ? "unknown" :
-    forecast.projectedCashflow < 0 ? "critical" :
-    forecast.confidence === "low" ? "warning" :
-    forecastCashflowMarginPct !== null && forecastCashflowMarginPct < 20 ? "warning" :
-    "good";
-
   const healthKey = intel.healthStatus === "at-risk" ? "atRisk" : intel.healthStatus;
   const badgeClass: Record<string, string> = {
     healthy: "text-[#4CC4A4] bg-[#234A40]",
@@ -133,6 +123,13 @@ export default async function DemoDashboardPage() {
     critical: "text-[#E5484D] bg-[#4A2A2A]",
     unknown: "text-[#7BA8C4] bg-[#1E3446]",
   };
+
+  // Cashflow Risk, not Forecast Health — a business can look profitable and
+  // still run out of cash, which is the more visceral, concrete risk a demo
+  // visitor actually understands at a glance. Reuses the same computeCashflowRisk
+  // result already driving the risk/opportunity cards and TrendsChart below,
+  // so this tile can never disagree with the rest of the page.
+  const riskBadgeKey: "good" | "warning" | "critical" = riskLevel === "low" ? "good" : riskLevel === "medium" ? "warning" : "critical";
 
   const summarySurface: Record<string, string> = {
     healthy: "surface-teal",
@@ -182,9 +179,9 @@ export default async function DemoDashboardPage() {
               <p className="text-[11px] text-[#6A97B4] mt-1">{t("cashPosition.caption")}</p>
             </div>
             <div className="card-sm">
-              <p className="label mb-2">{t("forecastHealth.label")}</p>
-              <span className={`inline-block text-sm font-bold px-3 py-1 rounded-full ${badgeClass[forecastHealth]}`}>
-                {t(`forecastHealth.${forecastHealth}`)}
+              <p className="label mb-2">{tf("cashflowRiskLabel")}</p>
+              <span className={`inline-block text-sm font-bold px-3 py-1 rounded-full ${badgeClass[riskBadgeKey]}`}>
+                {tf(`cashflowRisk.${riskLevel}.label`)}
               </span>
             </div>
           </div>

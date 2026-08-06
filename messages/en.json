@@ -1967,6 +1967,12 @@
       "ready": "Ready — loading your dashboard",
       "preparing": "Preparing…",
       "footer": "Sophie Martin — Freelance UX Designer — Paris — 2023–2025"
+    },
+    "payPreview": {
+      "banner": {
+        "heading": "This is a preview, not a real payment link",
+        "body": "Here's what your client sees when you send them a payment link — this example uses sample data, not what you just entered. Sign up to generate real ones."
+      }
     }
   }
 }

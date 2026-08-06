@@ -1967,6 +1967,12 @@
       "ready": "Prêt — chargement de votre tableau de bord",
       "preparing": "Préparation…",
       "footer": "Sophie Martin — Designer UX Freelance — Paris — 2023–2025"
+    },
+    "payPreview": {
+      "banner": {
+        "heading": "Ceci est un aperçu, pas un vrai lien de paiement",
+        "body": "Voici ce que votre client voit lorsque vous lui envoyez un lien de paiement — cet exemple utilise des données fictives, pas ce que vous venez de saisir. Inscrivez-vous pour en générer de vrais."
+      }
     }
   }
 }

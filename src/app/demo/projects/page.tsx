@@ -1,19 +1,23 @@
-import { getTranslations } from "next-intl/server";
-import Link from "next/link";
+import { getTranslations, getLocale } from "next-intl/server";
+import type { Locale } from "@/i18n/locales";
+import DemoProjectsExperience from "@/components/demo/DemoProjectsExperience";
 
 export const dynamic = "force-dynamic";
 
-// Kept in lockstep with (dashboard)/projects/page.tsx — same header, same
-// card-light empty state (a deliberate light-on-dark-shell contrast the real
-// app uses only for this invoicing-facing area, not a demo-only style).
-// The demo persona has no Projects entities, matching a genuine brand-new
-// signup, so only the empty state ever renders here — NewProjectPanel,
-// RunwayCard, and the Stripe/branding nudge banners are all real-write or
-// real-account-state features the demo can't back with anything real, so
-// they're omitted rather than faked. The CTA goes to /signup instead of
-// opening the real new-project form, for the same reason.
+// Kept in lockstep with (dashboard)/projects/page.tsx for the header and the
+// card-light styling (a deliberate light-on-dark-shell contrast the real app
+// uses only for this invoicing-facing area). Unlike a static empty state,
+// "Create a project" here actually lets the visitor create one and see the
+// resulting milestone list, payment-link copy, and status changes — entirely
+// in local browser state, nothing persisted — so they get a real feel for
+// the flow instead of being bounced straight to /signup. See
+// DemoProjectsExperience for the interactive part. RunwayCard and the
+// Stripe/branding nudge banners are still omitted: those reflect real
+// account state (Stripe connection, branding upload) that has no meaning
+// for a session with nothing saved server-side.
 export default async function DemoProjectsPage() {
   const t = await getTranslations("projects");
+  const locale = (await getLocale()) as Locale;
 
   return (
     <div className="space-y-8">
@@ -23,12 +27,7 @@ export default async function DemoProjectsPage() {
         <p className="text-[#5B7185] text-sm mt-0.5">{t("subtitle")}</p>
       </div>
 
-      <div className="card-light text-center py-16">
-        <div className="text-5xl mb-4">🤝</div>
-        <h2 className="text-xl font-semibold mb-2 text-[#16283B]">{t("emptyState.heading")}</h2>
-        <p className="text-[#5B7185] mb-6 max-w-sm mx-auto">{t("emptyState.body")}</p>
-        <Link href="/signup" className="btn-primary inline-block">{t("emptyState.cta")}</Link>
-      </div>
+      <DemoProjectsExperience locale={locale} />
     </div>
   );
 }
