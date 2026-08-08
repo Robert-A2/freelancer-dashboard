@@ -18,6 +18,27 @@ export function stripDiacritics(s: string): string {
   return s.normalize("NFD").replace(/[̀-ͯ]/g, "");
 }
 
+// ── Match-noise stripping ────────────────────────────────────────────────────────
+// Payment processors routinely glue words together with punctuation the keyword
+// packs never contain — e.g. Stripe/card-network exports render "Google Ads" as
+// "GOOGLE*ADS". A space-separated keyword like "google ads" is never a substring
+// of "google*ads", so the transaction silently falls through to a weaker/wrong
+// match (the generic "google" -> "software" entry) instead of the specific one
+// that already exists. Deliberately narrow — only the confirmed glue character.
+// NOT the same job as normalizeMerchantKey() below: that also strips reference
+// numbers via \b\d{4,}\b, which is fine for collapsing description variants into
+// one dictionary key, but would break real substring keywords that depend on a
+// literal 4+ digit run (e.g. the "sport 2000" pack entry) — proven by direct
+// testing before this was added, not a theoretical concern. Add a character here
+// only once a real, cited description confirms it's needed, the same bar "*" was
+// held to — this list is the intended one-line extension point as new noise
+// patterns turn up, not a place to speculatively harden.
+const MATCH_NOISE_CHARS = /\*/g;
+
+export function stripMatchNoise(s: string): string {
+  return s.replace(MATCH_NOISE_CHARS, " ").replace(/\s+/g, " ").trim();
+}
+
 // ── Merchant-key normalization ──────────────────────────────────────────────────
 // Used both when persisting a learned rule (on correction) and when looking one up
 // (during categorization), so the two stay in lockstep. Strips noise that varies
@@ -276,7 +297,7 @@ export function categorizeTransaction(
   merchantIndex?: MerchantIndex,
   decisionIndex?: DecisionIndex
 ): CategorizationResult {
-  const lower = stripDiacritics(description.toLowerCase());
+  const lower = stripMatchNoise(stripDiacritics(description.toLowerCase()));
 
   // DB-backed merchant entries (src/lib/categorization/merchant-db.ts) are
   // merged into the same buckets the static arrays below feed, so additions

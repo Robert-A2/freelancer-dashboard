@@ -1,5 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { categorizeTransaction } from "../engine";
+import { buildMerchantIndex, buildDecisionIndex } from "../merchant-db";
+import type { DbMerchantRow } from "../types";
 
 // ── Findings 1 & 2: positive incoming client payments must never be silently
 // classified as transfers, and negative third-party payments must never be
@@ -80,5 +82,65 @@ describe("categorizeTransaction — UK tax authority", () => {
     const result = categorizeTransaction("HM REVENUE & CUSTOMS", -450, undefined, "Robert Arthur");
     expect(result.transactionType).toBe("expense");
     expect(result.category).toBe("taxes");
+  });
+});
+
+// ── Match-noise stripping: real bank/processor exports glue words together
+// with "*" (e.g. Stripe/card-network rendering "Google Ads" as "GOOGLE*ADS")
+// — categorizeTransaction() must strip that noise before matching so the
+// specific keyword wins instead of a weaker/wrong generic one. Also guards
+// the two near-miss regressions a broader normalization (digit-stripping,
+// "#" stripping) was found to introduce during design review.
+
+describe("categorizeTransaction — processor-glued punctuation ('*')", () => {
+  it("'GOOGLE*ADS' matches the specific 'google ads' -> marketing keyword, not the generic 'google' -> software one", () => {
+    const result = categorizeTransaction("GOOGLE*ADS", -50, undefined, "Robert Arthur");
+    expect(result.transactionType).toBe("expense");
+    expect(result.category).toBe("marketing");
+    expect(result.confidence).toBe("high");
+  });
+
+  it("a Square-style processor prefix ('SQ *...') still resolves via the keyword in the tail", () => {
+    const result = categorizeTransaction("SQ *ACME COFFEE SHOP", -12.5, undefined, "Robert Arthur");
+    expect(result.transactionType).toBe("expense");
+    expect(result.category).toBe("food");
+  });
+
+  it("a seeded DB merchant ('google ads') also matches 'GOOGLE*ADS' via the Decision Engine, not just the static packs", () => {
+    const rows: DbMerchantRow[] = [{
+      id: "merchant-google-ads",
+      keyword: "google ads",
+      transactionType: "expense",
+      category: "marketing",
+      confidence: "high",
+      aliases: [],
+      popularity: 500,
+      country: null,
+      parentCompany: null,
+      feedback: [{ category: "marketing", agreeCount: 20, disagreeCount: 1 }],
+    }];
+    const merchantIndex = buildMerchantIndex(rows);
+    const decisionIndex = buildDecisionIndex(rows);
+
+    const result = categorizeTransaction("GOOGLE*ADS", -50, undefined, "Robert Arthur", merchantIndex, decisionIndex);
+    expect(result.transactionType).toBe("expense");
+    expect(result.category).toBe("marketing");
+    expect(result.source).toBe("intelligence");
+    expect(result.matchedMerchantId).toBe("merchant-google-ads");
+  });
+});
+
+describe("categorizeTransaction — match-noise stripping does not regress digit/hash-dependent keywords", () => {
+  it("'Invoice #1234' still resolves to the specific invoice-payment subcategory, not the generic income fallback", () => {
+    const result = categorizeTransaction("Invoice #1234", 800, undefined, "Robert Arthur");
+    expect(result.transactionType).toBe("income");
+    expect(result.category).toBe("invoice payment");
+  });
+
+  it("'SPORT 2000 LEVALLOIS' still resolves via the brand keyword that depends on the literal '2000'", () => {
+    const result = categorizeTransaction("SPORT 2000 LEVALLOIS", -45, undefined, "Robert Arthur");
+    expect(result.transactionType).toBe("expense");
+    expect(result.category).toBe("sports");
+    expect(result.confidence).toBe("high");
   });
 });
