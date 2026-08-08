@@ -275,18 +275,41 @@ interface CategorizationHealth {
   uncategorizedCount: number;
   topUncategorizedMerchants: { description: string; count: number }[];  // top 10
   topCorrectedMerchants: { description: string; count: number }[];      // top 10
+  needsReviewCount: number;                                            // intent understanding, not category
+  topNeedsReviewMerchants: { description: string; count: number }[];   // top 10
 }
 ```
 
 - `categorizedPct` / `uncategorizedPct` are simple counts: `category === "uncategorized"` vs. total, rounded to 1 decimal place.
 - `topUncategorizedMerchants` — `groupBy` on `Transaction.description` where `category === "uncategorized"`, ordered by count descending, top 10. This is the **per-user** view shown in-app (Analytics page "Categorization health" section, and the "Needs Review" banner data).
 - `topCorrectedMerchants` — `groupBy` on `CategoryCorrection.description`, top 10. Shows which merchants this specific user has manually fixed most often.
+- `needsReviewCount` / `topNeedsReviewMerchants` — same shape, but scoped to `Transaction.needsReview: true` instead of category. This is the **intent** layer's "meaning unclear" flag (e.g. an ambiguous transfer), a separate concern from category confidence — see the Intent Layer section (`getIntentBreakdown`, §13).
 
 > **Distinct from `UncategorizedMerchantReport`** (see [DATABASE.md §11](./DATABASE.md#11-uncategorizedmerchantreport---global-worklist)), which is the **cross-user, global** worklist used by maintainers — `getCategorizationHealth` is purely per-user and in-app.
 
 ---
 
-## 8. `getIncomeConcentration(userId, accountId?)`
+## 8. `getMerchantIntelligenceHealth(userId)` — confidence-based categorization health
+
+```ts
+interface MerchantIntelligenceHealth {
+  totalCount: number;
+  highConfidenceIdentifiedPct: number;    // categoryConfidence === "high"
+  mediumConfidenceIdentifiedPct: number;  // categoryConfidence === "medium"
+  lowConfidenceOrUnknownPct: number;      // categoryConfidence === "low" OR category === "uncategorized"
+  avgGlobalConfidenceScore: number;       // mean Merchant.globalConfidence across transactions with a resolved merchantId
+  topLowConfidenceMerchants: { candidateName: string; count: number; globalConfidence: number }[];  // top 10
+}
+```
+
+`getCategorizationHealth` (§7) measures **coverage** — did the engine assign any non-`"uncategorized"` category — not **correctness**. A transaction categorized at `categoryConfidence: "low"` (a heuristic guess, e.g. a structural transfer fallback) still counts as "categorized" there. This function is a materially more honest proxy: it reclassifies anything `categoryConfidence === "low"` out of the "understood" bucket, using data that already exists on every `Transaction` row — no dependency on the merchant-intelligence pipeline having resolved anything yet. Still a proxy, not ground-truth accuracy — no labeled dataset exists anywhere in this codebase.
+
+- `avgGlobalConfidenceScore` — averages `Merchant.globalConfidence` (the 0-100 numeric score computed by `computeMerchantConfidence()` in `src/lib/merchant-intelligence/confidence.ts`) across every transaction with a resolved `merchantId` — `0` until the merchant-intelligence pipeline has resolved any.
+- `topLowConfidenceMerchants` — groups the low/uncategorized transactions by raw `description` (not a normalized merchant key), so near-duplicate variants of the same real merchant can appear as separate entries here; this is a per-user diagnostic list, not a matching index.
+
+---
+
+## 9. `getIncomeConcentration(userId, accountId?)`
 
 When `accountId` is set, scopes the income transaction query to that account only via `{ accountId }` spread on the Prisma where clause.
 
@@ -310,7 +333,7 @@ Feeds the intelligence engine's `clientConcentration` / `incomeReasonablyDiversi
 
 ---
 
-## 9. `getClientInsights(userId)` — full client/revenue breakdown
+## 10. `getClientInsights(userId)` — full client/revenue breakdown
 
 The most involved function in this file. Returns `null` if fewer than **3** qualifying transactions exist.
 
@@ -351,7 +374,7 @@ All income transactions are grouped using two-phase alias grouping (see [Client 
 
 ---
 
-## 10. `getDataCoverage(userId, accountId?)` — single source of truth for date range
+## 11. `getDataCoverage(userId, accountId?)` — single source of truth for date range
 
 When `accountId` is set, the aggregate is scoped to that account's transactions — so the date range, count, and `rangeLabel` reflect only that account's history.
 
@@ -370,6 +393,63 @@ A single `prisma.transaction.aggregate()` call (`_count`, `_min`, `_max` on `tra
 
 - `years`/`months` are computed from the millisecond span using `365.25` days/year (`years` floored, `months` rounded) — this is a rough "age of the dataset" figure, not a precise calendar calculation, and is allowed to be approximate since it's only used for display ("12 months of history" badges) and forecast confidence tiering (see [FORECAST_ENGINE.md](./FORECAST_ENGINE.md)).
 - `rangeLabel` collapses to a single month/year (e.g. `"January 2024"`) if `earliest` and `latest` fall in the same month, otherwise `"<from> – <to>"`.
+
+---
+
+## 12. `detectDataGaps(userId)` — missing months inside the data range
+
+```ts
+interface DataGap {
+  month: number;
+  year:  number;
+  label: string;   // localized "Month Year", e.g. "March 2024"
+}
+```
+
+Walks `MonthlyAnalytics` from the first month with data to the last, and reports any **interior** month with zero income and zero expenses — the two boundary months (first and last) are anchor points, never reported as gaps, even if they're thin. Powers the Forecast page's "some months look empty" banner (`dataGaps.length > 0`), prompting the user to check whether they're missing a statement upload rather than silently treating a hole in the middle of their history as "no activity that month."
+
+- Requires a **2+ month span** between first and last data — with less than that, there's no interior to check, so it returns `[]`.
+- Caps at **12 reported gaps** even if more exist (`gaps.length >= 12` breaks the walk early) — this is a nudge banner, not an exhaustive audit.
+- **Self-suppresses on mostly-sparse data**: if more than half the interior months are gaps, it returns `[]` instead — that pattern usually means the user only ever uploaded selective months on purpose (e.g. quarterly statements), not that they're missing pieces of a continuous history, and the function can't tell those two cases apart, so it stays silent rather than nagging incorrectly.
+
+---
+
+## 13. `getIntentBreakdown(userId, year?, month?, accountId?)` — intent-aware P&L
+
+The Intent Layer's financial rollup — reads `Transaction.intent` directly (not `MonthlyAnalytics`, and not `transactionType`/`category`) to answer questions `category` alone can't: is a "transfer" actually a loan repayment, a family support payment, or genuinely invisible-to-cashflow money movement? Optional `year`/`month` scope it to a single year or month (same UTC date-range pattern as elsewhere in this file); omitting both covers all-time.
+
+```ts
+interface IntentBreakdown {
+  businessRevenue: number; businessCosts: number; businessProfit: number;
+  profitMarginPct: number | null;             // null when revenue = 0
+
+  personalSpend: number; familySupport: number; debtService: number; totalObligations: number;
+
+  savingsMovement: number; savingsWithdrawal: number; investmentFlow: number; ownerDraw: number;
+
+  passiveIncome: number; refunds: number;
+
+  trueNetCashflow: number;   // (businessRevenue + passiveIncome + refunds) - (businessCosts + personalSpend + debtService)
+
+  distribution: Array<{ intent: string | null; count: number; totalAmount: number }>;
+  transferBreakdown: {
+    totalCount: number; totalAmount: number;
+    byIntent: Array<{ intent: string | null; count: number; totalAmount: number }>;
+  };
+
+  totalTransactions: number; intentClassifiedCount: number; intentCoveragePct: number;
+  hasEnoughDataForDisplay: boolean;   // intentCoveragePct >= 80
+
+  needsReviewCount: number;
+  topNeedsReviewMerchants: Array<{ description: string; count: number }>;   // top 10
+}
+```
+
+- **`trueNetCashflow` corrects the "transfer blind spot"**: `transactionType: "transfer"` transactions (excluded from `netCashflow` in `MonthlyAnalytics`, §2) can still be real economic activity — a loan repayment or money sent to family is a transfer by type, but it's genuinely leaving the business. `trueNetCashflow` sums by *intent* instead, so these no longer vanish from the picture the way they do in the transaction-type-based `MonthlyAnalytics` view.
+- **`transferBreakdown`** shows exactly what's inside that previously-opaque "transfer" bucket, split by intent — this is the diagnostic that makes the correction in the point above visible/auditable rather than a black box.
+- **`hasEnoughDataForDisplay`** gates the UI between showing intent KPIs and a "back-fill required" prompt — `intentCoveragePct` (classified / total, this function's own scope) must be **≥ 80%** before the numbers are considered reliable enough to show as headline figures.
+- **`needsReviewCount`/`topNeedsReviewMerchants`** — transactions the intent classifier flagged as genuinely ambiguous (`needsReview: true`), independent of category confidence (see the `getCategorizationHealth` distinction, §7). This is the queue surfaced by the "meaning unclear" review UI.
+- Intent groupings (which raw `intent` values roll into `businessRevenue` vs `personalSpend` vs `savingsMovement`, etc.) are defined as a fixed set of constants near the top of the function in `analytics-engine.ts` (`BUSINESS_REVENUE_INTENTS`, `BUSINESS_COST_INTENTS`, and so on) — check those directly if a specific intent's bucket assignment is in question, rather than assuming from the field name alone.
 
 ---
 
