@@ -106,8 +106,10 @@ async function computeByMonthForAccount(
 // most recent upload doesn't extend to today.
 
 // The Dashboard's Recent Activity card shows a short, scannable peek — the
-// "View all transactions" link is right there for anyone who wants more.
-const RECENT_ACTIVITY_LIMIT = 5;
+// "View all transactions" link is right there for anyone who wants more, so
+// the card itself doesn't need to carry more than a handful of rows (spec:
+// reduce dashboard scroll length).
+const RECENT_ACTIVITY_LIMIT = 3;
 
 export async function getDashboardSummary(userId: string, accountId?: string | null) {
   // ── Per-account path ────────────────────────────────────────────────────────
