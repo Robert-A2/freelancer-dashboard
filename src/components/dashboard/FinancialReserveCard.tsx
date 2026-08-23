@@ -4,19 +4,37 @@ import type { Locale } from "@/i18n/locales";
 import type { ReserveSummary } from "@/lib/reserve-engine";
 import ReserveAdjustment from "@/components/dashboard/ReserveAdjustment";
 
-// Lives on Settings, directly below FinancialProfileSection — this is the
-// live result of that form, not a standalone dashboard widget, so there's no
-// separate "complete your profile" link here; the form is right above it.
+// Lives on Settings, directly below TaxContributionsSection/VatSettingsSection
+// — this is the live result of those forms (spec section 37: "Settings
+// should show what Nonodia is using"), not a standalone dashboard widget, so
+// there's no separate "complete your profile" link here; the forms are
+// right above it.
 export default async function FinancialReserveCard({ data, locale }: { data: ReserveSummary; locale: Locale }) {
   const t = await getTranslations("dashboard.financialReserveCard");
 
   const volatilityKey = `emergencyBuffer${data.emergencyBufferVolatility.charAt(0).toUpperCase()}${data.emergencyBufferVolatility.slice(1)}`;
 
+  // A France profile that can't be calculated yet carries a specific, honest
+  // reason on its first bucket (unsupported legal status, or an unidentified
+  // activity) — distinct from a plain "never set up" incomplete profile
+  // (spec sections 3, 5, 31, 36). Falls back to the generic estimate branch
+  // for every other case, unchanged.
+  const firstNoteKey = data.buckets[0]?.noteKey;
+  const franceUnsupportedStatus = !data.isProfileComplete && firstNoteKey === "socialContributionsUnsupportedStatus";
+  const franceNeedsActivityType = !data.isProfileComplete && firstNoteKey === "needsActivityType";
+
   return (
     <div className="card">
       <p className="label mb-3">{t("label")}</p>
 
-      {!data.isProfileComplete ? (
+      {franceUnsupportedStatus || franceNeedsActivityType ? (
+        <div className="mb-3">
+          <p className="text-lg font-bold text-[#D4A254] mb-1">
+            {franceUnsupportedStatus ? t("unsupportedStatusHeading") : t("needsActivityTypeHeading")}
+          </p>
+          <p className="text-xs text-[#6A97B4] leading-relaxed">{t("estimatedDisclaimer")}</p>
+        </div>
+      ) : !data.isProfileComplete ? (
         <div className="mb-3">
           <p className="text-lg font-bold text-[#D4A254] mb-1">{t("estimatedHeading")}</p>
           <p className="text-xs text-[#6A97B4] leading-relaxed mb-2">

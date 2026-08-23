@@ -8,9 +8,15 @@ export interface UserFinancialProfile {
   businessLegalStatus: string | null; // e.g. "micro_entrepreneur"
   activityType: string | null;        // country-specific key
   vatStatus: string | null;           // "exempt" | "registered" | "unknown"
+  // ── France micro-entrepreneur tax profile fields (Tax & Contributions
+  // spec) — optional, ignored by every other country's rule set. ──────────
+  versementLiberatoireStatus?: string | null; // "yes" | "no" | "unknown"
+  acreStatus?: string | null;                 // "yes" | "no" | "unknown"
+  activityStartDate?: Date | null;
+  defaultVatRate?: number | null;             // percentage, e.g. 20
 }
 
-export type BucketKey = "socialContributions" | "incomeTax" | "vat";
+export type BucketKey = "socialContributions" | "cfp" | "incomeTax" | "vat";
 export type BucketConfidence = "known" | "unavailable";
 
 export interface ReserveBucket {

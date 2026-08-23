@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import LanguageSwitcher from "@/components/ui/LanguageSwitcher";
 import MoreNavDrawer from "@/components/ui/MoreNavDrawer";
+import { PROJECTS_ENABLED } from "@/lib/feature-flags";
 
 const IconHome = () => (
   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
@@ -52,7 +53,7 @@ const IconReports = () => (
 // Clients is also linked from the Analytics page, and Reports has no
 // real-dashboard equivalent at all (see comment on the demo/reports page) —
 // keeping the mobile tab bar to exactly 5 icons, same as the real app.
-const NAV_LINKS = [
+const ALL_NAV_LINKS = [
   { href: "/demo",           key: "dashboard", Icon: IconHome      },
   { href: "/demo/upload",    key: "upload",    Icon: IconUpload    },
   { href: "/demo/history",   key: "history",   Icon: IconHistory   },
@@ -60,6 +61,10 @@ const NAV_LINKS = [
   { href: "/demo/analytics", key: "analytics", Icon: IconAnalytics },
   { href: "/demo/forecast",  key: "forecast",  Icon: IconForecast  },
 ] as const;
+
+// Projects is paused (see feature-flags.ts) — filtered out here rather than
+// deleted from the list, so re-enabling the feature is a one-line flip.
+const NAV_LINKS = ALL_NAV_LINKS.filter((l) => PROJECTS_ENABLED || l.key !== "projects");
 
 // Mobile bottom nav omits History, exactly like the real Navbar (accessible
 // via "View all" on the dashboard instead) — so the remaining items fit.

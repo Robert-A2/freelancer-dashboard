@@ -2,11 +2,14 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { createConnectedAccount, createAccountOnboardingLink } from "@/lib/stripe";
+import { PROJECTS_ENABLED } from "@/lib/feature-flags";
 
 // Creates (or reuses) the freelancer's Stripe Express connected account and
 // returns a fresh onboarding link. Called from the Settings page — never
 // exposes secret keys to the browser, only the one-time onboarding URL.
 export async function POST() {
+  // Projects/Milestones (and Stripe Connect onboarding) paused — see feature-flags.ts.
+  if (!PROJECTS_ENABLED) return NextResponse.json({ error: "Not available" }, { status: 404 });
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();

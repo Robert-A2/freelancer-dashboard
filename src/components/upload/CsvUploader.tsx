@@ -9,6 +9,7 @@ import type { LearnedRules, MerchantIndex } from "@/lib/categorization";
 import type { UserIntentRules } from "@/lib/intent-engine";
 import type { NormalizedTransaction } from "@/lib/csv-processor";
 import { formatCurrency } from "@/utils/finance";
+import { PROJECTS_ENABLED } from "@/lib/feature-flags";
 
 const EMPTY_MERCHANT_INDEX: MerchantIndex = {
   expenseHigh:    [],
@@ -61,6 +62,18 @@ interface SuspectedTransferPair {
   expenseAcct: string;
 }
 
+interface LikelyDuplicatePair {
+  manualTransactionId: string;
+  manualDescription: string;
+  manualDate: string;
+  manualAmount: number;
+  csvTransactionId: string;
+  csvDescription: string;
+  csvDate: string;
+  csvAmount: number;
+  confidence: "high" | "medium";
+}
+
 interface ImportResult {
   totalRows: number;
   importedRows: number;
@@ -74,6 +87,7 @@ interface ImportResult {
   typeBreakdown: { income: number; expense: number; savings: number; transfer: number } | null;
   suspectedTransfers?: SuspectedTransferPair[];
   skippedDuplicates?: Array<{ date: string; description: string; amount: number; type: string }>;
+  suspectedManualDuplicates?: LikelyDuplicatePair[];
 }
 
 type Stage =
@@ -130,12 +144,22 @@ export default function CsvUploader() {
   const [transfersDismissed, setTransfersDismissed] = useState(false);
   const [confirmedCount,    setConfirmedCount]    = useState<number | null>(null);
 
+  // Manual/CSV likely-duplicate review (spec section 32) — resolvedIds tracks
+  // pairs the user has already acted on (either way), so they drop out of
+  // the review list without needing a second server round trip to re-fetch.
+  const [resolvedDupeIds, setResolvedDupeIds] = useState<Set<string>>(new Set());
+  const [removingDupeId,  setRemovingDupeId]  = useState<string | null>(null);
+
   // Whether the user has ever created a Project — runway is computed entirely
   // from the Project/Milestone pipeline (see runway-engine.ts), so a CSV-only
   // user never sees it. Fetched once on mount so it's ready by the time the
   // "done" screen needs to decide whether to prompt for a project.
   const [hasProjects, setHasProjects] = useState<boolean | null>(null);
   useEffect(() => {
+    // Projects/Milestones paused — see feature-flags.ts. Skipping the fetch
+    // entirely (rather than just gating the JSX below) means re-enabling the
+    // feature is a one-line flip with no other code to remember to restore.
+    if (!PROJECTS_ENABLED) return;
     fetch("/api/projects")
       .then(r => r.json())
       .then(d => setHasProjects((d.projects ?? []).length > 0))
@@ -329,6 +353,28 @@ export default function CsvUploader() {
     setTransfersDismissed(true);
     router.refresh();
   }, [checkedKeys, router]);
+
+  // "This is a duplicate" — deletes the manual entry, keeping the newly
+  // imported CSV row (the CSV row is the more trustworthy of the two going
+  // forward, since it came from a real bank export). "Keep both" just marks
+  // the pair resolved without touching any data — the safe default for an
+  // uncertain (medium-confidence) match.
+  const removeManualDuplicate = useCallback(async (pairKey: string, manualTransactionId: string) => {
+    setRemovingDupeId(manualTransactionId);
+    try {
+      const res = await fetch(`/api/transactions/manual/${manualTransactionId}`, { method: "DELETE" });
+      if (res.ok) {
+        setResolvedDupeIds(prev => new Set(prev).add(pairKey));
+        router.refresh();
+      }
+    } finally {
+      setRemovingDupeId(null);
+    }
+  }, [router]);
+
+  const keepBothDuplicate = useCallback((pairKey: string) => {
+    setResolvedDupeIds(prev => new Set(prev).add(pairKey));
+  }, []);
 
   const reset = () => {
     setStage({ status: "idle" });
@@ -828,6 +874,59 @@ export default function CsvUploader() {
                 {t("done.duplicatesDetail.manyNote", { count: result.duplicateRows })}
               </p>
             )}
+          </div>
+        )}
+
+        {/* Likely manual/CSV duplicates (spec section 32) — never auto-deleted,
+            always reviewed one pair at a time. */}
+        {result.suspectedManualDuplicates && result.suspectedManualDuplicates.length > 0 && (
+          <div className="bg-[#D4A2540A] border border-[#D4A25430] rounded-xl px-4 py-3 space-y-3">
+            <p className="text-sm font-semibold text-[#D4A254]">
+              {t("done.manualDuplicates.heading", { count: result.suspectedManualDuplicates.length })}
+            </p>
+            <div className="space-y-3">
+              {result.suspectedManualDuplicates.map((pair) => {
+                const pairKey = `${pair.manualTransactionId}|${pair.csvTransactionId}`;
+                if (resolvedDupeIds.has(pairKey)) return null;
+                return (
+                  <div key={pairKey} className="bg-[#1A3048] rounded-lg p-3 space-y-2">
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div>
+                        <p className="text-[#6A97B4] mb-0.5">{t("done.manualDuplicates.manualLabel")}</p>
+                        <p className="text-[#A8C6E0] truncate">{pair.manualDescription}</p>
+                        <p className="text-[#6A97B4]">
+                          {new Date(pair.manualDate).toLocaleDateString(INTL_LOCALES[locale], { day: "numeric", month: "short", timeZone: "UTC" })}
+                          {" · "}{formatCurrency(pair.manualAmount, locale)}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-[#6A97B4] mb-0.5">{t("done.manualDuplicates.csvLabel")}</p>
+                        <p className="text-[#A8C6E0] truncate">{pair.csvDescription}</p>
+                        <p className="text-[#6A97B4]">
+                          {new Date(pair.csvDate).toLocaleDateString(INTL_LOCALES[locale], { day: "numeric", month: "short", timeZone: "UTC" })}
+                          {" · "}{formatCurrency(pair.csvAmount, locale)}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex gap-2 justify-end">
+                      <button
+                        onClick={() => keepBothDuplicate(pairKey)}
+                        className="text-xs font-medium text-[#7BA8C4] hover:text-[#A8C6E0] px-3 py-1.5 rounded-lg transition-colors"
+                      >
+                        {t("done.manualDuplicates.keepBoth")}
+                      </button>
+                      <button
+                        disabled={removingDupeId === pair.manualTransactionId}
+                        onClick={() => removeManualDuplicate(pairKey, pair.manualTransactionId)}
+                        className="text-xs font-semibold text-[#D4A254] hover:text-[#E8B86A] bg-[#D4A25415] px-3 py-1.5 rounded-lg transition-colors"
+                      >
+                        {t("done.manualDuplicates.removeManual")}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
 

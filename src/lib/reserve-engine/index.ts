@@ -2,6 +2,7 @@ import { prisma } from "../prisma";
 import { getCountryRules } from "./countries";
 import { computeEmergencyBuffer } from "./emergency-buffer";
 import type { ReserveBucket, UserFinancialProfile } from "./types";
+import { calculateFrenchMicroReserve, type FranceMicroReserveResult } from "../tax/france/calculate-reserve";
 
 export type { ReserveBucket, UserFinancialProfile, BucketKey, BucketConfidence } from "./types";
 export { computeEmergencyBuffer } from "./emergency-buffer";
@@ -25,11 +26,112 @@ export interface ReserveSummary {
   availableToSpendThisMonth: number;
 }
 
+export interface ReserveForAmount {
+  pct: number;
+  reserveAmount: number;
+  netAmount: number;
+  /** true when estimatedReservePct is the generic fallback or a manual override — not a real per-country VAT/tax calculation. Mirrors the same distinction FinancialReserveCard already shows via isProfileComplete/isManualOverride. */
+  isEstimate: boolean;
+}
+
+// The per-payment counterpart to getFinancialReserve's monthly view — "of
+// this €2,500 that just arrived, how much should I set aside, how much is
+// actually mine." Deliberately just applies the same headline
+// estimatedReservePct to one amount rather than a second rate calculation,
+// so a payment's reserve line can never disagree with the Settings page's
+// reserve card.
+export function computeReserveForAmount(summary: ReserveSummary, amount: number): ReserveForAmount {
+  const reserveAmount = Math.round(amount * (summary.estimatedReservePct / 100) * 100) / 100;
+  const netAmount = Math.round((amount - reserveAmount) * 100) / 100;
+  return {
+    pct: summary.estimatedReservePct,
+    reserveAmount,
+    netAmount,
+    isEstimate: !summary.isProfileComplete,
+  };
+}
+
+export interface FranceReserveForPayment {
+  engine: "france";
+  /** The full itemized breakdown (spec sections 21-25) — use this to render social/CFP/VFL/VAT as separate lines. */
+  result: FranceMicroReserveResult;
+  /** Flattened view for callers that only want one pct/amount pair (e.g. existing ReserveBreakdown fallback). */
+  asReserveForAmount: ReserveForAmount;
+}
+export interface GenericReserveForPayment {
+  engine: "generic";
+  result: ReserveForAmount;
+}
+export type ReserveForPayment = FranceReserveForPayment | GenericReserveForPayment;
+
+// The one entry point for "of this specific payment, how much is protected"
+// (spec sections 21, 24-25, 27, 45) — routes France micro-entrepreneurs
+// through calculateFrenchMicroReserve() for a real itemized answer, and
+// falls back to the generic country-agnostic estimate (manual override, or
+// the generic 25%) for everyone else, or for a France profile that can't be
+// calculated yet (wrong legal status, activity not identified). Every
+// caller that needs a payment-level reserve figure — Quick Add income,
+// Expected Payment scenario/received, Money Breakdown — calls this instead
+// of computing anything itself.
+export async function getReserveForPayment(
+  userId: string,
+  amount: number,
+  options?: { amountBasis?: "HT" | "TTC"; paymentDate?: Date; paymentActivityType?: string | null }
+): Promise<ReserveForPayment> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      country: true, businessLegalStatus: true, activityType: true, vatStatus: true,
+      versementLiberatoireStatus: true, acreStatus: true, activityStartDate: true, defaultVatRate: true,
+    },
+  });
+
+  if (user?.country === "FR") {
+    const result = calculateFrenchMicroReserve({
+      amount,
+      amountBasis: options?.amountBasis ?? "HT",
+      paymentDate: options?.paymentDate ?? new Date(),
+      taxProfile: {
+        businessLegalStatus: user.businessLegalStatus,
+        activityType: user.activityType,
+        versementLiberatoireStatus: user.versementLiberatoireStatus,
+        acreStatus: user.acreStatus,
+        activityStartDate: user.activityStartDate,
+        vatStatus: user.vatStatus,
+        defaultVatRate: user.defaultVatRate != null ? Number(user.defaultVatRate) : null,
+      },
+      paymentActivityType: options?.paymentActivityType,
+    });
+
+    if (result.status === "calculated") {
+      return {
+        engine: "france",
+        result,
+        asReserveForAmount: {
+          pct: result.grossReceived > 0 ? Math.round((result.knownMandatoryReserve / result.grossReceived) * 1000) / 10 : 0,
+          reserveAmount: result.knownMandatoryReserve,
+          netAmount: result.afterKnownStatutoryReserves,
+          isEstimate: false, // a real deterministic calculation from official rates, not a guess
+        },
+      };
+    }
+    // "unsupported-status" or "needs-activity-type" — fall through to the
+    // generic path below, which already treats an incomplete France profile
+    // the same way (manual override, else the generic 25% estimate).
+  }
+
+  const summary = await getFinancialReserve(userId);
+  return { engine: "generic", result: computeReserveForAmount(summary, amount) };
+}
+
 export async function getFinancialReserve(userId: string): Promise<ReserveSummary> {
   const [user, latestRecord] = await Promise.all([
     prisma.user.findUnique({
       where: { id: userId },
-      select: { country: true, businessLegalStatus: true, activityType: true, vatStatus: true, manualReservePctOverride: true },
+      select: {
+        country: true, businessLegalStatus: true, activityType: true, vatStatus: true, manualReservePctOverride: true,
+        versementLiberatoireStatus: true, acreStatus: true, activityStartDate: true, defaultVatRate: true,
+      },
     }),
     // Anchor "this month" to the most recent month with actual data, not wall-clock
     // time — same convention as getDashboardSummary/getMonthlyComparison. A user
@@ -47,6 +149,10 @@ export async function getFinancialReserve(userId: string): Promise<ReserveSummar
     businessLegalStatus: user?.businessLegalStatus ?? null,
     activityType: user?.activityType ?? null,
     vatStatus: user?.vatStatus ?? null,
+    versementLiberatoireStatus: user?.versementLiberatoireStatus ?? null,
+    acreStatus: user?.acreStatus ?? null,
+    activityStartDate: user?.activityStartDate ?? null,
+    defaultVatRate: user?.defaultVatRate != null ? Number(user.defaultVatRate) : null,
   };
 
   const anchor = latestRecord ? new Date(Date.UTC(latestRecord.year, latestRecord.month - 1, 1)) : new Date();
@@ -75,12 +181,18 @@ export async function getFinancialReserve(userId: string): Promise<ReserveSummar
   const countryRules = getCountryRules(profile.country);
   const isProfileComplete = countryRules?.isProfileComplete(profile) ?? false;
 
-  let buckets: ReserveBucket[] = [];
+  // Computed whenever a country rule set exists, even when the profile is
+  // incomplete — an "unsupported status" / "needs activity type" bucket
+  // still carries a specific, honest reason (spec sections 3, 5, 31, 36),
+  // distinct from "never set up at all."
+  const buckets: ReserveBucket[] = countryRules
+    ? countryRules.computeTaxBuckets(profile, { totalIncomeAllTime, incomeThisMonth, monthlyIncomeSamples })
+    : [];
+
   let estimatedReservePct: number;
   let isManualOverride = false;
 
   if (isProfileComplete && countryRules) {
-    buckets = countryRules.computeTaxBuckets(profile, { totalIncomeAllTime, incomeThisMonth, monthlyIncomeSamples });
     estimatedReservePct = buckets.reduce((sum, b) => sum + (b.pct ?? 0), 0);
   } else if (user?.manualReservePctOverride != null) {
     estimatedReservePct = Number(user.manualReservePctOverride);

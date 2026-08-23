@@ -215,6 +215,10 @@ export default async function HistoryPage({ searchParams }: { searchParams: Prom
             categoryReason: tx.categoryReason,
             transactionType: tx.transactionType,
             amount: Number(tx.amount),
+            // Manual and CSV transactions share one Activity list (spec
+            // section 13) — this flag only controls whether Edit/Delete
+            // render, never which list the row appears in.
+            isManual: tx.csvImportId === null,
           }))}
         />
       )}

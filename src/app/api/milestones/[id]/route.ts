@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { Decimal } from "@prisma/client/runtime/library";
+import { PROJECTS_ENABLED } from "@/lib/feature-flags";
 
 // Freelancer-side status updates only ("sent" when the link is copied/shared).
 // "paid"/"cleared" are never set here — those are exclusively the webhook's
@@ -10,6 +11,8 @@ import { Decimal } from "@prisma/client/runtime/library";
 const ALLOWED_STATUSES = new Set(["sent"]);
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  // Projects/Milestones paused — see feature-flags.ts.
+  if (!PROJECTS_ENABLED) return NextResponse.json({ error: "Not available" }, { status: 404 });
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -76,6 +79,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 }
 
 export async function DELETE(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  if (!PROJECTS_ENABLED) return NextResponse.json({ error: "Not available" }, { status: 404 });
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();

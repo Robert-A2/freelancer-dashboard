@@ -10,6 +10,13 @@ interface Body {
   vatStatus?: string | null;
   vatNumber?: string | null;
   manualReservePctOverride?: number | null;
+  safetyBufferMonths?: number | null;
+  // ── France Tax & Contributions profile ──────────────────────────────────
+  versementLiberatoireStatus?: string | null;
+  acreStatus?: string | null;
+  activityStartDate?: string | null; // ISO date
+  defaultVatRate?: number | null;
+  urssafFrequency?: string | null;
 }
 
 export async function PATCH(request: NextRequest) {
@@ -19,10 +26,14 @@ export async function PATCH(request: NextRequest) {
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const body = (await request.json()) as Body;
-    const data: Record<string, string | null | Decimal> = {};
+    const data: Record<string, string | null | Decimal | Date> = {};
 
-    for (const key of ["country", "businessLegalStatus", "activityType", "vatStatus", "vatNumber"] as const) {
+    for (const key of ["country", "businessLegalStatus", "activityType", "vatStatus", "vatNumber", "versementLiberatoireStatus", "acreStatus", "urssafFrequency"] as const) {
       if (body[key] !== undefined) data[key] = body[key];
+    }
+
+    if (body.activityStartDate !== undefined) {
+      data.activityStartDate = body.activityStartDate === null ? null : new Date(body.activityStartDate);
     }
 
     // Charging VAT while not registered is illegal — vatNumber only ever
@@ -38,6 +49,20 @@ export async function PATCH(request: NextRequest) {
         return NextResponse.json({ error: "Reserve percentage must be between 0 and 100." }, { status: 400 });
       }
       data.manualReservePctOverride = body.manualReservePctOverride === null ? null : new Decimal(body.manualReservePctOverride);
+    }
+
+    if (body.defaultVatRate !== undefined) {
+      if (body.defaultVatRate !== null && (!Number.isFinite(body.defaultVatRate) || body.defaultVatRate <= 0 || body.defaultVatRate > 100)) {
+        return NextResponse.json({ error: "VAT rate must be between 0 and 100." }, { status: 400 });
+      }
+      data.defaultVatRate = body.defaultVatRate === null ? null : new Decimal(body.defaultVatRate);
+    }
+
+    if (body.safetyBufferMonths !== undefined) {
+      if (body.safetyBufferMonths !== null && (!Number.isFinite(body.safetyBufferMonths) || body.safetyBufferMonths <= 0 || body.safetyBufferMonths > 24)) {
+        return NextResponse.json({ error: "Safety buffer must be between 0 and 24 months." }, { status: 400 });
+      }
+      data.safetyBufferMonths = body.safetyBufferMonths === null ? null : new Decimal(body.safetyBufferMonths);
     }
 
     if (Object.keys(data).length === 0) {

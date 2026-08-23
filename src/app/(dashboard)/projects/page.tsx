@@ -11,6 +11,7 @@ import Link from "next/link";
 import NewProjectPanel from "@/components/projects/NewProjectPanel";
 import ProjectList, { type ProjectView } from "@/components/projects/ProjectList";
 import RunwayCard from "@/components/dashboard/RunwayCard";
+import { PROJECTS_ENABLED } from "@/lib/feature-flags";
 
 export const dynamic = "force-dynamic";
 
@@ -18,6 +19,10 @@ export default async function ProjectsPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
+
+  // Projects/Milestones paused — see feature-flags.ts. Nothing below this
+  // is deleted, just unreachable while the flag is off.
+  if (!PROJECTS_ENABLED) redirect("/dashboard");
 
   const t = await getTranslations("projects");
   const locale = (await getLocale()) as Locale;

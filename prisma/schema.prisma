@@ -10,17 +10,17 @@ datasource db {
 }
 
 model User {
-  id           String   @id @default(uuid())
-  fullName     String
-  email        String   @unique
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id        String   @id @default(uuid())
+  fullName  String
+  email     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // ── Stripe Connect — lets a freelancer receive milestone payments directly
   // into their own Stripe account. Both nullable/defaulted so every existing
   // user row is valid the moment this column exists; no backfill required.
-  stripeAccountId      String?  @unique
-  stripeAccountEnabled Boolean  @default(false)
+  stripeAccountId      String? @unique
+  stripeAccountEnabled Boolean @default(false)
 
   // ── Financial profile ──────────────────────────────────────────────────────
   // Drives the Financial Reserve Engine (src/lib/reserve-engine/) — none of
@@ -29,11 +29,60 @@ model User {
   // gets a clearly-labeled generic estimate, never a silent guess presented
   // as precise. Completing these lets the country-specific rule set (only
   // France implemented so far) compute a real breakdown instead.
-  country                  String?  // ISO 3166-1 alpha-2, e.g. "FR"
-  businessLegalStatus      String?  // e.g. "micro_entrepreneur", "sole_trader", "llc"
-  activityType             String?  // country-specific key — France: "bnc_liberal" | "bic_services" | "bic_vente"
-  vatStatus                String?  // "exempt" | "registered" | "unknown"
+  country                  String? // ISO 3166-1 alpha-2, e.g. "FR"
+  businessLegalStatus      String? // "micro_entrepreneur" | "other" | "unsure"
+  // Country-specific key. France micro-entrepreneur: "bnc_liberal" |
+  // "bic_service_commercial" | "bic_service_artisan" | "bic_sales" |
+  // "cipav_liberal" | "mixed" | "unsure" — five categories, not three,
+  // because BIC commercial vs artisan services carry different CFP rates
+  // (Tax & Contributions spec section 4).
+  activityType             String?
+  vatStatus                String? // "exempt" | "registered" | "unknown"
   manualReservePctOverride Decimal? @db.Decimal(5, 2) // optional override of the total reserve %, usable any time, especially before the profile is complete
+
+  // ── France micro-entrepreneur tax profile (Tax & Contributions spec) ────────
+  // Extends the financial profile above rather than a separate table — there
+  // is exactly one tax profile per user; onboarding writes these same fields,
+  // Settings edits them later. Every field stores the user's raw declared
+  // fact, never a pre-computed rate, so calculateFrenchMicroReserve() can
+  // re-derive the correct percentage as rates or ACRE eligibility change over
+  // time (spec section 19).
+  versementLiberatoireStatus String? // "yes" | "no" | "unknown" — flat-rate income tax scheme (spec section 6)
+  acreStatus                 String? // "yes" | "no" | "unknown" — ACRE reduced-contribution eligibility (spec section 8)
+  activityStartDate          DateTime? // drives ACRE's date-versioned reduced rate and its expiry (spec sections 9-11)
+  defaultVatRate             Decimal?  @db.Decimal(4, 2) // e.g. 20.00 — only meaningful when vatStatus === "registered"; per-payment override allowed later
+  urssafFrequency            String? // "monthly" | "quarterly" | "unknown" — which contribution period the reserve belongs to (spec section 16)
+  // A user-declared flat euro figure to set aside for taxes — distinct from
+  // manualReservePctOverride above, which overrides the computed *rate* the
+  // Reserve Engine applies to income. This is the manual-entry user's own
+  // number, shown as-is, never derived from or reconciled with that engine.
+  manualTaxReserveAmount   Decimal? @db.Decimal(12, 2)
+  // Whether the user keeps a genuinely separate bank account for their
+  // freelance activity, or one shared account for both business and
+  // personal money (onboarding's money-separation question) — null = never
+  // asked (legacy). This is what makes the Dashboard's Business/Personal/All
+  // account filter actually show different numbers instead of the same
+  // figures copied into every view: without it there was only ever one
+  // undifferentiated "current cash" and one "spending estimate" no matter
+  // which tab was selected.
+  accountsSeparated        Boolean?
+  // Replaces the old single manualSpendingEstimate — a freelancer's business
+  // running costs and their own personal living-expense draw are different
+  // numbers with different implications (one is what the business needs to
+  // keep operating, the other is what the owner needs to pay themselves),
+  // so onboarding now asks for both separately rather than one vague
+  // "average expense" silently reused for both meanings. Powers Estimated
+  // Runway (src/lib/data-maturity.ts) per account/view until real observed
+  // history exists to calculate it instead. Never treated as actual
+  // history: always labeled "you told us this" wherever shown (spec
+  // section 28).
+  businessSpendingEstimate Decimal? @db.Decimal(12, 2)
+  personalSpendingEstimate Decimal? @db.Decimal(12, 2)
+  // "How much runway do you want to protect?" (Money Intelligence spec
+  // section 11) — null = not configured, so Safe To Use is never computed
+  // and silently presented as universally correct. When set, protectedBuffer
+  // = spendingBasis × safetyBufferMonths, in src/lib/money-breakdown.ts.
+  safetyBufferMonths       Decimal? @db.Decimal(4, 2)
 
   // ── VAT / invoicing identity ────────────────────────────────────────────────
   // vatStatus === "registered" doubles as the "I am registered for VAT/GST/
@@ -51,17 +100,20 @@ model User {
   brandAccentColor String? // hex, e.g. "#2FA393" — replaces the default teal accent
   brandFont        String? // key into src/lib/brand-font-options.ts, e.g. "inter"
 
-  accounts            Account[]
-  csvImports          CsvImport[]
-  transactions        Transaction[]
-  monthlyAnalytics    MonthlyAnalytics[]
-  forecasts           Forecast[]
-  categoryRules       CategoryRule[]
-  categoryCorrections CategoryCorrection[]
-  userIntentRules     UserIntentRule[]
-  payers              Payer[]
-  projects            Project[]
-  milestones          Milestone[]
+  accounts               Account[]
+  csvImports             CsvImport[]
+  transactions           Transaction[]
+  monthlyAnalytics       MonthlyAnalytics[]
+  forecasts              Forecast[]
+  categoryRules          CategoryRule[]
+  categoryCorrections    CategoryCorrection[]
+  userIntentRules        UserIntentRule[]
+  payers                 Payer[]
+  projects               Project[]
+  milestones             Milestone[]
+  cashBalanceCheckpoints CashBalanceCheckpoint[]
+  recurringExpenses      RecurringExpense[]
+  expectedPayments       ExpectedPayment[]
 
   @@map("users")
 }
@@ -86,18 +138,19 @@ enum AccountType {
 model Account {
   id          String      @id @default(uuid())
   userId      String
-  name        String      // user-given: "Revolut Business", "BNP Courant"
-  institution String?     // auto-detected from CSV header: "Revolut", "BNP"
+  name        String // user-given: "Revolut Business", "BNP Courant"
+  institution String? // auto-detected from CSV header: "Revolut", "BNP"
   accountType AccountType @default(personal_checking)
   currency    String      @default("EUR")
-  color       String?     // hex accent for UI, e.g. "#3AB5A0"
+  color       String? // hex accent for UI, e.g. "#3AB5A0"
   isArchived  Boolean     @default(false)
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 
-  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  transactions Transaction[]
-  csvImports   CsvImport[]
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions      Transaction[]
+  csvImports        CsvImport[]
+  recurringExpenses RecurringExpense[]
 
   @@unique([userId, name])
   @@index([userId])
@@ -121,20 +174,20 @@ model Account {
 //   NONE (bank/gov)  → excluded from all revenue figures
 
 enum PayerType {
-  client        // confirmed revenue source — freelance client
-  employer      // salary / employment — recurring fixed payroll
-  platform      // Upwork, Fiverr, Stripe, PayPal, Malt, etc.
-  bank          // financial institution transfers — NOT revenue
-  government    // tax authorities, social benefits — NOT revenue
+  client // confirmed revenue source — freelance client
+  employer // salary / employment — recurring fixed payroll
+  platform // Upwork, Fiverr, Stripe, PayPal, Malt, etc.
+  bank // financial institution transfers — NOT revenue
+  government // tax authorities, social benefits — NOT revenue
   refund_source // merchant / purchase reversal — NOT revenue
-  unknown       // unclassified — confidence determined by payment history
+  unknown // unclassified — confidence determined by payment history
 }
 
 model Payer {
   id            String    @id @default(uuid())
   userId        String
-  canonicalName String    // display name set on first encounter, e.g. "Acme Sarl"
-  displayName   String?   // user-set preferred name (overrides canonicalName in UI)
+  canonicalName String // display name set on first encounter, e.g. "Acme Sarl"
+  displayName   String? // user-set preferred name (overrides canonicalName in UI)
   payerType     PayerType @default(unknown)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -151,8 +204,8 @@ model Payer {
 model PayerAlias {
   id        String   @id @default(uuid())
   payerId   String
-  rawText   String   // exact text extracted from bank description
-  matchKey  String   // normalized for dedup (no legal suffixes, lowercase, accent-free)
+  rawText   String // exact text extracted from bank description
+  matchKey  String // normalized for dedup (no legal suffixes, lowercase, accent-free)
   hitCount  Int      @default(1)
   createdAt DateTime @default(now())
 
@@ -183,43 +236,58 @@ model CsvImport {
 }
 
 model Transaction {
-  id              String   @id @default(uuid())
-  userId          String
-  csvImportId     String?
-  accountId       String?
-  payerId         String?  // resolved payer — set by payer engine after import
-  merchantId      String?  // resolved merchant identity — set by merchant-intelligence pipeline after import
-  transactionDate DateTime
-  description     String
-  amount          Decimal  @db.Decimal(12, 2)
-  transactionType String
-  category        String   @default("uncategorized")
-  categoryConfidence String @default("medium")
-  categorySource  String?
+  id                 String   @id @default(uuid())
+  userId             String
+  csvImportId        String?
+  accountId          String?
+  payerId            String? // resolved payer — set by payer engine after import
+  merchantId         String? // resolved merchant identity — set by merchant-intelligence pipeline after import
+  // Set only on rows materialized by the recurring-expense sync engine (see
+  // src/lib/recurring-expense-engine.ts) — lets that engine know which months
+  // are already covered without re-deriving it from description/amount/date.
+  recurringExpenseId String?
+  transactionDate    DateTime
+  description        String
+  amount             Decimal  @db.Decimal(12, 2)
+  transactionType    String
+  category           String   @default("uncategorized")
+  categoryConfidence String   @default("medium")
+  categorySource     String?
   // Human-readable explanation, set only when categorySource is "intelligence"
   // (see computeDecisionScore()'s `reason` field) — the Decision Engine's own
   // account of which signals produced this category. Null for every other
   // source (static/keyword matches don't have one to give).
-  categoryReason  String?
-  sourceFile      String?
+  categoryReason     String?
+  sourceFile         String?
   // ── Financial intent ─────────────────────────────────────────────────────
   // Orthogonal to transactionType (which determines analytics bucketing).
   // intent says WHY the money moved; transactionType says HOW it's counted.
   // e.g. transactionType:"transfer" + intent:"family_support" = WorldRemit send.
-  intent            String?   // e.g. "family_support", "investment", "business_expense"
-  intentConfidence  String?   // "high" | "medium" | "low"
-  intentSource      String?   // "user" | "global" | "inferred"
-  needsReview       Boolean  @default(false)
-  createdAt       DateTime @default(now())
+  intent             String? // e.g. "family_support", "investment", "business_expense"
+  intentConfidence   String? // "high" | "medium" | "low"
+  intentSource       String? // "user" | "global" | "inferred"
+  needsReview        Boolean  @default(false)
+  createdAt          DateTime @default(now())
+  // Audit snapshot of the France tax calculation used for THIS payment at
+  // the moment it was recorded (Tax & Contributions spec section 33) — the
+  // rates/activity/ACRE status that applied then, not a live pointer to the
+  // user's current profile. A later Settings change must never silently
+  // rewrite what this transaction's reserve was calculated as (spec section
+  // 32). Null for expenses and any income not run through the France engine
+  // (e.g. CSV-imported rows, or a non-France/unsupported-status profile).
+  taxReserveSnapshot Json?
 
-  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  csvImport CsvImport? @relation(fields: [csvImportId], references: [id], onDelete: SetNull)
-  account   Account?   @relation(fields: [accountId], references: [id], onDelete: SetNull)
-  payer     Payer?     @relation(fields: [payerId], references: [id], onDelete: SetNull)
-  merchant  Merchant?  @relation(fields: [merchantId], references: [id], onDelete: SetNull)
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  csvImport        CsvImport?        @relation(fields: [csvImportId], references: [id], onDelete: SetNull)
+  account          Account?          @relation(fields: [accountId], references: [id], onDelete: SetNull)
+  payer            Payer?            @relation(fields: [payerId], references: [id], onDelete: SetNull)
+  merchant         Merchant?         @relation(fields: [merchantId], references: [id], onDelete: SetNull)
+  recurringExpense RecurringExpense? @relation(fields: [recurringExpenseId], references: [id], onDelete: SetNull)
   // Back-relation only — the foreign key lives on Milestone.transactionId.
   // Set once a Stripe payment (or a matched CSV import row) clears this milestone.
-  milestone Milestone?
+  milestone        Milestone?
+  // Back-relation only — the foreign key lives on ExpectedPayment.receivedTransactionId.
+  expectedPayment  ExpectedPayment?
 
   // Deduplication is per-account when an account is set, cross-account otherwise.
   // Two partial unique indexes (created via raw SQL after prisma db push) enforce this:
@@ -234,25 +302,26 @@ model Transaction {
   @@index([userId, accountId])
   @@index([userId, payerId])
   @@index([userId, merchantId])
+  @@index([userId, recurringExpenseId])
   @@map("transactions")
 }
 
 model MonthlyAnalytics {
-  id              String  @id @default(uuid())
+  id              String   @id @default(uuid())
   userId          String
   month           Int
   year            Int
   // ── Bank cashflow (raw) ───────────────────────────────────────────────────
-  totalIncome     Decimal @db.Decimal(12, 2) @default(0)  // all positive inflows
-  totalExpenses   Decimal @db.Decimal(12, 2) @default(0)
-  totalSavings    Decimal @db.Decimal(12, 2) @default(0)
-  netCashflow     Decimal @db.Decimal(12, 2) @default(0)  // totalIncome - totalExpenses
+  totalIncome     Decimal  @default(0) @db.Decimal(12, 2) // all positive inflows
+  totalExpenses   Decimal  @default(0) @db.Decimal(12, 2)
+  totalSavings    Decimal  @default(0) @db.Decimal(12, 2)
+  netCashflow     Decimal  @default(0) @db.Decimal(12, 2) // totalIncome - totalExpenses
   // ── Payer-derived revenue tiers ───────────────────────────────────────────
   // Computed by payer-engine after each import. These answer the question
   // "how much was actually earned from clients?" — not "how much came in?"
-  verifiedRevenue Decimal @db.Decimal(12, 2) @default(0)  // HIGH confidence payers
-  likelyRevenue   Decimal @db.Decimal(12, 2) @default(0)  // MEDIUM confidence payers
-  reviewRevenue   Decimal @db.Decimal(12, 2) @default(0)  // LOW confidence — Needs Review
+  verifiedRevenue Decimal  @default(0) @db.Decimal(12, 2) // HIGH confidence payers
+  likelyRevenue   Decimal  @default(0) @db.Decimal(12, 2) // MEDIUM confidence payers
+  reviewRevenue   Decimal  @default(0) @db.Decimal(12, 2) // LOW confidence — Needs Review
   createdAt       DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -305,7 +374,7 @@ model Forecast {
   projectedCashflow Decimal  @db.Decimal(12, 2)
   forecastPeriod    String
   generatedAt       DateTime @default(now())
-  intentBreakdown   Json?    // intent-based projections; null when coverage < 80%
+  intentBreakdown   Json? // intent-based projections; null when coverage < 80%
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -327,43 +396,43 @@ model Forecast {
 // every merchant a real identity that accumulates knowledge over time
 // (see MerchantFeedback) instead of being just a keyword row.
 model Merchant {
-  id              String   @id @default(uuid())
-  canonicalName   String                          // display name, e.g. "Adobe"
-  normalizedKey   String                          // stable identity key from normalizeMatchKey(), e.g. "adobe"
-  transactionType String   @default("expense")    // income | expense | savings | transfer
+  id              String @id @default(uuid())
+  canonicalName   String // display name, e.g. "Adobe"
+  normalizedKey   String // stable identity key from normalizeMatchKey(), e.g. "adobe"
+  transactionType String @default("expense") // income | expense | savings | transfer
 
   // ── Categorization (existing behavior, unchanged) ──────────────────────
-  category        String                          // e.g. "food", "taxes", "freelance platform"
-  subcategory     String?                         // e.g. "creative software" — unpopulated at launch
-  confidence      String   @default("high")       // high | medium | low — coarse tier; this (not globalConfidence) drives the matching waterfall bucket
+  category    String // e.g. "food", "taxes", "freelance platform"
+  subcategory String? // e.g. "creative software" — unpopulated at launch
+  confidence  String  @default("high") // high | medium | low — coarse tier; this (not globalConfidence) drives the matching waterfall bucket
 
   // ── Rich identity — vision fields, populated incrementally ─────────────
-  industry               String?
-  businessType            String?  // e.g. "saas" | "retail" | "marketplace" | "utility" | "government"
-  parentCompany           String?
-  website                  String?
-  logoUrl                  String?
-  recurringIndicator      String?  @default("unknown") // "always" | "sometimes" | "never" | "unknown"
-  taxClassificationHint   String?  // advisory only — never used for real tax filing
-  businessFunction         String?  // short free-text, e.g. "creative software subscription"
-  knownLanguages           String[] @default([])
-  metadata                 Json?    // open-ended catch-all so future fields don't need another migration
+  industry              String?
+  businessType          String? // e.g. "saas" | "retail" | "marketplace" | "utility" | "government"
+  parentCompany         String?
+  website               String?
+  logoUrl               String?
+  recurringIndicator    String?  @default("unknown") // "always" | "sometimes" | "never" | "unknown"
+  taxClassificationHint String? // advisory only — never used for real tax filing
+  businessFunction      String? // short free-text, e.g. "creative software subscription"
+  knownLanguages        String[] @default([])
+  metadata              Json? // open-ended catch-all so future fields don't need another migration
 
   // ── Numeric confidence engine ────────────────────────────────────────────
-  globalConfidence    Int      @default(0)  // 0-100. Reporting/UI input only in v1 — does NOT feed the matching waterfall.
-  confidenceBreakdown Json?                 // stored component signals for transparency/debugging
-  popularity          Int      @default(0)  // global hit counter, incremented on every match
+  globalConfidence    Int   @default(0) // 0-100. Reporting/UI input only in v1 — does NOT feed the matching waterfall.
+  confidenceBreakdown Json? // stored component signals for transparency/debugging
+  popularity          Int   @default(0) // global hit counter, incremented on every match
 
   // ── Provenance / future AI seam ──────────────────────────────────────────
   source String @default("static-pack")
   // "static-pack" | "seed-curated" | "db-manual" | "user-derived" | "cross-user-derived" | "ai-assisted"
   // "ai-assisted" is reserved for a future fast-follow — no v1 code path writes it.
 
-  country         String?                         // ISO 3166-1 alpha-2, null = international
-  notes           String?
-  isActive        Boolean  @default(true)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  country   String? // ISO 3166-1 alpha-2, null = international
+  notes     String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   aliases      MerchantAlias[]
   transactions Transaction[]
@@ -379,9 +448,9 @@ model Merchant {
 model MerchantAlias {
   id         String   @id @default(uuid())
   merchantId String
-  keyword    String   @unique                     // alternate lowercase match string
-  hitCount   Int      @default(1)                 // popularity signal at the alias level
-  source     String   @default("static-pack")     // same enum as Merchant.source
+  keyword    String   @unique // alternate lowercase match string
+  hitCount   Int      @default(1) // popularity signal at the alias level
+  source     String   @default("static-pack") // same enum as Merchant.source
   createdAt  DateTime @default(now())
 
   merchant Merchant @relation(fields: [merchantId], references: [id], onDelete: Cascade)
@@ -441,7 +510,7 @@ model UserIntentRule {
   userId      String
   merchantKey String
   intent      String
-  source      String   @default("user")  // "user" | "propagated"
+  source      String   @default("user") // "user" | "propagated"
   hitCount    Int      @default(1)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -458,10 +527,10 @@ model UserIntentRule {
 // maintainer a worklist for the next seed-data update.
 model UncategorizedMerchantReport {
   id                String   @id @default(uuid())
-  merchantKey       String   @unique              // normalizeMerchantKey(description)
+  merchantKey       String   @unique // normalizeMerchantKey(description)
   sampleDescription String
   occurrenceCount   Int      @default(1)
-  status            String   @default("new")      // new | reviewed | resolved | ignored
+  status            String   @default("new") // new | reviewed | resolved | ignored
   firstSeenAt       DateTime @default(now())
   lastSeenAt        DateTime @default(now())
   createdAt         DateTime @default(now())
@@ -521,14 +590,14 @@ model Project {
 }
 
 model Milestone {
-  id          String          @id @default(uuid())
-  projectId   String
-  userId      String          // denormalized — lets every dashboard query filter by userId alone
-  label       String          // e.g. "Deposit (50%)", "Final payment"
-  amount      Decimal         @db.Decimal(12, 2)
-  currency    String          @default("EUR")
-  dueDate     DateTime?
-  status      MilestoneStatus @default(pending)
+  id        String          @id @default(uuid())
+  projectId String
+  userId    String // denormalized — lets every dashboard query filter by userId alone
+  label     String // e.g. "Deposit (50%)", "Final payment"
+  amount    Decimal         @db.Decimal(12, 2)
+  currency  String          @default("EUR")
+  dueDate   DateTime?
+  status    MilestoneStatus @default(pending)
 
   // A project's milestones are created together in one batched insert, so
   // `createdAt` (DB-level `now()`) is identical across all of them — ties
@@ -585,4 +654,100 @@ model Milestone {
   @@index([userId, status])
   @@index([projectId])
   @@map("milestones")
+}
+
+// ── Manual transaction entry ─────────────────────────────────────────────────
+// Lets a user get value from Nonodia without uploading a CSV first — typing
+// in a starting cash balance, known recurring expenses, and expected income
+// feeds the exact same Transaction/MonthlyAnalytics pipeline a CSV import
+// does (see src/lib/recurring-expense-engine.ts, cash-balance-engine.ts,
+// expected-payment-engine.ts). Deliberately separate from Project/Milestone
+// (the invoicing feature) — not extended, not reused, per explicit product
+// decision.
+
+// Append-only: app code only ever inserts a new row, never updates one — this
+// is what makes "Edit balance" an honest adjustment on top of history rather
+// than a silent overwrite of it.
+model CashBalanceCheckpoint {
+  id            String   @id @default(uuid())
+  userId        String
+  // null = a shared/unified checkpoint, used when User.accountsSeparated is
+  // false (or never answered) — the same balance applies to every account
+  // filter view, since it genuinely is one pool of money. Set to a real
+  // Account id only when accountsSeparated is true, scoping this checkpoint
+  // to that one account (Business or Personal) so getCurrentCashPosition()
+  // can show a real, different balance per filter tab instead of the same
+  // global number everywhere.
+  accountId     String?
+  amount        Decimal  @db.Decimal(12, 2)
+  effectiveDate DateTime @default(now())
+  source        String // "manual-entry" | "user-correction"
+  note          String?
+  createdAt     DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, effectiveDate])
+  @@index([userId, accountId, effectiveDate])
+  @@map("cash_balance_checkpoints")
+}
+
+// A declared, known-in-advance monthly expense (rent, a SaaS subscription).
+// This is the DECLARED counterpart to forecast-engine.ts's detectRecurringExpenses,
+// which statistically INFERS recurrence from >=2 months of transaction history —
+// the two are complementary signals, never merged. accountId carries the
+// Business/Personal distinction via the existing Account/accountType mechanism,
+// not a new flag on Transaction.
+model RecurringExpense {
+  id           String   @id @default(uuid())
+  userId       String
+  accountId    String
+  merchantName String
+  category     String
+  amount       Decimal  @db.Decimal(12, 2)
+  dayOfMonth   Int // 1-28, clamped to the real length of shorter months
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user                  User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  account               Account       @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  generatedTransactions Transaction[]
+
+  @@index([userId, isActive])
+  @@map("recurring_expenses")
+}
+
+// "Money you expect to receive" — a manual-entry user's own record of upcoming
+// income. Deliberately has no invoicing/payment-link/Stripe fields, ever —
+// unlike Milestone, this never claims Stripe/CSV-grade verification, so
+// self-reporting it "received" (below) doesn't compromise any existing trust
+// boundary the way reusing Milestone.status would have.
+model ExpectedPayment {
+  id                    String   @id @default(uuid())
+  userId                String
+  amount                Decimal  @db.Decimal(12, 2)
+  // Both nullable — only amount and expectedDate are actually required.
+  // Display code must always fall back (never assume clientName is set):
+  // see today-facts.ts's UpcomingItem.label and markReceived()'s Transaction
+  // description.
+  clientName            String?
+  projectName           String?
+  // Which of the user's activities this payment belongs to — only meaningful
+  // (and only ever asked for) when the user's tax profile activityType is
+  // "mixed" (Tax & Contributions spec section 5): a single flat percentage
+  // would be dishonest for a mixed-activity freelancer, so each payment must
+  // identify its own activity instead of inheriting one blended guess.
+  activityType          String?
+  expectedDate          DateTime
+  status                String   @default("pending") // "pending" | "received" | "cancelled"
+  receivedTransactionId String?  @unique // set when marked received — links to the real Transaction created
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  user                User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  receivedTransaction Transaction? @relation(fields: [receivedTransactionId], references: [id], onDelete: SetNull)
+
+  @@index([userId, status])
+  @@map("expected_payments")
 }

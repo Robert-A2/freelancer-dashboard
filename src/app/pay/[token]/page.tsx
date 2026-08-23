@@ -5,6 +5,7 @@ import { INTL_LOCALES } from "@/i18n/locales";
 import { formatCurrency, formatInvoiceNumber, computeVatBreakdown } from "@/utils/finance";
 import { getBrandFontClassName } from "@/lib/brand-fonts";
 import PayButton from "@/components/pay/PayButton";
+import { PROJECTS_ENABLED } from "@/lib/feature-flags";
 
 export const dynamic = "force-dynamic";
 
@@ -43,6 +44,22 @@ export default async function PayPage({
   const { paid } = await searchParams;
   const t = await getTranslations("pay");
   const locale = (await getLocale()) as Locale;
+
+  // Projects/Milestones (and the payment links they generate) are paused —
+  // see feature-flags.ts. Reuses the existing "link not found" state below
+  // rather than a new one: from an external payer's point of view, no valid
+  // payment link exists right now, which is exactly true.
+  if (!PROJECTS_ENABLED) {
+    return (
+      <div className="min-h-screen bg-[#F4F6F8] flex items-center justify-center px-6">
+        <div className="max-w-md w-full bg-white border border-[#E3E8EE] rounded-2xl shadow-[0_1px_2px_rgba(15,40,60,0.04),0_12px_32px_rgba(15,40,60,0.06)] p-8 text-center">
+          <div className="text-4xl mb-4">🔗</div>
+          <h1 className="text-lg font-semibold text-[#16283B] mb-2">{t("notFound.heading")}</h1>
+          <p className="text-sm text-[#5B7185]">{t("notFound.body")}</p>
+        </div>
+      </div>
+    );
+  }
 
   const milestone = await prisma.milestone.findUnique({
     where: { paymentUrlToken: token },

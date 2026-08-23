@@ -17,6 +17,7 @@ import CollapsibleSection from "@/components/ui/CollapsibleSection";
 import ExpenseBreakdown from "@/components/analytics/ExpenseBreakdown";
 import type { BreakdownItem } from "@/components/analytics/ExpenseBreakdown";
 import BusinessIntelligence from "@/components/dashboard/BusinessIntelligence";
+import { getDataMaturity } from "@/lib/data-maturity";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
@@ -64,7 +65,7 @@ export default async function AnalyticsPage() {
   // Exactly 12 months ending at the last data month — UTC midnight
   const incSince = new Date(Date.UTC(dataYear, dataMonthMax - 12, 1));
 
-  const [chartData, categoryInsights, intentBreakdown, categoryBreakdown, incomeBySource, ytdThis, ytdPrev, clientInsights, coverage, concentration, categorizationHealth, ytdMonthsWithData] =
+  const [chartData, categoryInsights, intentBreakdown, categoryBreakdown, incomeBySource, ytdThis, ytdPrev, clientInsights, coverage, concentration, categorizationHealth, ytdMonthsWithData, maturity] =
     await Promise.all([
       getHistoricalData(user.id, 999),
       getCategoryInsights(user.id),
@@ -102,7 +103,15 @@ export default async function AnalyticsPage() {
           OR: [{ totalIncome: { gt: 0 } }, { totalExpenses: { gt: 0 } }],
         },
       }),
+      getDataMaturity(user.id),
     ]);
+
+  // "Want to save time? Import transactions" (spec section 31) — a manual-
+  // only user (no CSV ever imported) who's been entering a lot by hand each
+  // month is exactly who benefits most from importing history instead.
+  // Never shown to a CSV user, and dismissable by simply not clicking it —
+  // never blocks normal manual use.
+  const manualAccelerator = maturity.dataSources.length === 1 && maturity.dataSources[0] === "manual" && maturity.transactionCount >= 10;
 
   const hasData = chartData.some(d => d.income > 0 || d.expenses > 0);
   const nonZeroMonths = chartData.filter((d) => d.income > 0 || d.expenses > 0).length;
@@ -157,6 +166,21 @@ export default async function AnalyticsPage() {
       </div>
 
       {coverage.count > 0 && <DataCoverageBar coverage={coverage} />}
+
+      {manualAccelerator && (
+        <div className="flex items-start gap-3 px-4 py-3.5 bg-[#1E3446] border border-[#2D4C68] rounded-xl">
+          <span className="text-[#3AB5A0] text-lg flex-shrink-0 mt-0.5">⚡</span>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold text-[#A8C6E0] mb-1">
+              {t("manualAccelerator.title", { count: maturity.transactionCount })}
+            </p>
+            <p className="text-xs text-[#6A97B4] leading-relaxed">{t("manualAccelerator.body")}</p>
+            <Link href="/upload" className="inline-block mt-2 text-xs font-semibold text-[#3AB5A0] hover:text-[#4CC4A4] transition-colors">
+              {t("manualAccelerator.cta")} →
+            </Link>
+          </div>
+        </div>
+      )}
 
       {/* Habit verdict — answers "What is working and what is hurting?" */}
       {hasData && (

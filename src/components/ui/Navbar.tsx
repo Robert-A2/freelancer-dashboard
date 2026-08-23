@@ -7,6 +7,8 @@ import { useTranslations } from "next-intl";
 import FeedbackButton from "./FeedbackButton";
 import LanguageSwitcher from "./LanguageSwitcher";
 import AccountDrawer from "./AccountDrawer";
+import QuickAddDrawer from "./QuickAddDrawer";
+import { PROJECTS_ENABLED } from "@/lib/feature-flags";
 
 const IconHome = () => (
   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
@@ -38,7 +40,7 @@ const IconProjects = () => (
     <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 14.15v4.25a2 2 0 01-2 2H5.75a2 2 0 01-2-2v-4.25M20.25 14.15L18.25 6.5a2 2 0 00-2-1.5H7.75a2 2 0 00-2 1.5l-2 7.65M20.25 14.15h-4.5a2 2 0 00-2 2v.1a2 2 0 01-2 2h-.5a2 2 0 01-2-2v-.1a2 2 0 00-2-2h-4.5" />
   </svg>
 );
-const NAV_LINKS = [
+const ALL_NAV_LINKS = [
   { href: "/dashboard", key: "dashboard", Icon: IconHome      },
   { href: "/upload",    key: "upload",    Icon: IconUpload    },
   { href: "/history",   key: "history",   Icon: IconHistory   },
@@ -47,16 +49,22 @@ const NAV_LINKS = [
   { href: "/forecast",  key: "forecast",  Icon: IconForecast  },
 ] as const;
 
+// Projects is paused (see feature-flags.ts) — filtered out here rather than
+// deleted from the list, so re-enabling the feature is a one-line flip.
+const NAV_LINKS = ALL_NAV_LINKS.filter((l) => PROJECTS_ENABLED || l.key !== "projects");
+
 // Mobile bottom nav omits History (accessible via "View all" on dashboard)
 // so the remaining items fit cleanly across narrow screens — exactly 5 icons.
 // Clients isn't here either — it's in AccountDrawer instead (also linked
 // from the Analytics page), keeping the mobile tab bar to 5 icons.
 const MOBILE_NAV_LINKS = NAV_LINKS.filter(l => l.key !== "history");
 
-export default function Navbar({ fullName, email }: { fullName: string; email: string }) {
+export default function Navbar({ fullName, email, isMixedActivity, accountsSeparated }: { fullName: string; email: string; isMixedActivity: boolean; accountsSeparated: boolean }) {
   const pathname = usePathname();
   const t = useTranslations("common");
+  const tQuickAdd = useTranslations("manual.quickAdd");
   const [pending, setPending] = useState<string | null>(null);
+  const [quickAddOpen, setQuickAddOpen] = useState(false);
 
   // Clear pending once the real pathname catches up
   useEffect(() => { setPending(null); }, [pathname]);
@@ -103,12 +111,21 @@ export default function Navbar({ fullName, email }: { fullName: string; email: s
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => setQuickAddOpen(true)}
+              className="flex items-center gap-1.5 bg-[#3AB5A0] hover:bg-[#2E9D8A] text-[#0D1B2B] font-semibold text-sm px-3 py-1.5 rounded-lg transition-colors duration-150"
+            >
+              <span className="text-base leading-none">+</span>
+              <span className="hidden sm:inline">{tQuickAdd("button")}</span>
+            </button>
             <LanguageSwitcher />
             <FeedbackButton />
             <AccountDrawer fullName={fullName} email={email} />
           </div>
         </div>
       </nav>
+
+      <QuickAddDrawer open={quickAddOpen} onClose={() => setQuickAddOpen(false)} isMixedActivity={isMixedActivity} accountsSeparated={accountsSeparated} />
 
       {/* Mobile bottom navigation */}
       <div className="min-[1400px]:hidden fixed bottom-0 left-0 right-0 z-50 bg-[#17293C] border-t border-[#2D4C68]">

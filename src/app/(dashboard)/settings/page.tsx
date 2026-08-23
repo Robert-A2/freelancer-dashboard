@@ -10,8 +10,10 @@ import DeleteAccountSection from "@/components/settings/DeleteAccountSection";
 import ExportDataButton from "@/components/settings/ExportDataButton";
 import StripeConnectSection from "@/components/settings/StripeConnectSection";
 import VatSettingsSection from "@/components/settings/VatSettingsSection";
-import FinancialProfileSection from "@/components/settings/FinancialProfileSection";
+import TaxContributionsSection from "@/components/settings/TaxContributionsSection";
 import FinancialReserveCard from "@/components/dashboard/FinancialReserveCard";
+import SafetyBufferSection from "@/components/settings/SafetyBufferSection";
+import { PROJECTS_ENABLED } from "@/lib/feature-flags";
 
 export const dynamic = "force-dynamic";
 
@@ -34,10 +36,16 @@ export default async function SettingsPage() {
       activityType: true,
       vatStatus: true,
       vatNumber: true,
+      defaultVatRate: true,
+      versementLiberatoireStatus: true,
+      acreStatus: true,
+      activityStartDate: true,
+      urssafFrequency: true,
       businessName: true,
       brandLogoUrl: true,
       brandAccentColor: true,
       brandFont: true,
+      safetyBufferMonths: true,
     },
   });
 
@@ -46,6 +54,11 @@ export default async function SettingsPage() {
     businessLegalStatus: dbUser?.businessLegalStatus ?? null,
     activityType: dbUser?.activityType ?? null,
     vatStatus: dbUser?.vatStatus ?? null,
+    versementLiberatoireStatus: dbUser?.versementLiberatoireStatus ?? null,
+    acreStatus: dbUser?.acreStatus ?? null,
+    activityStartDate: dbUser?.activityStartDate ?? null,
+    defaultVatRate: dbUser?.defaultVatRate != null ? Number(dbUser.defaultVatRate) : null,
+    urssafFrequency: dbUser?.urssafFrequency ?? null,
   };
   const countryRules = getCountryRules(financialProfile.country);
   const isFinancialProfileComplete = countryRules?.isProfileComplete(financialProfile) ?? false;
@@ -54,7 +67,10 @@ export default async function SettingsPage() {
   // webhook — Connect onboarding can be finished by the user without any
   // webhook firing back to us, so this is how "pending" flips to "connected".
   let stripeStatus: "notConnected" | "pending" | "connected" = "notConnected";
-  if (dbUser?.stripeAccountId) {
+  // Projects/Milestones (and the Stripe Connect payment links tied to them)
+  // are paused — see feature-flags.ts. Skips the live Stripe API call too,
+  // not just the rendered section.
+  if (PROJECTS_ENABLED && dbUser?.stripeAccountId) {
     stripeStatus = dbUser.stripeAccountEnabled ? "connected" : "pending";
     if (process.env.STRIPE_SECRET_KEY) {
       try {
@@ -91,22 +107,28 @@ export default async function SettingsPage() {
         <ExportDataButton />
       </div>
 
-      <StripeConnectSection status={stripeStatus} />
+      {PROJECTS_ENABLED && <StripeConnectSection status={stripeStatus} />}
 
-      <FinancialProfileSection
+      <TaxContributionsSection
         country={financialProfile.country}
         businessLegalStatus={financialProfile.businessLegalStatus}
         activityType={financialProfile.activityType}
-        vatStatus={financialProfile.vatStatus}
+        versementLiberatoireStatus={financialProfile.versementLiberatoireStatus}
+        acreStatus={financialProfile.acreStatus}
+        activityStartDate={financialProfile.activityStartDate}
+        urssafFrequency={financialProfile.urssafFrequency}
         isComplete={isFinancialProfileComplete}
       />
 
       <VatSettingsSection
         vatStatus={dbUser?.vatStatus ?? null}
         vatNumber={dbUser?.vatNumber ?? null}
+        defaultVatRate={financialProfile.defaultVatRate}
       />
 
       <FinancialReserveCard data={financialReserve} locale={locale} />
+
+      <SafetyBufferSection safetyBufferMonths={dbUser?.safetyBufferMonths != null ? Number(dbUser.safetyBufferMonths) : null} />
 
       <DeleteAccountSection email={user.email ?? ""} />
     </div>

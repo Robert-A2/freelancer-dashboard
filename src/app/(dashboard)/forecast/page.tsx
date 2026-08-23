@@ -10,6 +10,10 @@ import {
 import { generateForecast } from "@/lib/forecast-engine";
 import { generateDashboardIntelligence, computeCashflowRisk } from "@/lib/intelligence-engine";
 import { getExpectedIncome } from "@/lib/milestone-engine";
+import { getDataMaturity, getCashRunway, MATURITY_THRESHOLDS } from "@/lib/data-maturity";
+import { getTodayFacts } from "@/lib/today-facts";
+import { getMoneyBreakdown, projectMoneyBreakdownWithPayment } from "@/lib/money-breakdown";
+import { getReserveForPayment } from "@/lib/reserve-engine";
 import { prisma } from "@/lib/prisma";
 import TrendsChart from "@/components/dashboard/TrendsChart";
 import DataCoverageBar from "@/components/dashboard/DataCoverage";
@@ -18,6 +22,7 @@ import CollapsibleSection from "@/components/ui/CollapsibleSection";
 import YearEndProjectionCard from "@/components/forecast/YearEndProjectionCard";
 import ExpectedFromProjectsCard from "@/components/forecast/ExpectedFromProjectsCard";
 import { formatCurrency } from "@/utils/finance";
+import { PROJECTS_ENABLED } from "@/lib/feature-flags";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
@@ -30,6 +35,8 @@ export default async function ForecastPage() {
   const t = await getTranslations("forecast");
   const td = await getTranslations("dashboard");
   const tCategories = await getTranslations("categories");
+  const tLearning = await getTranslations("manual.learning.forecastPage");
+  const tRunway = await getTranslations("manual.learning.runway");
   const locale = (await getLocale()) as Locale;
 
   const bold = (chunks: React.ReactNode) => <strong className="text-[#E8F0F8] font-semibold">{chunks}</strong>;
@@ -53,7 +60,7 @@ export default async function ForecastPage() {
     critical: { label: t("cashflowRisk.critical.label"), desc: t("cashflowRisk.critical.desc"), bg: "bg-[#E5484D0A]", border: "border-[#E5484D25]", text: "text-[#E5484D]" },
   };
 
-  const [forecast, chartData, monthCount, summary, comparison, categoryInsights, concentration, coverage, intentBreakdown, dataGaps, taxPaymentTxs, expectedIncome] =
+  const [forecast, chartData, monthCount, summary, comparison, categoryInsights, concentration, coverage, intentBreakdown, dataGaps, taxPaymentTxs, expectedIncome, maturity, todayFacts] =
     await Promise.all([
       generateForecast(user.id),
       getHistoricalData(user.id, 999),
@@ -69,8 +76,55 @@ export default async function ForecastPage() {
         where: { userId: user.id, intent: "tax_payment", transactionType: "expense" },
         select: { transactionDate: true, amount: true },
       }),
-      getExpectedIncome(user.id),
+      // Projects/Milestones paused — see feature-flags.ts.
+      PROJECTS_ENABLED ? getExpectedIncome(user.id) : Promise.resolve(null),
+      getDataMaturity(user.id),
+      getTodayFacts(user.id),
     ]);
+
+  // The Forecast page is framed as "Business Runway" — it must actually
+  // read Business-only cash/spend when the user keeps separate accounts,
+  // not the combined All-accounts figure (which would silently include
+  // Personal's spending estimate and cash, disagreeing with its own label).
+  // No account is created here — a user who's never touched the Business
+  // account yet simply falls through to the shared/unscoped figure below.
+  const dbUserAccounts = await prisma.user.findUnique({ where: { id: user.id }, select: { accountsSeparated: true } });
+  const businessAccountId = dbUserAccounts?.accountsSeparated
+    ? (await prisma.account.findUnique({ where: { userId_name: { userId: user.id, name: "Business (manual)" } }, select: { id: true } }))?.id ?? null
+    : null;
+
+  // Runway (spec sections 27-29) — only meaningful once a real cash figure
+  // exists (a manual checkpoint). CSV-only users with no checkpoint see
+  // nothing here rather than a fabricated number; runway-engine.ts's
+  // pipeline-based Runway on the Projects page answers a different question
+  // and is untouched by this.
+  const cashRunway = todayFacts.hasCurrentCash ? await getCashRunway(user.id, businessAccountId) : null;
+
+  // "If [next expected payment] arrives" (spec sections 23-24) — the exact
+  // same projection Expected Payment's own detail view shows, computed here
+  // for the nearest pending one so Runway never claims a guarantee it can't
+  // back up. Only queried when there's both a runway to project from and an
+  // actual pending payment to project with. Business-scoped for the same
+  // reason as cashRunway above — an expected client payment is always
+  // Business's, so the scenario it projects onto must be Business's too.
+  const nextExpectedPayment = todayFacts.upcoming.find((u) => u.kind === "expected_income") ?? null;
+  const runwayScenario = cashRunway && cashRunway.months !== null && nextExpectedPayment
+    ? await (async () => {
+        const [reserve, currentBreakdown] = await Promise.all([
+          getReserveForPayment(user.id, nextExpectedPayment.amount),
+          getMoneyBreakdown(user.id, businessAccountId),
+        ]);
+        return projectMoneyBreakdownWithPayment(currentBreakdown, nextExpectedPayment.amount, reserve.engine === "france" ? reserve.asReserveForAmount : reserve.result);
+      })()
+    : null;
+
+  // Protect Forecast more strongly than Analytics (spec section 26): a
+  // statistical projection off zero complete calendar months — a handful of
+  // days of manual activity — is not reliable enough to show as a real
+  // forecast, no matter how the confidence badge below would score it. A
+  // CSV user importing a full year hits >=1 complete month immediately, so
+  // this never touches an already-mature account (scenario F/36).
+  const forecastStillLearning = maturity.completeMonths < MATURITY_THRESHOLDS.MIN_COMPLETE_MONTHS_FOR_HEALTH;
 
   const current = summary.current
     ? { totalIncome: Number(summary.current.totalIncome), totalExpenses: Number(summary.current.totalExpenses), totalSavings: Number(summary.current.totalSavings), netCashflow: Number(summary.current.netCashflow) }
@@ -256,6 +310,48 @@ export default async function ForecastPage() {
         </div>
       )}
 
+      {/* Runway — a real cash figure (manual checkpoint) ÷ actual/estimated
+          burn. Independent of forecastStillLearning: it needs only a cash
+          checkpoint, never a full month of transaction history. */}
+      {cashRunway && cashRunway.months !== null && (
+        <div className="card">
+          <p className="label mb-2">
+            {cashRunway.source === "estimated" ? tRunway("estimatedLabel") : tRunway("calculatedLabel")}
+          </p>
+          {/* A negative months figure ("-0.8 months") is meaningless — cash
+              is already short of what the spend basis implies, so state
+              that plainly instead of printing a negative decimal. */}
+          {cashRunway.months < 0 ? (
+            <p className="text-2xl font-bold text-[#E5484D] tabular-nums mb-1">{tRunway("alreadyBehind")}</p>
+          ) : (
+            <p className="text-2xl font-bold text-[#E8F0F8] tabular-nums mb-1">
+              {t("howBuilt.monthsValue", { count: Math.round(cashRunway.months * 10) / 10 })}
+            </p>
+          )}
+          <p className="text-xs text-[#6A97B4]">
+            {cashRunway.source === "estimated"
+              ? tRunway("estimatedCaption", { amount: formatCurrency(cashRunway.monthlySpend, locale) })
+              : tRunway("calculatedCaption", { months: cashRunway.basedOnMonths })}
+          </p>
+
+          {/* "If this arrives" — a labeled scenario, never folded into the
+              runway figure above (spec sections 23-24, 32). */}
+          {runwayScenario && nextExpectedPayment && (
+            <div className="mt-4 pt-4 border-t border-[#1E3A55]">
+              <p className="text-xs text-[#6A97B4]">
+                {runwayScenario.projectedRunwayMonths !== null && runwayScenario.projectedRunwayMonths < 0
+                  ? tRunway("ifArrivesStillBehind", { label: nextExpectedPayment.label, amount: formatCurrency(nextExpectedPayment.amount, locale) })
+                  : tRunway("ifArrives", {
+                      label: nextExpectedPayment.label,
+                      amount: formatCurrency(nextExpectedPayment.amount, locale),
+                      months: runwayScenario.projectedRunwayMonths !== null ? (Math.round(runwayScenario.projectedRunwayMonths * 10) / 10) : "—",
+                    })}
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
       {!hasData && (
         <div className="card text-center py-16">
           <div className="text-5xl mb-4">📈</div>
@@ -267,7 +363,61 @@ export default async function ForecastPage() {
         </div>
       )}
 
-      {hasData && (
+      {hasData && forecastStillLearning && (
+        <div className="space-y-6">
+          <div className="card text-center py-10">
+            <h2 className="text-xl font-semibold mb-3">{tLearning("title")}</h2>
+            <p className="text-sm text-[#7BA8C4] mb-6">{tLearning("weKnow")}</p>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-xl mx-auto text-left mb-6">
+              <div className="bg-[#1A3048] rounded-xl p-3">
+                <p className="label mb-1">{td("cashPosition.label")}</p>
+                <p className="text-sm font-semibold text-[#E8F0F8] tabular-nums">{formatCurrency(todayFacts.currentCash, locale)}</p>
+              </div>
+              <div className="bg-[#1A3048] rounded-xl p-3">
+                <p className="label mb-1">{t("howBuilt.recurringExpensesLabel")}</p>
+                <p className="text-sm font-semibold text-[#E8F0F8] tabular-nums">{formatCurrency(todayFacts.knownCommitmentsMonthly, locale)}</p>
+              </div>
+              <div className="bg-[#1A3048] rounded-xl p-3">
+                <p className="label mb-1">{t("expectedFromProjects.label")}</p>
+                <p className="text-sm font-semibold text-[#E8F0F8] tabular-nums">
+                  {formatCurrency(todayFacts.upcoming.filter(u => u.kind === "expected_income").reduce((s, u) => s + u.amount, 0), locale)}
+                </p>
+              </div>
+              <div className="bg-[#1A3048] rounded-xl p-3">
+                <p className="label mb-1">{t("howBuilt.monthsOfHistory")}</p>
+                <p className="text-sm font-semibold text-[#E8F0F8] tabular-nums">{maturity.historyDays}</p>
+              </div>
+            </div>
+            <p className="text-sm text-[#7BA8C4] max-w-md mx-auto">{tLearning("notEnough")}</p>
+          </div>
+
+          {todayFacts.upcoming.length > 0 && (
+            <div className="card">
+              <p className="label mb-1">{tLearning("knownMovements")}</p>
+              <p className="text-xs text-[#6A97B4] mb-4">{tLearning("notAForecast")}</p>
+              <ul className="space-y-3">
+                {todayFacts.upcoming.map((item) => (
+                  <li key={`${item.kind}-${item.id}`} className="flex items-center justify-between gap-3 text-sm bg-[#1A3048] rounded-xl px-4 py-3">
+                    <span className="text-[#A8C6E0]">{item.label}</span>
+                    <span className={`font-semibold tabular-nums ${item.kind === "expected_income" ? "text-[#4CC4A4]" : "text-[#D4A254]"}`}>
+                      {item.kind === "expected_income" ? "+" : "−"}{formatCurrency(item.amount, locale)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          <div className="flex items-center justify-center gap-4 flex-wrap text-sm">
+            <span className="text-[#7BA8C4]">{tLearning("continueTracking")}</span>
+            <Link href="/upload" className="font-semibold text-[#3AB5A0] hover:text-[#4CC4A4] transition-colors">
+              {tLearning("importCsv")}
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {hasData && !forecastStillLearning && (
         <>
           {/* ── 1. Health overview row ─────────────────────────────────────── */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -590,7 +740,7 @@ export default async function ForecastPage() {
             </div>
           )}
 
-          <ExpectedFromProjectsCard data={expectedIncome} locale={locale} />
+          {PROJECTS_ENABLED && expectedIncome && <ExpectedFromProjectsCard data={expectedIncome} locale={locale} />}
 
           <TrendsChart data={chartData} riskLevel={cashflowRisk} />
         </>

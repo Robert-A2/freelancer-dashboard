@@ -3,6 +3,7 @@ import Stripe from "stripe";
 import { prisma } from "@/lib/prisma";
 import { createMilestoneCheckoutSession } from "@/lib/stripe";
 import { computeVatBreakdown, computePlatformFee } from "@/utils/finance";
+import { PROJECTS_ENABLED } from "@/lib/feature-flags";
 
 // Stripe's published minimum charge for EUR/GBP-family currencies — below
 // this, Stripe itself rejects session creation with an opaque API error.
@@ -15,6 +16,8 @@ const MIN_CHARGE_AMOUNT = 0.5;
 // server-side from the token; nothing about price or destination account is
 // ever trusted from the request body.
 export async function POST(_request: NextRequest, { params }: { params: Promise<{ token: string }> }) {
+  // Projects/Milestones (and client checkout) paused — see feature-flags.ts.
+  if (!PROJECTS_ENABLED) return NextResponse.json({ error: "Not available" }, { status: 404 });
   try {
     const { token } = await params;
 

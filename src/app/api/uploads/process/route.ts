@@ -10,6 +10,7 @@ import { resolveMerchants } from "@/lib/merchant-intelligence";
 import { matchMilestonesToTransactions } from "@/lib/milestone-engine";
 import { loadMerchantIndex, loadDecisionIndex, reportUncategorizedMerchants } from "@/lib/merchant-reports";
 import { detectCrossAccountTransfers } from "@/lib/transfer-detector";
+import { findLikelyManualDuplicates } from "@/lib/manual-csv-duplicate-detector";
 import { Decimal } from "@prisma/client/runtime/library";
 
 const BATCH_SIZE = 1000;
@@ -300,6 +301,18 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // ── Detect likely manual/CSV duplicates ─────────────────────────────────
+    // spec section 32: a manual user uploading a CSV later may find rows they
+    // already entered by hand. Synchronous (small — only scans this user's
+    // own manual-origin rows) so results land in the same response as
+    // everything else the upload screen already shows.
+    let suspectedManualDuplicates: Awaited<ReturnType<typeof findLikelyManualDuplicates>> = [];
+    try {
+      suspectedManualDuplicates = await findLikelyManualDuplicates(user.id, csvImport.id);
+    } catch (err) {
+      console.error("[Upload] manual duplicate detection failed:", err);
+    }
+
     // ── Build response ─────────────────────────────────────────────────────
     const categoryCounts: Record<string, number> = {};
     for (const tx of transactions) {
@@ -330,6 +343,7 @@ export async function POST(request: NextRequest) {
       typeBreakdown,
       suspectedTransfers:  suspectedTransfers.length  > 0 ? suspectedTransfers  : undefined,
       skippedDuplicates:   droppedDuplicates.length   > 0 ? droppedDuplicates   : undefined,
+      suspectedManualDuplicates: suspectedManualDuplicates.length > 0 ? suspectedManualDuplicates : undefined,
     });
   } catch (error) {
     console.error("CSV processing error:", error);

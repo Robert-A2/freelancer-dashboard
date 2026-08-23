@@ -291,30 +291,44 @@
       "connectedBody": "Les paiements d'étape vont directement sur votre compte Stripe. Nonodia prélève automatiquement des frais fixes de 0,3 % par étape, rien d'autre."
     },
     "financialProfile": {
-      "label": "Profil financier",
-      "body": "Optionnel — le compléter rend votre répartition de réserve financière exacte plutôt qu'une estimation. Nonodia fonctionne très bien sans.",
+      "label": "Impôts et cotisations",
+      "body": "Aidez Nonodia à estimer quelle part de vos revenus doit rester protégée. Vous pouvez modifier ceci à tout moment. Nonodia affiche des estimations et ne remplace pas les calculs officiels de l'Urssaf ou des impôts.",
       "country": "Pays",
       "countryUnselected": "Sélectionnez votre pays",
       "countryFrance": "France",
       "countryOther": "Autre (pas encore pris en charge — vous continuerez à utiliser l'estimation générale)",
-      "legalStatus": "Statut juridique de l'entreprise",
+      "legalStatus": "Quel est votre statut d'entreprise ?",
       "legalStatusUnselected": "Sélectionnez votre statut",
-      "legalStatusMicroEntrepreneur": "Micro-entrepreneur / Auto-entrepreneur",
-      "legalStatusOther": "Autre (pas encore pris en charge)",
-      "activityType": "Type d'activité",
+      "legalStatusMicroEntrepreneur": "Micro-entrepreneur",
+      "legalStatusOther": "Autre",
+      "legalStatusUnsure": "Je ne suis pas sûr",
+      "activityType": "De quel type d'activité provient principalement votre revenu ?",
       "activityTypeUnselected": "Sélectionnez votre activité",
-      "activityTypeBnc": "Profession libérale (design, dev, conseil, rédaction…)",
-      "activityTypeBicServices": "Services commerciaux ou artisanaux",
-      "activityTypeBicVente": "Vente de marchandises",
-      "vatStatus": "Statut TVA",
-      "vatStatusUnselected": "Sélectionnez votre statut TVA",
-      "vatStatusExempt": "Exonéré (sous le seuil)",
-      "vatStatusRegistered": "Assujetti à la TVA",
-      "vatStatusUnknown": "Je ne suis pas sûr",
+      "activityTypeOptions": {
+        "bnc_liberal": "Profession libérale / freelance (développeur, designer, consultant, coach, traducteur…)",
+        "bic_service_commercial": "Service commercial",
+        "bic_service_artisan": "Service artisanal",
+        "bic_sales": "Vente / commerce",
+        "cipav_liberal": "Profession libérale réglementée — CIPAV",
+        "mixed": "Plusieurs activités",
+        "unsure": "Je ne suis pas sûr"
+      },
+      "versementLiberatoire": "Utilisez-vous le versement libératoire pour l'impôt sur le revenu ?",
+      "versementLiberatoireHint": "C'est l'option où l'impôt sur le revenu de votre micro-entreprise est payé sous forme de pourcentage du chiffre d'affaires, en même temps que votre déclaration Urssaf.",
+      "acre": "Bénéficiez-vous actuellement de l'ACRE ?",
+      "activityStartDate": "Quand votre activité a-t-elle débuté ?",
+      "urssafFrequency": "À quelle fréquence déclarez-vous votre chiffre d'affaires à l'Urssaf ?",
+      "urssafMonthly": "Mensuelle",
+      "urssafQuarterly": "Trimestrielle",
+      "threeWayUnselected": "Sélectionnez une réponse",
+      "threeWayYes": "Oui",
+      "threeWayNo": "Non",
+      "threeWayUnsure": "Je ne suis pas sûr",
       "save": "Enregistrer",
       "saved": "Enregistré",
-      "complete": "Votre profil est complet — votre réserve financière est désormais calculée avec précision.",
-      "incomplete": "Incomplet — la carte Réserve financière affiche une estimation générale tant que ceci n'est pas rempli."
+      "saveError": "Impossible d'enregistrer. Réessayez.",
+      "complete": "Calculé à partir de votre configuration",
+      "incomplete": "Configuration incomplète"
     },
     "branding": {
       "label": "Image de marque",
@@ -344,18 +358,35 @@
     "vat": {
       "label": "TVA / Taxe",
       "body": "Facturer une TVA pour laquelle vous n'êtes pas enregistré est illégal — ceci est désactivé par défaut. Activez uniquement si vous êtes réellement enregistré.",
-      "toggle": {
-        "label": "Je suis enregistré pour la TVA / la taxe sur les ventes",
-        "body": "Une fois activé, vous pouvez ajouter votre numéro de TVA et définir un taux de taxe sur les nouvelles factures."
-      },
+      "statusQuestion": "Facturez-vous actuellement la TVA sur vos factures ?",
+      "statusNo": "Non",
+      "statusYes": "Oui",
+      "statusUnsure": "Pas sûr",
       "vatNumber": {
         "label": "Numéro d'enregistrement TVA / fiscal",
         "placeholder": "ex. FR12345678901"
       },
+      "rateQuestion": "Quel taux de TVA facturez-vous habituellement ?",
+      "rateCustom": "Personnalisé",
+      "rateHint": "Vous pourrez ajuster ce taux pour un paiement individuel plus tard — chaque facture n'a pas besoin d'utiliser le même taux.",
+      "rateInvalid": "Entrez un taux de TVA supérieur à 0.",
       "save": "Enregistrer",
       "saved": "Enregistré",
       "saveError": "Impossible d'enregistrer. Réessayez.",
-      "footer": "Affiché sur les factures uniquement si vous êtes enregistré. Nous calculons une réserve fiscale estimée pour tous les autres — voir le profil financier ci-dessous."
+      "footer": "Affiché sur les factures uniquement si vous êtes enregistré. Nous calculons une réserve fiscale estimée pour tous les autres — voir Impôts et cotisations ci-dessous."
+    },
+    "safetyBuffer": {
+      "label": "Marge de sécurité",
+      "body": "Combien de mois de dépenses voulez-vous garder protégés avant qu'un montant ne soit considéré comme « utilisable en toute sécurité » ? Tant que ce n'est pas défini, nous affichons « Disponible après protections » plutôt qu'un montant « utilisable en toute sécurité ».",
+      "none": "Non défini",
+      "months": "{count, plural, one {# mois} other {# mois}}",
+      "custom": "Personnalisé",
+      "customLabel": "Nombre de mois",
+      "customInvalid": "Entrez un nombre de mois supérieur à 0.",
+      "save": "Enregistrer",
+      "saved": "Enregistré",
+      "saveError": "Impossible d'enregistrer. Réessayez.",
+      "footer": "Ceci change uniquement ce qui compte comme protégé sur votre tableau de bord et dans les résumés Argent reçu / Paiement attendu — cela ne déplace ni ne réserve aucun argent automatiquement."
     },
     "deleteAccount": {
       "dangerZone": "Zone de danger",
@@ -508,6 +539,13 @@
         "hide": "Masquer",
         "viewHistory": "Voir l'historique →"
       },
+      "manualDuplicates": {
+        "heading": "{count, plural, one {Nous avons trouvé 1 transaction qui existe peut-être déjà} other {Nous avons trouvé # transactions qui existent peut-être déjà}}",
+        "manualLabel": "Saisie manuellement",
+        "csvLabel": "De cet import",
+        "keepBoth": "Ce sont deux transactions différentes",
+        "removeManual": "C'est un doublon — supprimer mon entrée"
+      },
       "transferReview": {
         "heading": "{count, plural, one {1 virement interne possible détecté} other {# virements internes possibles détectés}}",
         "subtitle": "Ces transactions ressemblent à des mouvements d'argent entre vos propres comptes — pas de vrais revenus. Les marquer comme virements les exclut des totaux.",
@@ -653,7 +691,14 @@
     "transactionList": {
       "lowConfidence": "Catégorie peu fiable — à vérifier rapidement",
       "showMore": "{count, plural, one {Afficher # transaction de plus} other {Afficher # transactions de plus}}",
-      "showLess": "Afficher moins"
+      "showLess": "Afficher moins",
+      "manualTag": "Manuel",
+      "edit": "Modifier",
+      "delete": "Supprimer",
+      "cancel": "Annuler",
+      "save": "Enregistrer",
+      "confirmDelete": "Supprimer cette entrée ?",
+      "confirmDeleteYes": "Supprimer"
     }
   },
   "metrics": {
@@ -669,6 +714,7 @@
     },
     "welcomeBack": "Bon retour, {name}.",
     "title": "Tableau de bord",
+    "personalTitle": "Personnel",
     "verdictHealthy": "Tout va bien.",
     "verdictWatch": "Quelques points méritent votre attention.",
     "verdictAtRisk": "Votre activité est sous pression.",
@@ -679,7 +725,8 @@
     "health": {
       "healthy": "Sain",
       "watch": "À surveiller",
-      "atRisk": "À risque"
+      "atRisk": "À risque",
+      "unknown": "En construction"
     },
     "businessHealth": {
       "label": "Santé de l'activité"
@@ -694,6 +741,33 @@
       "warning": "Avertissement",
       "critical": "Critique",
       "unknown": "Données insuffisantes"
+    },
+    "moneyBreakdown": {
+      "label": "Votre argent",
+      "protected": "Protégé",
+      "safeToUse": "Utilisable en toute sécurité",
+      "availableAfterProtections": "Disponible après protections",
+      "overCommitted": "Votre total protégé dépasse votre trésorerie actuelle — voir le détail ci-dessous.",
+      "seeBreakdown": "Voir le détail",
+      "taxReserve": "Réserve fiscale",
+      "commitments": "Engagements à venir",
+      "safetyBuffer": "Marge de sécurité",
+      "setBuffer": "Définir une marge",
+      "protectedTotal": "Total protégé",
+      "availableExplainer": "Disponible après protections = trésorerie actuelle moins réserve fiscale, engagements à venir et votre marge de sécurité.",
+      "runway": "Autonomie",
+      "runwayMonths": "{months, plural, one {# mois} other {# mois}}",
+      "runwayUnknown": "Pas encore assez de données",
+      "runwayAlreadyBehind": "Déjà en dessous de votre base de dépenses",
+      "spendingThisMonth": "Dépenses ce mois-ci",
+      "spendingOf": "{actual} sur {estimate} estimés",
+      "spendingExceeded": "Vous avez déjà dépassé votre estimation de {overBy} ce mois-ci.",
+      "spendingRemaining": "{remaining} restant avant d'atteindre votre estimation.",
+      "firstMonthTransitionTitle": "Votre premier mois complet est prêt",
+      "firstMonthTransitionBody": "Vous aviez estimé {estimate} — la dépense réelle était de {actual} ({difference} {direction}). L'autonomie utilise désormais vos dépenses réelles plutôt que l'estimation.",
+      "more": "de plus",
+      "less": "de moins",
+      "urssafOutstandingNote": "Ce que vous avez réservé sur vos revenus depuis votre dernier paiement Urssaf, moins ce que vous avez déjà payé — pas une estimation mensuelle."
     },
     "summary": {
       "label": "Résumé"
@@ -744,21 +818,31 @@
       "availableToSpend": "Disponible à dépenser ce mois-ci",
       "buckets": {
         "socialContributions": "Cotisations sociales",
+        "cfp": "Formation professionnelle (CFP)",
         "incomeTax": "Impôt sur le revenu",
-        "vat": "TVA",
+        "vat": "TVA collectée",
         "emergencyBuffer": "Coussin d'urgence"
       },
       "notes": {
         "socialContributionsUnsupportedStatus": "Non pris en charge pour votre statut juridique pour le moment",
-        "incomeTaxVariesByBracket": "Dépend de votre tranche d'imposition personnelle — non inclus",
-        "vatBelowThreshold": "Sous le seuil de TVA — aucune due",
+        "needsActivityType": "Type d'activité requis",
+        "acreApplied": "Taux réduit ACRE appliqué",
+        "incomeTaxVariesByBracket": "Non inclus — dépend de votre situation fiscale personnelle",
+        "incomeTaxVflUnknown": "Non inclus — statut du versement libératoire inconnu",
+        "incomeTaxVflNotSet": "Non inclus — vous n'avez pas encore répondu à cette question dans les Paramètres",
+        "versementLiberatoire": "Versement libératoire",
+        "vatBelowThreshold": "Non assujetti à la TVA — aucune due",
         "vatOverThreshold": "Peut-être au-dessus du seuil de TVA — le taux varie, non inclus",
         "vatRegisteredRateVaries": "Assujetti à la TVA — le taux exact varie selon l'activité, non inclus",
+        "vatCollectedNote": "Il s'agit de la TVA collectée sur les revenus de ce mois-ci, avant prise en compte de toute TVA déductible",
+        "vatRateMissing": "Assujetti à la TVA mais aucun taux défini",
         "emergencyBufferLow": "Vos revenus ont été stables ces 6 derniers mois",
         "emergencyBufferMedium": "Vos revenus ont modérément varié ces 6 derniers mois",
         "emergencyBufferHigh": "Vos revenus ont varié de manière significative ces 6 derniers mois",
         "emergencyBufferUnknown": "Pas encore assez d'historique pour mesurer — valeur prudente par défaut"
       },
+      "unsupportedStatusHeading": "Réserve fiscale automatique pas encore disponible pour ce statut",
+      "needsActivityTypeHeading": "Type d'activité requis",
       "footer": "Taux de référence, pas un conseil fiscal. Vérifiez avec un comptable.",
       "adjustPanel": {
         "label": "Votre taux de réserve",
@@ -1118,6 +1202,11 @@
     "title": "Analyses",
     "subtitle": "Analyse approfondie de vos habitudes financières",
     "subtitleHabits": "Voici ce que vos données révèlent sur vos habitudes.",
+    "manualAccelerator": {
+      "title": "{count, plural, one {1 transaction ajoutée manuellement jusqu'ici} other {# transactions ajoutées manuellement jusqu'ici}}",
+      "body": "Ajoutez les mois précédents pour voir l'évolution de vos dépenses dans le temps.",
+      "cta": "Importer l'historique"
+    },
     "habitVerdict": {
       "growingIncomeStableExp": "Les revenus ont augmenté de {prevYear} à {dataYear}, avec des dépenses maîtrisées.",
       "growingIncomeGrowingExp": "Les revenus ont augmenté de {prevYear} à {dataYear} — mais les coûts aussi. Surveillez où va cette croissance.",
@@ -1721,6 +1810,7 @@
     "advertising": "Publicité",
     "education": "Formation",
     "equipment": "Équipement",
+    "insurance": "Assurance",
     "office": "Bureau",
     "banking fees": "Frais bancaires",
     "transport": "Transport",
@@ -1743,6 +1833,299 @@
     "uncategorized": "Non catégorisé",
     "savings": "Épargne",
     "transfer": "Virement"
+  },
+  "manual": {
+    "onboarding": {
+      "step1": {
+        "eyebrow": "Étape 1 sur 6",
+        "separationQuestion": "Comment gérez-vous votre activité ?",
+        "separationHint": "Ceci détermine comment Nonodia sépare votre argent professionnel et personnel.",
+        "separationSeparate": "J'ai un compte séparé pour mon activité freelance",
+        "separationShared": "J'utilise le même compte pour l'argent professionnel et personnel",
+        "question": "Trésorerie professionnelle disponible aujourd'hui",
+        "questionShared": "Solde actuel",
+        "hint": "C'est votre position de départ — ce n'est pas comptabilisé comme un revenu."
+      },
+      "step2": {
+        "eyebrow": "Étape 2 sur 6",
+        "question": "Quelle part est déjà réservée pour les impôts ou les cotisations ?",
+        "hint": "Facultatif. 0 € convient — vous pourrez configurer cela plus tard."
+      },
+      "step3": {
+        "eyebrow": "Étape 3 sur 6",
+        "question": "Des engagements fixes ou récurrents ?",
+        "hint": "Loyer, abonnements logiciels, assurance — tout ce qui revient chaque mois. Facultatif.",
+        "namePlaceholder": "ex. Loyer",
+        "addAnother": "Ajouter un engagement",
+        "remove": "Supprimer",
+        "dayOfMonth": "Jour {day}",
+        "tag": {
+          "business": "Professionnel",
+          "personal": "Personnel"
+        }
+      },
+      "step4": {
+        "eyebrow": "Étape 4 sur 6",
+        "businessQuestion": "Combien dépensez-vous pour votre activité freelance chaque mois ?",
+        "businessLabel": "Dépense professionnelle nécessaire",
+        "personalQuestion": "De combien avez-vous normalement besoin de vos revenus freelance chaque mois pour vos dépenses de vie ?",
+        "personalLabel": "Besoin personnel nécessaire",
+        "explanation": "Cela aide Nonodia à comprendre combien votre activité doit vous soutenir. Les deux ne sont que des estimations — jamais traitées comme un historique réel. Facultatif."
+      },
+      "step5": {
+        "eyebrow": "Étape 5 sur 6",
+        "question": "Attendez-vous un paiement d'un client ou d'un projet ?",
+        "hint": "Facultatif — vous pourrez toujours l'ajouter plus tard.",
+        "amountPlaceholder": "Montant",
+        "clientPlaceholder": "Nom du client (facultatif)",
+        "projectPlaceholder": "Nom du projet (facultatif)"
+      },
+      "step6": {
+        "eyebrow": "Étape 6 sur 6",
+        "question": "Impôts et cotisations",
+        "hint": "Aidez Nonodia à estimer quelle part de vos revenus doit rester protégée. Vous pouvez modifier ceci à tout moment dans les paramètres. Nonodia affiche des estimations et ne remplace pas les calculs officiels de l'Urssaf ou des impôts.",
+        "country": "Pays",
+        "countryUnselected": "Sélectionnez votre pays",
+        "countryFrance": "France",
+        "countryOther": "Autre (pas encore pris en charge — vous continuerez à utiliser l'estimation générale)",
+        "businessStatus": "Quel est votre statut d'entreprise ?",
+        "businessStatusMicro": "Micro-entrepreneur",
+        "businessStatusOther": "Autre",
+        "activityType": "De quel type d'activité provient principalement votre revenu ?",
+        "activityTypeUnselected": "Sélectionnez votre activité",
+        "activityTypeOptions": {
+          "bnc_liberal": "Profession libérale / freelance (développeur, designer, consultant, coach, traducteur…)",
+          "bic_service_commercial": "Service commercial",
+          "bic_service_artisan": "Service artisanal",
+          "bic_sales": "Vente / commerce",
+          "cipav_liberal": "Profession libérale réglementée — CIPAV",
+          "mixed": "Plusieurs activités",
+          "unsure": "Je ne suis pas sûr"
+        },
+        "versementLiberatoire": "Utilisez-vous le versement libératoire pour l'impôt sur le revenu ?",
+        "versementLiberatoireHint": "C'est l'option où l'impôt sur le revenu de votre micro-entreprise est payé sous forme de pourcentage du chiffre d'affaires, en même temps que votre déclaration Urssaf.",
+        "acre": "Bénéficiez-vous actuellement de l'ACRE ?",
+        "activityStartDate": "Quand votre activité a-t-elle débuté ?",
+        "urssafFrequency": "À quelle fréquence déclarez-vous votre chiffre d'affaires à l'Urssaf ?",
+        "urssafMonthly": "Mensuelle",
+        "urssafQuarterly": "Trimestrielle",
+        "vatQuestion": "Facturez-vous actuellement la TVA sur vos factures ?",
+        "vatRateHint": "Si oui, vous pourrez définir votre taux de TVA habituel plus tard dans les paramètres.",
+        "threeWayUnselected": "Sélectionnez une réponse",
+        "threeWayYes": "Oui",
+        "threeWayNo": "Non",
+        "threeWayUnsure": "Je ne suis pas sûr"
+      },
+      "continue": "Continuer",
+      "back": "Retour",
+      "skip": "Passer",
+      "skipAll": "Passer pour l'instant",
+      "finish": "Aller à mon tableau de bord",
+      "saving": "Enregistrement…",
+      "errors": {
+        "generic": "Une erreur s'est produite lors de l'enregistrement. Veuillez réessayer."
+      }
+    },
+    "expectedPayment": {
+      "status": {
+        "label": "Statut",
+        "expected": "Attendu",
+        "dueToday": "Dû aujourd'hui",
+        "overdue": "En retard de {days, plural, one {# jour} other {# jours}}"
+      },
+      "detail": {
+        "amountLabel": "Paiement attendu",
+        "expectedDateLabel": "Date prévue",
+        "markAsReceived": "Marquer comme reçu",
+        "edit": "Modifier",
+        "save": "Enregistrer les modifications",
+        "cancel": "Annuler",
+        "close": "Fermer",
+        "reserveHeading": "Si ce paiement arrive, pour ce paiement",
+        "ifArrivesHeading": "Si ce paiement arrive — votre situation globale",
+        "projectedCash": "Trésorerie",
+        "projectedAvailable": "Disponible après protections",
+        "projectedSafeToUse": "Utilisable en toute sécurité",
+        "projectedRunway": "Autonomie",
+        "scenarioDisclaimer": "Ceci est une projection, pas une garantie — elle ne devient réelle que lorsque vous marquez ce paiement comme reçu.",
+        "scenarioLoading": "Chargement…"
+      },
+      "markReceived": {
+        "title": "Marquer comme reçu",
+        "amountReceivedLabel": "Montant reçu",
+        "dateReceivedLabel": "Date de réception",
+        "confirmPayment": "Confirmer le paiement",
+        "back": "Retour"
+      },
+      "errors": {
+        "generic": "Impossible d'enregistrer. Veuillez réessayer.",
+        "timeout": "La requête a pris trop de temps et a été annulée — vérifiez votre connexion et réessayez."
+      }
+    },
+    "quickAdd": {
+      "button": "Ajouter",
+      "menu": {
+        "title": "Ajouter",
+        "income": "Argent reçu",
+        "expense": "Dépense",
+        "expectedPayment": "Paiement attendu / projet",
+        "recurringExpense": "Dépense récurrente",
+        "payMyself": "Se payer soi-même"
+      },
+      "tag": {
+        "business": "Professionnel",
+        "personal": "Personnel"
+      },
+      "back": "Retour",
+      "close": "Fermer",
+      "forms": {
+        "activityLabel": "Activité",
+        "activityUnselected": "Sélectionnez à quelle activité cela correspond",
+        "expense": {
+          "title": "Ajouter une dépense",
+          "amountLabel": "Montant",
+          "whatWasIt": "De quoi s'agissait-il ?",
+          "whatWasItPlaceholder": "ex. Monoprix",
+          "category": "Catégorie",
+          "date": "Date",
+          "save": "Ajouter la dépense"
+        },
+        "income": {
+          "title": "Argent reçu",
+          "amountLabel": "Montant",
+          "source": "D'où cela provient-il ?",
+          "sourcePlaceholder": "Client ou source",
+          "date": "Date",
+          "save": "Ajouter le revenu"
+        },
+        "expectedPayment": {
+          "title": "Paiement attendu",
+          "amountLabel": "Montant",
+          "client": "Client (facultatif)",
+          "clientPlaceholder": "Nom du client",
+          "project": "Projet (facultatif)",
+          "projectPlaceholder": "Nom du projet",
+          "date": "Date prévue",
+          "save": "Enregistrer le paiement attendu"
+        },
+        "recurringExpense": {
+          "title": "Dépense récurrente",
+          "name": "Nom",
+          "namePlaceholder": "ex. Adobe",
+          "amountLabel": "Montant",
+          "category": "Catégorie",
+          "dayOfMonth": "Jour du mois",
+          "save": "Enregistrer la dépense récurrente"
+        },
+        "payMyself": {
+          "title": "Se payer soi-même",
+          "hint": "Transfère de l'argent de votre compte professionnel vers votre compte personnel. Ce n'est ni une dépense professionnelle ni un nouveau revenu personnel — juste un transfert entre vos deux comptes.",
+          "amountLabel": "Montant",
+          "date": "Date",
+          "save": "Enregistrer le transfert"
+        }
+      },
+      "reward": {
+        "expenseAdded": "Dépense de {amount} ajoutée",
+        "incomeAdded": "{amount} reçus",
+        "expectedSaved": "Paiement attendu enregistré",
+        "recurringSaved": "Dépense récurrente enregistrée",
+        "payMyselfSaved": "{amount} transférés vers votre compte personnel",
+        "payMyselfNote": "Votre trésorerie professionnelle a diminué de ce montant et votre trésorerie personnelle a augmenté du même montant — cela ne compte ni comme une nouvelle dépense professionnelle ni comme un nouveau revenu personnel.",
+        "currentCash": "Trésorerie actuelle",
+        "spentThisMonth": "Dépensé ce mois-ci",
+        "incomeThisMonth": "Revenus ce mois-ci",
+        "categoryThisMonth": "{category} ce mois-ci",
+        "forThisPayment": "Pour ce paiement",
+        "overall": "Votre situation globale",
+        "addAnother": "Ajouter un autre",
+        "done": "Terminé"
+      },
+      "errors": {
+        "generic": "Impossible d'enregistrer. Veuillez réessayer.",
+        "timeout": "La requête a pris trop de temps et a été annulée — vérifiez votre connexion et réessayez."
+      }
+    },
+    "reserve": {
+      "setAside": "À réserver pour les impôts ({pct}%)",
+      "netForYou": "Vous revient",
+      "vat": "TVA",
+      "vatCollected": "TVA collectée ({pct}%)",
+      "vatRateMissing": "Assujetti mais aucun taux défini — définissez-en un dans les Paramètres",
+      "socialContributions": "Cotisations sociales ({pct}%)",
+      "cfp": "Formation professionnelle — CFP ({pct}%)",
+      "vfl": "Impôt sur le revenu — versement libératoire ({pct}%)",
+      "incomeTax": "Impôt sur le revenu",
+      "incomeTaxNotIncluded": "Non inclus dans cette estimation",
+      "incomeTaxVflUnknown": "Non inclus — statut du versement libératoire inconnu",
+      "incomeTaxVflNotSet": "Non inclus — vous n'avez pas encore répondu à cette question dans les Paramètres",
+      "acreApplied": "Taux réduit ACRE appliqué",
+      "keepProtected": "À garder protégé"
+    },
+    "today": {
+      "currentCash": "Trésorerie actuelle",
+      "currentCashCaption": "Ce que vous avez indiqué à Nonodia",
+      "moneyIn": "Entrées ce mois-ci",
+      "moneyOut": "Sorties ce mois-ci",
+      "knownCommitments": "Engagements connus",
+      "perMonth": "/ mois",
+      "reserved": "Réservé",
+      "comingUp": "À venir",
+      "comingUpEmpty": "Rien de connu pour l'instant — ajoutez un paiement attendu ou une dépense récurrente.",
+      "expectedOn": "Attendu {date}",
+      "dueOn": "Dû {date}",
+      "spendingThisMonth": "Dépenses ce mois-ci",
+      "spendingSoFar": "Ce mois-ci jusqu'à présent",
+      "spendingEmpty": "Aucune dépense enregistrée ce mois-ci.",
+      "recentActivity": "Activité récente",
+      "viewAllActivity": "Voir toute l'activité →",
+      "noActivityYet": "Rien d'enregistré pour l'instant. Utilisez + Ajouter pour votre première entrée.",
+      "setUpFinances": "Configurez vos finances",
+      "addCurrentCash": "Indiquez votre trésorerie actuelle à Nonodia pour commencer — cela prend une minute."
+    },
+    "personalDashboard": {
+      "currentCash": "Trésorerie personnelle actuelle",
+      "currentCashNote": "Ne change que lorsque de l'argent passe réellement sur votre compte personnel — un paiement client reste de l'argent professionnel jusqu'à ce que vous vous payiez.",
+      "received": "Reçu",
+      "spent": "Dépensé",
+      "remaining": "Restant",
+      "monthlyNeed": "Votre besoin mensuel",
+      "monthlyNeedValue": "{amount}/mois, d'après votre configuration",
+      "spentSoFar": "Dépensé jusqu'à présent",
+      "overNeed": "Vous dépassez votre besoin habituel de {amount} ce mois-ci.",
+      "remainingAgainstNeed": "{amount} restant avant d'atteindre votre besoin habituel.",
+      "personalRunway": "Autonomie personnelle",
+      "runwayMonths": "{count, plural, one {# mois} other {# mois}}",
+      "runwayAlreadyBehind": "Déjà en dessous de votre besoin mensuel",
+      "runwayEstimatedCaption": "Basée sur votre besoin mensuel déclaré de {amount} — vous nous l'avez indiqué",
+      "runwayCalculatedCaption": "Basée sur vos {months, plural, one {# mois complet} other {# mois complets}} de dépenses personnelles réelles",
+      "categories": "Où c'est parti",
+      "activity": "Activité personnelle"
+    },
+    "learning": {
+      "businessHealth": {
+        "title": "En construction",
+        "body": "{days, plural, one {# jour suivi} other {# jours suivis}}. Nonodia a besoin de plus d'historique de revenus et de dépenses avant d'évaluer la santé de votre activité."
+      },
+      "forecastPage": {
+        "title": "Votre prévision est encore en apprentissage",
+        "weKnow": "Nous savons actuellement :",
+        "notEnough": "Nonodia n'a pas encore assez d'historique pour créer une prévision comportementale fiable.",
+        "knownMovements": "Mouvements de trésorerie futurs connus",
+        "notAForecast": "Ceci n'est pas une prévision — cela montre simplement les revenus et engagements futurs déjà saisis.",
+        "continueTracking": "Continuer le suivi normalement",
+        "importCsv": "Importez vos transactions précédentes pour débloquer les prévisions plus tôt"
+      },
+      "runway": {
+        "estimatedLabel": "Autonomie professionnelle estimée",
+        "estimatedCaption": "Basée sur votre estimation de dépenses mensuelles de {amount} — vous nous l'avez indiqué",
+        "calculatedLabel": "Autonomie professionnelle",
+        "calculatedCaption": "Basée sur vos {months, plural, one {# mois complet} other {# mois complets}} d'activité réelle",
+        "ifArrives": "Si {label} ({amount}) arrive, l'autonomie serait d'environ {months} mois — une projection, pas une garantie.",
+        "alreadyBehind": "Déjà en dessous de votre base de dépenses",
+        "ifArrivesStillBehind": "Même si {label} ({amount}) arrive, vous resteriez en dessous de votre base de dépenses — une projection, pas une garantie."
+      }
+    }
   },
   "insightCategories": {
     "growth": "Croissance financière",
