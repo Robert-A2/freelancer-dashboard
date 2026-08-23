@@ -61,15 +61,89 @@
   },
   "landing": {
     "nav": {
-      "signIn": "Sign in",
-      "getStarted": "Get started"
+      "product": "Product",
+      "howItWorks": "How it works",
+      "resources": "Resources",
+      "resourcesLiveDemo": "Live demo",
+      "resourcesCsvGuide": "CSV import guide",
+      "signIn": "Log in",
+      "cta": "Get started"
     },
     "hero": {
-      "titleLead": "Stop managing bureaucracy.",
-      "titleMain": "Start understanding your runway.",
-      "bodyLight": "A financial operating system built for freelance income — not steady paychecks.",
-      "bodyDark": "Nonodia helps you analyze your CSV and cashflow, send milestone invoice links paid via Stripe, and instantly see your true cash runway.",
-      "cta": "Get started free"
+      "titleLead": "Your client paid you",
+      "titleAmount": "€5,000.",
+      "titleQuestionPre": "How much is actually",
+      "titleQuestionHighlight": "available",
+      "titleQuestionPost": "to you?",
+      "body": "Nonodia separates what should stay protected for tax/cotisations, your upcoming commitments and your safety buffer — then shows how long you're covered if work slows down.",
+      "primaryCta": "Get started",
+      "trust": ["No bank connection", "No credit card"],
+      "example": {
+        "badge": "Client payment received",
+        "amount": "€5,000",
+        "updated": "Updated today",
+        "rows": {
+          "payment": { "label": "Client payment", "value": "+€5,000" },
+          "tax": { "label": "Estimated tax & cotisations", "note": "URSSAF, income tax", "value": "−€1,400" },
+          "commitments": { "label": "Upcoming business commitments", "note": "Invoices, subscriptions, expenses", "value": "−€650" },
+          "buffer": { "label": "Safety buffer", "note": "For quiet months", "value": "−€1,200" }
+        },
+        "available": "Above your protections",
+        "availableNote": "Available to use or pay yourself",
+        "availableAmount": "€1,750",
+        "runway": "Estimated runway",
+        "runwayValue": "3.4 months",
+        "runwayNote": "If no more money comes in",
+        "runwayWithPayment": "Runway with expected payment",
+        "runwayWithPaymentValue": "5.6 months",
+        "runwayWithPaymentNote": "If your client pays on time",
+        "disclaimer": "This is an example. Your results will be based on your numbers."
+      }
+    },
+    "calculator": {
+      "title": "Get your financial position in 2 minutes",
+      "subtitle": "Answer a few simple questions. No signup required.",
+      "steps": {
+        "currentCash": { "title": "Current business cash", "subtitle": "How much business cash do you have today?" },
+        "monthlyBusinessCost": { "title": "Monthly business costs", "subtitle": "About how much does your business cost each month?" },
+        "personalMonthlyNeed": { "title": "Personal monthly need", "subtitle": "How much do you need personally each month?" },
+        "upcomingPayment": { "title": "Upcoming payment", "subtitle": "Are you expecting a client payment?" },
+        "expectedDate": { "title": "When is it expected?", "subtitle": "When should you receive this payment?" }
+      },
+      "submitCta": "See my financial position",
+      "privacyNote": "This is a test, nothing is stored.",
+      "validationError": "Fill in the amounts above to see your position.",
+      "results": {
+        "heading": "Your estimated financial position",
+        "currentCash": "Current business cash",
+        "taxReserve": "Estimated tax & cotisations",
+        "taxReserveNote": "Based on typical micro-entrepreneur (BNC) rates applied to your upcoming payment — your real rate depends on your actual activity type and tax options.",
+        "upcomingCommitments": "Upcoming business commitments",
+        "upcomingCommitmentsNote": "Your stated monthly business costs",
+        "safetyBuffer": "Safety buffer",
+        "safetyBufferNote": "{months, plural, one {# month} other {# months}} of spending set aside for quiet months",
+        "available": "Above your protections",
+        "availableNote": "Available to use or pay yourself",
+        "runway": "Estimated runway",
+        "runwayNote": "If no more money comes in",
+        "runwayWithPayment": "Runway with expected payment",
+        "runwayWithPaymentNoDate": "If your upcoming payment arrives",
+        "runwayWithPaymentOnDate": "If it arrives by {date}",
+        "months": "{count, plural, one {# month} other {# months}}",
+        "disclaimer": "This is an estimate based on the numbers you entered, using typical micro-entrepreneur tax rates — not tax advice. Nothing you enter here is stored.",
+        "editAnswers": "Edit my answers",
+        "cta": "Create your free account"
+      }
+    },
+    "features": {
+      "title": "Make clear decisions with your freelance money",
+      "items": [
+        { "title": "Know what to keep protected", "body": "Estimated tax, cotisations and your safety buffer, calculated for you." },
+        { "title": "Know what's actually available", "body": "See what's available to use or pay yourself — after your obligations." },
+        { "title": "See how long you're covered", "body": "Understand your runway, with and without expected payments." },
+        { "title": "Plan with confidence", "body": "Add expected projects and see the impact on your cashflow." },
+        { "title": "Track what matters", "body": "Track income, expenses and spending vs. your estimates." }
+      ]
     },
     "forecastShowcase": {
       "healthExplanation": "Worth watching — a mixed picture, with 11 positive and 3 negative months out of the last 14.",
@@ -149,20 +223,14 @@
         "net": "€7,500"
       }
     },
-    "pricing": {
-      "eyebrow": "How we make money",
-      "title": "We only win when you get paid.",
-      "body1": "We don't charge a flat monthly fee, because we don't think you should pay for software during dry periods.",
-      "body2": "Our core operating platform is completely free to use. Create unlimited projects, run your CSVs, and customize your branding without ever entering a credit card. We only collect a lean 0.3% fee, automatically deducted when your client successfully clears a milestone invoice through your secure payment link.",
-      "highlight": "If you aren't earning, our tool costs you absolutely nothing."
-    },
     "finalCta": {
-      "title": "Take control of your business's financial life today.",
-      "body": "Every hour lost to complicated software is stolen from your craft. Nonodia makes it so simple and easy for developers, designers, video editors, and consultants to reclaim that wasted time.",
-      "cta": "Get started"
+      "title": "Ready to take control of your freelance finances?",
+      "body": "Start with your numbers. Get clarity in minutes.",
+      "primaryCta": "Get started",
+      "secondaryCta": "Explore Sophie's business"
     },
     "footer": {
-      "tagline": "Financial Operating System for Freelancers",
+      "tagline": "Financial Decision Engine for Freelancers",
       "privacyPolicy": "Privacy Policy",
       "termsOfService": "Terms of Service",
       "dataPrivacy": "Data Privacy",

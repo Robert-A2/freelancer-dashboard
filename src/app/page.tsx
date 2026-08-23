@@ -3,11 +3,7 @@ import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import LanguageSwitcher from "@/components/ui/LanguageSwitcher";
-import CsvHelpPanel from "@/components/landing/CsvHelpPanel";
-import ProductExperience from "@/components/landing/ProductExperience";
-import PhoneNavShowcase from "@/components/landing/snapshots/PhoneNavShowcase";
-import MilestoneFlipCard from "@/components/landing/MilestoneFlipCard";
-import TaxShieldFlipCard from "@/components/landing/TaxShieldFlipCard";
+import FinancialPositionCalculator from "@/components/landing/FinancialPositionCalculator";
 
 function Lines({ text }: { text: string }) {
   const lines = text.split("\n");
@@ -23,12 +19,8 @@ function Lines({ text }: { text: string }) {
   );
 }
 
-// Shared CTA style — every primary button on the landing page uses this
-// exact size/shape: a calm, light-weight pill, no arrow icon.
-const CTA_CLASS = "inline-flex items-center bg-[#3AB5A0] hover:bg-[#2E9D8A] text-[#0D1B2B] font-medium text-sm px-6 py-3 rounded-full transition-colors";
-// The hero CTA only — same shape/weight, just a touch larger since it's the
-// page's primary action and sits next to a large product screen.
-const CTA_CLASS_HERO = "inline-flex items-center bg-[#3AB5A0] hover:bg-[#2E9D8A] text-[#0D1B2B] font-medium text-base px-8 py-3.5 rounded-full transition-colors";
+const CTA_PRIMARY = "inline-flex items-center justify-center bg-[#4F46E5] hover:bg-[#4338CA] text-white font-medium text-base px-7 py-3.5 rounded-full transition-colors";
+const CTA_SECONDARY = "inline-flex items-center justify-center border border-[#CBD5E1] hover:border-[#0D1B2B] text-[#0D1B2B] font-medium text-base px-7 py-3.5 rounded-full transition-colors";
 
 export default async function LandingPage() {
   const supabase = await createClient();
@@ -36,378 +28,234 @@ export default async function LandingPage() {
   if (user) redirect("/dashboard");
 
   const t = await getTranslations("landing");
-  const questions = t.raw("problem.questions") as string[];
-  const valuePropItems = t.raw("valueProp.items") as { title: string; body: string }[];
-  const valuePropDemo = t.raw("valueProp.demo") as {
-    cta: string;
-    invoiceHeading: string;
-    project: string;
-    milestones: { label: string; status: string; state: "paid" | "upcoming"; amount: string; due: string }[];
-  };
-  const valuePropTaxDemo = t.raw("valueProp.taxDemo") as {
-    cta: string;
-    heading: string;
-    subtitle: string;
-    grossLabel: string;
-    gross: string;
-    taxLabel: string;
-    taxAmount: string;
-    netLabel: string;
-    net: string;
-  };
+  const featureItems = t.raw("features.items") as { title: string; body: string }[];
 
   return (
-    <div className="min-h-screen bg-[#0D1B2B] text-[#E8F0F8]">
+    <div className="min-h-screen bg-white text-[#0D1B2B]">
 
       {/* ── Navbar ────────────────────────────────────────────────── */}
-      <nav className="fixed top-0 left-0 right-0 z-50 border-b border-[#1E3550]/40 bg-[#132537]/80 backdrop-blur-md">
+      <nav className="fixed top-0 left-0 right-0 z-50 border-b border-[#E2E8F0] bg-white/90 backdrop-blur-md">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 flex items-center justify-between h-16">
-          <span className="font-bold text-[#E8F0F8] text-lg tracking-tight">Nonodia</span>
-          <div className="flex items-center gap-1 sm:gap-2">
-            <LanguageSwitcher />
-            <Link
-              href="/login"
-              className="hidden sm:inline-block text-sm text-[#7BA8C4] hover:text-[#E8F0F8] transition-colors px-4 py-2"
-            >
+          <a href="#top" className="flex items-center gap-2">
+            <span className="font-bold text-[#0D1B2B] text-lg tracking-tight">Nonodia</span>
+          </a>
+
+          <div className="hidden md:flex items-center gap-1 text-sm font-medium text-[#33465A]">
+            <a href="#features" className="px-3 py-2 rounded-lg hover:bg-[#F1F5F9] transition-colors">{t("nav.product")}</a>
+            <a href="#calculator" className="px-3 py-2 rounded-lg hover:bg-[#F1F5F9] transition-colors">{t("nav.howItWorks")}</a>
+            <details className="relative">
+              <summary className="list-none [&::-webkit-details-marker]:hidden cursor-pointer px-3 py-2 rounded-lg hover:bg-[#F1F5F9] transition-colors flex items-center gap-1">
+                {t("nav.resources")}
+                <svg width="10" height="10" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M2.5 4.5L6 8l3.5-3.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </summary>
+              <div className="absolute top-full left-0 mt-1 w-56 bg-white border border-[#E2E8F0] rounded-xl shadow-lg py-2">
+                <Link href="/demo" className="block px-4 py-2.5 text-sm text-[#33465A] hover:bg-[#F1F5F9] transition-colors">{t("nav.resourcesLiveDemo")}</Link>
+                <Link href="/demo/upload" className="block px-4 py-2.5 text-sm text-[#33465A] hover:bg-[#F1F5F9] transition-colors">{t("nav.resourcesCsvGuide")}</Link>
+              </div>
+            </details>
+          </div>
+
+          <div className="flex items-center gap-1 sm:gap-3">
+            <LanguageSwitcher variant="light" />
+            <Link href="/login" className="text-sm font-medium text-[#33465A] hover:text-[#0D1B2B] transition-colors px-3 py-2">
               {t("nav.signIn")}
             </Link>
-            <Link
-              href="/signup"
-              className="bg-[#3AB5A0] hover:bg-[#2E9D8A] text-[#0D1B2B] text-sm font-bold px-4 sm:px-5 py-2.5 rounded-xl transition-colors whitespace-nowrap"
-            >
-              {t("nav.getStarted")}
-            </Link>
+            <a href="#calculator" className="bg-[#4F46E5] hover:bg-[#4338CA] text-white text-sm font-semibold px-4 sm:px-5 py-2.5 rounded-full transition-colors whitespace-nowrap">
+              {t("nav.cta")}
+            </a>
           </div>
         </div>
       </nav>
 
-      {/* ── Section 1: Hero — text left, live product screen right ──── */}
-      <section className="pt-24 pb-14 md:pt-28 overflow-x-hidden" style={{ background: "linear-gradient(180deg, #F3F8FD 0%, #F8FBFE 55%, #FFFFFF 100%)" }}>
-        <div className="max-w-[1440px] mx-auto px-6 grid grid-cols-1 lg:grid-cols-[minmax(0,480px)_1fr] gap-y-8 gap-x-14 lg:gap-x-16 items-start">
+      {/* ── Section 1: Hero ───────────────────────────────────────── */}
+      <section id="top" className="pt-28 pb-16 md:pt-36 md:pb-24" style={{ background: "linear-gradient(180deg, #F5F8FC 0%, #FFFFFF 100%)" }}>
+        <div className="max-w-6xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-14 items-start">
 
           {/* Text column */}
-          <div className="lg:pt-6 lg:pl-10">
-            <h1 className="mb-10 text-balance">
-              <span className="block text-2xl sm:text-[1.75rem] font-medium leading-[1.4] tracking-tight text-[#7189A3] mb-4">
-                {t("hero.titleLead")}
-              </span>
-              <span className="block text-3xl sm:text-4xl lg:text-[2.875rem] font-bold leading-[1.15] tracking-tight text-[#0D1B2B]">
-                {t("hero.titleMain")}
-              </span>
+          <div>
+            <h1 className="text-3xl sm:text-4xl lg:text-[2.75rem] font-bold leading-[1.2] tracking-tight text-[#0D1B2B] mb-6 text-balance">
+              {t("hero.titleLead")}{" "}
+              <span className="text-[#4F46E5]">{t("hero.titleAmount")}</span>{" "}
+              {t("hero.titleQuestionPre")}{" "}
+              <span className="text-[#4F46E5]">{t("hero.titleQuestionHighlight")}</span>{" "}
+              {t("hero.titleQuestionPost")}
             </h1>
 
-            <p className="text-[15px] sm:text-base leading-[1.7] mb-8 max-w-md">
-              <span className="text-[#7189A3]">{t("hero.bodyLight")}</span>{" "}
-              <span className="text-[#33465A] font-medium">{t("hero.bodyDark")}</span>
+            <p className="text-base leading-[1.7] text-[#64748B] mb-8 max-w-md">
+              {t("hero.body")}
             </p>
 
-            <Link href="/signup" className={CTA_CLASS_HERO}>
-              {t("hero.cta")}
-            </Link>
-          </div>
-
-          {/* Live product screen — one fixed 800px-wide composition (matching
-              its 5-column internal grid, which never reflows) shrunk down as
-              a whole using `zoom` rather than reflowed per breakpoint. zoom
-              (unlike transform) actually shrinks the layout box too, so this
-              behaves like a real screenshot scaling down, not a live grid
-              restructuring itself.
-
-              The zoom steps are NOT monotonically "bigger at bigger
-              breakpoints" — that's intentional. Below `lg` this sits in a
-              single-column stack with the full viewport width to itself
-              (minus the page's own px-6). At `lg` (1024px) the grid switches
-              to two columns and the text column claims up to 480px + a 64px
-              gap, so the space actually available to this column *drops*
-              sharply right at that breakpoint even though the viewport got
-              bigger — from ~720px just before `lg` to as little as ~430px
-              right at it. The zoom value has to drop to match, then climb
-              back up as the viewport keeps growing and there's real room
-              again. min-w-0 + overflow-hidden is the hard backstop: even if
-              this math is ever slightly off at some in-between width, it
-              clips instead of overlapping the text column.
-
-              Deliberately NOT `ml-auto`: once zoom shrinks this smaller than
-              its 1fr track (true at every width except >=1440px), ml-auto
-              pushes it flush against the page's outer edge instead — which
-              looks fine on its own, but leaves the *leftover track space*
-              sitting between the text and the image, right where the eye
-              expects them to be close together. Left-aligned, it just sits
-              directly next to the grid gap instead.
-
-              Below `lg` (single-column stack), the opposite problem showed
-              up: this sits in a full-width grid track, but the zoomed
-              content is narrower than that track and — as a plain block
-              child with no width of its own — hugs the left edge, dumping
-              all the leftover slack on the right (confirmed on a real
-              phone: text reached further right than the mockup did).
-              w-fit + mx-auto below `lg` makes this box hug its own (zoomed)
-              content size and centers *that* within the column, so
-              whatever slack exists splits evenly instead of collecting on
-              one side. Reset to the flush-left, next-to-text behavior at
-              `lg`+ where it's beside the text, not stacked under it.
-
-              Above `lg`, the steps are deliberately fine-grained (every
-              ~70px) rather than 3 big jumps. With only a few coarse steps,
-              the mockup stays flat between them while the actual available
-              track space keeps growing as the viewport does — right before
-              each jump there was up to ~150-200px of real, measured unused
-              space inside the mockup's own column (confirmed at 1920x900:
-              a bare 3-step version left the mockup visibly not filling the
-              room it had). Finer steps keep the gap between "available"
-              and "used" small at every width in between, not just at the
-              breakpoints themselves.
-
-              This outer wrapper carries its own drop-shadow, deliberately
-              OUTSIDE the zoomed div below. zoom shrinks everything inside
-              it proportionally, box-shadow included — DeviceFrame's own
-              shadow all but disappears at mobile's ~0.39 zoom. A
-              drop-shadow filter on an ancestor that isn't itself zoomed
-              renders at full, unscaled strength around whatever size the
-              zoomed content ends up, so the "lifted off the page" effect
-              stays visible even at the smallest sizes.
-
-              Base 0.39 is the ceiling for a genuinely narrow phone (~360px
-              wide, minus this column's 48px of page padding = ~312px —
-              exactly 800*0.39). min-[390px]:0.42 gives every modern
-              standard-width phone (390px+: iPhone 12 onward, most Android)
-              a visibly bigger, easier-to-read screen once there's the
-              ~342px of room to support it, while staying comfortably under
-              that width's own overflow ceiling (~0.4275) — the narrow-phone
-              step stays untouched below 390px. mt-6 (was mt-10) tightens
-              the gap under the CTA button to match. */}
-          <div className="drop-shadow-[0_20px_38px_rgba(13,27,43,0.35)]">
-            <div className="w-fit mx-auto lg:w-auto lg:mx-0 min-w-0 overflow-hidden mt-6 lg:mt-0 lg:-mt-4 [zoom:0.39] min-[390px]:[zoom:0.42] sm:[zoom:0.6] md:[zoom:0.85] lg:[zoom:0.52] min-[1080px]:[zoom:0.59] min-[1150px]:[zoom:0.68] min-[1220px]:[zoom:0.76] min-[1290px]:[zoom:0.85] min-[1360px]:[zoom:0.94] min-[1440px]:[zoom:1]">
-              <div className="w-[800px]">
-                <ProductExperience />
-              </div>
+            <div className="flex flex-wrap items-center gap-3 mb-6">
+              <a href="#calculator" className={CTA_PRIMARY}>{t("hero.primaryCta")} →</a>
             </div>
-          </div>
-        </div>
-      </section>
 
-      {/* ── Section 2: The Problem ────────────────────────────────── */}
-      <section className="pt-10 pb-16 md:pt-12 md:pb-20 bg-[#EFE5D4] border-y border-[#E0D4BC] overflow-x-hidden">
-        <div className="max-w-[1440px] mx-auto px-6 grid grid-cols-1 lg:grid-cols-[minmax(0,480px)_1fr] gap-6 items-center">
-
-          <div className="max-w-[560px] mx-auto lg:mx-0 lg:pl-12">
-            <h2 className="text-2xl sm:text-3xl font-bold tracking-[-0.015em] text-[#0D1B2B] leading-[1.3] mb-6 text-balance">
-              <Lines text={t("problem.title")} />
-            </h2>
-
-            <p className="text-base font-light tracking-[-0.005em] leading-[1.65] text-[#5B5346] mb-10">
-              {t("problem.body")}
-            </p>
-
-            <p className="text-base font-medium text-[#33465A] mb-8">
-              {t("problem.questionsIntro")}
-            </p>
-
-            <div className="flex flex-col gap-5">
-              {questions.map((q, i) => (
-                <p
-                  key={i}
-                  className="text-base font-semibold tracking-[-0.02em] leading-[1.4] text-[#0D1B2B] text-balance border-l-2 border-[#3AB5A0] pl-5 text-left"
-                >
-                  {q}
-                </p>
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+              {(t.raw("hero.trust") as string[]).map((label, i) => (
+                <span key={i} className="flex items-center gap-1.5 text-sm text-[#64748B]">
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                    <circle cx="8" cy="8" r="7" stroke="#16A34A" strokeWidth="1.3"/>
+                    <path d="M5 8.2l2 2 4-4.4" stroke="#16A34A" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  {label}
+                </span>
               ))}
             </div>
           </div>
 
-          <div className="flex justify-center lg:justify-end pr-0 lg:pr-12">
-            <PhoneNavShowcase />
-          </div>
-        </div>
-      </section>
-
-      {/* ── Section 3: Interactive Demo entry ────────────────────── */}
-      <section className="py-14 md:py-20 bg-[#0A1825] border-b border-[#1E3550]">
-        <div className="max-w-3xl mx-auto px-6 text-center">
-
-          <div className="inline-flex items-center gap-2 mb-8">
-            <div className="w-1.5 h-1.5 rounded-full bg-[#3AB5A0]" />
-            <span className="text-[11px] font-medium tracking-[0.2em] text-[#3AB5A0] uppercase">
-              {t("liveDemo.badge")}
-            </span>
-          </div>
-
-          <h2 className="text-5xl sm:text-6xl font-bold tracking-tight text-[#E8F0F8] leading-tight mb-6">
-            <Lines text={t("liveDemo.title")} />
-          </h2>
-
-          <p className="text-xl text-[#7BA8C4] leading-relaxed max-w-xl mx-auto mb-12 font-light">
-            {t("liveDemo.subtitle")}
-          </p>
-
-          <Link href="/demo/upload" className={CTA_CLASS}>
-            {t("liveDemo.cta")}
-          </Link>
-
-          <p className="text-sm text-[#2E5070] mt-5 mb-8">
-            {t("liveDemo.ctaNote")}
-          </p>
-
-          <CsvHelpPanel />
-        </div>
-      </section>
-
-      {/* ── Section 4: Value Proposition ──────────────────────────── */}
-      <section className="py-16 md:py-20 bg-[#F1F5F9] border-y border-[#E1E7EF]">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="max-w-2xl mx-auto text-center mb-16">
-            <h2 className="text-[2rem] sm:text-[2.5rem] font-semibold tracking-[-0.02em] text-[#0D1B2B] leading-[1.2] text-balance">
-              <Lines text={t("valueProp.title")} />
-            </h2>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {valuePropItems.map((item, i) => {
-              const isSecond = i === 1;
-              const bg = isSecond ? "#D4A254" : "#4C7FEE";
-              const shadowColor = isSecond ? "rgba(212,162,84,0.4)" : "rgba(76,127,238,0.4)";
-              const number = String(i + 1).padStart(2, "0");
-
-              if (isSecond) {
-                return (
-                  <MilestoneFlipCard
-                    key={i}
-                    number={number}
-                    title={item.title}
-                    body={item.body}
-                    bg={bg}
-                    shadowColor={shadowColor}
-                    ctaLabel={valuePropDemo.cta}
-                    timeline={{
-                      heading: valuePropDemo.invoiceHeading,
-                      project: valuePropDemo.project,
-                      milestones: valuePropDemo.milestones,
-                    }}
-                  />
-                );
-              }
-
-              if (i === 2) {
-                return (
-                  <TaxShieldFlipCard
-                    key={i}
-                    number={number}
-                    title={item.title}
-                    body={item.body}
-                    bg={bg}
-                    shadowColor={shadowColor}
-                    ctaLabel={valuePropTaxDemo.cta}
-                    breakdown={{
-                      heading: valuePropTaxDemo.heading,
-                      subtitle: valuePropTaxDemo.subtitle,
-                      grossLabel: valuePropTaxDemo.grossLabel,
-                      gross: valuePropTaxDemo.gross,
-                      taxLabel: valuePropTaxDemo.taxLabel,
-                      taxAmount: valuePropTaxDemo.taxAmount,
-                      netLabel: valuePropTaxDemo.netLabel,
-                      net: valuePropTaxDemo.net,
-                    }}
-                  />
-                );
-              }
-
-              return (
-                <div
-                  key={i}
-                  className="border rounded-2xl p-8 flex flex-col"
-                  style={{ backgroundColor: bg, borderColor: bg, boxShadow: `0 8px 24px -8px ${shadowColor}` }}
-                >
-                  <span className="text-sm font-bold tabular-nums mb-4 text-white">
-                    {number}
-                  </span>
-                  <p className="text-xl font-bold tracking-[-0.01em] leading-snug mb-3 text-white">
-                    {item.title}
-                  </p>
-                  <p className="text-[15px] leading-relaxed text-white font-medium">
-                    {item.body}
-                  </p>
+          {/* Illustrative example card — static, clearly labeled as an
+              example (never presented as a real transaction or user). */}
+          <div>
+            <div className="bg-white border border-[#E2E8F0] rounded-3xl p-6 sm:p-7 shadow-[0_20px_45px_-20px_rgba(13,27,43,0.2)]">
+              <div className="flex items-start justify-between mb-1">
+                <div>
+                  <p className="text-xs text-[#64748B] mb-1">{t("hero.example.badge")}</p>
+                  <p className="text-2xl font-bold text-[#0D1B2B]">{t("hero.example.amount")}</p>
                 </div>
-              );
-            })}
+                <span className="flex items-center gap-1 text-xs font-medium text-[#16A34A] bg-[#F0FDF4] px-2.5 py-1 rounded-full">
+                  <svg width="10" height="10" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M2.5 6.2l2.3 2.3 4.7-5" stroke="#16A34A" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  {t("hero.example.updated")}
+                </span>
+              </div>
+
+              <div className="mt-5 space-y-0">
+                <ExampleRow icon="payment" label={t("hero.example.rows.payment.label")} value={t("hero.example.rows.payment.value")} positive />
+                <ExampleRow icon="tax" label={t("hero.example.rows.tax.label")} note={t("hero.example.rows.tax.note")} value={t("hero.example.rows.tax.value")} />
+                <ExampleRow icon="commitments" label={t("hero.example.rows.commitments.label")} note={t("hero.example.rows.commitments.note")} value={t("hero.example.rows.commitments.value")} />
+                <ExampleRow icon="buffer" label={t("hero.example.rows.buffer.label")} note={t("hero.example.rows.buffer.note")} value={t("hero.example.rows.buffer.value")} />
+              </div>
+
+              <div className="flex items-center justify-between pt-4 mt-2 border-t border-[#F1F5F9]">
+                <div>
+                  <p className="text-sm font-semibold text-[#0D1B2B]">{t("hero.example.available")}</p>
+                  <p className="text-xs text-[#94A3B8]">{t("hero.example.availableNote")}</p>
+                </div>
+                <p className="text-xl font-bold text-[#16A34A]">{t("hero.example.availableAmount")}</p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 mt-5">
+                <div className="bg-[#F5F3FF] rounded-xl p-4">
+                  <p className="text-xs text-[#64748B] mb-1">{t("hero.example.runway")}</p>
+                  <p className="text-lg font-bold text-[#0D1B2B]">{t("hero.example.runwayValue")}</p>
+                  <p className="text-[11px] text-[#94A3B8] mt-0.5">{t("hero.example.runwayNote")}</p>
+                </div>
+                <div className="bg-[#F5F3FF] rounded-xl p-4">
+                  <p className="text-xs text-[#64748B] mb-1">{t("hero.example.runwayWithPayment")}</p>
+                  <p className="text-lg font-bold text-[#0D1B2B]">{t("hero.example.runwayWithPaymentValue")}</p>
+                  <p className="text-[11px] text-[#94A3B8] mt-0.5">{t("hero.example.runwayWithPaymentNote")}</p>
+                </div>
+              </div>
+            </div>
+            <p className="flex items-center justify-center gap-1.5 text-xs text-[#94A3B8] mt-4">
+              <svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                <rect x="3" y="7" width="10" height="7" rx="1.5" stroke="currentColor" strokeWidth="1.3" />
+                <path d="M5.5 7V4.8a2.5 2.5 0 0 1 5 0V7" stroke="currentColor" strokeWidth="1.3" />
+              </svg>
+              {t("hero.example.disclaimer")}
+            </p>
           </div>
         </div>
       </section>
 
-      {/* ── Section 5: Pricing / Alignment ────────────────────────── */}
-      <section className="py-16 md:py-20 bg-[#132537] border-y border-[#1E3550]">
-        <div className="max-w-[640px] mx-auto px-6 text-center">
-
-          <p className="text-xs font-semibold tracking-[0.24em] uppercase text-[#3AB5A0] mb-8">
-            {t("pricing.eyebrow")}
-          </p>
-
-          <h2 className="text-4xl sm:text-5xl font-bold tracking-[-0.03em] text-[#E8F0F8] leading-[1.14] mb-8 text-balance">
-            {t("pricing.title")}
-          </h2>
-
-          <p className="text-[17px] sm:text-[19px] font-light tracking-[-0.005em] leading-[1.65] text-[#7BA8C4] mb-6">
-            {t("pricing.body1")}
-          </p>
-
-          <p className="text-[17px] sm:text-[19px] font-light tracking-[-0.005em] leading-[1.65] text-[#7BA8C4] mb-12">
-            {t("pricing.body2")}
-          </p>
-
-          <div className="w-7 h-px bg-[#1E3550] mx-auto mb-12" />
-
-          <p className="text-2xl sm:text-3xl font-bold tracking-[-0.02em] leading-[1.3] text-[#3AB5A0] text-balance">
-            {t("pricing.highlight")}
-          </p>
+      {/* ── Section 2: Interactive calculator ─────────────────────── */}
+      <section id="calculator" className="py-16 md:py-24 bg-white border-t border-[#F1F5F9]">
+        <div className="max-w-4xl mx-auto px-6 text-center mb-10">
+          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#0D1B2B] mb-3">{t("calculator.title")}</h2>
+          <p className="text-base text-[#64748B]">{t("calculator.subtitle")}</p>
+        </div>
+        <div className="px-6">
+          <FinancialPositionCalculator />
         </div>
       </section>
 
-      {/* ── Section 6: Final CTA ──────────────────────────────────── */}
-      <section className="py-14 md:py-20 bg-[#F1ECE2]">
+      {/* ── Section 3: Features ───────────────────────────────────── */}
+      <section id="features" className="py-16 md:py-20 bg-[#F8FAFC] border-y border-[#E2E8F0]">
+        <div className="max-w-6xl mx-auto px-6">
+          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#0D1B2B] text-center mb-14 text-balance">
+            {t("features.title")}
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-8">
+            {featureItems.map((item, i) => (
+              <div key={i} className="flex flex-col items-center text-center">
+                <div className="w-12 h-12 rounded-full bg-[#EEF2FF] flex items-center justify-center mb-4">
+                  <FeatureIcon index={i} />
+                </div>
+                <p className="text-sm font-semibold text-[#0D1B2B] mb-1.5">{item.title}</p>
+                <p className="text-xs text-[#64748B] leading-relaxed">{item.body}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Section 4: Final CTA ──────────────────────────────────── */}
+      <section className="py-16 md:py-20 bg-[#F5F3FF]">
         <div className="max-w-2xl mx-auto px-6 text-center">
-          <h2 className="text-4xl sm:text-5xl font-bold tracking-[-0.03em] text-[#0D1B2B] leading-[1.14] mb-6 text-balance">
-            {t("finalCta.title")}
-          </h2>
-          <p className="text-lg text-[#5B5346] leading-relaxed mb-10 font-light">
-            {t("finalCta.body")}
-          </p>
-          <Link href="/signup" className={CTA_CLASS}>
-            {t("finalCta.cta")}
-          </Link>
+          <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-[#0D1B2B] leading-[1.2] mb-4 text-balance">{t("finalCta.title")}</h2>
+          <p className="text-base text-[#64748B] leading-relaxed mb-9">{t("finalCta.body")}</p>
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            <a href="#calculator" className={CTA_PRIMARY}>{t("finalCta.primaryCta")}</a>
+            <Link href="/demo" className={CTA_SECONDARY}>{t("finalCta.secondaryCta")}</Link>
+          </div>
         </div>
       </section>
 
-      {/* ── Section 7: Footer / Legal ─────────────────────────────── */}
-      <footer className="border-t border-[#1E3550] bg-[#0D1B2B] py-10">
+      {/* ── Footer ─────────────────────────────────────────────────── */}
+      <footer className="border-t border-[#E2E8F0] bg-white py-10">
         <div className="max-w-6xl mx-auto px-6">
           <div className="flex flex-col md:flex-row items-center justify-between gap-8">
-
             <div>
-              <p className="font-bold text-[#E8F0F8] text-lg mb-1">Nonodia</p>
-              <p className="text-sm text-[#4A7A9B]">{t("footer.tagline")}</p>
+              <p className="font-bold text-[#0D1B2B] text-lg mb-1">Nonodia</p>
+              <p className="text-sm text-[#94A3B8]">{t("footer.tagline")}</p>
             </div>
 
-            <nav className="flex flex-wrap items-center justify-center gap-2 text-sm text-[#4A7A9B]">
-              <Link href="/data-privacy" className="hover:text-[#7BA8C4] transition-colors px-2 py-1">
-                {t("footer.privacyPolicy")}
-              </Link>
-              <span className="text-[#1E3550]">·</span>
-              <Link href="/terms-of-service" className="hover:text-[#7BA8C4] transition-colors px-2 py-1">
-                {t("footer.termsOfService")}
-              </Link>
-              <span className="text-[#1E3550]">·</span>
-              <Link href="/data-privacy" className="hover:text-[#7BA8C4] transition-colors px-2 py-1">
-                {t("footer.dataPrivacy")}
-              </Link>
+            <nav className="flex flex-wrap items-center justify-center gap-2 text-sm text-[#64748B]">
+              <Link href="/data-privacy" className="hover:text-[#0D1B2B] transition-colors px-2 py-1">{t("footer.privacyPolicy")}</Link>
+              <span className="text-[#E2E8F0]">·</span>
+              <Link href="/terms-of-service" className="hover:text-[#0D1B2B] transition-colors px-2 py-1">{t("footer.termsOfService")}</Link>
+              <span className="text-[#E2E8F0]">·</span>
+              <Link href="/data-privacy" className="hover:text-[#0D1B2B] transition-colors px-2 py-1">{t("footer.dataPrivacy")}</Link>
             </nav>
 
             <div className="flex items-center gap-4">
-              <LanguageSwitcher />
-              <span className="text-sm text-[#4A7A9B]">{t("footer.copyright")}</span>
+              <LanguageSwitcher variant="light" />
+              <span className="text-sm text-[#94A3B8]">{t("footer.copyright")}</span>
             </div>
           </div>
         </div>
       </footer>
 
     </div>
+  );
+}
+
+function ExampleRow({ label, value, note, positive = false }: { label: string; value: string; note?: string; positive?: boolean; icon?: string }) {
+  return (
+    <div className="flex items-start justify-between py-2.5 gap-4">
+      <div className="min-w-0">
+        <p className="text-sm text-[#33465A]">{label}</p>
+        {note && <p className="text-xs text-[#94A3B8] mt-0.5">{note}</p>}
+      </div>
+      <p className={`text-sm font-semibold tabular-nums shrink-0 ${positive ? "text-[#16A34A]" : "text-[#DC2626]"}`}>{value}</p>
+    </div>
+  );
+}
+
+function FeatureIcon({ index }: { index: number }) {
+  const paths = [
+    // shield — protected
+    <path key="shield" d="M12 3l7 3v5c0 4.5-3 8-7 9-4-1-7-4.5-7-9V6l7-3z" stroke="#4F46E5" strokeWidth="1.4" strokeLinejoin="round" />,
+    // wallet — available
+    <path key="wallet" d="M4 7a2 2 0 012-2h10a2 2 0 012 2v10a2 2 0 01-2 2H6a2 2 0 01-2-2V7z M15 12h3v3h-3a1.5 1.5 0 010-3z" stroke="#4F46E5" strokeWidth="1.4" strokeLinejoin="round" />,
+    // clock — runway
+    <g key="clock"><circle cx="12" cy="12" r="8" stroke="#4F46E5" strokeWidth="1.4" /><path d="M12 8v4l3 2" stroke="#4F46E5" strokeWidth="1.4" strokeLinecap="round" /></g>,
+    // trending up — plan
+    <path key="trend" d="M4 16l5-5 4 4 7-8 M15 6h5v5" stroke="#4F46E5" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" fill="none" />,
+    // list — track
+    <g key="list"><path d="M8 7h9M8 12h9M8 17h9" stroke="#4F46E5" strokeWidth="1.4" strokeLinecap="round" /><circle cx="5" cy="7" r="1" fill="#4F46E5" /><circle cx="5" cy="12" r="1" fill="#4F46E5" /><circle cx="5" cy="17" r="1" fill="#4F46E5" /></g>,
+  ];
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      {paths[index % paths.length]}
+    </svg>
   );
 }

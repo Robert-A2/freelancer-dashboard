@@ -61,15 +61,89 @@
   },
   "landing": {
     "nav": {
+      "product": "Produit",
+      "howItWorks": "Comment ça marche",
+      "resources": "Ressources",
+      "resourcesLiveDemo": "Démo en direct",
+      "resourcesCsvGuide": "Guide d'import CSV",
       "signIn": "Se connecter",
-      "getStarted": "Commencer"
+      "cta": "Commencer"
     },
     "hero": {
-      "titleLead": "Arrêtez de gérer la paperasse.",
-      "titleMain": "Commencez à comprendre votre trésorerie.",
-      "bodyLight": "Un système d'exploitation financier conçu pour les revenus freelance — pas pour un salaire fixe.",
-      "bodyDark": "Nonodia vous aide à analyser votre CSV et votre trésorerie, à envoyer des liens de facture par étape payés via Stripe, et à voir instantanément votre véritable autonomie de trésorerie.",
-      "cta": "Commencer gratuitement"
+      "titleLead": "Votre client vous a payé",
+      "titleAmount": "5 000 €.",
+      "titleQuestionPre": "Combien est réellement",
+      "titleQuestionHighlight": "disponible",
+      "titleQuestionPost": "pour vous ?",
+      "body": "Nonodia sépare ce qui doit rester protégé pour les impôts/cotisations, vos prochains engagements et votre réserve de sécurité — puis vous montre combien de temps vous tenez si l'activité ralentit.",
+      "primaryCta": "Commencer",
+      "trust": ["Aucune connexion bancaire", "Aucune carte bancaire"],
+      "example": {
+        "badge": "Paiement client reçu",
+        "amount": "5 000 €",
+        "updated": "Mis à jour aujourd'hui",
+        "rows": {
+          "payment": { "label": "Paiement client", "value": "+5 000 €" },
+          "tax": { "label": "Impôts et cotisations estimés", "note": "URSSAF, impôt sur le revenu", "value": "− 1 400 €" },
+          "commitments": { "label": "Engagements professionnels à venir", "note": "Factures, abonnements, dépenses", "value": "− 650 €" },
+          "buffer": { "label": "Réserve de sécurité", "note": "Pour les mois creux", "value": "− 1 200 €" }
+        },
+        "available": "Au-delà de vos protections",
+        "availableNote": "Disponible à utiliser ou à vous verser",
+        "availableAmount": "1 750 €",
+        "runway": "Autonomie estimée",
+        "runwayValue": "3,4 mois",
+        "runwayNote": "Si aucun autre argent n'arrive",
+        "runwayWithPayment": "Autonomie avec le paiement attendu",
+        "runwayWithPaymentValue": "5,6 mois",
+        "runwayWithPaymentNote": "Si votre client paie à temps",
+        "disclaimer": "Ceci est un exemple. Vos résultats dépendront de vos propres chiffres."
+      }
+    },
+    "calculator": {
+      "title": "Obtenez votre situation financière en 2 minutes",
+      "subtitle": "Répondez à quelques questions simples. Aucune inscription requise.",
+      "steps": {
+        "currentCash": { "title": "Trésorerie professionnelle actuelle", "subtitle": "Combien de trésorerie professionnelle avez-vous aujourd'hui ?" },
+        "monthlyBusinessCost": { "title": "Coûts professionnels mensuels", "subtitle": "Combien coûte votre activité chaque mois, environ ?" },
+        "personalMonthlyNeed": { "title": "Besoin personnel mensuel", "subtitle": "De combien avez-vous besoin personnellement chaque mois ?" },
+        "upcomingPayment": { "title": "Paiement à venir", "subtitle": "Attendez-vous un paiement client ?" },
+        "expectedDate": { "title": "Quand est-il attendu ?", "subtitle": "Quand devriez-vous recevoir ce paiement ?" }
+      },
+      "submitCta": "Voir ma situation financière",
+      "privacyNote": "Ceci est un test, rien n'est conservé.",
+      "validationError": "Renseignez les montants ci-dessus pour voir votre situation.",
+      "results": {
+        "heading": "Votre situation financière estimée",
+        "currentCash": "Trésorerie professionnelle actuelle",
+        "taxReserve": "Impôts et cotisations estimés",
+        "taxReserveNote": "Basé sur les taux habituels d'un micro-entrepreneur (BNC) appliqués à votre paiement à venir — votre taux réel dépend de votre activité et de vos options fiscales.",
+        "upcomingCommitments": "Engagements professionnels à venir",
+        "upcomingCommitmentsNote": "Vos coûts professionnels mensuels déclarés",
+        "safetyBuffer": "Réserve de sécurité",
+        "safetyBufferNote": "{months, plural, one {# mois} other {# mois}} de dépenses mis de côté pour les mois creux",
+        "available": "Au-delà de vos protections",
+        "availableNote": "Disponible à utiliser ou à vous verser",
+        "runway": "Autonomie estimée",
+        "runwayNote": "Si aucun autre argent n'arrive",
+        "runwayWithPayment": "Autonomie avec le paiement attendu",
+        "runwayWithPaymentNoDate": "Si votre paiement à venir arrive",
+        "runwayWithPaymentOnDate": "S'il arrive avant le {date}",
+        "months": "{count, plural, one {# mois} other {# mois}}",
+        "disclaimer": "Ceci est une estimation basée sur les chiffres que vous avez saisis, selon les taux habituels d'un micro-entrepreneur — pas un conseil fiscal. Rien de ce que vous saisissez ici n'est conservé.",
+        "editAnswers": "Modifier mes réponses",
+        "cta": "Créer mon compte gratuit"
+      }
+    },
+    "features": {
+      "title": "Prenez des décisions claires avec l'argent de votre activité freelance",
+      "items": [
+        { "title": "Savoir ce qu'il faut protéger", "body": "Impôts, cotisations et réserve de sécurité estimés, calculés pour vous." },
+        { "title": "Savoir ce qui est réellement disponible", "body": "Voyez ce qui est disponible à utiliser ou à vous verser — une fois vos obligations couvertes." },
+        { "title": "Voir combien de temps vous tenez", "body": "Comprenez votre autonomie, avec et sans les paiements attendus." },
+        { "title": "Planifier en confiance", "body": "Ajoutez des projets attendus et voyez leur impact sur votre trésorerie." },
+        { "title": "Suivre ce qui compte", "body": "Suivez vos revenus, dépenses et dépenses par rapport à vos estimations." }
+      ]
     },
     "forecastShowcase": {
       "healthExplanation": "À surveiller — un bilan mitigé, avec 11 mois positifs et 3 mois négatifs sur les 14 derniers.",
@@ -149,20 +223,14 @@
         "net": "7 500 €"
       }
     },
-    "pricing": {
-      "eyebrow": "Comment nous gagnons de l'argent",
-      "title": "Nous ne gagnons que lorsque vous êtes payé.",
-      "body1": "Nous ne facturons pas d'abonnement mensuel fixe, car nous pensons que vous ne devriez pas payer pour un logiciel pendant les périodes creuses.",
-      "body2": "Notre plateforme principale est entièrement gratuite. Créez des projets illimités, importez vos CSV et personnalisez votre image de marque sans jamais entrer de carte bancaire. Nous prélevons seulement des frais limités de 0,3 %, déduits automatiquement lorsque votre client règle avec succès une facture par étape via votre lien de paiement sécurisé.",
-      "highlight": "Si vous ne gagnez rien, notre outil ne vous coûte absolument rien."
-    },
     "finalCta": {
-      "title": "Prenez le contrôle de la vie financière de votre activité dès aujourd'hui.",
-      "body": "Chaque heure perdue à cause d'un logiciel compliqué est volée à votre métier. Nonodia rend cela si simple et facile pour les développeurs, designers, monteurs vidéo et consultants qui veulent récupérer ce temps perdu.",
-      "cta": "Commencer"
+      "title": "Prêt à prendre le contrôle de vos finances freelance ?",
+      "body": "Partez de vos chiffres. Obtenez de la clarté en quelques minutes.",
+      "primaryCta": "Commencer",
+      "secondaryCta": "Explorer l'activité de Sophie"
     },
     "footer": {
-      "tagline": "Système d'exploitation financier pour freelances",
+      "tagline": "Moteur de décision financière pour freelances",
       "privacyPolicy": "Politique de confidentialité",
       "termsOfService": "Conditions d'utilisation",
       "dataPrivacy": "Confidentialité des données",
