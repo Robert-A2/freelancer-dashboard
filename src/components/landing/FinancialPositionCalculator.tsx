@@ -61,7 +61,7 @@ export default function FinancialPositionCalculator() {
   return (
     <div className="max-w-4xl mx-auto">
       {!result ? (
-        <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-3xl p-6 sm:p-10">
+        <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-3xl p-7 sm:p-10 lg:p-12">
           {/* Stepper track */}
           <div className="flex items-center justify-center mb-10">
             {ALL_FIELDS.map((id, i) => (
@@ -135,7 +135,7 @@ export default function FinancialPositionCalculator() {
           </div>
         </div>
       ) : (
-        <div className="bg-white border border-[#E2E8F0] rounded-3xl p-6 sm:p-10 shadow-[0_20px_38px_-16px_rgba(13,27,43,0.15)]">
+        <div className="bg-white border border-[#E2E8F0] rounded-3xl p-7 sm:p-10 lg:p-12 shadow-[0_20px_38px_-16px_rgba(13,27,43,0.15)]">
           <p className="text-lg font-semibold text-[#0D1B2B] mb-6">{t("results.heading")}</p>
 
           <div className="space-y-0 mb-6">
@@ -157,12 +157,12 @@ export default function FinancialPositionCalculator() {
             />
           </div>
 
-          <div className="flex items-center justify-between pt-4 border-t-2 border-[#0D1B2B]/10 mb-8">
+          <div className="flex items-center justify-between pt-5 border-t-2 border-[#0D1B2B]/10 mb-8">
             <div>
               <p className="text-sm font-semibold text-[#0D1B2B]">{t("results.available")}</p>
               <p className="text-xs text-[#64748B] mt-0.5">{t("results.availableNote")}</p>
             </div>
-            <p className={`text-xl font-bold tabular-nums ${result.availableAfterProtections >= 0 ? "text-[#16A34A]" : "text-[#DC2626]"}`}>
+            <p className={`text-3xl font-bold tabular-nums ${result.availableAfterProtections >= 0 ? "text-[#16A34A]" : "text-[#DC2626]"}`}>
               {formatCurrency(result.availableAfterProtections, locale)}
             </p>
           </div>
@@ -170,14 +170,14 @@ export default function FinancialPositionCalculator() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
             <div className="bg-[#F5F3FF] rounded-2xl p-5">
               <p className="text-xs font-medium text-[#64748B] mb-2">{t("results.runway")}</p>
-              <p className="text-2xl font-bold text-[#0D1B2B]">
+              <p className="text-xl font-bold text-[#0D1B2B]">
                 {result.runwayMonths !== null ? t("results.months", { count: Math.round(result.runwayMonths * 10) / 10 }) : "—"}
               </p>
               <p className="text-xs text-[#94A3B8] mt-1">{t("results.runwayNote")}</p>
             </div>
             <div className="bg-[#F5F3FF] rounded-2xl p-5">
               <p className="text-xs font-medium text-[#64748B] mb-2">{t("results.runwayWithPayment")}</p>
-              <p className="text-2xl font-bold text-[#0D1B2B]">
+              <p className="text-xl font-bold text-[#0D1B2B]">
                 {result.runwayWithPaymentMonths !== null ? t("results.months", { count: Math.round(result.runwayWithPaymentMonths * 10) / 10 }) : "—"}
               </p>
               <p className="text-xs text-[#94A3B8] mt-1">

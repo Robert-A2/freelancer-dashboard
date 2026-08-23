@@ -21,6 +21,13 @@ function Lines({ text }: { text: string }) {
 
 const CTA_PRIMARY = "inline-flex items-center justify-center bg-[#4F46E5] hover:bg-[#4338CA] text-white font-medium text-base px-7 py-3.5 rounded-full transition-colors";
 const CTA_SECONDARY = "inline-flex items-center justify-center border border-[#CBD5E1] hover:border-[#0D1B2B] text-[#0D1B2B] font-medium text-base px-7 py-3.5 rounded-full transition-colors";
+// One consistent primary container used by every full-width section, so
+// alignment never drifts between sections (spec: "global page width").
+const CONTAINER = "max-w-[1320px] mx-auto px-5 sm:px-8 lg:px-10";
+// Shared scale for every major-section heading (Calculator/Features/Final
+// CTA) — one step below the Hero headline, so hierarchy stays coherent
+// instead of each section inventing its own heading size.
+const SECTION_HEADING = "text-3xl sm:text-4xl lg:text-5xl font-bold leading-[1.1] tracking-tight text-[#0D1B2B] text-balance";
 
 export default async function LandingPage() {
   const supabase = await createClient();
@@ -35,7 +42,7 @@ export default async function LandingPage() {
 
       {/* ── Navbar ────────────────────────────────────────────────── */}
       <nav className="fixed top-0 left-0 right-0 z-50 border-b border-[#E2E8F0] bg-white/90 backdrop-blur-md">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 flex items-center justify-between h-16">
+        <div className={`${CONTAINER} flex items-center justify-between h-[76px]`}>
           <a href="#top" className="flex items-center gap-2">
             <span className="font-bold text-[#0D1B2B] text-lg tracking-tight">Nonodia</span>
           </a>
@@ -68,12 +75,12 @@ export default async function LandingPage() {
       </nav>
 
       {/* ── Section 1: Hero ───────────────────────────────────────── */}
-      <section id="top" className="pt-28 pb-16 md:pt-36 md:pb-24" style={{ background: "linear-gradient(180deg, #F5F8FC 0%, #FFFFFF 100%)" }}>
-        <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-16 xl:gap-20 items-start">
+      <section id="top" className="pt-24 sm:pt-32 lg:pt-[172px] pb-20 lg:pb-32" style={{ background: "linear-gradient(180deg, #F5F8FC 0%, #FFFFFF 100%)" }}>
+        <div className={`${CONTAINER} grid grid-cols-1 lg:grid-cols-[46%_54%] gap-16 xl:gap-20 items-start`}>
 
           {/* Text column */}
           <div>
-            <h1 className="text-4xl sm:text-5xl lg:text-[3.25rem] font-bold leading-[1.35] tracking-tight text-[#0D1B2B] mb-8 text-balance">
+            <h1 className="text-[clamp(2.375rem,1.5rem_+_4vw,4.5rem)] font-bold leading-[1.05] tracking-[-0.04em] text-[#0D1B2B] mb-7 max-w-[650px] text-balance">
               {t("hero.titleLead")}{" "}
               <span className="text-[#4F46E5]">{t("hero.titleAmount")}</span>{" "}
               {t("hero.titleQuestionPre")}{" "}
@@ -81,7 +88,7 @@ export default async function LandingPage() {
               {t("hero.titleQuestionPost")}
             </h1>
 
-            <p className="text-lg leading-[1.75] text-[#64748B] mb-12 max-w-lg">
+            <p className="text-[19px] leading-[1.55] text-[#64748B] mb-9 max-w-[600px]">
               {t("hero.body")}
             </p>
 
@@ -105,7 +112,7 @@ export default async function LandingPage() {
           {/* Illustrative example card — static, clearly labeled as an
               example (never presented as a real transaction or user). */}
           <div>
-            <div className="bg-white border border-[#E2E8F0] rounded-3xl p-6 sm:p-7 shadow-[0_20px_45px_-20px_rgba(13,27,43,0.2)]">
+            <div className="bg-white border border-[#E2E8F0] rounded-3xl p-7 sm:p-9 shadow-[0_20px_45px_-20px_rgba(13,27,43,0.2)]">
               <div className="flex items-start justify-between mb-1">
                 <div>
                   <p className="text-xs text-[#64748B] mb-1">{t("hero.example.badge")}</p>
@@ -157,30 +164,30 @@ export default async function LandingPage() {
       </section>
 
       {/* ── Section 2: Interactive calculator ─────────────────────── */}
-      <section id="calculator" className="py-16 md:py-24 bg-white border-t border-[#F1F5F9]">
-        <div className="max-w-4xl mx-auto px-6 text-center mb-10">
-          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#0D1B2B] mb-3">{t("calculator.title")}</h2>
-          <p className="text-base text-[#64748B]">{t("calculator.subtitle")}</p>
+      <section id="calculator" className="py-20 md:py-28 lg:py-36 bg-white border-t border-[#F1F5F9]">
+        <div className="max-w-[760px] mx-auto px-5 sm:px-8 text-center mb-14">
+          <h2 className={SECTION_HEADING}>{t("calculator.title")}</h2>
+          <p className="text-lg text-[#64748B] mt-5">{t("calculator.subtitle")}</p>
         </div>
-        <div className="px-6">
+        <div className="px-5 sm:px-8">
           <FinancialPositionCalculator />
         </div>
       </section>
 
       {/* ── Section 3: Features ───────────────────────────────────── */}
-      <section id="features" className="py-16 md:py-20 bg-[#F8FAFC] border-y border-[#E2E8F0]">
-        <div className="max-w-6xl mx-auto px-6">
-          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#0D1B2B] text-center mb-14 text-balance">
+      <section id="features" className="py-20 md:py-28 lg:py-36 bg-[#F8FAFC] border-y border-[#E2E8F0]">
+        <div className={CONTAINER}>
+          <h2 className={`${SECTION_HEADING} text-center max-w-[760px] mx-auto mb-16`}>
             {t("features.title")}
           </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-x-8 gap-y-12">
             {featureItems.map((item, i) => (
               <div key={i} className="flex flex-col items-center text-center">
-                <div className="w-12 h-12 rounded-full bg-[#EEF2FF] flex items-center justify-center mb-4">
+                <div className="w-14 h-14 rounded-full bg-[#EEF2FF] flex items-center justify-center mb-5">
                   <FeatureIcon index={i} />
                 </div>
-                <p className="text-sm font-semibold text-[#0D1B2B] mb-1.5">{item.title}</p>
-                <p className="text-xs text-[#64748B] leading-relaxed">{item.body}</p>
+                <p className="text-base font-semibold text-[#0D1B2B] mb-2">{item.title}</p>
+                <p className="text-sm text-[#64748B] leading-relaxed">{item.body}</p>
               </div>
             ))}
           </div>
@@ -188,11 +195,11 @@ export default async function LandingPage() {
       </section>
 
       {/* ── Section 4: Final CTA ──────────────────────────────────── */}
-      <section className="py-16 md:py-20 bg-[#F5F3FF]">
-        <div className="max-w-2xl mx-auto px-6 text-center">
-          <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-[#0D1B2B] leading-[1.2] mb-4 text-balance">{t("finalCta.title")}</h2>
-          <p className="text-base text-[#64748B] leading-relaxed mb-9">{t("finalCta.body")}</p>
-          <div className="flex flex-wrap items-center justify-center gap-3">
+      <section className="py-16 md:py-20 lg:py-24 bg-[#F5F3FF]">
+        <div className="max-w-2xl mx-auto px-5 sm:px-8 text-center">
+          <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-[#0D1B2B] leading-[1.15] mb-5 text-balance">{t("finalCta.title")}</h2>
+          <p className="text-lg text-[#64748B] leading-relaxed mb-10">{t("finalCta.body")}</p>
+          <div className="flex flex-wrap items-center justify-center gap-4">
             <a href="#calculator" className={CTA_PRIMARY}>{t("finalCta.primaryCta")}</a>
             <Link href="/demo" className={CTA_SECONDARY}>{t("finalCta.secondaryCta")}</Link>
           </div>
@@ -200,8 +207,8 @@ export default async function LandingPage() {
       </section>
 
       {/* ── Footer ─────────────────────────────────────────────────── */}
-      <footer className="border-t border-[#E2E8F0] bg-white py-10">
-        <div className="max-w-6xl mx-auto px-6">
+      <footer className="border-t border-[#E2E8F0] bg-white pt-16 pb-10">
+        <div className={CONTAINER}>
           <div className="flex flex-col md:flex-row items-center justify-between gap-8">
             <div>
               <p className="font-bold text-[#0D1B2B] text-lg mb-1">Nonodia</p>
