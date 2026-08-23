@@ -69,11 +69,11 @@ export default async function LandingPage() {
 
       {/* ── Section 1: Hero ───────────────────────────────────────── */}
       <section id="top" className="pt-28 pb-16 md:pt-36 md:pb-24" style={{ background: "linear-gradient(180deg, #F5F8FC 0%, #FFFFFF 100%)" }}>
-        <div className="max-w-6xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-14 items-start">
+        <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-16 xl:gap-20 items-start">
 
           {/* Text column */}
           <div>
-            <h1 className="text-3xl sm:text-4xl lg:text-[2.75rem] font-bold leading-[1.2] tracking-tight text-[#0D1B2B] mb-6 text-balance">
+            <h1 className="text-4xl sm:text-5xl lg:text-[3.25rem] font-bold leading-[1.35] tracking-tight text-[#0D1B2B] mb-8 text-balance">
               {t("hero.titleLead")}{" "}
               <span className="text-[#4F46E5]">{t("hero.titleAmount")}</span>{" "}
               {t("hero.titleQuestionPre")}{" "}
@@ -81,11 +81,11 @@ export default async function LandingPage() {
               {t("hero.titleQuestionPost")}
             </h1>
 
-            <p className="text-base leading-[1.7] text-[#64748B] mb-8 max-w-md">
+            <p className="text-lg leading-[1.75] text-[#64748B] mb-12 max-w-lg">
               {t("hero.body")}
             </p>
 
-            <div className="flex flex-wrap items-center gap-3 mb-6">
+            <div className="flex flex-wrap items-center gap-3 mb-10">
               <a href="#calculator" className={CTA_PRIMARY}>{t("hero.primaryCta")} →</a>
             </div>
 
