@@ -120,8 +120,6 @@
         "taxReserveNote": "Basé sur les taux habituels d'un micro-entrepreneur (BNC) appliqués à votre paiement à venir — votre taux réel dépend de votre activité et de vos options fiscales.",
         "upcomingCommitments": "Engagements professionnels à venir",
         "upcomingCommitmentsNote": "Vos coûts professionnels mensuels déclarés",
-        "safetyBuffer": "Réserve de sécurité",
-        "safetyBufferNote": "{months, plural, one {# mois} other {# mois}} de dépenses mis de côté pour les mois creux",
         "available": "Au-delà de vos protections",
         "availableNote": "Disponible à utiliser ou à vous verser",
         "runway": "Autonomie estimée",

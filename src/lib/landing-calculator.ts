@@ -7,11 +7,19 @@ import { calculateFrenchMicroReserve } from "./tax/france/calculate-reserve";
 // and runway with/without the expected payment. This reuses the ONE real
 // France micro-entrepreneur tax formula (calculateFrenchMicroReserve, a pure
 // function with no server/DB dependency) rather than inventing a second tax
-// calculation — the only thing that's simplified is the ASSUMPTIONS behind
-// it (a default micro-entrepreneur/BNC profile, no VAT/ACRE/versement
-// libératoire, a flat 1-month safety buffer), since a 5-question teaser
-// can't collect the visitor's full tax profile. Every result is labeled as
-// an estimate for exactly this reason.
+// calculation.
+//
+// Nothing here is ever assumed or defaulted on the visitor's behalf — every
+// figure below is either a number they typed, or a real derivation of one.
+// The only simplification is which tax PROFILE the formula assumes (a
+// default micro-entrepreneur/BNC status, no VAT/ACRE/versement libératoire),
+// since a 5-question teaser can't collect the visitor's full tax profile the
+// way onboarding does — that's clearly labeled as an estimate in the UI. A
+// safety buffer is deliberately NOT included here: the real product only
+// ever shows one because the user explicitly configured a number of months
+// in Settings, and this teaser never asks that question — inventing a
+// default for it would be exactly the kind of silent assumption the rest of
+// this product refuses to make.
 
 export interface LandingCalculatorInput {
   currentCash: number;
@@ -25,8 +33,6 @@ export interface LandingCalculatorResult {
   taxReserve: number;
   taxReserveRatePct: number;
   upcomingCommitments: number;
-  safetyBuffer: number;
-  safetyBufferMonths: number;
   protectedTotal: number;
   availableAfterProtections: number;
   monthlySpend: number;
@@ -47,8 +53,6 @@ const DEFAULT_TAX_PROFILE = {
   defaultVatRate: null,
 } as const;
 
-const DEFAULT_SAFETY_BUFFER_MONTHS = 1;
-
 export function calculateLandingFinancialPosition(input: LandingCalculatorInput): LandingCalculatorResult {
   const { currentCash, monthlyBusinessCost, personalMonthlyNeed, upcomingPayment } = input;
 
@@ -63,9 +67,8 @@ export function calculateLandingFinancialPosition(input: LandingCalculatorInput)
 
   const monthlySpend = monthlyBusinessCost + personalMonthlyNeed;
   const upcomingCommitments = monthlyBusinessCost;
-  const safetyBuffer = DEFAULT_SAFETY_BUFFER_MONTHS * monthlySpend;
 
-  const protectedTotal = taxReserve + upcomingCommitments + safetyBuffer;
+  const protectedTotal = taxReserve + upcomingCommitments;
   const availableAfterProtections = currentCash - protectedTotal;
 
   const runwayMonths = monthlySpend > 0 ? currentCash / monthlySpend : null;
@@ -76,8 +79,6 @@ export function calculateLandingFinancialPosition(input: LandingCalculatorInput)
     taxReserve,
     taxReserveRatePct,
     upcomingCommitments,
-    safetyBuffer,
-    safetyBufferMonths: DEFAULT_SAFETY_BUFFER_MONTHS,
     protectedTotal,
     availableAfterProtections,
     monthlySpend,

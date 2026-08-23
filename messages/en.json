@@ -120,8 +120,6 @@
         "taxReserveNote": "Based on typical micro-entrepreneur (BNC) rates applied to your upcoming payment — your real rate depends on your actual activity type and tax options.",
         "upcomingCommitments": "Upcoming business commitments",
         "upcomingCommitmentsNote": "Your stated monthly business costs",
-        "safetyBuffer": "Safety buffer",
-        "safetyBufferNote": "{months, plural, one {# month} other {# months}} of spending set aside for quiet months",
         "available": "Above your protections",
         "availableNote": "Available to use or pay yourself",
         "runway": "Estimated runway",

@@ -150,11 +150,6 @@ export default function FinancialPositionCalculator() {
               value={`−${formatCurrency(result.upcomingCommitments, locale)}`}
               note={t("results.upcomingCommitmentsNote")}
             />
-            <BreakdownRow
-              label={t("results.safetyBuffer")}
-              value={`−${formatCurrency(result.safetyBuffer, locale)}`}
-              note={t("results.safetyBufferNote", { months: result.safetyBufferMonths })}
-            />
           </div>
 
           <div className="flex items-center justify-between pt-5 border-t-2 border-[#0D1B2B]/10 mb-8">
