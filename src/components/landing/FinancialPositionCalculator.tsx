@@ -59,9 +59,9 @@ export default function FinancialPositionCalculator() {
     : null;
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-6xl mx-auto">
       {!result ? (
-        <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-3xl p-7 sm:p-10 lg:p-12">
+        <div className="bg-[#F1F5F9] border border-[#CBD5E1] rounded-3xl shadow-[0_1px_2px_rgba(15,23,42,0.04),0_12px_28px_-12px_rgba(15,23,42,0.18)] p-7 sm:p-10 lg:p-12">
           {/* Stepper track */}
           <div className="flex items-center justify-center mb-10">
             {ALL_FIELDS.map((id, i) => (

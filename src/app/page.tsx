@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import LanguageSwitcher from "@/components/ui/LanguageSwitcher";
 import FinancialPositionCalculator from "@/components/landing/FinancialPositionCalculator";
+import ProductDemoReel from "@/components/landing/ProductDemoReel";
 
 function Lines({ text }: { text: string }) {
   const lines = text.split("\n");
@@ -38,7 +39,7 @@ export default async function LandingPage() {
   const featureItems = t.raw("features.items") as { title: string; body: string }[];
 
   return (
-    <div className="min-h-screen bg-white text-[#0D1B2B]">
+    <div className="min-h-screen bg-white text-[#0D1B2B] overflow-x-hidden">
 
       {/* ── Navbar ────────────────────────────────────────────────── */}
       <nav className="fixed top-0 left-0 right-0 z-50 border-b border-[#E2E8F0] bg-white/90 backdrop-blur-md">
@@ -67,20 +68,20 @@ export default async function LandingPage() {
             <Link href="/login" className="text-sm font-medium text-[#33465A] hover:text-[#0D1B2B] transition-colors px-3 py-2">
               {t("nav.signIn")}
             </Link>
-            <a href="#calculator" className="bg-[#4F46E5] hover:bg-[#4338CA] text-white text-sm font-semibold px-4 sm:px-5 py-2.5 rounded-full transition-colors whitespace-nowrap">
+            <Link href="/signup" className="bg-[#4F46E5] hover:bg-[#4338CA] text-white text-sm font-semibold px-4 sm:px-5 py-2.5 rounded-full transition-colors whitespace-nowrap">
               {t("nav.cta")}
-            </a>
+            </Link>
           </div>
         </div>
       </nav>
 
       {/* ── Section 1: Hero ───────────────────────────────────────── */}
-      <section id="top" className="pt-24 sm:pt-32 lg:pt-[172px] pb-20 lg:pb-32" style={{ background: "linear-gradient(180deg, #F5F8FC 0%, #FFFFFF 100%)" }}>
-        <div className={`${CONTAINER} grid grid-cols-1 lg:grid-cols-[46%_54%] gap-16 xl:gap-20 items-start`}>
+      <section id="top" className="pt-24 sm:pt-32 lg:pt-[172px] pb-10 lg:pb-16" style={{ background: "linear-gradient(180deg, #F5F8FC 0%, #FFFFFF 100%)" }}>
+        <div className={`${CONTAINER} grid grid-cols-1 lg:grid-cols-[43%_57%] gap-16 xl:gap-20 items-start`}>
 
           {/* Text column */}
-          <div>
-            <h1 className="text-[clamp(2.375rem,1.5rem_+_4vw,4.5rem)] font-bold leading-[1.05] tracking-[-0.04em] text-[#0D1B2B] mb-7 max-w-[650px] text-balance">
+          <div className="min-w-0">
+            <h1 className="text-[clamp(2.375rem,1.25rem_+_3vw,4rem)] font-bold leading-[1.05] tracking-[-0.04em] text-[#0D1B2B] mb-7 max-w-[650px] text-balance">
               {t("hero.titleLead")}{" "}
               <span className="text-[#4F46E5]">{t("hero.titleAmount")}</span>{" "}
               {t("hero.titleQuestionPre")}{" "}
@@ -93,7 +94,7 @@ export default async function LandingPage() {
             </p>
 
             <div className="flex flex-wrap items-center gap-3 mb-10">
-              <a href="#calculator" className={CTA_PRIMARY}>{t("hero.primaryCta")} →</a>
+              <Link href="/signup" className={CTA_PRIMARY}>{t("hero.primaryCta")} →</Link>
             </div>
 
             <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
@@ -109,62 +110,16 @@ export default async function LandingPage() {
             </div>
           </div>
 
-          {/* Illustrative example card — static, clearly labeled as an
-              example (never presented as a real transaction or user). */}
-          <div>
-            <div className="bg-white border border-[#E2E8F0] rounded-3xl p-7 sm:p-9 shadow-[0_20px_45px_-20px_rgba(13,27,43,0.2)]">
-              <div className="flex items-start justify-between mb-1">
-                <div>
-                  <p className="text-xs text-[#64748B] mb-1">{t("hero.example.badge")}</p>
-                  <p className="text-2xl font-bold text-[#0D1B2B]">{t("hero.example.amount")}</p>
-                </div>
-                <span className="flex items-center gap-1 text-xs font-medium text-[#16A34A] bg-[#F0FDF4] px-2.5 py-1 rounded-full">
-                  <svg width="10" height="10" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M2.5 6.2l2.3 2.3 4.7-5" stroke="#16A34A" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                  {t("hero.example.updated")}
-                </span>
-              </div>
-
-              <div className="mt-5 space-y-0">
-                <ExampleRow icon="payment" label={t("hero.example.rows.payment.label")} value={t("hero.example.rows.payment.value")} positive />
-                <ExampleRow icon="tax" label={t("hero.example.rows.tax.label")} note={t("hero.example.rows.tax.note")} value={t("hero.example.rows.tax.value")} />
-                <ExampleRow icon="commitments" label={t("hero.example.rows.commitments.label")} note={t("hero.example.rows.commitments.note")} value={t("hero.example.rows.commitments.value")} />
-                <ExampleRow icon="buffer" label={t("hero.example.rows.buffer.label")} note={t("hero.example.rows.buffer.note")} value={t("hero.example.rows.buffer.value")} />
-              </div>
-
-              <div className="flex items-center justify-between pt-4 mt-2 border-t border-[#F1F5F9]">
-                <div>
-                  <p className="text-sm font-semibold text-[#0D1B2B]">{t("hero.example.available")}</p>
-                  <p className="text-xs text-[#94A3B8]">{t("hero.example.availableNote")}</p>
-                </div>
-                <p className="text-xl font-bold text-[#16A34A]">{t("hero.example.availableAmount")}</p>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3 mt-5">
-                <div className="bg-[#F5F3FF] rounded-xl p-4">
-                  <p className="text-xs text-[#64748B] mb-1">{t("hero.example.runway")}</p>
-                  <p className="text-lg font-bold text-[#0D1B2B]">{t("hero.example.runwayValue")}</p>
-                  <p className="text-[11px] text-[#94A3B8] mt-0.5">{t("hero.example.runwayNote")}</p>
-                </div>
-                <div className="bg-[#F5F3FF] rounded-xl p-4">
-                  <p className="text-xs text-[#64748B] mb-1">{t("hero.example.runwayWithPayment")}</p>
-                  <p className="text-lg font-bold text-[#0D1B2B]">{t("hero.example.runwayWithPaymentValue")}</p>
-                  <p className="text-[11px] text-[#94A3B8] mt-0.5">{t("hero.example.runwayWithPaymentNote")}</p>
-                </div>
-              </div>
-            </div>
-            <p className="flex items-center justify-center gap-1.5 text-xs text-[#94A3B8] mt-4">
-              <svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                <rect x="3" y="7" width="10" height="7" rx="1.5" stroke="currentColor" strokeWidth="1.3" />
-                <path d="M5.5 7V4.8a2.5 2.5 0 0 1 5 0V7" stroke="currentColor" strokeWidth="1.3" />
-              </svg>
-              {t("hero.example.disclaimer")}
-            </p>
+          {/* Product demo reel — a real, animated UI walkthrough (not a
+              screen-recorded video file; auto-plays in view, replayable). */}
+          <div className="min-w-0">
+            <ProductDemoReel />
           </div>
         </div>
       </section>
 
       {/* ── Section 2: Interactive calculator ─────────────────────── */}
-      <section id="calculator" className="py-20 md:py-28 lg:py-36 bg-white border-t border-[#F1F5F9]">
+      <section id="calculator" className="pt-10 md:pt-14 lg:pt-16 pb-20 md:pb-28 lg:pb-36 bg-white border-t border-[#F1F5F9]">
         <div className="max-w-[760px] mx-auto px-5 sm:px-8 text-center mb-14">
           <h2 className={SECTION_HEADING}>{t("calculator.title")}</h2>
           <p className="text-lg text-[#64748B] mt-5">{t("calculator.subtitle")}</p>
@@ -200,7 +155,7 @@ export default async function LandingPage() {
           <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-[#0D1B2B] leading-[1.15] mb-5 text-balance">{t("finalCta.title")}</h2>
           <p className="text-lg text-[#64748B] leading-relaxed mb-10">{t("finalCta.body")}</p>
           <div className="flex flex-wrap items-center justify-center gap-4">
-            <a href="#calculator" className={CTA_PRIMARY}>{t("finalCta.primaryCta")}</a>
+            <Link href="/signup" className={CTA_PRIMARY}>{t("finalCta.primaryCta")}</Link>
             <Link href="/demo" className={CTA_SECONDARY}>{t("finalCta.secondaryCta")}</Link>
           </div>
         </div>
@@ -235,17 +190,6 @@ export default async function LandingPage() {
   );
 }
 
-function ExampleRow({ label, value, note, positive = false }: { label: string; value: string; note?: string; positive?: boolean; icon?: string }) {
-  return (
-    <div className="flex items-start justify-between py-2.5 gap-4">
-      <div className="min-w-0">
-        <p className="text-sm text-[#33465A]">{label}</p>
-        {note && <p className="text-xs text-[#94A3B8] mt-0.5">{note}</p>}
-      </div>
-      <p className={`text-sm font-semibold tabular-nums shrink-0 ${positive ? "text-[#16A34A]" : "text-[#DC2626]"}`}>{value}</p>
-    </div>
-  );
-}
 
 function FeatureIcon({ index }: { index: number }) {
   const paths = [

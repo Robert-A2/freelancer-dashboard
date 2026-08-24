@@ -77,28 +77,7 @@
       "titleQuestionPost": "to you?",
       "body": "Nonodia separates what should stay protected for tax/cotisations, your upcoming commitments and your safety buffer — then shows how long you're covered if work slows down.",
       "primaryCta": "Get started",
-      "trust": ["No bank connection", "No credit card"],
-      "example": {
-        "badge": "Client payment received",
-        "amount": "€5,000",
-        "updated": "Updated today",
-        "rows": {
-          "payment": { "label": "Client payment", "value": "+€5,000" },
-          "tax": { "label": "Estimated tax & cotisations", "note": "URSSAF, income tax", "value": "−€1,400" },
-          "commitments": { "label": "Upcoming business commitments", "note": "Invoices, subscriptions, expenses", "value": "−€650" },
-          "buffer": { "label": "Safety buffer", "note": "For quiet months", "value": "−€1,200" }
-        },
-        "available": "Above your protections",
-        "availableNote": "Available to use or pay yourself",
-        "availableAmount": "€1,750",
-        "runway": "Estimated runway",
-        "runwayValue": "3.4 months",
-        "runwayNote": "If no more money comes in",
-        "runwayWithPayment": "Runway with expected payment",
-        "runwayWithPaymentValue": "5.6 months",
-        "runwayWithPaymentNote": "If your client pays on time",
-        "disclaimer": "This is an example. Your results will be based on your numbers."
-      }
+      "trust": ["No bank connection", "No credit card"]
     },
     "calculator": {
       "title": "Get your financial position in 2 minutes",

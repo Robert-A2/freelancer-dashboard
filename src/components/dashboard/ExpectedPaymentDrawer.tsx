@@ -31,9 +31,25 @@ interface Scenario {
 export default function ExpectedPaymentDrawer({
   item,
   onClose,
+  demoScenario,
+  demoAfter,
+  demoAutoPlay,
 }: {
   item: UpcomingItem | null;
   onClose: () => void;
+  /** Landing-page product showcase only (src/lib/landing-demo-data.ts) — when
+   * set, skips the real /api/expected-payments fetch and PATCH entirely and
+   * uses this precomputed scenario instead. Undefined for every real caller,
+   * so real behavior is unchanged. */
+  demoScenario?: Scenario;
+  /** Paired with demoScenario — the Current cash / Money in this month to
+   * show on the simulated "received" confirmation, instead of a real
+   * /api/today-facts fetch. */
+  demoAfter?: { currentCash: number; moneyInThisMonth: number };
+  /** Landing-page product showcase only — self-advances detail -> mark as
+   * received -> confirm -> done, then closes, entirely via real onClick
+   * handlers (no DOM simulation). Undefined for every real caller. */
+  demoAutoPlay?: boolean;
 }) {
   const t = useTranslations("manual.expectedPayment");
   const tQuickAdd = useTranslations("manual.quickAdd.forms.expectedPayment");
@@ -80,6 +96,13 @@ export default function ExpectedPaymentDrawer({
   // different (or newly reopened) item is shown.
   useEffect(() => {
     if (!item) return;
+    // Landing-page product showcase only — tells the outer app-shell
+    // (which can't otherwise reach across the Server Component boundary
+    // that TodayLayer sits on) that a fresh cycle is starting, so it can
+    // show the "before" dashboard state again. No-op without a listener.
+    if (demoScenario && typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("nonodia-demo-state", { detail: { received: false } }));
+    }
     setView("detail");
     setError(null);
     setEditAmount(String(item.amount));
@@ -96,13 +119,35 @@ export default function ExpectedPaymentDrawer({
     // Recurring expenses share this drawer's item shape but have no
     // expected-payments scenario endpoint — only fetch for income items.
     if (item.kind !== "expected_income") return;
+    if (demoScenario) { setScenario(demoScenario); return; }
     setScenarioLoading(true);
     fetchWithTimeout(`/api/expected-payments/${item.id}`, {})
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => { if (data) setScenario(data); })
       .catch(() => { /* detail view still works without the scenario — non-fatal */ })
       .finally(() => setScenarioLoading(false));
-  }, [item]);
+  }, [item, demoScenario]);
+
+  // Landing-page product showcase only — self-advances through the same
+  // steps a visitor could click through manually, via the same view-state
+  // transitions and the same confirmReceived() above (which no-ops the real
+  // mutation when demoScenario is set). Undefined demoAutoPlay -> no timers,
+  // zero effect on real usage.
+  useEffect(() => {
+    if (!demoAutoPlay || !item || !demoScenario) return;
+    if (view === "detail") {
+      const t = setTimeout(() => setView("markReceived"), 2300);
+      return () => clearTimeout(t);
+    }
+    if (view === "markReceived") {
+      const t = setTimeout(() => { confirmReceived(); }, 1300);
+      return () => clearTimeout(t);
+    }
+    if (view === "received") {
+      const t = setTimeout(() => onClose(), 2400);
+      return () => clearTimeout(t);
+    }
+  }, [demoAutoPlay, item, demoScenario, view]);
 
   useEffect(() => {
     if (item) document.body.style.overflow = "hidden";
@@ -154,6 +199,21 @@ export default function ExpectedPaymentDrawer({
     if (!item) return;
     const amount = Number(receivedAmount);
     if (!Number.isFinite(amount) || amount <= 0 || !receivedDate) return;
+
+    // Landing-page product showcase only — never a real mutation, never a
+    // real network call. Simulates exactly what the real flow shows next,
+    // using the real reserve figure already computed for this demo item.
+    if (demoScenario) {
+      setReceivedResult({ amount, reserve: demoScenario.reserve });
+      setFacts(demoAfter ?? null);
+      setReceivedBreakdown(null);
+      setView("received");
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("nonodia-demo-state", { detail: { received: true } }));
+      }
+      return;
+    }
+
     setSaving(true); setError(null);
     try {
       const res = await fetchWithTimeout(`/api/expected-payments/${item.id}`, {

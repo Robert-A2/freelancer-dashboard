@@ -2,6 +2,8 @@ import { getTranslations } from "next-intl/server";
 import { formatCurrency } from "@/utils/finance";
 import type { Locale } from "@/i18n/locales";
 import type { TodayFacts } from "@/lib/today-facts";
+import type { ReserveForPayment } from "@/lib/reserve-engine";
+import type { MoneyBreakdown, MoneyBreakdownProjection } from "@/lib/money-breakdown";
 import UpcomingList from "./UpcomingList";
 
 // Nonodia's factual "Today" layer (spec section 10) — works on Day 1 from a
@@ -14,9 +16,18 @@ import UpcomingList from "./UpcomingList";
 export default async function TodayLayer({
   facts,
   locale,
+  demoAutoPlayTargetId,
+  demoScenario,
+  demoAfter,
 }: {
   facts: TodayFacts;
   locale: Locale;
+  /** Landing-page product showcase only — forwarded to UpcomingList
+   * unchanged (src/lib/landing-demo-data.ts). Undefined for every real
+   * dashboard usage. */
+  demoAutoPlayTargetId?: string;
+  demoScenario?: { reserve: ReserveForPayment; current: MoneyBreakdown; scenario: MoneyBreakdownProjection };
+  demoAfter?: { currentCash: number; moneyInThisMonth: number };
 }) {
   const t = await getTranslations("manual.today");
   const tCat = await getTranslations("categories");
@@ -58,7 +69,12 @@ export default async function TodayLayer({
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Coming up */}
-        <UpcomingList upcoming={upcoming} />
+        <UpcomingList
+          upcoming={upcoming}
+          demoAutoPlayTargetId={demoAutoPlayTargetId}
+          demoScenario={demoScenario}
+          demoAfter={demoAfter}
+        />
 
         {/* Spending this month */}
         <div className="card-sm">

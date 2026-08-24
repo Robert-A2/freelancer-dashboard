@@ -77,28 +77,7 @@
       "titleQuestionPost": "pour vous ?",
       "body": "Nonodia sépare ce qui doit rester protégé pour les impôts/cotisations, vos prochains engagements et votre réserve de sécurité — puis vous montre combien de temps vous tenez si l'activité ralentit.",
       "primaryCta": "Commencer",
-      "trust": ["Aucune connexion bancaire", "Aucune carte bancaire"],
-      "example": {
-        "badge": "Paiement client reçu",
-        "amount": "5 000 €",
-        "updated": "Mis à jour aujourd'hui",
-        "rows": {
-          "payment": { "label": "Paiement client", "value": "+5 000 €" },
-          "tax": { "label": "Impôts et cotisations estimés", "note": "URSSAF, impôt sur le revenu", "value": "− 1 400 €" },
-          "commitments": { "label": "Engagements professionnels à venir", "note": "Factures, abonnements, dépenses", "value": "− 650 €" },
-          "buffer": { "label": "Réserve de sécurité", "note": "Pour les mois creux", "value": "− 1 200 €" }
-        },
-        "available": "Au-delà de vos protections",
-        "availableNote": "Disponible à utiliser ou à vous verser",
-        "availableAmount": "1 750 €",
-        "runway": "Autonomie estimée",
-        "runwayValue": "3,4 mois",
-        "runwayNote": "Si aucun autre argent n'arrive",
-        "runwayWithPayment": "Autonomie avec le paiement attendu",
-        "runwayWithPaymentValue": "5,6 mois",
-        "runwayWithPaymentNote": "Si votre client paie à temps",
-        "disclaimer": "Ceci est un exemple. Vos résultats dépendront de vos propres chiffres."
-      }
+      "trust": ["Aucune connexion bancaire", "Aucune carte bancaire"]
     },
     "calculator": {
       "title": "Obtenez votre situation financière en 2 minutes",
