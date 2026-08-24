@@ -5,6 +5,7 @@ import Link from "next/link";
 import LanguageSwitcher from "@/components/ui/LanguageSwitcher";
 import FinancialPositionCalculator from "@/components/landing/FinancialPositionCalculator";
 import ProductDemoReel from "@/components/landing/ProductDemoReel";
+import MobileAppShellShowcase from "@/components/landing/MobileAppShellShowcase";
 
 function Lines({ text }: { text: string }) {
   const lines = text.split("\n");
@@ -111,9 +112,18 @@ export default async function LandingPage() {
           </div>
 
           {/* Product demo reel — a real, animated UI walkthrough (not a
-              screen-recorded video file; auto-plays in view, replayable). */}
+              screen-recorded video file; auto-plays in view, replayable).
+              Desktop and mobile get purpose-built previews rather than one
+              layout awkwardly serving both: the mobile version is a
+              compact, curated slice (see MobileAppShellShowcase), not the
+              full desktop card stack shrunk down. */}
           <div className="min-w-0">
-            <ProductDemoReel />
+            <div className="hidden lg:block">
+              <ProductDemoReel />
+            </div>
+            <div className="lg:hidden">
+              <MobileAppShellShowcase />
+            </div>
           </div>
         </div>
       </section>

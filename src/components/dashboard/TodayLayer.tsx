@@ -4,6 +4,7 @@ import type { Locale } from "@/i18n/locales";
 import type { TodayFacts } from "@/lib/today-facts";
 import type { ReserveForPayment } from "@/lib/reserve-engine";
 import type { MoneyBreakdown, MoneyBreakdownProjection } from "@/lib/money-breakdown";
+import TodayStatsGrid from "./TodayStatsGrid";
 import UpcomingList from "./UpcomingList";
 
 // Nonodia's factual "Today" layer (spec section 10) — works on Day 1 from a
@@ -39,26 +40,7 @@ export default async function TodayLayer({
   return (
     <div className="space-y-4">
       {/* Current position + this month, at a glance */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="card-sm">
-          <p className="label mb-2">{t("currentCash")}</p>
-          <p className="text-xl font-bold text-[#E8F0F8] tabular-nums">{fmt(facts.currentCash)}</p>
-        </div>
-        <div className="card-sm">
-          <p className="label mb-2">{t("moneyIn")}</p>
-          <p className="text-xl font-bold text-[#4CC4A4] tabular-nums">{fmt(facts.moneyInThisMonth)}</p>
-        </div>
-        <div className="card-sm">
-          <p className="label mb-2">{t("moneyOut")}</p>
-          <p className="text-xl font-bold text-[#D4A254] tabular-nums">{fmt(facts.moneyOutThisMonth)}</p>
-        </div>
-        <div className="card-sm">
-          <p className="label mb-2">{t("knownCommitments")}</p>
-          <p className="text-xl font-bold text-[#E8F0F8] tabular-nums">
-            {fmt(facts.knownCommitmentsMonthly)} <span className="text-xs font-normal text-[#6A97B4]">{t("perMonth")}</span>
-          </p>
-        </div>
-      </div>
+      <TodayStatsGrid facts={facts} locale={locale} />
 
       {facts.reserved !== null && (
         <div className="card-sm inline-block">

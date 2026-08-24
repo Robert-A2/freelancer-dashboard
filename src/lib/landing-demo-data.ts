@@ -5,15 +5,28 @@ import type { TodayFacts } from "./today-facts";
 import type { UpcomingItem } from "./upcoming-item";
 
 // ── Landing page product showcase — real data, real formula ─────────────────
-// Every number here is the real screenshotted data from an actual Dashboard
-// and Expected Payment screen (Camille Farm, €1,000 HT). The reserve
-// breakdown below is not hand-typed — it's the output of
+// The "before" figures here are the real, live GET /api/today-facts response
+// for the real Business (manual) account, fetched and copied verbatim —
+// including "food" as a spending category, which genuinely is one of that
+// account's real business-tagged categories right now (not sanitized into
+// something that looks tidier; this demo must show what the real account
+// actually has, not an idealized version of it). Current cash, money in/out,
+// known commitments, spending categories, and the "Your money" reserve
+// (€774 — the real account's actual URSSAF-outstanding balance, not a
+// generic per-payment estimate) and runway (real €200/month business
+// spending estimate) all come directly from that live response.
+//
+// The Camille Farm payment itself is a demo scenario layered on top (the
+// real one is already marked received in the account, so there's no live
+// "still expected" version of it to read back) — but its reserve breakdown
+// (VAT/social/CFP) is not hand-typed either: it's the output of
 // calculateFrenchMicroReserve(), the exact same pure function the real
 // product calls, fed the real account's actual tax profile (micro-
 // entrepreneur, bnc_liberal, VAT registered at 20%, versement libératoire
 // explicitly declined). Only the welcome name ("Sophie", the existing
 // public demo persona at /demo) is substituted for the real account
-// holder's name.
+// holder's name, and the recurring expense is relabeled from the real
+// "ChatGPT" per an explicit request not to name that specific product.
 //
 // Since VAT is registered, the €1,000 HT payment grosses up to €1,200
 // actually received (the extra €200 is VAT collected on the state's
@@ -33,7 +46,18 @@ const DEMO_PROFILE = {
 
 const PAYMENT_HT = 1000;
 const PAYMENT_GROSS = 1200; // 1000 HT + 200 VAT (20%)
-const MONTHLY_SPEND = 979.73; // this demo's own assumed monthly burn — currentCash/MONTHLY_SPEND = 5.1 months, matching the real screenshot's runway
+
+// The real account's actual business spending estimate (Settings ->
+// "About how much does your business cost each month?") — this, not an
+// invented figure, is what the real Runway calculation divides cash by.
+const MONTHLY_SPEND = 200;
+
+// The real account's actual current reserve state, read live from
+// GET /api/today-facts?accountId=<business> — a real URSSAF-outstanding
+// balance (accrued from real recorded income), not a per-payment estimate.
+const CURRENT_TAX_RESERVE = 774;
+const CURRENT_PROTECTED_TOTAL = 794.99; // 774 + the 20.99 known commitment
+const CURRENT_AVAILABLE = 4201.61; // 4996.6 - 794.99
 
 export const DEMO_PAYMENT_ID = "landing-demo-camille-farm";
 
@@ -60,14 +84,13 @@ export function buildDemoTodayFacts(received: boolean): TodayFacts {
     moneyOutThisMonth: 1024.39,
     knownCommitmentsMonthly: 20.99,
     reserved: null,
-    // Both genuinely business categories — "food" (a personal category) was
-    // here before, which is exactly the kind of mixed-account inconsistency
-    // this demo must never show: the account pill says "Business (manual)",
-    // so every figure on this card has to actually be business-scoped, not
-    // quietly pulled from an "All accounts" combined view.
+    // The real account's actual top spending categories this month, copied
+    // verbatim from the live API response — "food" genuinely is one of
+    // them right now, so it stays, rather than being swapped for something
+    // that reads as more tidily "business."
     spendingByCategoryThisMonth: [
       { category: "software", amount: 20.99 },
-      { category: "banking fees", amount: 3.4 },
+      { category: "food", amount: 3.4 },
     ],
     upcoming,
   };
@@ -76,6 +99,11 @@ export function buildDemoTodayFacts(received: boolean): TodayFacts {
 // The real reserve engine, fed the real (now fully-configured) tax profile —
 // reproduces the exact real numbers: VAT (20%) €200, Social €256, CFP €2,
 // Keep protected €458, Yours to keep €742 (of the €1,200 gross received).
+// This is deliberately a DIFFERENT number from CURRENT_TAX_RESERVE above —
+// the real product itself computes these two differently: the "Your money"
+// card shows the accumulated URSSAF-outstanding balance, while an
+// individual Expected Payment's own detail shows that one payment's own
+// VAT/social/CFP split. They're not supposed to match each other.
 function computeDemoResult() {
   return calculateFrenchMicroReserve({
     amount: PAYMENT_HT,
@@ -104,23 +132,25 @@ export function buildDemoScenario(): { reserve: ReserveForPayment; current: Mone
   const current: MoneyBreakdown = {
     currentCash: 4996.6,
     hasCurrentCash: true,
-    taxReserve: { amount: 536.99, rate: null, source: "profile", confidence: "known" },
+    taxReserve: { amount: CURRENT_TAX_RESERVE, rate: null, source: "urssaf-outstanding", confidence: "known" },
     recurringCommitmentsMonthly: 20.99,
     safetyBuffer: { months: null, amount: 0 },
-    protectedTotal: 536.99,
-    availableAfterProtections: 4459.61,
-    safeToUse: null, // no safety-buffer months configured for this demo profile, same as the real screenshot
+    protectedTotal: CURRENT_PROTECTED_TOTAL,
+    availableAfterProtections: CURRENT_AVAILABLE,
+    safeToUse: null, // no safety-buffer months configured for this demo profile, same as the real account
     runway: { months: Math.round((4996.6 / MONTHLY_SPEND) * 10) / 10, monthlySpend: MONTHLY_SPEND, source: "estimated", basedOnMonths: 0 },
     spendingPace: null,
     firstMonthTransition: null,
     warnings: [],
   };
   const demoResult = computeDemoResult();
+  const paymentReserve = demoResult.status === "calculated" ? demoResult.knownMandatoryReserve : 0;
+  const paymentNet = demoResult.status === "calculated" ? demoResult.afterKnownStatutoryReserves : 0;
   const projectedCash = 4996.6 + PAYMENT_GROSS;
-  const projectedAvailable = 4459.61 + (demoResult.status === "calculated" ? demoResult.afterKnownStatutoryReserves : 0);
+  const projectedAvailable = CURRENT_AVAILABLE + paymentNet;
   const scenario: MoneyBreakdownProjection = {
     projectedCash,
-    projectedProtectedTotal: projectedCash - projectedAvailable,
+    projectedProtectedTotal: CURRENT_PROTECTED_TOTAL + paymentReserve,
     projectedAvailableAfterProtections: projectedAvailable,
     projectedRunwayMonths: Math.round((projectedCash / MONTHLY_SPEND) * 10) / 10,
   };
@@ -131,8 +161,8 @@ export function buildDemoAfter(): { currentCash: number; moneyInThisMonth: numbe
   return { currentCash: 4996.6 + PAYMENT_GROSS, moneyInThisMonth: 1000 + PAYMENT_GROSS };
 }
 
-// The real screenshotted "Your money" card figures (Protected €536.99 /
-// Available after protections €4,459.61), and the same figures updated by
+// The real account's actual "Your money" card figures (Protected €794.99 /
+// Available after protections €4,201.61), and the same figures updated by
 // the Camille Farm payment actually landing: Protected grows by this
 // payment's own reserve (€458), Available grows by what's genuinely left
 // over (€742) — Protected+Available still sums to Current cash exactly as
@@ -142,12 +172,12 @@ export function buildDemoMoneyBreakdown(received: boolean): MoneyBreakdown {
   const paymentReserve = demoResult.status === "calculated" ? demoResult.knownMandatoryReserve : 0;
   const paymentNet = demoResult.status === "calculated" ? demoResult.afterKnownStatutoryReserves : 0;
   const currentCash = received ? 4996.6 + PAYMENT_GROSS : 4996.6;
-  const protectedTotal = received ? 536.99 + paymentReserve : 536.99;
-  const availableAfterProtections = received ? 4459.61 + paymentNet : 4459.61;
+  const protectedTotal = received ? CURRENT_PROTECTED_TOTAL + paymentReserve : CURRENT_PROTECTED_TOTAL;
+  const availableAfterProtections = received ? CURRENT_AVAILABLE + paymentNet : CURRENT_AVAILABLE;
   return {
     currentCash,
     hasCurrentCash: true,
-    taxReserve: { amount: protectedTotal, rate: null, source: "profile", confidence: "known" },
+    taxReserve: { amount: received ? CURRENT_TAX_RESERVE + paymentReserve : CURRENT_TAX_RESERVE, rate: null, source: "urssaf-outstanding", confidence: "known" },
     recurringCommitmentsMonthly: 20.99,
     safetyBuffer: { months: null, amount: 0 },
     protectedTotal,
