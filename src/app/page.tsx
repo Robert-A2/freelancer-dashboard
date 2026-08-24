@@ -6,6 +6,7 @@ import LanguageSwitcher from "@/components/ui/LanguageSwitcher";
 import FinancialPositionCalculator from "@/components/landing/FinancialPositionCalculator";
 import ProductDemoReel from "@/components/landing/ProductDemoReel";
 import MobileAppShellShowcase from "@/components/landing/MobileAppShellShowcase";
+import ProductLaptopShowcase from "@/components/landing/ProductLaptopShowcase";
 
 function Lines({ text }: { text: string }) {
   const lines = text.split("\n");
@@ -155,6 +156,16 @@ export default async function LandingPage() {
                 <p className="text-sm text-[#64748B] leading-relaxed">{item.body}</p>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Section 3.5: Product showcase (real laptop photo) ──────── */}
+      <section className="py-16 md:py-20 lg:py-24 bg-white">
+        <div className={CONTAINER}>
+          <div className="flex flex-col lg:flex-row lg:items-center gap-10 lg:gap-16">
+            <ProductLaptopShowcase />
+            <p className={`${SECTION_HEADING} lg:flex-1`}>{t("productShowcase.tagline")}</p>
           </div>
         </div>
       </section>
