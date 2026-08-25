@@ -749,8 +749,10 @@ function computeStatus(avgIntervalDays: number | null, currentGapDays: number): 
   return "current";
 }
 
-function computeTrendClient(monthly: MonthlyRevenue[]): { trend: "increasing" | "stable" | "declining" | null; trendPct: number | null } {
-  if (monthly.length < 6) return { trend: null, trendPct: null };
+function computeTrendClient(monthly: MonthlyRevenue[], paymentCount: number): { trend: "increasing" | "stable" | "declining" | null; trendPct: number | null } {
+  // Mirrors client-risk-engine.ts's computeTrend: fewer than 3 payments ever
+  // is not enough to call a month-over-month change a "trend".
+  if (paymentCount < 3) return { trend: null, trendPct: null };
   const last3 = (monthly[3].amount + monthly[4].amount + monthly[5].amount) / 3;
   const prev3 = (monthly[0].amount + monthly[1].amount + monthly[2].amount) / 3;
   if (last3 === 0 && prev3 === 0) return { trend: null, trendPct: null };
@@ -958,7 +960,7 @@ export function computeClientRiskProfiles(locale: Locale): ClientRiskCenterData 
         .reduce((s, t) => s + t.amount, 0),
     }));
 
-    const { trend, trendPct } = computeTrendClient(monthlyRevenue);
+    const { trend, trendPct } = computeTrendClient(monthlyRevenue, sorted.length);
     const status        = computeStatus(avgIntervalDays, currentGapDays);
     const lifecycle     = status === "inactive" ? "inactive" as const : "current" as const;
     const dependencyRisk = revenueContributionPct >= 50 ? "high" as const : revenueContributionPct >= 25 ? "medium" as const : "low" as const;
@@ -991,8 +993,8 @@ export function computeClientRiskProfiles(locale: Locale): ClientRiskCenterData 
       status === "inactive" ? "inactive" :
       status === "risk"     ? "risk" :
       status === "watch"    ? "watch" :
-      sorted.length >= 6 && monthsActive >= 4 && trend !== "declining" ? "excellent" :
-      sorted.length >= 3  ? "good" : "watch";
+      sorted.length < 3     ? "new" :
+      sorted.length >= 6 && monthsActive >= 4 && trend !== "declining" ? "excellent" : "good";
 
     return {
       name: c.name,

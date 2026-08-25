@@ -255,7 +255,7 @@
     },
     "signup": {
       "heading": "Créez votre compte",
-      "subtitle": "Importez votre relevé bancaire CSV et comprenez votre argent en quelques minutes.",
+      "subtitle": "Configurez votre compte en quelques étapes et voyez où vous en êtes.",
       "fullName": "Nom complet",
       "fullNamePlaceholder": "Votre nom",
       "email": "E-mail",
@@ -368,6 +368,7 @@
       "acreHint": "L'ACRE est une réduction temporaire de vos cotisations sociales pour les nouvelles entreprises, généralement disponible pendant votre première année d'activité. En cas de doute, vérifiez votre compte Urssaf ou sélectionnez « Je ne sais pas ».",
       "activityStartDate": "Quand votre activité a-t-elle débuté ?",
       "urssafFrequency": "À quelle fréquence déclarez-vous votre chiffre d'affaires à l'Urssaf ?",
+      "urssafFrequencyHint": "Cela permet à Nonodia de suivre votre solde réel réservé/payé au lieu d'une estimation approximative. En cas de doute, sélectionnez « Je ne sais pas ».",
       "urssafMonthly": "Mensuelle",
       "urssafQuarterly": "Trimestrielle",
       "threeWayUnselected": "Sélectionnez une réponse",
@@ -743,6 +744,7 @@
       "showMore": "{count, plural, one {Afficher # transaction de plus} other {Afficher # transactions de plus}}",
       "showLess": "Afficher moins",
       "manualTag": "Manuel",
+      "manualTagHint": "Vous l'avez saisi vous-même — il n'a pas été importé d'un relevé bancaire.",
       "edit": "Modifier",
       "delete": "Supprimer",
       "cancel": "Annuler",
@@ -1657,11 +1659,13 @@
         "watch": "À surveiller",
         "risk": "En retard",
         "inactive": "Inactif",
+        "new": "Données insuffisantes",
         "excellentDesc": "Longue relation avec des paiements réguliers et dans les délais.",
         "goodDesc": "Historique de paiements régulier — actuellement dans les délais.",
         "watchDesc": "Paiement légèrement au-delà de l'intervalle habituel.",
         "riskDesc": "Paiement significativement au-delà de l'intervalle habituel.",
-        "inactiveDesc": "Aucune activité de paiement récente enregistrée. L'historique complet est visible dans la chronologie ci-dessous."
+        "inactiveDesc": "Aucune activité de paiement récente enregistrée. L'historique complet est visible dans la chronologie ci-dessous.",
+        "newDesc": "Trop peu de paiements pour évaluer un profil de fiabilité."
       },
       "revenueStory": {
         "title": "Historique des revenus",
@@ -1678,6 +1682,7 @@
         "stable": "Stable",
         "shrinking": "En déclin",
         "new": "Nouveau client",
+        "unknown": "Données insuffisantes",
         "recentAvg": "Moy. mensuelle récente",
         "priorAvg": "Moy. mensuelle antérieure",
         "noHistory": "Historique insuffisant pour calculer la dynamique."
@@ -1955,9 +1960,9 @@
       "step4": {
         "eyebrow": "Étape 4 sur 6",
         "businessQuestion": "Combien dépensez-vous pour votre activité freelance chaque mois ?",
-        "businessLabel": "Dépense professionnelle nécessaire",
+        "businessLabel": "Dépenses professionnelles mensuelles",
         "personalQuestion": "De combien avez-vous normalement besoin de vos revenus freelance chaque mois pour vos dépenses de vie ?",
-        "personalLabel": "Besoin personnel nécessaire",
+        "personalLabel": "Dépenses personnelles mensuelles",
         "explanation": "Cela aide Nonodia à comprendre combien votre activité doit vous soutenir. Les deux ne sont que des estimations — jamais traitées comme un historique réel. Facultatif."
       },
       "step5": {
@@ -1997,6 +2002,7 @@
         "acreHint": "L'ACRE est une réduction temporaire de vos cotisations sociales pour les nouvelles entreprises, généralement disponible pendant votre première année d'activité. En cas de doute, vérifiez votre compte Urssaf ou sélectionnez « Je ne sais pas ».",
         "activityStartDate": "Quand votre activité a-t-elle débuté ?",
         "urssafFrequency": "À quelle fréquence déclarez-vous votre chiffre d'affaires à l'Urssaf ?",
+        "urssafFrequencyHint": "Cela permet à Nonodia de suivre votre solde réel réservé/payé au lieu d'une estimation approximative. En cas de doute, sélectionnez « Je ne sais pas ».",
         "urssafMonthly": "Mensuelle",
         "urssafQuarterly": "Trimestrielle",
         "vatQuestion": "Facturez-vous actuellement la TVA sur vos factures ?",
@@ -2110,6 +2116,7 @@
         "payMyself": {
           "title": "Se payer soi-même",
           "hint": "Transfère de l'argent de votre compte professionnel vers votre compte personnel. Ce n'est ni une dépense professionnelle ni un nouveau revenu personnel — juste un transfert entre vos deux comptes.",
+          "safeAmountHint": "D'après votre coussin de sécurité, vous pourriez vous verser jusqu'à {amount} ce mois-ci en toute sécurité.",
           "amountLabel": "Montant",
           "date": "Date",
           "save": "Enregistrer le transfert"

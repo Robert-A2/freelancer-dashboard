@@ -422,6 +422,7 @@ export default function OnboardingWizard() {
 
                       <div>
                         <label className="text-xs text-[#6A97B4] mb-2 block">{t("step6.urssafFrequency")}</label>
+                        <p className="text-xs text-[#4A7A9B] mb-1.5 leading-relaxed">{t("step6.urssafFrequencyHint")}</p>
                         <select className="input" value={urssafFrequency} onChange={(e) => setUrssafFrequency(e.target.value)}>
                           <option value="">{t("step6.threeWayUnselected")}</option>
                           <option value="monthly">{t("step6.urssafMonthly")}</option>

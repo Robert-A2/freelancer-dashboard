@@ -255,7 +255,7 @@
     },
     "signup": {
       "heading": "Create your account",
-      "subtitle": "Upload your bank CSV and understand your money in minutes.",
+      "subtitle": "Set up your account in a few steps and see where you stand.",
       "fullName": "Full name",
       "fullNamePlaceholder": "Your name",
       "email": "Email",
@@ -368,6 +368,7 @@
       "acreHint": "ACRE is a temporary reduction on your social contributions for new businesses, usually available during your first year of activity. If you're not sure, check your Urssaf account or select \"Not sure.\"",
       "activityStartDate": "When did your activity start?",
       "urssafFrequency": "How often do you declare your turnover to Urssaf?",
+      "urssafFrequencyHint": "This lets Nonodia track your real reserved-vs-paid tax balance instead of a rough estimate. If you're not sure, select \"Not sure.\"",
       "urssafMonthly": "Monthly",
       "urssafQuarterly": "Quarterly",
       "threeWayUnselected": "Select an answer",
@@ -743,6 +744,7 @@
       "showMore": "{count, plural, one {Show # more transaction} other {Show # more transactions}}",
       "showLess": "Show less",
       "manualTag": "Manual",
+      "manualTagHint": "You typed this in — it wasn't imported from a bank statement.",
       "edit": "Edit",
       "delete": "Delete",
       "cancel": "Cancel",
@@ -1657,11 +1659,13 @@
         "watch": "Needs attention",
         "risk": "Late",
         "inactive": "Inactive",
+        "new": "Not enough data",
         "excellentDesc": "Long track record with consistent on-time payments.",
         "goodDesc": "Regular payment history — currently on schedule.",
         "watchDesc": "Payment is slightly past their usual interval.",
         "riskDesc": "Payment is significantly past their usual interval.",
-        "inactiveDesc": "No recent payment activity recorded. Their full payment history is visible in the timeline below."
+        "inactiveDesc": "No recent payment activity recorded. Their full payment history is visible in the timeline below.",
+        "newDesc": "Too few payments yet to assess a reliability pattern."
       },
       "revenueStory": {
         "title": "Revenue Story",
@@ -1678,6 +1682,7 @@
         "stable": "Stable",
         "shrinking": "Shrinking",
         "new": "New client",
+        "unknown": "Not enough data",
         "recentAvg": "Recent monthly avg",
         "priorAvg": "Prior monthly avg",
         "noHistory": "Not enough history to calculate momentum."
@@ -1955,9 +1960,9 @@
       "step4": {
         "eyebrow": "Step 4 of 6",
         "businessQuestion": "How much do you spend on your freelance activity each month?",
-        "businessLabel": "Business requiring expense",
+        "businessLabel": "Monthly business expenses",
         "personalQuestion": "How much do you normally need from your freelance income each month for living expenses?",
-        "personalLabel": "Personal requiring expense",
+        "personalLabel": "Monthly personal expenses",
         "explanation": "This helps Nonodia understand how much your business needs to support you. Both are only estimates — never treated as real history. Optional."
       },
       "step5": {
@@ -1997,6 +2002,7 @@
         "acreHint": "ACRE is a temporary reduction on your social contributions for new businesses, usually available during your first year of activity. If you're not sure, check your Urssaf account or select \"Not sure.\"",
         "activityStartDate": "When did your activity start?",
         "urssafFrequency": "How often do you declare your turnover to Urssaf?",
+        "urssafFrequencyHint": "This lets Nonodia track your real reserved-vs-paid tax balance instead of a rough estimate. If you're not sure, select \"Not sure.\"",
         "urssafMonthly": "Monthly",
         "urssafQuarterly": "Quarterly",
         "vatQuestion": "Do you currently charge VAT on your invoices?",
@@ -2110,6 +2116,7 @@
         "payMyself": {
           "title": "Pay yourself",
           "hint": "Moves money from your business to your personal account. Not a business expense or new personal income — just a transfer between your own two buckets.",
+          "safeAmountHint": "Based on your safety buffer, you could safely pay yourself up to {amount} this month.",
           "amountLabel": "Amount",
           "date": "Date",
           "save": "Record transfer"

@@ -52,6 +52,11 @@ export default function QuickAddDrawer({ open, onClose, isMixedActivity: isMixed
   // yourself only shows once, then I can't find it").
   const [isMixedActivity, setIsMixedActivity] = useState(isMixedActivityProp);
   const [accountsSeparated, setAccountsSeparated] = useState(accountsSeparatedProp);
+  // Refreshed on open so the Pay Yourself form can reference the current
+  // safeMonthlyPay figure — previously that number only ever lived on the
+  // Dashboard card, disconnected from the one form where a user would
+  // actually need it to decide an amount.
+  const [currentBreakdown, setCurrentBreakdown] = useState<MoneyBreakdown | null>(null);
   const [view, setView] = useState<View>("menu");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -108,6 +113,7 @@ export default function QuickAddDrawer({ open, onClose, isMixedActivity: isMixed
         if (!data) return;
         if (typeof data.isMixedActivity === "boolean") setIsMixedActivity(data.isMixedActivity);
         if (typeof data.accountsSeparated === "boolean") setAccountsSeparated(data.accountsSeparated);
+        if (data.moneyBreakdown) setCurrentBreakdown(data.moneyBreakdown);
       })
       .catch(() => { /* menu still works off the last-known prop/state — non-fatal */ });
   }, [open]);
@@ -543,6 +549,13 @@ export default function QuickAddDrawer({ open, onClose, isMixedActivity: isMixed
           {!reward && view === "payMyself" && (
             <div className="space-y-4">
               <p className="text-sm text-[#6A97B4]">{t("forms.payMyself.hint")}</p>
+              {currentBreakdown?.safeMonthlyPay != null && (
+                <div className="surface-teal rounded-xl px-4 py-3">
+                  <p className="text-xs text-[#4CC4A4] leading-relaxed">
+                    {t("forms.payMyself.safeAmountHint", { amount: formatCurrency(currentBreakdown.safeMonthlyPay, locale) })}
+                  </p>
+                </div>
+              )}
               <div>
                 <label className="label mb-2 block">{t("forms.payMyself.amountLabel")}</label>
                 <div className="relative">

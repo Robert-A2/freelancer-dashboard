@@ -28,6 +28,7 @@ const RELIABILITY_STYLES: Record<ReliabilityScore, { text: string; bg: string; b
   watch:     { text: "text-[#D4A254]", bg: "bg-[#D4A25410]", border: "border-[#D4A25430]" },
   risk:      { text: "text-[#E5484D]", bg: "bg-[#E5484D10]", border: "border-[#E5484D30]" },
   inactive:  { text: "text-[#6A97B4]", bg: "bg-[#132537]",   border: "border-[#243F5E]"   },
+  new:       { text: "text-[#6A97B4]", bg: "bg-[#132537]",   border: "border-[#243F5E]"   },
 };
 
 const IMPACT_STYLES = {
@@ -117,24 +118,34 @@ export default async function ClientDetailPage({
     new Date(iso).toLocaleDateString(INTL_LOCALES[locale], dateOpts);
 
   // ── Momentum ─────────────────────────────────────────────────────────────
+  // client.revenueTrend is null whenever the engine doesn't have enough real
+  // payments to call a change a "trend" (client-risk-engine.ts's computeTrend,
+  // gated the same way computeStatus is: paymentCount < 3). Deriving momentum
+  // from hasPriorActivity/hasRecentActivity alone used to fall through to a
+  // default of "stable" in that case — a fabricated verdict for e.g. a client
+  // with exactly one old payment and nothing since. Key off the real trend
+  // first; only fall back to "new" for a client with no activity before the
+  // recent window at all, and "unknown" for everything else with too little
+  // signal to characterize.
   const hasRecentActivity = client.monthlyRevenue.slice(3).some(m => m.amount > 0);
   const hasPriorActivity  = client.monthlyRevenue.slice(0, 3).some(m => m.amount > 0);
   const momentumDir =
-    !hasPriorActivity ? "new" :
     client.revenueTrend === "increasing" ? "growing" :
     client.revenueTrend === "declining"  ? "shrinking" :
-    "stable";
+    client.revenueTrend === "stable"     ? "stable" :
+    !hasPriorActivity ? "new" :
+    "unknown";
 
   const momentumColor =
     momentumDir === "growing"   ? "text-[#4CC4A4]" :
     momentumDir === "shrinking" ? "text-[#E5484D]" :
-    momentumDir === "new"       ? "text-[#A8C6E0]" :
                                   "text-[#A8C6E0]";
 
   const momentumIcon =
     momentumDir === "growing"   ? "↑" :
     momentumDir === "shrinking" ? "↓" :
     momentumDir === "new"       ? "★" :
+    momentumDir === "unknown"   ? "?" :
                                   "→";
 
   // ── Dependency simulator ──────────────────────────────────────────────────
@@ -457,7 +468,7 @@ export default async function ClientDetailPage({
           defaultOpen={false}
         >
         <div className="card">
-          {hasPriorActivity && hasRecentActivity ? (
+          {client.revenueTrend !== null ? (
             <div className="space-y-3">
               <div className="flex items-stretch gap-3">
                 <div className="flex-1 bg-[#1A3048] rounded-xl p-3.5">

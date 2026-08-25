@@ -23,6 +23,7 @@ const RELIABILITY_STYLES: Record<ReliabilityScore, { text: string; bg: string; b
   watch:     { text: "text-[#D4A254]", bg: "bg-[#D4A25410]", border: "border-[#D4A25430]" },
   risk:      { text: "text-[#E5484D]", bg: "bg-[#E5484D10]", border: "border-[#E5484D30]" },
   inactive:  { text: "text-[#6A97B4]", bg: "bg-[#132537]",   border: "border-[#243F5E]"   },
+  new:       { text: "text-[#6A97B4]", bg: "bg-[#132537]",   border: "border-[#243F5E]"   },
 };
 
 const IMPACT_STYLES = {
@@ -100,20 +101,21 @@ export default async function DemoClientDetailPage({
   const hasRecentActivity = client.monthlyRevenue.slice(3).some(m => m.amount > 0);
   const hasPriorActivity  = client.monthlyRevenue.slice(0, 3).some(m => m.amount > 0);
   const momentumDir =
-    !hasPriorActivity    ? "new" :
     client.revenueTrend === "increasing" ? "growing" :
     client.revenueTrend === "declining"  ? "shrinking" :
-    "stable";
+    client.revenueTrend === "stable"     ? "stable" :
+    !hasPriorActivity ? "new" :
+    "unknown";
 
   const momentumColor =
     momentumDir === "growing"   ? "text-[#4CC4A4]" :
-    momentumDir === "shrinking" ? "text-[#E5484D]"  :
-    momentumDir === "new"       ? "text-[#A8C6E0]"  : "text-[#A8C6E0]";
+    momentumDir === "shrinking" ? "text-[#E5484D]"  : "text-[#A8C6E0]";
 
   const momentumIcon =
     momentumDir === "growing"   ? "↑" :
     momentumDir === "shrinking" ? "↓" :
-    momentumDir === "new"       ? "★" : "→";
+    momentumDir === "new"       ? "★" :
+    momentumDir === "unknown"   ? "?" : "→";
 
   const monthlyClientContrib = Math.round(client.totalRevenue / Math.max(client.monthsActive, 1));
   const annualClientContrib  = monthlyClientContrib * 12;
@@ -336,7 +338,7 @@ export default async function DemoClientDetailPage({
           defaultOpen={false}
         >
         <div className="card">
-          {hasPriorActivity && hasRecentActivity ? (
+          {client.revenueTrend !== null ? (
             <div className="space-y-3">
               <div className="flex items-stretch gap-3">
                 <div className="flex-1 bg-[#1A3048] rounded-xl p-3.5">

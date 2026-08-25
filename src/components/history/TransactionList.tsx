@@ -142,7 +142,7 @@ export default function TransactionList({ transactions }: { transactions: TxRow[
                   </span>
                 )}
                 {tx.isManual && (
-                  <span className="text-[10px] uppercase tracking-wide text-[#4A7A9B]">{t("manualTag")}</span>
+                  <span className="text-[10px] uppercase tracking-wide text-[#4A7A9B]" title={t("manualTagHint")}>{t("manualTag")}</span>
                 )}
               </div>
             </div>

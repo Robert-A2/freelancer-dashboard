@@ -14,7 +14,7 @@ export type ClientStatus = "current" | "watch" | "risk" | "inactive";
 export type ClientLifecycle = "current" | "inactive";
 export type DependencyRisk = "low" | "medium" | "high";
 export type RevenueTrend = "increasing" | "stable" | "declining";
-export type ReliabilityScore = "excellent" | "good" | "watch" | "risk" | "inactive";
+export type ReliabilityScore = "excellent" | "good" | "watch" | "risk" | "inactive" | "new";
 
 export interface MonthlyRevenue {
   year: number;
@@ -128,13 +128,17 @@ function computeDependencyRisk(pct: number): DependencyRisk {
   return "low";
 }
 
-interface TrendResult {
+export interface TrendResult {
   trend: RevenueTrend | null;
   trendPct: number | null;
 }
 
-function computeTrend(monthly: MonthlyRevenue[]): TrendResult {
-  if (monthly.length < 6) return { trend: null, trendPct: null };
+export function computeTrend(monthly: MonthlyRevenue[], paymentCount: number): TrendResult {
+  // Same bar computeStatus already uses: fewer than 3 payments ever is not
+  // enough to call a month-over-month change a "trend" — a single payment
+  // landing in either half of the window would otherwise read as a fake
+  // 100% swing.
+  if (paymentCount < 3) return { trend: null, trendPct: null };
   const last3 = (monthly[3].amount + monthly[4].amount + monthly[5].amount) / 3;
   const prev3 = (monthly[0].amount + monthly[1].amount + monthly[2].amount) / 3;
   if (last3 === 0 && prev3 === 0) return { trend: null, trendPct: null };
@@ -148,7 +152,7 @@ function computeTrend(monthly: MonthlyRevenue[]): TrendResult {
 
 // ── Insights & actions ────────────────────────────────────────────────────────
 
-type PartialProfile = Omit<ClientRiskProfile, "insights" | "actions">;
+export type PartialProfile = Omit<ClientRiskProfile, "insights" | "actions">;
 
 function buildInsights(p: PartialProfile): ClientInsight[] {
   const insights: ClientInsight[] = [];
@@ -201,13 +205,16 @@ function buildActions(p: PartialProfile): ClientAction[] {
   return actions;
 }
 
-function computeReliabilityScore(p: PartialProfile): ReliabilityScore {
+export function computeReliabilityScore(p: PartialProfile): ReliabilityScore {
   if (p.status === "inactive") return "inactive";
   if (p.status === "risk")     return "risk";
   if (p.status === "watch")    return "watch";
+  // Fewer than 3 payments: no established pattern to rate as "watch" or
+  // "good" — that would fabricate a verdict off too little data (mirrors
+  // computeStatus's own paymentCount < 3 rule above).
+  if (p.paymentCount < 3)      return "new";
   if (p.paymentCount >= 6 && p.monthsActive >= 4 && p.revenueTrend !== "declining") return "excellent";
-  if (p.paymentCount >= 3)     return "good";
-  return "watch";
+  return "good";
 }
 
 // ── Main export ───────────────────────────────────────────────────────────────
@@ -459,7 +466,7 @@ export async function getClientRiskProfiles(userId: string, accountId?: string |
         .reduce((s, t) => s + t.amount, 0),
     }));
 
-    const { trend, trendPct } = computeTrend(monthlyRevenue);
+    const { trend, trendPct } = computeTrend(monthlyRevenue, sorted.length);
     const status = computeStatus(avgIntervalDays, currentGapDays, sorted.length);
     const lifecycle: ClientLifecycle = status === "inactive" ? "inactive" : "current";
     const dependencyRisk = computeDependencyRisk(revenueContributionPct);

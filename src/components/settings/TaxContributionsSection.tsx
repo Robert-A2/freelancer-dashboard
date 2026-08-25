@@ -168,6 +168,7 @@ export default function TaxContributionsSection({
 
                 <div>
                   <label className="text-xs text-[#6A97B4] mb-1 block">{t("urssafFrequency")}</label>
+                  <p className="text-xs text-[#4A7A9B] mb-1.5 leading-relaxed">{t("urssafFrequencyHint")}</p>
                   <select value={form.urssafFrequency} onChange={(e) => update("urssafFrequency", e.target.value)} className={selectBase}>
                     <option value="">{t("threeWayUnselected")}</option>
                     <option value="monthly">{t("urssafMonthly")}</option>
