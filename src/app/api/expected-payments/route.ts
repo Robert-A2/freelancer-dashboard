@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { Decimal } from "@prisma/client/runtime/library";
 import { getExpectedPayments } from "@/lib/expected-payment-engine";
+import { resolveExistingPayerId } from "@/lib/payer-engine";
 
 export async function POST(request: NextRequest) {
   try {
@@ -35,6 +36,11 @@ export async function POST(request: NextRequest) {
       create: { id: user.id, fullName: user.user_metadata?.full_name ?? "", email: user.email ?? "" },
     });
 
+    // Only links to a client Nonodia already knows (exact normalized match)
+    // — never creates one. Powers the real payment-lateness signal on that
+    // client's card once enough payments have been received this way.
+    const payerId = await resolveExistingPayerId(user.id, clientName);
+
     const expectedPayment = await prisma.expectedPayment.create({
       data: {
         userId: user.id,
@@ -43,6 +49,7 @@ export async function POST(request: NextRequest) {
         projectName: projectName?.trim() || null,
         expectedDate: new Date(expectedDate),
         activityType: activityType || null,
+        payerId,
       },
     });
 

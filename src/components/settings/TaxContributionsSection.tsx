@@ -132,6 +132,9 @@ export default function TaxContributionsSection({
                       <option key={a} value={a}>{t(`activityTypeOptions.${a}`)}</option>
                     ))}
                   </select>
+                  {form.activityType === "cipav_liberal" && (
+                    <p className="text-xs text-[#4A7A9B] mt-1.5 leading-relaxed">{t("cipavHint")}</p>
+                  )}
                 </div>
 
                 <div>
@@ -147,6 +150,7 @@ export default function TaxContributionsSection({
 
                 <div>
                   <label className="text-xs text-[#6A97B4] mb-1 block">{t("acre")}</label>
+                  <p className="text-xs text-[#4A7A9B] mb-1.5 leading-relaxed">{t("acreHint")}</p>
                   <select value={form.acreStatus} onChange={(e) => update("acreStatus", e.target.value)} className={selectBase}>
                     <option value="">{t("threeWayUnselected")}</option>
                     <option value="yes">{t("threeWayYes")}</option>

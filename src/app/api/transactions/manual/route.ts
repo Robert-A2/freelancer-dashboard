@@ -115,7 +115,14 @@ export async function POST(request: NextRequest) {
     // the rate/activity/ACRE status that applied AT THIS MOMENT, so a later
     // Settings change can never silently rewrite what this transaction's
     // reserve was (spec section 32).
-    const incomeRows = newRows.filter((r) => r.transactionType === "income");
+    // Business-tagged income only — a "Money received" entry the user
+    // explicitly tagged Personal (a gift, a refund, non-business income —
+    // that's the entire point of the tag) is real income but generates no
+    // business tax obligation, so it must never feed a reserve calculation
+    // or the Urssaf-outstanding ledger (getUrssafPeriodStatus sums every
+    // income row's taxReserveSnapshot regardless of account, so a snapshot
+    // stored here would otherwise permanently inflate that ledger).
+    const incomeRows = newRows.filter((r) => r.transactionType === "income" && r.accountId === businessAccount.id);
     const incomeJustAdded = incomeRows.reduce((s, r) => s + r.amount, 0);
     const reserve = incomeJustAdded > 0
       ? await getReserveForPayment(user.id, incomeJustAdded, { paymentActivityType: incomeRows.find((r) => r.activityType)?.activityType })
@@ -149,7 +156,7 @@ export async function POST(request: NextRequest) {
             categoryConfidence: "high",
             categorySource: "user-manual",
             intent, intentConfidence, intentSource, needsReview,
-            taxReserveSnapshot: r.transactionType === "income" && reserveResult ? (reserveResult as unknown as Prisma.InputJsonValue) : undefined,
+            taxReserveSnapshot: r.transactionType === "income" && r.accountId === businessAccount.id && reserveResult ? (reserveResult as unknown as Prisma.InputJsonValue) : undefined,
           };
         }),
       });

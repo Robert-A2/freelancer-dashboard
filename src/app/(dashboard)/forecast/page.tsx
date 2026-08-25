@@ -11,7 +11,7 @@ import { generateForecast } from "@/lib/forecast-engine";
 import { generateDashboardIntelligence, computeCashflowRisk } from "@/lib/intelligence-engine";
 import { getExpectedIncome } from "@/lib/milestone-engine";
 import { getDataMaturity, getCashRunway, MATURITY_THRESHOLDS } from "@/lib/data-maturity";
-import { getTodayFacts } from "@/lib/today-facts";
+import { getTodayFacts, getUpcomingCashWindow } from "@/lib/today-facts";
 import { getMoneyBreakdown, projectMoneyBreakdownWithPayment } from "@/lib/money-breakdown";
 import { getReserveForPayment } from "@/lib/reserve-engine";
 import { prisma } from "@/lib/prisma";
@@ -99,6 +99,12 @@ export default async function ForecastPage() {
   // pipeline-based Runway on the Projects page answers a different question
   // and is untouched by this.
   const cashRunway = todayFacts.hasCurrentCash ? await getCashRunway(user.id, businessAccountId) : null;
+
+  // Upcoming Cash 30/60/90 — the real, un-truncated expected-income/
+  // recurring-expense feed (see getUpcomingCashWindow's own comment for why
+  // this can't reuse todayFacts.upcoming as-is). Business-scoped for the
+  // same reason as cashRunway above.
+  const upcomingCashWindow = await getUpcomingCashWindow(user.id, businessAccountId);
 
   // "If [next expected payment] arrives" (spec sections 23-24) — the exact
   // same projection Expected Payment's own detail view shows, computed here
@@ -352,6 +358,45 @@ export default async function ForecastPage() {
         </div>
       )}
 
+      {/* Upcoming Cash 30/60/90 — real expected income vs. committed expenses
+          over the next 3 months, cumulative. Gated the same as Runway above
+          (a real cash checkpoint, not full transaction history) rather than
+          on "is there anything upcoming" — so it's never silently missing
+          just because nothing happens to be pending right now; an honest
+          "nothing upcoming" state is still an answer, not a missing feature
+          the user has no way to discover. Scope is stated explicitly so it
+          never reads as "all my money": Business account only (same as
+          Runway), and only pending expected payments — one already marked
+          received doesn't count twice. */}
+      {todayFacts.hasCurrentCash && (
+      <div className="card">
+        <div className="flex items-baseline justify-between mb-1">
+          <p className="label">{t("upcomingCashWindow.label")}</p>
+        </div>
+        <p className="text-[11px] text-[#6A97B4] mb-4">{t("upcomingCashWindow.scope")}</p>
+        {upcomingCashWindow.every((b) => b.expectedIncome === 0 && b.committedExpenses === 0) ? (
+          <p className="text-sm text-[#6A97B4]">{t("upcomingCashWindow.empty")}</p>
+        ) : (
+          <div className="grid grid-cols-3 gap-4">
+            {upcomingCashWindow.map((bucket) => (
+              <div key={bucket.throughDay}>
+                <p className="text-xs text-[#6A97B4] mb-1.5">{t(`upcomingCashWindow.day${bucket.throughDay}`)}</p>
+                <p className={`text-lg font-bold tabular-nums mb-1 ${bucket.net < 0 ? "text-[#E5484D]" : "text-[#E8F0F8]"}`}>
+                  {formatCurrency(bucket.net, locale)}
+                </p>
+                <p className="text-[11px] text-[#4CC4A4] tabular-nums">
+                  {t("upcomingCashWindow.expectedIncome", { amount: formatCurrency(bucket.expectedIncome, locale) })}
+                </p>
+                <p className="text-[11px] text-[#D4A254] tabular-nums">
+                  {t("upcomingCashWindow.committedExpenses", { amount: formatCurrency(bucket.committedExpenses, locale) })}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+      )}
+
       {!hasData && (
         <div className="card text-center py-16">
           <div className="text-5xl mb-4">📈</div>
@@ -419,12 +464,28 @@ export default async function ForecastPage() {
 
       {hasData && !forecastStillLearning && (
         <>
+          {/* forecastStillLearning only gates out completeMonths===0 — at
+              exactly 1 complete month, the badges below can render as
+              fully confident-looking (Healthy/Improving-style colors) while
+              the one honest "Low confidence" signal sits two sections down,
+              partly inside a collapsed panel. Surface it here too, right
+              where the confident-looking badges actually are. */}
+          {forecast?.confidence === "low" && (
+            <div className="flex items-start gap-2.5 px-4 py-3 bg-[#D4A2540A] border border-[#D4A25425] rounded-xl">
+              <span className="text-[#D4A254] text-sm flex-shrink-0 mt-0.5">ⓘ</span>
+              <p className="text-xs text-[#D4A254] leading-relaxed">
+                {t("healthOverview.lowConfidenceNote", { months: maturity.completeMonths })}
+              </p>
+            </div>
+          )}
+
           {/* ── 1. Health overview row ─────────────────────────────────────── */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
 
             {/* Business Health */}
             <div className="card">
-              <p className="label mb-3">{t("healthScore.label")}</p>
+              <p className="label mb-1">{t("healthScore.label")}</p>
+              <p className="text-[11px] text-[#6A97B4] mb-2.5">{t("healthScore.caption")}</p>
               <span className={`text-sm font-semibold px-3 py-1.5 rounded-lg inline-block mb-3 ${health.bg} ${health.text}`}>
                 {health.label}
               </span>

@@ -67,6 +67,13 @@ export interface ClientRiskProfile {
   recentMonthlyAvg: number;
   priorMonthlyAvg: number;
   rawDescriptions: string[]; // kept for the payment timeline — ground truth
+  /** Real average (receivedTransaction.transactionDate - expectedDate) across
+   *  this client's own received Expected Payments — positive = late,
+   *  negative = early. Null when fewer than 3 real paired data points exist
+   *  for this specific client (same paymentCount>=3 bar this file already
+   *  uses everywhere else before making a cadence claim) — never estimated. */
+  avgDaysLate: number | null;
+  daysLateSampleCount: number;
 }
 
 export interface UnresolvedGroup {
@@ -204,6 +211,66 @@ function computeReliabilityScore(p: PartialProfile): ReliabilityScore {
 }
 
 // ── Main export ───────────────────────────────────────────────────────────────
+
+// Same bar computeStatus/buildInsights/buildActions already use before making
+// any cadence claim about a specific client — a wrong-feeling number on a
+// named client's card is worse than no number at all.
+const MIN_LATENESS_SAMPLES_PER_CLIENT = 3;
+// Looser bar for the account-wide, unattributed figure — it doesn't risk
+// misattributing anything to a specific client, so it can surface real data
+// sooner (spec: never fabricate, but don't waste real data either).
+const MIN_LATENESS_SAMPLES_OVERVIEW = 5;
+
+// Real (expectedDate vs. actual receivedTransaction.transactionDate) pairs —
+// the only source of payment-lateness truth in the app. Only pairs where
+// payerId was resolved (see resolveExistingPayerId, set at Expected Payment
+// creation time from an exact client-name match — never guessed here).
+async function getReceivedPaymentPairs(userId: string): Promise<Array<{ payerId: string | null; daysLate: number }>> {
+  const rows = await prisma.expectedPayment.findMany({
+    where: { userId, status: "received", receivedTransactionId: { not: null } },
+    select: { payerId: true, expectedDate: true, receivedTransaction: { select: { transactionDate: true } } },
+  });
+  return rows
+    .filter((r) => r.receivedTransaction != null)
+    .map((r) => ({
+      payerId: r.payerId,
+      daysLate: Math.round((r.receivedTransaction!.transactionDate.getTime() - r.expectedDate.getTime()) / 86_400_000),
+    }));
+}
+
+async function getLatenessByPayer(userId: string): Promise<Map<string, { avgDaysLate: number; sampleCount: number }>> {
+  const pairs = await getReceivedPaymentPairs(userId);
+  const byPayer = new Map<string, number[]>();
+  for (const p of pairs) {
+    if (!p.payerId) continue;
+    if (!byPayer.has(p.payerId)) byPayer.set(p.payerId, []);
+    byPayer.get(p.payerId)!.push(p.daysLate);
+  }
+  const result = new Map<string, { avgDaysLate: number; sampleCount: number }>();
+  for (const [payerId, daysLateValues] of byPayer) {
+    if (daysLateValues.length < MIN_LATENESS_SAMPLES_PER_CLIENT) continue;
+    const avg = daysLateValues.reduce((s, v) => s + v, 0) / daysLateValues.length;
+    result.set(payerId, { avgDaysLate: Math.round(avg * 10) / 10, sampleCount: daysLateValues.length });
+  }
+  return result;
+}
+
+export interface PaymentLatenessOverview {
+  avgDaysLate: number;
+  sampleCount: number;
+}
+
+// The safe fallback signal — real, but not attributed to any one client.
+// Available even before any per-client link has accumulated 3 real pairs
+// (e.g. a new account's first few payments), and the sub-factor the
+// Stability Score should prefer when it needs "is this business generally
+// paid on time" without the per-client matching risk.
+export async function getPaymentLatenessOverview(userId: string): Promise<PaymentLatenessOverview | null> {
+  const pairs = await getReceivedPaymentPairs(userId);
+  if (pairs.length < MIN_LATENESS_SAMPLES_OVERVIEW) return null;
+  const avg = pairs.reduce((s, p) => s + p.daysLate, 0) / pairs.length;
+  return { avgDaysLate: Math.round(avg * 10) / 10, sampleCount: pairs.length };
+}
 
 export async function getClientRiskProfiles(userId: string, accountId?: string | null): Promise<ClientRiskCenterData> {
   const acctFilter = accountId ? { accountId } : {};
@@ -354,6 +421,13 @@ export async function getClientRiskProfiles(userId: string, accountId?: string |
     }
   }
 
+  // ── Phase 2.5: Real payment lateness, grouped by the same payerId links
+  //    used above — only real received-Expected-Payment pairs, never
+  //    estimated. See resolveExistingPayerId in payer-engine.ts for how
+  //    payerId gets set (exact-match only, at creation time). ────────────────
+
+  const latenessByPayer = await getLatenessByPayer(userId);
+
   // ── Phase 3: Build risk profiles ─────────────────────────────────────────────
 
   const profiles: ClientRiskProfile[] = Object.values(map).map(c => {
@@ -393,6 +467,8 @@ export async function getClientRiskProfiles(userId: string, accountId?: string |
     const recentMonthlyAvg = ((monthlyRevenue[3]?.amount ?? 0) + (monthlyRevenue[4]?.amount ?? 0) + (monthlyRevenue[5]?.amount ?? 0)) / 3;
     const priorMonthlyAvg  = ((monthlyRevenue[0]?.amount ?? 0) + (monthlyRevenue[1]?.amount ?? 0) + (monthlyRevenue[2]?.amount ?? 0)) / 3;
 
+    const lateness = c.payerId ? latenessByPayer.get(c.payerId) : undefined;
+
     const partial: PartialProfile = {
       name: c.name,
       payerId: c.payerId,
@@ -420,6 +496,8 @@ export async function getClientRiskProfiles(userId: string, accountId?: string |
       recentMonthlyAvg,
       priorMonthlyAvg,
       rawDescriptions: [...new Set(sorted.map(t => t.description))],
+      avgDaysLate: lateness?.avgDaysLate ?? null,
+      daysLateSampleCount: lateness?.sampleCount ?? 0,
     };
 
     const reliabilityScore = computeReliabilityScore(partial);

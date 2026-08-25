@@ -44,6 +44,21 @@ export default async function MoneyBreakdownCard({
         <p className="text-[11px] text-[#E5484D] mt-1 mb-2">{t("overCommitted")}</p>
       )}
 
+      {breakdown.safeMonthlyPay !== null ? (
+        <p className="text-[11px] text-[#6A97B4] mt-1 mb-2">
+          {t("safeMonthlyPay", { amount: fmt(breakdown.safeMonthlyPay), months: breakdown.safetyBuffer.months ?? 0 })}
+        </p>
+      ) : breakdown.safetyBuffer.months === null && (
+        // Never silently absent — the reason (no buffer configured yet) and
+        // the fix are right where the figure itself would otherwise be.
+        <p className="text-[11px] text-[#6A97B4] mt-1 mb-2">
+          {t("safeMonthlyPayLocked")}{" "}
+          <Link href="/settings" className="font-medium text-[#3AB5A0] hover:text-[#4CC4A4]">
+            {t("setBuffer")}
+          </Link>
+        </p>
+      )}
+
       {/* Spending pace vs. the onboarding estimate — shown regardless of
           whether Runway itself has switched to real data yet, so actual
           overspending is never silent during the first month (spec
@@ -124,6 +139,9 @@ export default async function MoneyBreakdownCard({
           </div>
 
           <p className="text-[11px] text-[#6A97B4] pt-1">{t("availableExplainer")}</p>
+          {breakdown.safeMonthlyPay !== null && (
+            <p className="text-[11px] text-[#6A97B4]">{t("safeMonthlyPayExplainer")}</p>
+          )}
         </div>
       </details>
     </div>

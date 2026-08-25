@@ -1,8 +1,8 @@
 import { prisma } from "./prisma";
 import { getCurrentCashPosition } from "./cash-balance-engine";
 import { getManualAccountKind, OWNER_PAY_IN_CATEGORY, OWNER_PAY_OUT_CATEGORY } from "./manual-accounts";
-import type { UpcomingItem } from "./upcoming-item";
-import { expectedPaymentDisplayName } from "./upcoming-item";
+import type { UpcomingItem, CashWindowBucket } from "./upcoming-item";
+import { expectedPaymentDisplayName, bucketUpcomingByWindow } from "./upcoming-item";
 
 // Re-exported so existing server-side importers (dashboard/page.tsx,
 // forecast/page.tsx, TodayLayer.tsx) don't need a second import line — but
@@ -42,6 +42,71 @@ function nextOccurrence(dayOfMonth: number, now: Date): Date {
   }
   const daysInNextMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 2, 0)).getUTCDate();
   return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, Math.min(dayOfMonth, daysInNextMonth)));
+}
+
+// Every occurrence of a recurring expense between `now` and `now + horizonDays`
+// — unlike nextOccurrence() above (which getTodayFacts()'s "what's next" list
+// intentionally wants capped at one), a 30/60/90-day cash window would
+// silently understate a monthly expense's real impact past its first
+// occurrence if it only ever projected one date.
+function occurrencesWithin(dayOfMonth: number, now: Date, horizonDays: number): Date[] {
+  const horizon = new Date(now.getTime() + horizonDays * 24 * 60 * 60 * 1000);
+  const dates: Date[] = [];
+  let cursor = nextOccurrence(dayOfMonth, now);
+  while (cursor.getTime() <= horizon.getTime()) {
+    dates.push(cursor);
+    // Walk to the following month's clamped occurrence from just past this one.
+    const dayAfter = new Date(cursor.getTime() + 24 * 60 * 60 * 1000);
+    cursor = nextOccurrence(dayOfMonth, dayAfter);
+  }
+  return dates;
+}
+
+// The real, un-truncated feed behind the 30/60/90-day cash view (spec: don't
+// crowd the Dashboard's Today layer with this — it's a Forecast-page card).
+// Reuses the exact same expected-payment/recurring-expense sources as
+// getTodayFacts(), just without that function's `take: 5` / single-occurrence
+// limits, which exist for a different job (a short "what's next" list).
+export async function getUpcomingCashWindow(userId: string, accountId?: string | null): Promise<CashWindowBucket[]> {
+  const now = new Date();
+  const horizonDays = 90;
+  const horizon = new Date(now.getTime() + horizonDays * 24 * 60 * 60 * 1000);
+
+  const accountKind = await getManualAccountKind(accountId);
+  const showExpectedPayments = accountKind !== "personal";
+
+  const [recurringExpenses, expectedPending] = await Promise.all([
+    prisma.recurringExpense.findMany({ where: { userId, isActive: true, ...(accountId ? { accountId } : {}) } }),
+    showExpectedPayments
+      ? prisma.expectedPayment.findMany({
+          where: { userId, status: "pending", expectedDate: { lte: horizon } },
+          orderBy: { expectedDate: "asc" },
+        })
+      : Promise.resolve([]),
+  ]);
+
+  const items: UpcomingItem[] = [
+    ...expectedPending.map((e) => ({
+      kind: "expected_income" as const,
+      id: e.id,
+      label: expectedPaymentDisplayName(e.clientName, e.projectName),
+      clientName: e.clientName,
+      projectName: e.projectName,
+      amount: Number(e.amount),
+      date: e.expectedDate,
+    })),
+    ...recurringExpenses.flatMap((r) =>
+      occurrencesWithin(r.dayOfMonth, now, horizonDays).map((date, i) => ({
+        kind: "recurring_expense" as const,
+        id: `${r.id}-${i}`,
+        label: r.merchantName,
+        amount: Number(r.amount),
+        date,
+      }))
+    ),
+  ];
+
+  return bucketUpcomingByWindow(items, now);
 }
 
 export async function getTodayFacts(userId: string, accountId?: string | null): Promise<TodayFacts> {

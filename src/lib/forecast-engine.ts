@@ -304,8 +304,22 @@ interface StoredBreakdown {
 // ── generateForecast ──────────────────────────────────────────────────────────
 
 export async function generateForecast(userId: string): Promise<ForecastResult | null> {
+  // The current calendar month is always partial, no matter how much
+  // activity happened in it so far — same exclusion data-maturity.ts's
+  // completeMonths already applies. Without this, a forecast generated a
+  // few days into a fresh month would average that still-accumulating
+  // month in as if it were a finished one, understating basedOnMonths'
+  // real meaning and skewing weightedAvg/confidence off incomplete data.
+  const now = new Date();
+  const currentMonthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
   const records = await prisma.monthlyAnalytics.findMany({
-    where:   { userId },
+    where: {
+      userId,
+      OR: [
+        { year: { lt: currentMonthStart.getUTCFullYear() } },
+        { year: currentMonthStart.getUTCFullYear(), month: { lt: currentMonthStart.getUTCMonth() + 1 } },
+      ],
+    },
     orderBy: [{ year: "asc" }, { month: "asc" }],
   });
 
@@ -632,7 +646,20 @@ export async function getLatestForecast(userId: string): Promise<ForecastResult 
 
   if (!forecast) return null;
 
-  const monthsCount = await prisma.monthlyAnalytics.count({ where: { userId } });
+  // Same exclusion as generateForecast() above — the current calendar month
+  // is always partial, and this count backs both a displayed basedOnMonths
+  // and the backward-compat confidence fallback below.
+  const now = new Date();
+  const currentMonthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+  const monthsCount = await prisma.monthlyAnalytics.count({
+    where: {
+      userId,
+      OR: [
+        { year: { lt: currentMonthStart.getUTCFullYear() } },
+        { year: currentMonthStart.getUTCFullYear(), month: { lt: currentMonthStart.getUTCMonth() + 1 } },
+      ],
+    },
+  });
 
   const forecastPeriod = PERIOD_RE.test(forecast.forecastPeriod)
     ? forecast.forecastPeriod

@@ -363,7 +363,9 @@
       },
       "versementLiberatoire": "Utilisez-vous le versement libératoire pour l'impôt sur le revenu ?",
       "versementLiberatoireHint": "C'est l'option où l'impôt sur le revenu de votre micro-entreprise est payé sous forme de pourcentage du chiffre d'affaires, en même temps que votre déclaration Urssaf.",
+      "cipavHint": "La CIPAV est la caisse de retraite de certaines professions réglementées (architectes, certains consultants en santé ou en technique). La plupart des designers, consultants et développeurs freelance ne devraient pas choisir cette option — ne la sélectionnez que si vous savez que votre profession relève spécifiquement de la CIPAV.",
       "acre": "Bénéficiez-vous actuellement de l'ACRE ?",
+      "acreHint": "L'ACRE est une réduction temporaire de vos cotisations sociales pour les nouvelles entreprises, généralement disponible pendant votre première année d'activité. En cas de doute, vérifiez votre compte Urssaf ou sélectionnez « Je ne sais pas ».",
       "activityStartDate": "Quand votre activité a-t-elle débuté ?",
       "urssafFrequency": "À quelle fréquence déclarez-vous votre chiffre d'affaires à l'Urssaf ?",
       "urssafMonthly": "Mensuelle",
@@ -779,12 +781,25 @@
     "businessHealth": {
       "label": "Santé de l'activité"
     },
+    "stabilityScore": {
+      "label": "Stabilité financière",
+      "caption": "Votre profil de risque global — trésorerie, diversification des revenus, fiabilité des clients, impôts.",
+      "basedOn": "Basé sur {available} des {total} signaux",
+      "why": "Pourquoi {score} ?",
+      "notEnoughData": "En construction",
+      "band": {
+        "stable": "Stable",
+        "watch": "À surveiller",
+        "at-risk": "À risque"
+      }
+    },
     "cashPosition": {
       "label": "Trésorerie cumulée",
       "caption": "Solde net de tout ce qui est suivi — pas un solde bancaire en direct"
     },
     "forecastHealth": {
       "label": "Santé des prévisions",
+      "caption": "Si vos revenus et dépenses prévus pour la prochaine période restent positifs.",
       "good": "Bonne",
       "warning": "Avertissement",
       "critical": "Critique",
@@ -796,6 +811,9 @@
       "safeToUse": "Utilisable en toute sécurité",
       "availableAfterProtections": "Disponible après protections",
       "overCommitted": "Votre total protégé dépasse votre trésorerie actuelle — voir le détail ci-dessous.",
+      "safeMonthlyPay": "Vous pourriez vous verser {amount}/mois pendant {months, plural, one {# mois} other {# mois}} sans nouveau revenu.",
+      "safeMonthlyPayLocked": "Définissez un coussin de sécurité pour voir combien vous pourriez vous verser chaque mois en toute sécurité.",
+      "safeMonthlyPayExplainer": "Le revenu mensuel sûr = le montant utilisable en sécurité, réparti sur la durée de votre coussin de sécurité.",
       "seeBreakdown": "Voir le détail",
       "taxReserve": "Réserve fiscale",
       "commitments": "Engagements à venir",
@@ -815,7 +833,9 @@
       "firstMonthTransitionBody": "Vous aviez estimé {estimate} — la dépense réelle était de {actual} ({difference} {direction}). L'autonomie utilise désormais vos dépenses réelles plutôt que l'estimation.",
       "more": "de plus",
       "less": "de moins",
-      "urssafOutstandingNote": "Ce que vous avez réservé sur vos revenus depuis votre dernier paiement Urssaf, moins ce que vous avez déjà payé — pas une estimation mensuelle."
+      "urssafOutstandingNote": "Ce que vous avez réservé sur vos revenus depuis votre dernier paiement Urssaf, moins ce que vous avez déjà payé — pas une estimation mensuelle.",
+      "runwayEstimatedNote": "Basé sur votre estimation mensuelle de {amount} — c'est vous qui nous l'avez indiqué.",
+      "runwayCalculatedNote": "Basé sur vos {months, plural, one {# mois complet} other {# mois complets}} de dépenses réelles."
     },
     "summary": {
       "label": "Résumé"
@@ -1075,6 +1095,9 @@
       "medium": "Moyenne",
       "high": "Élevée"
     },
+    "healthOverview": {
+      "lowConfidenceNote": "Basé sur {months, plural, one {seulement # mois} other {seulement # mois}} d'historique — ces signaux ci-dessous deviendront plus fiables avec le temps."
+    },
     "confidenceDescriptions": {
       "low": "Faible — moins de 4 mois de données",
       "medium": "Moyenne — de 4 à 11 mois",
@@ -1106,6 +1129,7 @@
     },
     "healthScore": {
       "label": "Indice de santé financière",
+      "caption": "Si vos derniers mois réels ont été rentables et avec une bonne tendance.",
       "outOf100": "/100",
       "howCalculated": "Mode de calcul",
       "rows": {
@@ -1196,6 +1220,16 @@
       "subtitle": "Importer les relevés de ces mois améliorerait la précision de cette projection.",
       "months": "{months}",
       "uploadNow": "Importer les relevés →"
+    },
+    "upcomingCashWindow": {
+      "label": "Trésorerie à venir",
+      "scope": "Compte professionnel — paiements attendus en attente et dépenses récurrentes actives uniquement.",
+      "empty": "Rien en attente ni engagé dans les 90 prochains jours.",
+      "day30": "30 prochains jours",
+      "day60": "60 prochains jours",
+      "day90": "90 prochains jours",
+      "expectedIncome": "+{amount} attendu",
+      "committedExpenses": "−{amount} engagé"
     },
     "howBuilt": {
       "label": "Comment cette prévision a été établie",
@@ -1563,7 +1597,11 @@
         "insufficientData": "Historique de paiement insuffisant pour analyser le modèle.",
         "onSchedule": "Ce client paie dans les délais selon son comportement habituel.",
         "slightlyLate": "Le paiement de ce client est légèrement en retard par rapport à son intervalle habituel.",
-        "significantlyLate": "Le paiement de ce client est significativement en retard. Envisagez une relance."
+        "significantlyLate": "Le paiement de ce client est significativement en retard. Envisagez une relance.",
+        "avgDaysLate": "Vs. date attendue",
+        "daysLate": "{count, plural, one {# jour de retard en moyenne} other {# jours de retard en moyenne}}",
+        "daysEarly": "{count, plural, one {# jour d'avance en moyenne} other {# jours d'avance en moyenne}}",
+        "onTime": "À l'heure en moyenne"
       },
       "revenueTrend": {
         "title": "Tendance des revenus",
@@ -1880,7 +1918,9 @@
     "sports": "Sport",
     "uncategorized": "Non catégorisé",
     "savings": "Épargne",
-    "transfer": "Virement"
+    "transfer": "Virement",
+    "owner_pay_in": "Versement à soi-même (reçu)",
+    "owner_pay_out": "Versement à soi-même (envoyé)"
   },
   "manual": {
     "onboarding": {
@@ -1950,9 +1990,11 @@
           "mixed": "Plusieurs activités",
           "unsure": "Je ne suis pas sûr"
         },
+        "cipavHint": "La CIPAV est la caisse de retraite de certaines professions réglementées (architectes, certains consultants en santé ou en technique). La plupart des designers, consultants et développeurs freelance ne devraient pas choisir cette option — ne la sélectionnez que si vous savez que votre profession relève spécifiquement de la CIPAV.",
         "versementLiberatoire": "Utilisez-vous le versement libératoire pour l'impôt sur le revenu ?",
         "versementLiberatoireHint": "C'est l'option où l'impôt sur le revenu de votre micro-entreprise est payé sous forme de pourcentage du chiffre d'affaires, en même temps que votre déclaration Urssaf.",
         "acre": "Bénéficiez-vous actuellement de l'ACRE ?",
+        "acreHint": "L'ACRE est une réduction temporaire de vos cotisations sociales pour les nouvelles entreprises, généralement disponible pendant votre première année d'activité. En cas de doute, vérifiez votre compte Urssaf ou sélectionnez « Je ne sais pas ».",
         "activityStartDate": "Quand votre activité a-t-elle débuté ?",
         "urssafFrequency": "À quelle fréquence déclarez-vous votre chiffre d'affaires à l'Urssaf ?",
         "urssafMonthly": "Mensuelle",
@@ -2204,6 +2246,21 @@
     "categorySubscriptionsGrewEveryYear": "Les coûts liés à <b>{category}</b> ont augmenté chaque année depuis {fromYear}, passant de <b>{fromAmount}</b> à <b>{toAmount}</b> en {toYear}.",
     "clientConcentration": "{hasSource, select, yes {<b>{source}</b> représente <b>{pct} %</b> de vos revenus} other {Une seule source représente <b>{pct} %</b> de vos revenus}} — une forte concentration sur une seule source.",
     "incomeReasonablyDiversified": "Vos revenus sont raisonnablement diversifiés sur <b>{total, plural, one {# source} other {# sources}}</b>, votre principale source représentant <b>{pct} %</b>.",
+    "stability": {
+      "runwayGood": "<b>{months, plural, one {# mois} other {# mois}}</b> protégés si aucun nouveau revenu n'arrivait.",
+      "runwayLow": "Seulement <b>{months, plural, one {# mois} other {# mois}}</b> protégés si aucun nouveau revenu n'arrivait.",
+      "cashflowConsistent": "<b>{pct} %</b> de vos derniers mois avaient une trésorerie positive.",
+      "cashflowInconsistent": "Seulement <b>{pct} %</b> de vos derniers mois avaient une trésorerie positive.",
+      "diversificationGood": "Votre principale source de revenus représente <b>{pct} %</b> — raisonnablement répartie.",
+      "diversificationConcentrated": "<b>{pct} %</b> de vos revenus attendus proviennent d'un seul client.",
+      "clientsReliable": "<b>{reliable}</b> clients établis sur <b>{total}</b> paient de manière fiable.",
+      "clientsUnreliable": "Seulement <b>{reliable}</b> clients établis sur <b>{total}</b> paient de manière fiable.",
+      "clientPaysLate": "<b>{name}</b> a en moyenne <b>{days, plural, one {# jour} other {# jours}}</b> de retard.",
+      "paymentsOnTime": "Les paiements ont récemment été à l'heure ou en avance en moyenne.",
+      "paymentsLate": "Les paiements ont récemment eu en moyenne <b>{days, plural, one {# jour} other {# jours}}</b> de retard.",
+      "taxReserveKnown": "La réserve fiscale est entièrement financée à partir d'un montant connu, pas d'une estimation.",
+      "taxReserveEstimated": "La réserve fiscale est actuellement une estimation, pas un montant connu."
+    },
     "context": {
       "incomeAboveAvg": "{incomeType, select, salary {Votre salaire} other {Vos revenus}} en <b>{period}</b>, <b>{current}</b>, {incomeType, select, salary {est} other {sont}} {incomeType, select, salary {supérieur} other {supérieurs}} de <b>{pct} %</b> à votre moyenne sur {months, plural, one {le dernier mois} other {les # derniers mois}} (<b>{avg}</b>).",
       "incomeBelowAvg": "{incomeType, select, salary {Votre salaire} other {Vos revenus}} en <b>{period}</b>, <b>{current}</b>, {incomeType, select, salary {est} other {sont}} {incomeType, select, salary {inférieur} other {inférieurs}} de <b>{pct} %</b> à votre moyenne sur {months, plural, one {le dernier mois} other {les # derniers mois}} (<b>{avg}</b>).",

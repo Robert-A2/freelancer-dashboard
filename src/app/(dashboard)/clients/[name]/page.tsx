@@ -361,6 +361,22 @@ export default async function ClientDetailPage({
                 {formatCurrency(client.avgPayment, locale)}
               </p>
             </div>
+            {/* Real (expectedDate vs. actual received date) average — only
+                shown once 3+ real paired data points exist for this client
+                (see client-risk-engine.ts's MIN_LATENESS_SAMPLES_PER_CLIENT);
+                never estimated. */}
+            {client.avgDaysLate !== null && (
+              <div className="bg-[#132537] rounded-xl p-3.5">
+                <p className="label mb-1 text-[11px]">{t("detail.pattern.avgDaysLate")}</p>
+                <p className={`text-sm font-bold tabular-nums ${client.avgDaysLate > 0 ? "text-[#D4A254]" : "text-[#4CC4A4]"}`}>
+                  {client.avgDaysLate > 0
+                    ? t("detail.pattern.daysLate", { count: Math.round(client.avgDaysLate) })
+                    : client.avgDaysLate < 0
+                    ? t("detail.pattern.daysEarly", { count: Math.round(-client.avgDaysLate) })
+                    : t("detail.pattern.onTime")}
+                </p>
+              </div>
+            )}
           </div>
         </div>
       )}

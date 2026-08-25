@@ -138,6 +138,7 @@ export function buildDemoScenario(): { reserve: ReserveForPayment; current: Mone
     protectedTotal: CURRENT_PROTECTED_TOTAL,
     availableAfterProtections: CURRENT_AVAILABLE,
     safeToUse: null, // no safety-buffer months configured for this demo profile, same as the real account
+    safeMonthlyPay: null, // depends on safetyBuffer.months, also unconfigured
     runway: { months: Math.round((4996.6 / MONTHLY_SPEND) * 10) / 10, monthlySpend: MONTHLY_SPEND, source: "estimated", basedOnMonths: 0 },
     spendingPace: null,
     firstMonthTransition: null,
@@ -183,6 +184,7 @@ export function buildDemoMoneyBreakdown(received: boolean): MoneyBreakdown {
     protectedTotal,
     availableAfterProtections,
     safeToUse: null,
+    safeMonthlyPay: null, // depends on safetyBuffer.months, also unconfigured
     runway: { months: Math.round((currentCash / MONTHLY_SPEND) * 10) / 10, monthlySpend: MONTHLY_SPEND, source: "estimated", basedOnMonths: 0 },
     spendingPace: null,
     firstMonthTransition: null,

@@ -458,6 +458,25 @@ export function normalizeMatchKey(name: string): string {
   return key.replace(/\s+/g, " ").trim();
 }
 
+// Read-only lookup for surfaces that need to link free text to an existing
+// client without ever creating one — e.g. an Expected Payment's typed
+// clientName (see /api/expected-payments/route.ts). Every Payer already gets
+// a PayerAlias with matchKey = normalizeMatchKey(canonicalName) at creation
+// (see resolvePayers above), so this alone covers both alias hits and a
+// direct canonicalName match. Returns null on no confident match — the
+// caller must treat that as "unlinked," never guess.
+export async function resolveExistingPayerId(userId: string, name: string | null | undefined): Promise<string | null> {
+  const trimmed = name?.trim();
+  if (!trimmed) return null;
+  const matchKey = normalizeMatchKey(trimmed);
+  if (!matchKey) return null;
+  const alias = await prisma.payerAlias.findFirst({
+    where: { matchKey, payer: { userId } },
+    select: { payerId: true },
+  });
+  return alias?.payerId ?? null;
+}
+
 // ── Cadence detection ─────────────────────────────────────────────────────────
 
 /**

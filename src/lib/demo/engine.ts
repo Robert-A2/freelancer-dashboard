@@ -1021,6 +1021,8 @@ export function computeClientRiskProfiles(locale: Locale): ClientRiskCenterData 
       recentMonthlyAvg,
       priorMonthlyAvg,
       rawDescriptions: [...new Set(sorted.map(t => t.description))],
+      avgDaysLate: null, // fixture data has no payerId link, same as any real unlinked client
+      daysLateSampleCount: 0,
       insights,
       actions,
     };

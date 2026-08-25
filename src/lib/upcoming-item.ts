@@ -26,6 +26,44 @@ export function expectedPaymentDisplayName(clientName: string | null, projectNam
   return clientName?.trim() || projectName?.trim() || "Expected payment";
 }
 
+export interface CashWindowBucket {
+  throughDay: 30 | 60 | 90;
+  expectedIncome: number;
+  committedExpenses: number;
+  net: number;
+}
+
+// Cumulative 30/60/90-day buckets over the real upcoming items (expected
+// income + every projected recurring-expense occurrence within the horizon —
+// see today-facts.ts's getUpcomingCashWindow, which is the only caller that
+// actually projects multiple occurrences; getTodayFacts()'s own `upcoming`
+// stays single-next-occurrence and is not a valid input here for expenses
+// beyond the first one). Cumulative because "what's coming in the next 60
+// days" naturally includes the next 30, not a separate slice of it.
+//
+// An item whose date has already passed (days < 0) is still pending, not
+// resolved — it didn't stop being expected just because it's late. It's
+// counted in every window rather than dropped, so it can't silently vanish
+// from this view while the exact same item is still shown "overdue"
+// elsewhere (e.g. TodayLayer's "Coming up" list).
+export function bucketUpcomingByWindow(items: UpcomingItem[], now: Date = new Date()): CashWindowBucket[] {
+  const dayMs = 24 * 60 * 60 * 1000;
+  const daysFromNow = (d: Date) => Math.ceil((d.getTime() - now.getTime()) / dayMs);
+
+  const windows: Array<30 | 60 | 90> = [30, 60, 90];
+  return windows.map((throughDay) => {
+    let expectedIncome = 0;
+    let committedExpenses = 0;
+    for (const item of items) {
+      const days = daysFromNow(item.date);
+      if (days > throughDay) continue;
+      if (item.kind === "expected_income") expectedIncome += item.amount;
+      else committedExpenses += item.amount;
+    }
+    return { throughDay, expectedIncome, committedExpenses, net: expectedIncome - committedExpenses };
+  });
+}
+
 export type ExpectedPaymentDisplayStatus = "expected" | "dueToday" | "overdue";
 
 // Derived at read time, never stored — an expected payment's expectedDate

@@ -3,7 +3,6 @@ import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { Decimal } from "@prisma/client/runtime/library";
 import { recordBalanceCheckpoint } from "@/lib/cash-balance-engine";
-import { setManualTaxReserve } from "@/lib/tax-reserve-engine";
 import { getOrCreateManualAccount } from "@/lib/manual-accounts";
 import { syncRecurringExpenses } from "@/lib/recurring-expense-engine";
 import { recalculateMonthlyAnalytics } from "@/lib/analytics-engine";
@@ -91,10 +90,18 @@ export async function POST(request: NextRequest) {
     const businessAccountForCheckpoint = accountsSeparated ? await getOrCreateManualAccount(user.id, "business") : null;
     await recordBalanceCheckpoint(user.id, currentCash, "manual-entry", undefined, businessAccountForCheckpoint?.id ?? null);
 
-    // Step 2 — reserved for tax/contributions (optional, €0 allowed)
-    if (taxReserve !== undefined && taxReserve !== null) {
-      await setManualTaxReserve(user.id, taxReserve);
-    }
+    // Step 2 — "how much is already reserved for tax" is a one-time
+    // starting-state answer, not a request to permanently self-manage the
+    // reserve going forward (that's a separate, deliberate opt-in — see
+    // setManualTaxReserve's own doc comment — reachable via PATCH
+    // /api/tax-reserve). Wiring this onboarding answer into that same
+    // permanent-override field used to mean: answer "€0" here (which the
+    // UI explicitly invites as "Optional, €0 is fine") and the real France
+    // tax formula / live Urssaf-outstanding ledger would never activate
+    // again, with no Settings UI to discover or undo it. Intentionally not
+    // persisted anywhere for now — better to lose one onboarding data
+    // point than silently lock the dynamic reserve off forever.
+    void taxReserve;
 
     // Step 3 — fixed/recurring commitments (optional, zero or more).
     // Onboarding only offers "monthly" (the spec's own worked examples —

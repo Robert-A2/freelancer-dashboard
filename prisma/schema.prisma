@@ -192,9 +192,10 @@ model Payer {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  aliases      PayerAlias[]
-  transactions Transaction[]
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  aliases          PayerAlias[]
+  transactions     Transaction[]
+  expectedPayments ExpectedPayment[]
 
   @@unique([userId, canonicalName])
   @@index([userId, payerType])
@@ -742,12 +743,21 @@ model ExpectedPayment {
   expectedDate          DateTime
   status                String   @default("pending") // "pending" | "received" | "cancelled"
   receivedTransactionId String?  @unique // set when marked received — links to the real Transaction created
+  // Resolved at creation time only when clientName exactly matches (via
+  // normalizeMatchKey) an existing Payer/PayerAlias for this user — never
+  // auto-created. Null means "no confident existing-client match," not
+  // "no client" (clientName may still be set as free text). This is what
+  // lets payment-lateness be attributed to a real client record instead of
+  // a fuzzy string guess (see client-risk-engine.ts).
+  payerId               String?
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
 
   user                User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   receivedTransaction Transaction? @relation(fields: [receivedTransactionId], references: [id], onDelete: SetNull)
+  payer               Payer?       @relation(fields: [payerId], references: [id], onDelete: SetNull)
 
   @@index([userId, status])
+  @@index([payerId])
   @@map("expected_payments")
 }

@@ -386,6 +386,9 @@ export default function OnboardingWizard() {
                             <option key={a} value={a}>{t(`step6.activityTypeOptions.${a}`)}</option>
                           ))}
                         </select>
+                        {activityType === "cipav_liberal" && (
+                          <p className="text-xs text-[#4A7A9B] mt-1.5 leading-relaxed">{t("step6.cipavHint")}</p>
+                        )}
                       </div>
 
                       <div>
@@ -401,6 +404,7 @@ export default function OnboardingWizard() {
 
                       <div>
                         <label className="text-xs text-[#6A97B4] mb-2 block">{t("step6.acre")}</label>
+                        <p className="text-xs text-[#4A7A9B] mb-1.5 leading-relaxed">{t("step6.acreHint")}</p>
                         <select className="input" value={acre} onChange={(e) => setAcre(e.target.value)}>
                           <option value="">{t("step6.threeWayUnselected")}</option>
                           <option value="yes">{t("step6.threeWayYes")}</option>

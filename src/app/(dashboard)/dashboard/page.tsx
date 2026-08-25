@@ -19,6 +19,7 @@ import { getFinancialLifeIntelligence } from "@/lib/financial-life-engine";
 import { getClientRiskProfiles } from "@/lib/client-risk-engine";
 import { generateDashboardIntelligence, computeCashflowRisk } from "@/lib/intelligence-engine";
 import { getMoneyBreakdown } from "@/lib/money-breakdown";
+import { getStabilityScore } from "@/lib/stability-score-engine";
 import { getManualAccountKind } from "@/lib/manual-accounts";
 import { prisma } from "@/lib/prisma";
 import TrendsChart from "@/components/dashboard/TrendsChart";
@@ -119,6 +120,7 @@ export default async function DashboardPage({
     summary, forecast, chartData, comparison, totalTx, coverage,
     categoryInsights, concentration, dbUser, intentBreakdown,
     financialLife, clientData, taxPaymentTxs, todayFacts, maturity, moneyBreakdown,
+    stabilityScore,
   ] = await Promise.all([
     getDashboardSummary(user.id, accountId),
     getLatestForecast(user.id),
@@ -150,6 +152,10 @@ export default async function DashboardPage({
     // read here and also by Quick Add's reward and the Expected Payment
     // detail view. Never recomputed independently.
     getMoneyBreakdown(user.id, accountId),
+    // Financial Stability Score — composes the signals above into one
+    // explainable 0-100 number; see stability-score-engine.ts for the exact
+    // factor sources (never a second calculation of any of them).
+    getStabilityScore(user.id, accountId),
   ]);
 
   const current = summary.current
@@ -298,9 +304,6 @@ export default async function DashboardPage({
     forecastCashflowMarginPct !== null && forecastCashflowMarginPct < 20 ? "warning" :
     "good";
 
-  // "learning" reuses forecastHealth's own "Not enough data" styling/copy —
-  // no separate Learning-state translation needed, same honest meaning.
-  const healthKey = !hasEnoughHistoryForHealth ? "unknown" : intel.healthStatus === "at-risk" ? "atRisk" : intel.healthStatus;
   const badgeClass: Record<string, string> = {
     healthy: "text-[#4CC4A4] bg-[#234A40]",
     watch: "text-[#D4A254] bg-[#332C1A]",
@@ -377,14 +380,51 @@ export default async function DashboardPage({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="card-sm">
-              <p className="label mb-2">{t("businessHealth.label")}</p>
-              <span className={`inline-block text-sm font-bold px-3 py-1 rounded-full ${badgeClass[healthKey]}`}>
-                {t(`health.${healthKey}`)}
-              </span>
-              {!hasEnoughHistoryForHealth && (
-                <p className="text-[11px] text-[#6A97B4] mt-2">
-                  {tLearning("businessHealth.body", { days: maturity.historyDays })}
-                </p>
+              <p className="label mb-1">{t("stabilityScore.label")}</p>
+              <p className="text-[11px] text-[#6A97B4] mb-2">{t("stabilityScore.caption")}</p>
+              {stabilityScore.status === "known" ? (
+                <>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-2xl font-bold text-[#E8F0F8] tabular-nums">{stabilityScore.score}</span>
+                    <span className={`inline-block text-sm font-bold px-3 py-1 rounded-full ${badgeClass[stabilityScore.band === "at-risk" ? "atRisk" : stabilityScore.band!]}`}>
+                      {t(`stabilityScore.band.${stabilityScore.band}`)}
+                    </span>
+                  </div>
+                  {/* A score built from 3 of 6 signals and one built from 6 of
+                      6 used to render identically — always visible, not
+                      buried in the collapsed "why," since it changes how
+                      much weight the number itself deserves. */}
+                  <p className="text-[11px] text-[#6A97B4] mt-1">
+                    {t("stabilityScore.basedOn", {
+                      available: stabilityScore.factors.filter((f) => f.available).length,
+                      total: stabilityScore.factors.length,
+                    })}
+                  </p>
+                  {(stabilityScore.positiveFactors.length > 0 || stabilityScore.warningFactors.length > 0) && (
+                    <details className="mt-2 group">
+                      <summary className="text-xs font-medium text-[#3AB5A0] cursor-pointer hover:text-[#4CC4A4] list-none">
+                        {t("stabilityScore.why", { score: stabilityScore.score ?? 0 })}
+                      </summary>
+                      <div className="mt-2.5 space-y-1.5 text-[11px] leading-relaxed">
+                        {stabilityScore.positiveFactors.map((insight, i) => (
+                          <p key={`pos-${i}`} className="text-[#4CC4A4]">✓ <InsightText insight={insight} /></p>
+                        ))}
+                        {stabilityScore.warningFactors.map((insight, i) => (
+                          <p key={`warn-${i}`} className="text-[#D4A254]">⚠ <InsightText insight={insight} /></p>
+                        ))}
+                      </div>
+                    </details>
+                  )}
+                </>
+              ) : (
+                <>
+                  <span className={`inline-block text-sm font-bold px-3 py-1 rounded-full ${badgeClass.unknown}`}>
+                    {t("stabilityScore.notEnoughData")}
+                  </span>
+                  <p className="text-[11px] text-[#6A97B4] mt-2">
+                    {tLearning("businessHealth.body", { days: maturity.historyDays })}
+                  </p>
+                </>
               )}
             </div>
             <div className="card-sm">
@@ -392,6 +432,11 @@ export default async function DashboardPage({
               <span className={`inline-block text-sm font-bold px-3 py-1 rounded-full ${badgeClass[forecastHealth]}`}>
                 {t(`forecastHealth.${forecastHealth}`)}
               </span>
+              {/* Three differently-named "how am I doing" signals exist in
+                  the product (this one, Financial Stability above, Business
+                  Health on the Forecast page) — a one-line disambiguator so
+                  they don't read as unexplained duplicates of each other. */}
+              <p className="text-[11px] text-[#6A97B4] mt-2">{t("forecastHealth.caption")}</p>
             </div>
           </div>
 

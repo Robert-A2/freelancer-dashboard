@@ -75,6 +75,12 @@ export interface MoneyBreakdown {
   availableAfterProtections: number;
   /** max(0, availableAfterProtections). Only non-null once safetyBuffer.months is configured — this IS the spec's "Safe to use" number, and it must not exist until a real floor has been defined. */
   safeToUse: number | null;
+  /** safeToUse spread evenly across the buffer horizon the user configured —
+   *  "if no more money arrived, what could I pay myself every month before
+   *  dipping into what's protected." Deliberately doesn't predict future
+   *  income the way a forecast would. Null under the same conditions
+   *  safeToUse is null, or when safetyBuffer.months is 0. */
+  safeMonthlyPay: number | null;
 
   /** The exact same Runway object Forecast already shows — one calculation, read here too. */
   runway: CashRunway;
@@ -85,7 +91,7 @@ export interface MoneyBreakdown {
 }
 
 export async function getMoneyBreakdown(userId: string, accountId?: string | null): Promise<MoneyBreakdown> {
-  const [position, facts, reserve, runway, user, urssafStatus, account] = await Promise.all([
+  const [position, facts, reserve, runway, user, urssafStatus, account, taxableIncomeThisMonth] = await Promise.all([
     getCurrentCashPosition(userId, accountId),
     getTodayFacts(userId, accountId),
     getFinancialReserve(userId),
@@ -96,6 +102,7 @@ export async function getMoneyBreakdown(userId: string, accountId?: string | nul
     }),
     getUrssafPeriodStatus(userId),
     accountId ? prisma.account.findUnique({ where: { id: accountId }, select: { name: true } }) : null,
+    getBusinessTaxableIncomeThisMonth(userId),
   ]);
 
   // Which of the two spending estimates applies to the account currently
@@ -106,10 +113,17 @@ export async function getMoneyBreakdown(userId: string, accountId?: string | nul
     account?.name === "Business (manual)" ? "business" : account?.name === "Personal (manual)" ? "personal" : null;
   const business = user?.businessSpendingEstimate != null ? Number(user.businessSpendingEstimate) : null;
   const personal = user?.personalSpendingEstimate != null ? Number(user.personalSpendingEstimate) : null;
-  const combined = (business ?? 0) + (personal ?? 0);
-  const viewEstimate = accountKind === "business" ? business : accountKind === "personal" ? personal : (combined > 0 ? combined : null);
+  // Only treat the combined figure as a real total once BOTH halves are
+  // known — comparing full combined actual spending (business + personal)
+  // against a half-known "estimate" (only one side ever answered) would
+  // silently understate it, the same false-completeness problem as showing
+  // a stability score built from partial signals without saying so. Genuine
+  // "both are €0" is different from "one was simply never answered" — only
+  // the former should read as a real, complete combined estimate.
+  const combined = business != null && personal != null ? business + personal : null;
+  const viewEstimate = accountKind === "business" ? business : accountKind === "personal" ? personal : combined;
 
-  const taxReserve = computeTaxReserve(user?.manualTaxReserveAmount, reserve, facts.moneyInThisMonth, urssafStatus);
+  const taxReserve = computeTaxReserve(user?.manualTaxReserveAmount, reserve, taxableIncomeThisMonth, urssafStatus);
 
   const safetyBufferMonths = user?.safetyBufferMonths != null ? Number(user.safetyBufferMonths) : null;
   const safetyBufferAmount = safetyBufferMonths != null ? safetyBufferMonths * runway.monthlySpend : 0;
@@ -118,6 +132,7 @@ export async function getMoneyBreakdown(userId: string, accountId?: string | nul
   const protectedTotal = taxReserve.amount + facts.knownCommitmentsMonthly + safetyBufferAmount;
   const availableAfterProtections = position.amount - protectedTotal;
   const safeToUse = safetyBufferMonths != null ? Math.max(0, availableAfterProtections) : null;
+  const safeMonthlyPay = safeToUse != null && safetyBufferMonths ? safeToUse / safetyBufferMonths : null;
 
   const spendingPace: SpendingPace | null = viewEstimate != null
     ? {
@@ -152,11 +167,45 @@ export async function getMoneyBreakdown(userId: string, accountId?: string | nul
     protectedTotal,
     availableAfterProtections,
     safeToUse,
+    safeMonthlyPay,
     runway,
     spendingPace,
     firstMonthTransition,
     warnings,
   };
+}
+
+// The tax-reserve fallback estimate must always be based on genuine
+// business revenue — never on whichever account tab happens to be
+// currently viewed. A Personal-tagged "Money received" entry (a gift, a
+// refund, non-business income — the whole point of that tag) is real
+// income but not business revenue, and would otherwise inflate a fresh
+// tax-reserve calculation on the Personal tab exactly the way an owner-pay
+// transfer used to. Excludes only the Personal manual account specifically
+// (when one exists) rather than requiring a Business one to exist first,
+// so an unscoped/CSV-only user with no manual split at all still gets their
+// full real income counted, undiminished.
+async function getBusinessTaxableIncomeThisMonth(userId: string): Promise<number> {
+  const now = new Date();
+  const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+  const monthEnd = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
+
+  const personalAccount = await prisma.account.findUnique({
+    where: { userId_name: { userId, name: "Personal (manual)" } },
+    select: { id: true },
+  });
+
+  const agg = await prisma.transaction.aggregate({
+    where: {
+      userId,
+      transactionType: "income",
+      transactionDate: { gte: monthStart, lt: monthEnd },
+      ...(personalAccount ? { accountId: { not: personalAccount.id } } : {}),
+    },
+    _sum: { amount: true },
+  });
+
+  return Number(agg._sum.amount ?? 0);
 }
 
 // A flat manually-declared reserve (money already physically set aside)

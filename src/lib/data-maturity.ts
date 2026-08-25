@@ -32,6 +32,10 @@ export const MATURITY_THRESHOLDS = {
   MIN_COMPLETE_MONTHS_FOR_COMPARISON: 2,
   /** Analytics' deeper sections unlock progressively (spec §25). */
   MIN_COMPLETE_MONTHS_FOR_PATTERNS: 3,
+  /** The Financial Stability Score is shown once at least this many of its 6
+   *  factors have real data (renormalized over just those) — below this, an
+   *  honest "not enough data yet" state instead of a shaky partial score. */
+  MIN_FACTORS_FOR_STABILITY_SCORE: 3,
 } as const;
 
 export async function getDataMaturity(userId: string): Promise<DataMaturity> {
@@ -208,8 +212,12 @@ export async function getCashRunway(userId: string, accountId?: string | null): 
 
   const business = user?.businessSpendingEstimate != null ? Number(user.businessSpendingEstimate) : null;
   const personal = user?.personalSpendingEstimate != null ? Number(user.personalSpendingEstimate) : null;
-  const combined = (business ?? 0) + (personal ?? 0);
-  const estimate = accountKind === "business" ? business : accountKind === "personal" ? personal : (combined > 0 ? combined : null);
+  // Same rule as money-breakdown.ts's identical combined-estimate logic:
+  // only trust the combined total once BOTH halves were actually answered —
+  // one side left blank isn't "the other side is the whole picture," it's
+  // "we don't actually know the full combined spend."
+  const combined = business != null && personal != null ? business + personal : null;
+  const estimate = accountKind === "business" ? business : accountKind === "personal" ? personal : combined;
 
   if (estimate && estimate > 0) {
     return { months: position.amount / estimate, monthlySpend: estimate, source: "estimated", basedOnMonths: 0 };

@@ -59,7 +59,11 @@ export async function recordOwnerPay(userId: string, amount: number, date?: Date
         userId,
         accountId: businessAccount.id,
         transactionDate,
-        description: "Transfer to personal",
+        // Both legs deliberately share the "Pay yourself" phrase (the exact
+        // feature name from the +Add menu) so they read as one recognizable
+        // action in History, not two unrelated "Transfer..." rows — see the
+        // audit's own finding on this.
+        description: "Pay yourself — to personal",
         amount: new Decimal(amount),
         transactionType: "transfer",
         category: OWNER_PAY_OUT_CATEGORY,
@@ -72,7 +76,7 @@ export async function recordOwnerPay(userId: string, amount: number, date?: Date
         userId,
         accountId: personalAccount.id,
         transactionDate,
-        description: "Transfer from business",
+        description: "Pay yourself — from business",
         amount: new Decimal(amount),
         transactionType: "transfer",
         category: OWNER_PAY_IN_CATEGORY,

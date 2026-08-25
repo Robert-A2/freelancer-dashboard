@@ -363,7 +363,9 @@
       },
       "versementLiberatoire": "Do you use the versement libératoire for income tax?",
       "versementLiberatoireHint": "This is the option where income tax for your micro-business is paid as a percentage of turnover together with your Urssaf declaration.",
+      "cipavHint": "CIPAV is the pension fund for certain regulated professions (architects, some healthcare and technical consultants). Most freelance designers, consultants and developers should not pick this — only choose it if you know your profession specifically requires CIPAV registration.",
       "acre": "Are you currently benefiting from ACRE?",
+      "acreHint": "ACRE is a temporary reduction on your social contributions for new businesses, usually available during your first year of activity. If you're not sure, check your Urssaf account or select \"Not sure.\"",
       "activityStartDate": "When did your activity start?",
       "urssafFrequency": "How often do you declare your turnover to Urssaf?",
       "urssafMonthly": "Monthly",
@@ -779,12 +781,25 @@
     "businessHealth": {
       "label": "Business health"
     },
+    "stabilityScore": {
+      "label": "Financial stability",
+      "caption": "Your overall risk profile — runway, income spread, client reliability, taxes.",
+      "basedOn": "Based on {available} of {total} signals",
+      "why": "Why {score}?",
+      "notEnoughData": "Building",
+      "band": {
+        "stable": "Stable",
+        "watch": "Watch",
+        "at-risk": "At risk"
+      }
+    },
     "cashPosition": {
       "label": "Cash position",
       "caption": "Net across everything you've tracked — not a live bank balance"
     },
     "forecastHealth": {
       "label": "Forecast health",
+      "caption": "Whether your projected income and expenses next period stay positive.",
       "good": "Good",
       "warning": "Warning",
       "critical": "Critical",
@@ -796,6 +811,9 @@
       "safeToUse": "Safe to use",
       "availableAfterProtections": "Available after protections",
       "overCommitted": "Your protected total is more than your current cash — see the breakdown below.",
+      "safeMonthlyPay": "You could pay yourself {amount}/month for {months, plural, one {# month} other {# months}} without needing new income.",
+      "safeMonthlyPayLocked": "Set a safety buffer to see how much you could safely pay yourself each month.",
+      "safeMonthlyPayExplainer": "Safe monthly pay = safe to use, spread evenly across your safety buffer horizon.",
       "seeBreakdown": "See breakdown",
       "taxReserve": "Tax reserve",
       "commitments": "Upcoming commitments",
@@ -815,7 +833,9 @@
       "firstMonthTransitionBody": "You estimated {estimate} — actual spending was {actual} ({difference} {direction}). Runway now uses your actual spending, not the estimate.",
       "more": "more",
       "less": "less",
-      "urssafOutstandingNote": "What you've reserved from income since your last Urssaf payment, minus what you've already paid — not a monthly estimate."
+      "urssafOutstandingNote": "What you've reserved from income since your last Urssaf payment, minus what you've already paid — not a monthly estimate.",
+      "runwayEstimatedNote": "Based on your stated {amount} monthly spending estimate — you told us this.",
+      "runwayCalculatedNote": "Based on your last {months, plural, one {# complete month} other {# complete months}} of actual spending."
     },
     "summary": {
       "label": "Summary"
@@ -1075,6 +1095,9 @@
       "medium": "Medium",
       "high": "High"
     },
+    "healthOverview": {
+      "lowConfidenceNote": "Based on {months, plural, one {just # month} other {only # months}} of history — these signals below will get more reliable as you track more time."
+    },
     "confidenceDescriptions": {
       "low": "Low — less than 4 months of data",
       "medium": "Medium — 4 to 11 months",
@@ -1106,6 +1129,7 @@
     },
     "healthScore": {
       "label": "Business Health Score",
+      "caption": "Whether your recent actual months have been profitable and trending well.",
       "outOf100": "/100",
       "howCalculated": "How it's calculated",
       "rows": {
@@ -1196,6 +1220,16 @@
       "subtitle": "Uploading bank statements for those months would make this forecast more accurate.",
       "months": "{months}",
       "uploadNow": "Upload statements →"
+    },
+    "upcomingCashWindow": {
+      "label": "Upcoming cash",
+      "scope": "Business account — pending expected payments and active recurring expenses only.",
+      "empty": "Nothing pending or committed in the next 90 days.",
+      "day30": "Next 30 days",
+      "day60": "Next 60 days",
+      "day90": "Next 90 days",
+      "expectedIncome": "+{amount} expected",
+      "committedExpenses": "−{amount} committed"
     },
     "howBuilt": {
       "label": "How This Forecast Was Built",
@@ -1563,7 +1597,11 @@
         "insufficientData": "Not enough payment history to analyse the pattern.",
         "onSchedule": "This client is paying on schedule based on historical behaviour.",
         "slightlyLate": "This client's payment is slightly late compared to their usual interval.",
-        "significantlyLate": "This client's payment is significantly overdue. Consider following up."
+        "significantlyLate": "This client's payment is significantly overdue. Consider following up.",
+        "avgDaysLate": "Vs. expected date",
+        "daysLate": "{count, plural, one {# day late on average} other {# days late on average}}",
+        "daysEarly": "{count, plural, one {# day early on average} other {# days early on average}}",
+        "onTime": "On time on average"
       },
       "revenueTrend": {
         "title": "Revenue trend",
@@ -1880,7 +1918,9 @@
     "sports": "Sports",
     "uncategorized": "Uncategorized",
     "savings": "Savings",
-    "transfer": "Transfer"
+    "transfer": "Transfer",
+    "owner_pay_in": "Pay yourself (received)",
+    "owner_pay_out": "Pay yourself (sent)"
   },
   "manual": {
     "onboarding": {
@@ -1950,9 +1990,11 @@
           "mixed": "More than one activity",
           "unsure": "I'm not sure"
         },
+        "cipavHint": "CIPAV is the pension fund for certain regulated professions (architects, some healthcare and technical consultants). Most freelance designers, consultants and developers should not pick this — only choose it if you know your profession specifically requires CIPAV registration.",
         "versementLiberatoire": "Do you use the versement libératoire for income tax?",
         "versementLiberatoireHint": "This is the option where income tax for your micro-business is paid as a percentage of turnover together with your Urssaf declaration.",
         "acre": "Are you currently benefiting from ACRE?",
+        "acreHint": "ACRE is a temporary reduction on your social contributions for new businesses, usually available during your first year of activity. If you're not sure, check your Urssaf account or select \"Not sure.\"",
         "activityStartDate": "When did your activity start?",
         "urssafFrequency": "How often do you declare your turnover to Urssaf?",
         "urssafMonthly": "Monthly",
@@ -2204,6 +2246,21 @@
     "categorySubscriptionsGrewEveryYear": "<b>{category}</b> costs have increased every year since {fromYear}, from <b>{fromAmount}</b> to <b>{toAmount}</b> in {toYear}.",
     "clientConcentration": "{hasSource, select, yes {<b>{source}</b> accounts for <b>{pct}%</b> of your income} other {A single source accounts for <b>{pct}%</b> of your income}} — a high concentration in one source.",
     "incomeReasonablyDiversified": "Your income is reasonably diversified across <b>{total, plural, one {# source} other {# sources}}</b>, with your top source making up <b>{pct}%</b>.",
+    "stability": {
+      "runwayGood": "<b>{months, plural, one {# month} other {# months}}</b> protected if no more income arrived.",
+      "runwayLow": "Only <b>{months, plural, one {# month} other {# months}}</b> protected if no more income arrived.",
+      "cashflowConsistent": "<b>{pct}%</b> of your recent months had positive cashflow.",
+      "cashflowInconsistent": "Only <b>{pct}%</b> of your recent months had positive cashflow.",
+      "diversificationGood": "Your top income source is <b>{pct}%</b> of income — reasonably spread out.",
+      "diversificationConcentrated": "<b>{pct}%</b> of your expected income comes from a single client.",
+      "clientsReliable": "<b>{reliable}</b> of <b>{total}</b> established clients pay reliably.",
+      "clientsUnreliable": "Only <b>{reliable}</b> of <b>{total}</b> established clients pay reliably.",
+      "clientPaysLate": "<b>{name}</b> averages <b>{days, plural, one {# day} other {# days}}</b> late.",
+      "paymentsOnTime": "Payments have averaged on time or early recently.",
+      "paymentsLate": "Payments have averaged <b>{days, plural, one {# day} other {# days}}</b> late recently.",
+      "taxReserveKnown": "Tax reserve is fully funded from a known figure, not a rough estimate.",
+      "taxReserveEstimated": "Tax reserve is currently an estimate, not a known figure."
+    },
     "context": {
       "incomeAboveAvg": "{incomeType, select, salary {Your salary} other {Your income}} in <b>{period}</b>, <b>{current}</b>, is <b>{pct}%</b> above your average over {months, plural, one {the last month} other {the last # months}} (<b>{avg}</b>).",
       "incomeBelowAvg": "{incomeType, select, salary {Your salary} other {Your income}} in <b>{period}</b>, <b>{current}</b>, is <b>{pct}%</b> below your average over {months, plural, one {the last month} other {the last # months}} (<b>{avg}</b>).",

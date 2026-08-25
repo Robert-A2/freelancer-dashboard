@@ -3,6 +3,7 @@ import { Decimal } from "@prisma/client/runtime/library";
 import { recalculateMonthlyAnalytics } from "./analytics-engine";
 import { generateForecast } from "./forecast-engine";
 import { expectedPaymentDisplayName } from "./upcoming-item";
+import { getOrCreateManualAccount } from "./manual-accounts";
 
 // "Money you expect to receive" — deliberately its own standalone model, not
 // Project/Milestone. Self-reported from the start (never claims Stripe/CSV-
@@ -31,22 +32,44 @@ export async function markReceived(
   const now = new Date();
   const date = options?.receivedDate ?? new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
 
-  const tx = await prisma.transaction.create({
-    data: {
-      userId,
-      transactionDate: date,
-      description: expectedPaymentDisplayName(expected.clientName, expected.projectName),
-      amount: new Decimal(amount),
-      transactionType: "income",
-      category: "client payment",
-      categoryConfidence: "high",
-      categorySource: "user-manual",
-    },
-  });
+  // A client payment always belongs to the business (see today-facts.ts's
+  // own comment on this convention) — without a real accountId here, this
+  // income is invisible to every scoped Current Cash view (Business,
+  // Personal, and "All accounts" while separated all filter by accountId)
+  // even though it's correctly counted in MonthlyAnalytics, so cash and
+  // "money in this month" silently disagree the moment a payment lands.
+  const businessAccount = await getOrCreateManualAccount(userId, "business");
 
-  await prisma.expectedPayment.update({
-    where: { id: expectedPaymentId },
-    data: { status: "received", receivedTransactionId: tx.id },
+  // Wrapped so a double-click or a client retry after a slow/timed-out first
+  // response can't both pass the "still pending" check before either write
+  // commits — the re-check happens against the transaction's own isolated
+  // view, and the second caller's update simply affects 0 rows instead of
+  // silently creating a second income transaction for the same payment.
+  const tx = await prisma.$transaction(async (txClient) => {
+    const current = await txClient.expectedPayment.findUniqueOrThrow({ where: { id: expectedPaymentId } });
+    if (current.status !== "pending") throw new Error("Expected payment is already resolved");
+
+    const created = await txClient.transaction.create({
+      data: {
+        userId,
+        accountId: businessAccount.id,
+        transactionDate: date,
+        description: expectedPaymentDisplayName(expected.clientName, expected.projectName),
+        amount: new Decimal(amount),
+        transactionType: "income",
+        category: "client payment",
+        categoryConfidence: "high",
+        categorySource: "user-manual",
+      },
+    });
+
+    const updated = await txClient.expectedPayment.updateMany({
+      where: { id: expectedPaymentId, status: "pending" },
+      data: { status: "received", receivedTransactionId: created.id },
+    });
+    if (updated.count === 0) throw new Error("Expected payment is already resolved");
+
+    return created;
   });
 
   await recalculateMonthlyAnalytics(userId);
