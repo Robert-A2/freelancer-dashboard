@@ -18,10 +18,9 @@ export default async function TodayStatsGrid({ facts, locale }: { facts: TodayFa
       <div className="card-sm">
         <p className="label mb-2">{t("currentCash")}</p>
         <p className="text-xl font-bold text-[#E8F0F8] tabular-nums">{fmt(facts.currentCash)}</p>
-        {/* This same figure is captioned "Net across everything you've
-            tracked — not a live bank balance" on the Forecast page, under a
-            different label ("Cash position") — but never explained here,
-            where it's actually the most prominent number on the whole app. */}
+        {/* Same underlying figure and same caption as Forecast's "Cash
+            position" — kept word-for-word identical so the two labels for
+            one number don't drift into disagreement. */}
         <p className="text-[10px] text-[#6A97B4] mt-1">{t("currentCashCaption")}</p>
       </div>
       <div className="card-sm">

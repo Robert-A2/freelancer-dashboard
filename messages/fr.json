@@ -2161,7 +2161,7 @@
     },
     "today": {
       "currentCash": "Trésorerie actuelle",
-      "currentCashCaption": "Ce que vous avez indiqué à Nonodia",
+      "currentCashCaption": "Solde net de tout ce qui est suivi — pas un solde bancaire en direct",
       "moneyIn": "Entrées ce mois-ci",
       "moneyOut": "Sorties ce mois-ci",
       "knownCommitments": "Engagements connus",

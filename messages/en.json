@@ -2161,7 +2161,7 @@
     },
     "today": {
       "currentCash": "Current cash",
-      "currentCashCaption": "What you told Nonodia you have",
+      "currentCashCaption": "Net across everything you've tracked — not a live bank balance",
       "moneyIn": "Money in this month",
       "moneyOut": "Money out this month",
       "knownCommitments": "Known commitments",
