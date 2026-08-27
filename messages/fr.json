@@ -201,7 +201,8 @@
       }
     },
     "productShowcase": {
-      "tagline": "Laissez votre argent décider de la suite."
+      "tagline": "Laissez votre argent décider\nde la suite.",
+      "businessDirectionSnapshot": "Au cours des {months} derniers mois ({range}), les revenus ont augmenté de {pct} %, passant de {from} à {to}. Les dépenses sont restées maîtrisées."
     },
     "finalCta": {
       "title": "Prêt à prendre le contrôle de vos finances freelance ?",

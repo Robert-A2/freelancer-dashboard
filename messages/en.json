@@ -201,7 +201,8 @@
       }
     },
     "productShowcase": {
-      "tagline": "Allow your money to decide what to do next."
+      "tagline": "Allow your money to decide\nwhat to do next.",
+      "businessDirectionSnapshot": "Over the past {months} months ({range}), income grew {pct}%, from {from} to {to}. Expenses stayed under control."
     },
     "finalCta": {
       "title": "Ready to take control of your freelance finances?",
