@@ -165,7 +165,7 @@ export default async function LandingPage() {
         <div className={CONTAINER}>
           <div className="flex flex-col lg:flex-row lg:items-center gap-4 lg:gap-0">
             <ProductPanelShowcase />
-            <p className="text-xl sm:text-2xl lg:text-3xl font-bold leading-[1.1] tracking-tight text-[#0D1B2B] lg:flex-1 mt-0 lg:mt-0 lg:-translate-y-8 lg:-translate-x-6"><Lines text={t("productShowcase.tagline")} /></p>
+            <p className="text-xl sm:text-2xl lg:text-3xl font-bold leading-[1.1] tracking-tight text-[#0D1B2B] lg:flex-1 mt-0 lg:mt-0 lg:-translate-y-8 lg:translate-x-8"><Lines text={t("productShowcase.tagline")} /></p>
           </div>
         </div>
       </section>
