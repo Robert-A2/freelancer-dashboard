@@ -11,8 +11,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Nonodia — Financial Operating System for Freelancers",
-  description: "Nonodia transforms your bank statements into clear financial insights. Understand your business, make better decisions, and grow.",
+  title: "Nonodia — Financial Decision Engine",
+  description: "Allow your money to decide on what to do next. Nonodia helps freelancers with irregular income get a better handle on their money, understanding what is available, how much belongs to them and when to pay themselves.",
   icons: {
     icon: "/favicon.svg",
     shortcut: "/favicon.svg",
