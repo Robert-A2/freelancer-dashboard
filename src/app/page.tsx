@@ -171,7 +171,7 @@ export default async function LandingPage() {
       </section>
 
       {/* ── Section 4: Final CTA ──────────────────────────────────── */}
-      <section className="py-16 md:py-20 lg:py-24 bg-[#F5F3FF]">
+      <section className="py-16 md:py-20 lg:py-24 bg-[#F5F0E5]">
         <div className="max-w-2xl mx-auto px-5 sm:px-8 text-center">
           <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-[#0D1B2B] leading-[1.15] mb-5 text-balance">{t("finalCta.title")}</h2>
           <p className="text-lg text-[#64748B] leading-relaxed mb-10">{t("finalCta.body")}</p>
