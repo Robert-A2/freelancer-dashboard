@@ -28,11 +28,12 @@ import type { UpcomingItem } from "./upcoming-item";
 // holder's name, and the recurring expense is relabeled from the real
 // "ChatGPT" per an explicit request not to name that specific product.
 //
-// Since VAT is registered, the €1,000 HT payment grosses up to €1,200
-// actually received (the extra €200 is VAT collected on the state's
+// Since VAT is registered, the €2,000 HT payment grosses up to €2,400
+// actually received (the extra €400 is VAT collected on the state's
 // behalf, not the freelancer's) — every downstream cash figure uses that
-// €1,200 gross, matching how the real product treats a VAT-registered
-// payment landing in the account.
+// €2,400 gross, matching how the real product treats a VAT-registered
+// payment landing in the account. €2,000 matches the landing page's own
+// hero headline ("Your client paid you €2,000") so the two don't disagree.
 
 const DEMO_PROFILE = {
   businessLegalStatus: "micro_entrepreneur",
@@ -44,8 +45,8 @@ const DEMO_PROFILE = {
   defaultVatRate: 20, // registered with a real rate set — the real account's actual setting
 } as const;
 
-const PAYMENT_HT = 1000;
-const PAYMENT_GROSS = 1200; // 1000 HT + 200 VAT (20%)
+const PAYMENT_HT = 2000;
+const PAYMENT_GROSS = 2400; // 2000 HT + 400 VAT (20%)
 
 // The real account's actual business spending estimate (Settings ->
 // "About how much does your business cost each month?") — this, not an
@@ -72,7 +73,7 @@ export function buildDemoTodayFacts(received: boolean): TodayFacts {
       label: "Camille Farm",
       clientName: "Camille Farm",
       projectName: "Website development",
-      amount: 1000,
+      amount: PAYMENT_HT,
       date: new Date("2026-09-30T00:00:00Z"),
     });
   }
@@ -97,8 +98,8 @@ export function buildDemoTodayFacts(received: boolean): TodayFacts {
 }
 
 // The real reserve engine, fed the real (now fully-configured) tax profile —
-// reproduces the exact real numbers: VAT (20%) €200, Social €256, CFP €2,
-// Keep protected €458, Yours to keep €742 (of the €1,200 gross received).
+// reproduces the exact real numbers: VAT (20%) €400, Social €512, CFP €4,
+// Keep protected €916, Yours to keep €1,484 (of the €2,400 gross received).
 // This is deliberately a DIFFERENT number from CURRENT_TAX_RESERVE above —
 // the real product itself computes these two differently: the "Your money"
 // card shows the accumulated URSSAF-outstanding balance, while an
@@ -165,8 +166,8 @@ export function buildDemoAfter(): { currentCash: number; moneyInThisMonth: numbe
 // The real account's actual "Your money" card figures (Protected €794.99 /
 // Available after protections €4,201.61), and the same figures updated by
 // the Camille Farm payment actually landing: Protected grows by this
-// payment's own reserve (€458), Available grows by what's genuinely left
-// over (€742) — Protected+Available still sums to Current cash exactly as
+// payment's own reserve (€916), Available grows by what's genuinely left
+// over (€1,484) — Protected+Available still sums to Current cash exactly as
 // it does before.
 export function buildDemoMoneyBreakdown(received: boolean): MoneyBreakdown {
   const demoResult = computeDemoResult();
