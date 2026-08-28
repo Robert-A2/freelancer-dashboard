@@ -117,7 +117,13 @@ export function computeScoreFromFactors(factors: StabilityFactor[], baseGateMet:
 // linear between. 6 months is the same ceiling this app's own safety-buffer
 // UX already treats as "well covered" — not a new invented number. A
 // negative runway (already behind the spend basis) scores 0.
-function buildRunwayFactor(months: number | null): StabilityFactor {
+// Exported (alongside the other build* functions below) so the demo engine
+// can compute the exact same factors from its own real-shaped inputs
+// (computeIncomeConcentration/computeClientRiskProfiles already return the
+// real IncomeConcentration/ClientRiskCenterData types) instead of
+// duplicating this scoring math — see src/lib/demo/engine.ts's
+// computeStabilityScore().
+export function buildRunwayFactor(months: number | null): StabilityFactor {
   if (months === null) {
     return { key: "runway", available: false, points: 0, maxPoints: MAX_POINTS_PER_FACTOR, detail: null, isPositive: null };
   }
@@ -139,7 +145,7 @@ function buildRunwayFactor(months: number | null): StabilityFactor {
 // Forecast pages already use for the Cashflow Risk signal, applied here as a
 // score input instead of a bucket. Gated on the same MIN_COMPLETE_MONTHS_FOR_HEALTH
 // bar Business Health already requires.
-function buildCashflowConsistencyFactor(
+export function buildCashflowConsistencyFactor(
   history: Parameters<typeof computeCashflowRisk>[0],
   taxPaymentTxs: Parameters<typeof computeCashflowRisk>[1],
   completeMonths: number,
@@ -168,7 +174,7 @@ function buildCashflowConsistencyFactor(
 // ── Factor 3: Income diversification ─────────────────────────────────────────
 // Source: getIncomeConcentration() — reuses its own existing >=3-transaction
 // gate. 100% from one source -> 0pts, <=40% -> 20pts, linear between.
-function buildDiversificationFactor(concentration: Awaited<ReturnType<typeof getIncomeConcentration>>): StabilityFactor {
+export function buildDiversificationFactor(concentration: Awaited<ReturnType<typeof getIncomeConcentration>>): StabilityFactor {
   if (concentration.totalSources === 0) {
     return { key: "incomeDiversification", available: false, points: 0, maxPoints: MAX_POINTS_PER_FACTOR, detail: null, isPositive: null };
   }
@@ -191,7 +197,7 @@ function buildDiversificationFactor(concentration: Awaited<ReturnType<typeof get
 // Source: getClientRiskProfiles() — share of active clients (with a proven
 // >=3-payment cadence, same bar that file uses everywhere) whose
 // reliabilityScore is excellent/good.
-function buildClientReliabilityFactor(clientData: Awaited<ReturnType<typeof getClientRiskProfiles>>): StabilityFactor {
+export function buildClientReliabilityFactor(clientData: Awaited<ReturnType<typeof getClientRiskProfiles>>): StabilityFactor {
   const establishedActiveClients = clientData.clients.filter((c) => c.lifecycle === "current" && c.paymentCount >= 3);
   if (establishedActiveClients.length === 0) {
     return { key: "clientReliability", available: false, points: 0, maxPoints: MAX_POINTS_PER_FACTOR, detail: null, isPositive: null };
@@ -269,7 +275,7 @@ function buildPaymentTimingFactor(
 // ── Factor 5: Tax reserve confidence ─────────────────────────────────────────
 // Source: MoneyBreakdown.taxReserve.confidence — always available, since
 // computeTaxReserve() in money-breakdown.ts always returns a value.
-function buildTaxReserveFactor(confidence: "known" | "estimated" | "learning"): StabilityFactor {
+export function buildTaxReserveFactor(confidence: "known" | "estimated" | "learning"): StabilityFactor {
   const points = confidence === "known" ? MAX_POINTS_PER_FACTOR : confidence === "estimated" ? 12 : 6;
   const isPositive = confidence === "known";
   return {

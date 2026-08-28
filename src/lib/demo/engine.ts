@@ -3,14 +3,30 @@
 // Uses the exact same algorithms as the real engines, but operates on the
 // in-memory demo transaction array instead of the database.
 
-import type { DemoTransaction } from "./transactions";
-import { DEMO_TRANSACTIONS, DEMO_REF_DATE, DEMO_PERSONA } from "./transactions";
+import type { DemoTransaction, ExpenseRule } from "./transactions";
+import { DEMO_TRANSACTIONS, DEMO_REF_DATE, DEMO_PERSONA, DEMO_TAX_PROFILE, DEMO_EXPECTED_PAYMENTS, EXPENSE_RULES } from "./transactions";
 import { INTL_LOCALES, type Locale } from "@/i18n/locales";
 import {
   generateDashboardIntelligence,
   buildHistoricalInsights,
+  computeCashflowRisk,
   type RankedInsight,
 } from "@/lib/intelligence-engine";
+import type { UpcomingItem, CashWindowBucket } from "@/lib/upcoming-item";
+import { expectedPaymentDisplayName, bucketUpcomingByWindow } from "@/lib/upcoming-item";
+import type { TodayFacts } from "@/lib/today-facts";
+import type { CashRunway } from "@/lib/data-maturity";
+import type { MoneyBreakdown, SafetyBuffer, TaxReserveBreakdown } from "@/lib/money-breakdown";
+import { calculateFrenchMicroReserve } from "@/lib/tax/france/calculate-reserve";
+import type { StabilityScore, StabilityFactor } from "@/lib/stability-score-engine";
+import {
+  computeScoreFromFactors,
+  buildRunwayFactor,
+  buildCashflowConsistencyFactor,
+  buildDiversificationFactor,
+  buildClientReliabilityFactor,
+  buildTaxReserveFactor,
+} from "@/lib/stability-score-engine";
 import type {
   MonthPoint,
   CategoryTrend,
@@ -1211,12 +1227,14 @@ export function computeYtdTotals() {
 
   let ytdInc = 0, ytdExp = 0, ytdCash = 0;
   let prevInc = 0, prevExp = 0, prevCash = 0;
+  let ytdMonthsWithData = 0;
 
   for (const b of buckets) {
     if (b.year === dataYear && b.month <= dataMonthMax) {
       ytdInc  += b.income;
       ytdExp  += b.expenses;
       ytdCash += b.income - b.expenses;
+      if (b.income > 0 || b.expenses > 0) ytdMonthsWithData++;
     }
     if (b.year === prevYear && b.month <= dataMonthMax) {
       prevInc  += b.income;
@@ -1225,7 +1243,12 @@ export function computeYtdTotals() {
     }
   }
 
-  return { dataYear, prevYear, dataMonthMax, ytdInc, ytdExp, ytdCash, prevInc, prevExp, prevCash };
+  // Months within the YTD window that have no income or expense data —
+  // mirrors the real analytics page's ytdMissingMonths (dataMonthMax minus
+  // the real ytdMonthsWithData Prisma count).
+  const ytdMissingMonths = dataMonthMax - ytdMonthsWithData;
+
+  return { dataYear, prevYear, dataMonthMax, ytdInc, ytdExp, ytdCash, prevInc, prevExp, prevCash, ytdMissingMonths };
 }
 
 // ── Financial Reserve (demo) ────────────────────────────────────────────────
@@ -1277,6 +1300,235 @@ export function computeFinancialReserve(): ReserveSummary {
   };
 }
 
+// ── Today Facts (mirrors getTodayFacts in today-facts.ts) ──────────────────────
+// The real engine reads a cash-balance-checkpoint row; the demo has none, so
+// current cash is instead a running balance across every DEMO_TRANSACTION up
+// to DEMO_REF_DATE — the one existing dataset stays the single source of
+// truth rather than a second hand-typed number.
+export function computeCurrentCash(): number {
+  return DEMO_TRANSACTIONS.reduce((sum, tx) => {
+    if (tx.transactionType === "income") return sum + tx.amount;
+    if (tx.transactionType === "expense" || tx.transactionType === "savings") return sum - tx.amount;
+    return sum; // "transfer" — unused by Sophie's generated data today, excluded defensively
+  }, 0);
+}
+
+function demoExpectedPaymentsUpcoming(): UpcomingItem[] {
+  return DEMO_EXPECTED_PAYMENTS.map((e, i) => ({
+    kind: "expected_income" as const,
+    id: `demo-expected-${i}`,
+    label: expectedPaymentDisplayName(e.clientName, e.projectName),
+    clientName: e.clientName,
+    projectName: e.projectName,
+    amount: e.amount,
+    date: new Date(DEMO_REF_DATE.getTime() + e.daysFromRef * 86_400_000),
+  }));
+}
+
+// Mirrors today-facts.ts's nextOccurrence(): this month's day-of-month if it
+// hasn't passed yet, otherwise next month's — clamped to each month's real length.
+function demoNextOccurrence(dayOfMonth: number, now: Date): Date {
+  const daysInCurrentMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 0)).getUTCDate();
+  const clampedThisMonth = Math.min(dayOfMonth, daysInCurrentMonth);
+  const thisMonthDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), clampedThisMonth));
+  if (thisMonthDate.getTime() >= Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())) {
+    return thisMonthDate;
+  }
+  const daysInNextMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 2, 0)).getUTCDate();
+  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, Math.min(dayOfMonth, daysInNextMonth)));
+}
+
+// Every occurrence of a recurring expense between `now` and `now + horizonDays`
+// — mirrors today-facts.ts's occurrencesWithin() (pure date math, no DB).
+function demoOccurrencesWithin(dayOfMonth: number, now: Date, horizonDays: number): Date[] {
+  const horizon = new Date(now.getTime() + horizonDays * 24 * 60 * 60 * 1000);
+  const dates: Date[] = [];
+  let cursor = demoNextOccurrence(dayOfMonth, now);
+  while (cursor.getTime() <= horizon.getTime()) {
+    dates.push(cursor);
+    const dayAfter = new Date(cursor.getTime() + 24 * 60 * 60 * 1000);
+    cursor = demoNextOccurrence(dayOfMonth, dayAfter);
+  }
+  return dates;
+}
+
+type DemoRecurringExpense = { merchantName: string; amount: number; dayOfMonth: number; category: string };
+
+// Sophie's active recurring expenses — reuses EXPENSE_RULES directly (same
+// merchant names/categories/day-of-month already driving her transaction
+// history) rather than a second, separate list, evaluated at DEMO_REF_DATE's
+// year for rules with a year-dependent amount (e.g. Navigo's yearly price rise).
+function demoRecurringExpenses(): DemoRecurringExpense[] {
+  const y = DEMO_REF_DATE.getUTCFullYear();
+  const m = DEMO_REF_DATE.getUTCMonth() + 1;
+  const result: DemoRecurringExpense[] = [];
+  for (const r of EXPENSE_RULES as ExpenseRule[]) {
+    if (r.startYear && (y < r.startYear || (y === r.startYear && (r.startMonth ?? 1) > m))) continue;
+    const amount = typeof r.amount === "function" ? r.amount(y, m) : r.amount;
+    if (amount != null) result.push({ merchantName: r.description, amount, dayOfMonth: r.day, category: r.category });
+  }
+  return result;
+}
+
+export function computeTodayFacts(): TodayFacts {
+  const now = DEMO_REF_DATE;
+  const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+  const monthEnd = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
+
+  const thisMonthTxs = DEMO_TRANSACTIONS.filter((tx) => tx.transactionDate >= monthStart && tx.transactionDate < monthEnd);
+  const moneyInThisMonth = thisMonthTxs.filter((t) => t.transactionType === "income").reduce((s, t) => s + t.amount, 0);
+  const moneyOutThisMonth = thisMonthTxs.filter((t) => t.transactionType === "expense").reduce((s, t) => s + t.amount, 0);
+
+  const categoryTotals = new Map<string, number>();
+  for (const tx of thisMonthTxs.filter((t) => t.transactionType === "expense")) {
+    categoryTotals.set(tx.category, (categoryTotals.get(tx.category) ?? 0) + tx.amount);
+  }
+  const spendingByCategoryThisMonth = Array.from(categoryTotals.entries())
+    .map(([category, amount]) => ({ category, amount }))
+    .sort((a, b) => b.amount - a.amount);
+
+  const recurring = demoRecurringExpenses();
+  const upcoming: UpcomingItem[] = [
+    ...demoExpectedPaymentsUpcoming(),
+    ...recurring.map((r, i) => ({
+      kind: "recurring_expense" as const,
+      id: `demo-recurring-${i}`,
+      label: r.merchantName,
+      amount: r.amount,
+      date: demoNextOccurrence(r.dayOfMonth, now),
+    })),
+  ].sort((a, b) => a.date.getTime() - b.date.getTime());
+
+  return {
+    currentCash: computeCurrentCash(),
+    hasCurrentCash: true,
+    moneyInThisMonth,
+    moneyOutThisMonth,
+    knownCommitmentsMonthly: recurring.reduce((s, r) => s + r.amount, 0),
+    reserved: null, // no manual override — Sophie's reserve comes from her real tax profile, see computeMoneyBreakdown()
+    spendingByCategoryThisMonth,
+    upcoming,
+  };
+}
+
+// ── Upcoming Cash 30/60/90 (mirrors getUpcomingCashWindow) ──────────────────────
+export function computeUpcomingCashWindow(): CashWindowBucket[] {
+  const now = DEMO_REF_DATE;
+  const horizonDays = 90;
+  const recurring = demoRecurringExpenses();
+
+  const items: UpcomingItem[] = [
+    ...demoExpectedPaymentsUpcoming(),
+    ...recurring.flatMap((r, i) =>
+      demoOccurrencesWithin(r.dayOfMonth, now, horizonDays).map((date, j) => ({
+        kind: "recurring_expense" as const,
+        id: `demo-recurring-${i}-${j}`,
+        label: r.merchantName,
+        amount: r.amount,
+        date,
+      }))
+    ),
+  ];
+
+  return bucketUpcomingByWindow(items, now);
+}
+
+// ── Cash Runway (mirrors getCashRunway's "calculated" branch in data-maturity.ts) ──
+export function computeCashRunway(locale: Locale): CashRunway {
+  const chartData = computeHistoricalData(locale);
+  const lookback = chartData.slice(-3);
+  const monthlySpend = lookback.length > 0 ? lookback.reduce((s, m) => s + m.expenses, 0) / lookback.length : 0;
+  const currentCash = computeCurrentCash();
+  return {
+    months: monthlySpend > 0 ? currentCash / monthlySpend : null,
+    monthlySpend,
+    source: "calculated",
+    basedOnMonths: lookback.length,
+  };
+}
+
+// ── Money Breakdown (mirrors getMoneyBreakdown) ─────────────────────────────────
+export function computeMoneyBreakdown(locale: Locale): MoneyBreakdown {
+  const facts = computeTodayFacts();
+  const runway = computeCashRunway(locale);
+  const currentCash = facts.currentCash;
+
+  // Tax reserve: Sophie has a real tax profile (DEMO_TAX_PROFILE), so this
+  // uses the exact real formula — the same "profile"-based reserve a real
+  // user with a completed tax profile would see, never a generic estimate.
+  const reserveResult = calculateFrenchMicroReserve({
+    amount: facts.moneyInThisMonth,
+    amountBasis: "HT",
+    paymentDate: DEMO_REF_DATE,
+    taxProfile: DEMO_TAX_PROFILE,
+  });
+  const taxReserve: TaxReserveBreakdown = reserveResult.status === "calculated"
+    ? {
+        amount: reserveResult.knownMandatoryReserve,
+        rate: reserveResult.socialContribution!.rate + reserveResult.cfp!.rate,
+        source: "profile",
+        confidence: "known",
+      }
+    : { amount: 0, rate: null, source: "generic-estimate", confidence: "estimated" };
+
+  // No safety-buffer setting exists in the demo (nothing to configure) — the
+  // same honest "not set yet" state a real brand-new user would see.
+  const safetyBuffer: SafetyBuffer = { months: null, amount: 0 };
+
+  const protectedTotal = taxReserve.amount + facts.knownCommitmentsMonthly + safetyBuffer.amount;
+  const availableAfterProtections = currentCash - protectedTotal;
+
+  return {
+    currentCash,
+    hasCurrentCash: true,
+    taxReserve,
+    recurringCommitmentsMonthly: facts.knownCommitmentsMonthly,
+    safetyBuffer,
+    protectedTotal,
+    availableAfterProtections,
+    safeToUse: null,
+    safeMonthlyPay: null,
+    runway,
+    spendingPace: null,
+    firstMonthTransition: null,
+    warnings: [],
+  };
+}
+
+// ── Financial Stability Score (mirrors getStabilityScore) ──────────────────────
+// Reuses the real, pure, already-tested factor-builder functions and
+// computeScoreFromFactors verbatim (exported from stability-score-engine.ts
+// specifically for this) — the demo can never disagree with the real
+// scoring formula, since it's the same functions computing it.
+export function computeStabilityScore(locale: Locale): StabilityScore {
+  const breakdown = computeMoneyBreakdown(locale);
+  const chartData = computeHistoricalData(locale);
+  const concentration = computeIncomeConcentration();
+  const clientData = computeClientRiskProfiles(locale);
+
+  const taxPaymentTxs = DEMO_TRANSACTIONS.filter((tx) => tx.intent === "tax_payment" && tx.transactionType === "expense")
+    .map((tx) => ({ transactionDate: tx.transactionDate, amount: tx.amount }));
+  const completeMonths = chartData.filter((d) => d.income > 0 || d.expenses > 0).length;
+
+  const factors: StabilityFactor[] = [
+    buildRunwayFactor(breakdown.runway.months),
+    buildCashflowConsistencyFactor(chartData, taxPaymentTxs, completeMonths),
+    buildDiversificationFactor(concentration),
+    buildClientReliabilityFactor(clientData),
+    // Payment timing deliberately stays "not enough data" — the demo has no
+    // ExpectedPayment-style expected-vs-received date pairs to draw a real
+    // lateness figure from, and fabricating a batch of them just to fill in
+    // one of six factors isn't worth the new fixture surface it would add
+    // (the score already renormalizes over whichever factors are available).
+    { key: "paymentTiming", available: false, points: 0, maxPoints: 20, detail: null, isPositive: null },
+    buildTaxReserveFactor(breakdown.taxReserve.confidence),
+  ];
+
+  // baseGateMet: real engine requires hasCurrentCash + enough complete
+  // months — demo always has both (36 months of full history).
+  return computeScoreFromFactors(factors, true);
+}
+
 // ── Full demo dataset (computed once) ─────────────────────────────────────────
 
 export interface DemoDataset {
@@ -1297,6 +1549,11 @@ export interface DemoDataset {
   totalTx:             number;
   personaName:         string;
   personaFirstName:    string;
+  todayFacts:          TodayFacts;
+  upcomingCashWindow:  CashWindowBucket[];
+  cashRunway:          CashRunway;
+  moneyBreakdown:      MoneyBreakdown;
+  stabilityScore:      StabilityScore;
 }
 
 // Cache per locale so we don't recompute on every request
@@ -1319,6 +1576,11 @@ export function getDemoDataset(locale: Locale): DemoDataset {
   const dataGaps         = computeDataGaps(locale);
   const nonZeroMonths    = chartData.filter(d => d.income > 0 || d.expenses > 0).length;
   const totalTx          = DEMO_TRANSACTIONS.length;
+  const todayFacts        = computeTodayFacts();
+  const upcomingCashWindow = computeUpcomingCashWindow();
+  const cashRunway        = computeCashRunway(locale);
+  const moneyBreakdown    = computeMoneyBreakdown(locale);
+  const stabilityScore    = computeStabilityScore(locale);
 
   const rankedInsights = buildHistoricalInsights(
     chartData,
@@ -1333,6 +1595,7 @@ export function getDemoDataset(locale: Locale): DemoDataset {
     chartData, summary, comparison, coverage, categoryInsights,
     concentration, intentBreakdown, forecast, financialLife, financialReserve,
     clientData, rankedInsights, dataGaps, nonZeroMonths, totalTx,
+    todayFacts, upcomingCashWindow, cashRunway, moneyBreakdown, stabilityScore,
     personaName:      DEMO_PERSONA.name,
     personaFirstName: DEMO_PERSONA.firstName,
   };

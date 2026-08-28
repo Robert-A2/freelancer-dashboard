@@ -182,6 +182,21 @@ export default async function DemoClientDetailPage({
           <h1 className={`text-2xl font-bold break-words ${isUnidentified ? "text-[#6A97B4] italic" : "text-[#E8F0F8]"}`}>
             {client.name}
           </h1>
+          {!isUnidentified && (client.confidence === "medium" || client.confidence === "low") && (
+            <span className="inline-block mt-1 text-[11px] font-medium text-[#D4A254] bg-[#D4A25410] border border-[#D4A25425] px-2 py-0.5 rounded-full">
+              {t(`confidence.${client.confidence}`)}
+            </span>
+          )}
+          {!isUnidentified && (
+            <p className={`text-sm font-medium mt-1 ${
+              client.status === "current"  ? "text-[#4CC4A4]" :
+              client.status === "watch"    ? "text-[#D4A254]" :
+              client.status === "risk"     ? "text-[#E5484D]" :
+                                             "text-[#6A97B4]"
+            }`}>
+              {t(`dependOnVerdict.${client.status}`, { name: client.name })}
+            </p>
+          )}
           {isUnidentified ? (
             <p className="text-xs text-[#4A7A9B] mt-1">{t("detail.identityUnknown")}</p>
           ) : (
@@ -279,6 +294,18 @@ export default async function DemoClientDetailPage({
               <p className="label mb-1 text-[11px]">{t("detail.overview.avgPayment")}</p>
               <p className="text-sm font-bold text-[#A8C6E0] tabular-nums">{formatCurrency(client.avgPayment, locale)}</p>
             </div>
+            {client.avgDaysLate !== null && (
+              <div className="bg-[#132537] rounded-xl p-3.5">
+                <p className="label mb-1 text-[11px]">{t("detail.pattern.avgDaysLate")}</p>
+                <p className={`text-sm font-bold tabular-nums ${client.avgDaysLate > 0 ? "text-[#D4A254]" : "text-[#4CC4A4]"}`}>
+                  {client.avgDaysLate > 0
+                    ? t("detail.pattern.daysLate", { count: Math.round(client.avgDaysLate) })
+                    : client.avgDaysLate < 0
+                    ? t("detail.pattern.daysEarly", { count: Math.round(-client.avgDaysLate) })
+                    : t("detail.pattern.onTime")}
+                </p>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -305,6 +332,18 @@ export default async function DemoClientDetailPage({
           <>
             <p className="label mb-3 text-[11px]">{t("detail.revenueTrend.subtitle")}</p>
             <MiniBarChart data={client.monthlyRevenue} />
+            <div className="flex justify-between mt-1">
+              {client.monthlyRevenue.map((m, i) => (
+                <div key={i} className="flex-1 text-right first:text-left">
+                  {i === 0 && (
+                    <span className="text-[10px] text-[#6A97B4]">{formatCurrency(client.monthlyRevenue[0].amount, locale)}</span>
+                  )}
+                  {i === client.monthlyRevenue.length - 1 && (
+                    <span className="text-[10px] text-[#4CC4A4] font-semibold">{formatCurrency(m.amount, locale)}</span>
+                  )}
+                </div>
+              ))}
+            </div>
             <div className="mt-5 pt-4 border-t border-[#243F5E]">
               <p className="label mb-3 text-[11px]">{t("detail.revenueStory.periodComparison")}</p>
               <div className="grid grid-cols-2 gap-3">

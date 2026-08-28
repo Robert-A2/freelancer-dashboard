@@ -1,7 +1,10 @@
 import { getTranslations, getLocale } from "next-intl/server";
 import { INTL_LOCALES, type Locale } from "@/i18n/locales";
 import { getDemoDataset } from "@/lib/demo";
+import { DEMO_TAX_PROFILE, DEMO_REF_DATE } from "@/lib/demo/transactions";
 import { generateDashboardIntelligence, computeCashflowRisk } from "@/lib/intelligence-engine";
+import { projectMoneyBreakdownWithPayment } from "@/lib/money-breakdown";
+import { calculateFrenchMicroReserve } from "@/lib/tax/france/calculate-reserve";
 import { formatCurrency } from "@/utils/finance";
 import TrendsChart from "@/components/dashboard/TrendsChart";
 import DataCoverageBar from "@/components/dashboard/DataCoverage";
@@ -13,15 +16,19 @@ import Link from "next/link";
 export const dynamic = "force-dynamic";
 
 // Kept in lockstep with (dashboard)/forecast/page.tsx — same sections, same
-// shared computeCashflowRisk risk math, same banners. No demo equivalent of
-// ExpectedFromProjectsCard: the demo persona has no Projects/milestones
-// entities at all, and the real component itself renders nothing for any
-// project-less user (returns null when expectedCount === 0) — so omitting it
-// here produces the identical visual outcome, not a gap.
+// shared computeCashflowRisk risk math, same banners, same Runway and
+// Upcoming Cash 30/60/90 cards (sourced from src/lib/demo/engine.ts's
+// computeCashRunway/computeUpcomingCashWindow — see that file's comments for
+// why the demo can produce these where it previously couldn't). No demo
+// equivalent of ExpectedFromProjectsCard: the demo persona has no Projects/
+// milestones entities at all, and the real component itself renders nothing
+// for any project-less user (returns null when expectedCount === 0) — so
+// omitting it here produces the identical visual outcome, not a gap.
 export default async function DemoForecastPage() {
   const t      = await getTranslations("forecast");
   const td     = await getTranslations("dashboard");
   const tCategories = await getTranslations("categories");
+  const tRunway = await getTranslations("manual.learning.runway");
   const locale = (await getLocale()) as Locale;
 
   const bold = (chunks: React.ReactNode) => <strong className="text-[#E8F0F8] font-semibold">{chunks}</strong>;
@@ -48,7 +55,31 @@ export default async function DemoForecastPage() {
   const {
     chartData, summary, comparison, coverage, categoryInsights,
     concentration, intentBreakdown, forecast, dataGaps,
+    todayFacts, cashRunway, upcomingCashWindow, moneyBreakdown,
   } = getDemoDataset(locale);
+
+  // "If this arrives" scenario — same real, pure projectMoneyBreakdownWithPayment
+  // the real Forecast page uses, fed the real calculateFrenchMicroReserve()
+  // result for Sophie's nearest pending payment (see engine.ts's
+  // computeMoneyBreakdown for why she has a real "profile"-based reserve).
+  const nextExpectedPayment = todayFacts.upcoming.find((u) => u.kind === "expected_income") ?? null;
+  const runwayScenario = cashRunway.months !== null && nextExpectedPayment
+    ? (() => {
+        const result = calculateFrenchMicroReserve({
+          amount: nextExpectedPayment.amount,
+          amountBasis: "HT",
+          paymentDate: DEMO_REF_DATE,
+          taxProfile: DEMO_TAX_PROFILE,
+        });
+        const reserveForPayment = {
+          pct: result.status === "calculated" ? Math.round((result.knownMandatoryReserve / nextExpectedPayment.amount) * 1000) / 10 : 0,
+          reserveAmount: result.knownMandatoryReserve,
+          netAmount: result.afterKnownStatutoryReserves,
+          isEstimate: false,
+        };
+        return projectMoneyBreakdownWithPayment(moneyBreakdown, nextExpectedPayment.amount, reserveForPayment);
+      })()
+    : null;
 
   const current  = summary.current;
   const previous = summary.previous;
@@ -188,6 +219,71 @@ export default async function DemoForecastPage() {
           </Link>
         </div>
       )}
+
+      {/* Runway — real cash ÷ actual burn. Copied verbatim from the real
+          Forecast page's Runway card. */}
+      {cashRunway.months !== null && (
+        <div className="card">
+          <p className="label mb-2">
+            {cashRunway.source === "estimated" ? tRunway("estimatedLabel") : tRunway("calculatedLabel")}
+          </p>
+          {cashRunway.months < 0 ? (
+            <p className="text-2xl font-bold text-[#E5484D] tabular-nums mb-1">{tRunway("alreadyBehind")}</p>
+          ) : (
+            <p className="text-2xl font-bold text-[#E8F0F8] tabular-nums mb-1">
+              {t("howBuilt.monthsValue", { count: Math.round(cashRunway.months * 10) / 10 })}
+            </p>
+          )}
+          <p className="text-xs text-[#6A97B4]">
+            {cashRunway.source === "estimated"
+              ? tRunway("estimatedCaption", { amount: formatCurrency(cashRunway.monthlySpend, locale) })
+              : tRunway("calculatedCaption", { months: cashRunway.basedOnMonths })}
+          </p>
+
+          {runwayScenario && nextExpectedPayment && (
+            <div className="mt-4 pt-4 border-t border-[#1E3A55]">
+              <p className="text-xs text-[#6A97B4]">
+                {runwayScenario.projectedRunwayMonths !== null && runwayScenario.projectedRunwayMonths < 0
+                  ? tRunway("ifArrivesStillBehind", { label: nextExpectedPayment.label, amount: formatCurrency(nextExpectedPayment.amount, locale) })
+                  : tRunway("ifArrives", {
+                      label: nextExpectedPayment.label,
+                      amount: formatCurrency(nextExpectedPayment.amount, locale),
+                      months: runwayScenario.projectedRunwayMonths !== null ? (Math.round(runwayScenario.projectedRunwayMonths * 10) / 10) : "—",
+                    })}
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Upcoming cash 30/60/90 — copied verbatim from the real Forecast
+          page's card. */}
+      <div className="card">
+        <div className="flex items-baseline justify-between mb-1">
+          <p className="label">{t("upcomingCashWindow.label")}</p>
+        </div>
+        <p className="text-[11px] text-[#6A97B4] mb-4">{t("upcomingCashWindow.scope")}</p>
+        {upcomingCashWindow.every((b) => b.expectedIncome === 0 && b.committedExpenses === 0) ? (
+          <p className="text-sm text-[#6A97B4]">{t("upcomingCashWindow.empty")}</p>
+        ) : (
+          <div className="grid grid-cols-3 gap-4">
+            {upcomingCashWindow.map((bucket) => (
+              <div key={bucket.throughDay}>
+                <p className="text-xs text-[#6A97B4] mb-1.5">{t(`upcomingCashWindow.day${bucket.throughDay}`)}</p>
+                <p className={`text-lg font-bold tabular-nums mb-1 ${bucket.net < 0 ? "text-[#E5484D]" : "text-[#E8F0F8]"}`}>
+                  {formatCurrency(bucket.net, locale)}
+                </p>
+                <p className="text-[11px] text-[#4CC4A4] tabular-nums">
+                  {t("upcomingCashWindow.expectedIncome", { amount: formatCurrency(bucket.expectedIncome, locale) })}
+                </p>
+                <p className="text-[11px] text-[#D4A254] tabular-nums">
+                  {t("upcomingCashWindow.committedExpenses", { amount: formatCurrency(bucket.committedExpenses, locale) })}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
       {!hasData && (
         <div className="card text-center py-16">

@@ -60,7 +60,7 @@ const INCOME_PLAN: Record<string, { nexo: number; nova: number; dc: number }> = 
 
 // ── Expense rules ─────────────────────────────────────────────────────────────
 
-interface ExpenseRule {
+export interface ExpenseRule {
   description: string;
   amount: number | ((year: number, month: number) => number | null);
   category: string;
@@ -70,7 +70,7 @@ interface ExpenseRule {
   startMonth?: number; // 1-12, default 1
 }
 
-const EXPENSE_RULES: ExpenseRule[] = [
+export const EXPENSE_RULES: ExpenseRule[] = [
   // Software subscriptions
   { description: "ADOBE SYSTEMS CREATIVE CLOUD",  amount: 54.99, category: "software", intent: "subscription", day: 2  },
   { description: "NOTION LABS",                   amount: 8.00,  category: "software", intent: "subscription", day: 3  },
@@ -323,3 +323,39 @@ export const DEMO_PERSONA = {
   role: "Freelance UX Designer",
   location: "Paris",
 };
+
+// Sophie's tax profile — a real, consistent French micro-entrepreneur setup
+// (matches her existing "Freelance UX Designer, Paris" persona exactly) so
+// the real calculateFrenchMicroReserve() formula can compute her actual tax
+// reserve instead of a generic estimate. This is new fictional-but-consistent
+// fixture data, same footing as the rest of DEMO_TRANSACTIONS — the /demo
+// section is already 100% fictional and labeled as such everywhere; this is
+// not the "never fabricate" rule that governs the real product or the
+// landing page, which must never show a fabricated-looking REAL number.
+export const DEMO_TAX_PROFILE = {
+  businessLegalStatus: "micro_entrepreneur" as const,
+  activityType: "bnc_liberal" as const,
+  versementLiberatoireStatus: "no" as const,
+  acreStatus: "no" as const,
+  activityStartDate: null,
+  vatStatus: "exempt" as const,
+  defaultVatRate: null,
+};
+
+export interface DemoExpectedPayment {
+  clientName: string;
+  projectName: string | null;
+  amount: number;
+  /** Days from DEMO_REF_DATE — kept relative so these stay "pending" no matter when the demo is viewed (DEMO_REF_DATE itself shifts onto the current calendar). */
+  daysFromRef: number;
+}
+
+// A few pending invoices, narratively consistent with Sophie's real clients
+// (Nexo/Nova/DesignCraft already drive her whole income history) — gives
+// Upcoming Cash and the Runway "if this arrives" scenario something real to
+// show, the same fictional-demo reasoning as DEMO_TAX_PROFILE above.
+export const DEMO_EXPECTED_PAYMENTS: DemoExpectedPayment[] = [
+  { clientName: "Nexo Startup", projectName: "Monthly retainer", amount: 3600, daysFromRef: 12 },
+  { clientName: "DesignCraft Agency", projectName: "Q1 landing page project", amount: 2400, daysFromRef: 28 },
+  { clientName: "Nova Digital", projectName: "Design system audit", amount: 1400, daysFromRef: 55 },
+];

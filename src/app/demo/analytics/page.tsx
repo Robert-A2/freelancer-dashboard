@@ -43,7 +43,7 @@ export default async function DemoAnalyticsPage() {
 
   const hasData = chartData.some(d => d.income > 0 || d.expenses > 0);
 
-  const { dataYear, prevYear, dataMonthMax, ytdInc, ytdExp, ytdCash, prevInc, prevExp, prevCash } = ytd;
+  const { dataYear, prevYear, dataMonthMax, ytdInc, ytdExp, ytdCash, prevInc, prevExp, prevCash, ytdMissingMonths } = ytd;
   const ytdMargin  = ytdInc  > 0 ? Math.round((ytdCash  / ytdInc)  * 100) : null;
   const prevMargin = prevInc > 0 ? Math.round((prevCash / prevInc) * 100) : null;
 
@@ -118,6 +118,14 @@ export default async function DemoAnalyticsPage() {
             <div className="card">
               {!showPrevYearComparison && (
                 <p className="text-xs text-[#6A97B4] mb-4">{t("ytdSection.noComparisonYet")}</p>
+              )}
+              {ytdMissingMonths > 0 && (
+                <div className="flex items-start gap-2 mb-4 px-3 py-2.5 bg-[#D4A2540A] border border-[#D4A25430] rounded-lg">
+                  <span className="text-[#D4A254] flex-shrink-0 text-xs mt-0.5">◈</span>
+                  <p className="text-xs text-[#A8C6E0]">
+                    {t("ytdSection.missingMonthsNote", { count: ytdMissingMonths })}
+                  </p>
+                </div>
               )}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                 {[
