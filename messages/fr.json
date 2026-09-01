@@ -1071,14 +1071,6 @@
   },
   "forecast": {
     "title": "Prévisions",
-    "subtitle": {
-      "withData": "Perspectives financières basées sur vos données réelles",
-      "noData": "Ajoutez vos revenus et dépenses pour générer votre prévision",
-      "answerLow": "Non — vos flux de trésorerie sont régulièrement positifs. Vous êtes sur la bonne voie.",
-      "answerMedium": "Restez vigilant — certains mois montrent une pression sur la trésorerie.",
-      "answerHigh": "Oui, soyez prudent — il y a plus de mois négatifs que positifs.",
-      "answerCritical": "Agissez maintenant — la trésorerie est en territoire critique."
-    },
     "expectedFromProjects": {
       "label": "Attendu des projets",
       "subtitle": "Argent que vous avez demandé via des étapes de projet mais pas encore reçu — séparé de la prévision ci-dessus, qui ne compte que les transactions confirmées.",

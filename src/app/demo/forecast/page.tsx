@@ -167,20 +167,11 @@ export default async function DemoForecastPage() {
   return (
     <div className="space-y-8 md:space-y-10">
 
-      {/* Header */}
+      {/* Header — kept in lockstep with (dashboard)/forecast/page.tsx: no
+          verdict subtitle any more, it only ever restated the Cashflow Risk
+          card below. */}
       <div>
         <h1 className="text-2xl font-bold">{t("title")}</h1>
-        {hasData ? (
-          <p className={`text-sm font-medium mt-0.5 ${
-            cashflowRisk === "low"      ? "text-[#4CC4A4]" :
-            cashflowRisk === "medium"   ? "text-[#D4A254]" :
-                                          "text-[#E5484D]"
-          }`}>
-            {t(`subtitle.answer${cashflowRisk.charAt(0).toUpperCase()}${cashflowRisk.slice(1)}`)}
-          </p>
-        ) : (
-          <p className="text-[#7BA8C4] text-sm mt-0.5">{t("subtitle.noData")}</p>
-        )}
       </div>
 
       {/* Data coverage — always visible so the user knows exactly what was analyzed */}

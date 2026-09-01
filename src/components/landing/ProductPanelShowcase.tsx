@@ -104,10 +104,12 @@ export default async function ProductPanelShowcase() {
       <div className="flex flex-row">
         {/* Real Forecast page content, frozen snapshot (see SNAPSHOT above). */}
         <div className="flex-1 min-w-0 p-5 space-y-4">
-          <div>
-            <p className="text-base font-bold text-[#E8F0F8] leading-tight">{tForecast("title")}</p>
-            <p className="text-[13px] font-medium text-[#4CC4A4] mt-0.5">{tForecast("subtitle.answerLow")}</p>
-          </div>
+          {/* No subtitle verdict line here — it would just restate the
+              Cashflow Risk card's own description a few lines down
+              ("cashflow is consistently positive"), which is redundant
+              in a way it isn't on the real page (there it's the only
+              at-a-glance verdict before scrolling). */}
+          <p className="text-base font-bold text-[#E8F0F8] leading-tight">{tForecast("title")}</p>
 
           {/* Upcoming cash 30/60/90 */}
           <div className="card-sm">

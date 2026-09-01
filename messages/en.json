@@ -1071,14 +1071,6 @@
   },
   "forecast": {
     "title": "Forecast",
-    "subtitle": {
-      "withData": "Financial outlook based on your actual data",
-      "noData": "Add income and expenses to generate your forecast",
-      "answerLow": "No — your cashflow is consistently positive. You're on track.",
-      "answerMedium": "Stay alert — some months show cashflow pressure.",
-      "answerHigh": "Yes, be careful — more months are negative than positive.",
-      "answerCritical": "Take action now — cashflow is in critical territory."
-    },
     "expectedFromProjects": {
       "label": "Expected from projects",
       "subtitle": "Money you've requested through project milestones but haven't received yet — separate from the forecast above, which only counts confirmed transactions.",
