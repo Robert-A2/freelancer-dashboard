@@ -1,3 +1,13 @@
+import type { Metadata } from "next";
+
+// Reachable from the homepage footer, but never meant to compete with the
+// homepage as its own search result — same reasoning as the demo's robots
+// export (src/app/demo/layout.tsx): index: false keeps it out of search
+// results while follow: true still lets crawlers pass through it normally.
+export const metadata: Metadata = {
+  robots: { index: false, follow: true },
+};
+
 export default function TermsOfServicePage() {
   return (
     <div className="min-h-screen bg-white">

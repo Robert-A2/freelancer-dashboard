@@ -853,13 +853,13 @@
     },
     "emptyState": {
       "heading": "Built for freelancers",
-      "body": "Upload your bank statement CSV to get cashflow clarity, intelligent insights, and forecasts designed specifically for freelance income patterns.",
+      "body": "Add your income and expenses to get cashflow clarity, intelligent insights, and forecasts designed specifically for freelance income patterns.",
       "cta": "Upload CSV",
       "ctaProjects": "Or create a project to send your first invoice →"
     },
     "noCsvYet": {
-      "title": "Full cashflow insights need a bank statement",
-      "body": "Your projects and expected income are already tracked below. Upload a CSV to add spending analytics, trends, and forecasts on top.",
+      "title": "Full cashflow insights need transaction history",
+      "body": "Your projects and expected income are already tracked below. Add income and expenses (by CSV or by hand) to add spending analytics, trends, and forecasts on top.",
       "cta": "Upload CSV →"
     },
     "expectedIncome": {
@@ -983,7 +983,7 @@
       "showFewerReasons": "Show fewer reasons"
     },
     "trendsChart": {
-      "uploadPrompt": "Upload a CSV to see your financial trends.",
+      "uploadPrompt": "Add income and expenses to see your financial trends.",
       "label": "Financial Outlook",
       "title": "Income vs Expenses",
       "tapHint": "Tap any month to see the breakdown",
@@ -1026,7 +1026,7 @@
     },
     "recentTransactions": {
       "label": "Recent Activity",
-      "empty": "No transactions yet. Upload a CSV to get started.",
+      "empty": "No transactions yet. Add your first one to get started.",
       "viewAll": "View all transactions",
       "drawer": {
         "title": "Transaction Detail",
@@ -1073,7 +1073,7 @@
     "title": "Forecast",
     "subtitle": {
       "withData": "Financial outlook based on your actual data",
-      "noData": "Upload a CSV to generate your forecast",
+      "noData": "Add income and expenses to generate your forecast",
       "answerLow": "No — your cashflow is consistently positive. You're on track.",
       "answerMedium": "Stay alert — some months show cashflow pressure.",
       "answerHigh": "Yes, be careful — more months are negative than positive.",
@@ -1081,7 +1081,7 @@
     },
     "expectedFromProjects": {
       "label": "Expected from projects",
-      "subtitle": "Money you've requested through project milestones but haven't received yet — separate from the CSV-based forecast above, which only counts confirmed transactions.",
+      "subtitle": "Money you've requested through project milestones but haven't received yet — separate from the forecast above, which only counts confirmed transactions.",
       "overdue": "Overdue",
       "notSentYet": "Not sent yet",
       "total": "Total expected",
@@ -1089,7 +1089,7 @@
     },
     "emptyState": {
       "heading": "No data to forecast yet",
-      "body": "Upload your bank statement CSV to generate personalised forecasts and financial insights.",
+      "body": "Add your income and expenses to generate personalised forecasts and financial insights.",
       "cta": "Upload CSV"
     },
     "confidenceLabel": "{level, select, low {Low confidence} medium {Medium confidence} high {High confidence} other {}}",
@@ -1301,7 +1301,7 @@
     },
     "emptyState": {
       "heading": "No data yet",
-      "body": "Upload your bank statement to unlock full analytics.",
+      "body": "Add your income and expenses to unlock full analytics.",
       "cta": "Upload CSV"
     },
     "ytdSection": {
@@ -1508,7 +1508,7 @@
     "intentDataWarning": "Intent classification is incomplete. Showing all income transactions. For best results, review and classify your transactions in History.",
     "emptyState": {
       "heading": "No client data yet",
-      "body": "Upload a bank statement to start tracking your client payments.",
+      "body": "Add income from your clients to start tracking your client payments.",
       "cta": "Upload CSV"
     },
     "summary": {
@@ -2306,7 +2306,7 @@
       "partialMonth": "<b>{period}</b> is still in progress. Month-to-month comparisons aren't shown yet — figures will update as the month completes."
     },
     "snapshot": {
-      "uploadPrompt": "Upload your bank statement to get personalised insights about your finances.",
+      "uploadPrompt": "Add your income and expenses to get personalised insights about your finances.",
       "firstUpload": "{cashflowOk, select, positive {Great start — your <b>{period}</b> cashflow is positive.} other {Your <b>{period}</b> cashflow is negative — let's see what's driving that.}}",
       "excellentMonth": "Excellent month — income is up and expenses are down.",
       "incomeUpExpensesUp": "{hasCategory, select, yes {Income is up in <b>{period}</b>, but so are expenses — mainly driven by <b>{category}</b> (<b>{amount}</b> more than last month).} other {Income is up in <b>{period}</b>, but so are expenses.}}",

@@ -853,13 +853,13 @@
     },
     "emptyState": {
       "heading": "Conçu pour les freelances",
-      "body": "Importez votre relevé bancaire CSV pour obtenir une vision claire de votre trésorerie, des analyses intelligentes et des prévisions conçues spécifiquement pour les revenus de freelance.",
+      "body": "Ajoutez vos revenus et dépenses pour obtenir une vision claire de votre trésorerie, des analyses intelligentes et des prévisions conçues spécifiquement pour les revenus de freelance.",
       "cta": "Importer un CSV",
       "ctaProjects": "Ou créez un projet pour envoyer votre première facture →"
     },
     "noCsvYet": {
-      "title": "Une vision complète de votre trésorerie nécessite un relevé bancaire",
-      "body": "Vos projets et revenus attendus sont déjà suivis ci-dessous. Importez un CSV pour ajouter l'analyse des dépenses, les tendances et les prévisions.",
+      "title": "Une vision complète de votre trésorerie nécessite un historique de transactions",
+      "body": "Vos projets et revenus attendus sont déjà suivis ci-dessous. Ajoutez vos revenus et dépenses (par CSV ou manuellement) pour ajouter l'analyse des dépenses, les tendances et les prévisions.",
       "cta": "Importer un CSV →"
     },
     "expectedIncome": {
@@ -983,7 +983,7 @@
       "showFewerReasons": "Afficher moins de raisons"
     },
     "trendsChart": {
-      "uploadPrompt": "Importez un CSV pour voir vos tendances financières.",
+      "uploadPrompt": "Ajoutez vos revenus et dépenses pour voir vos tendances financières.",
       "label": "Perspectives financières",
       "title": "Revenus vs Dépenses",
       "tapHint": "Touchez un mois pour voir le détail",
@@ -1026,7 +1026,7 @@
     },
     "recentTransactions": {
       "label": "Activité récente",
-      "empty": "Aucune transaction pour l'instant. Importez un CSV pour commencer.",
+      "empty": "Aucune transaction pour l'instant. Ajoutez la première pour commencer.",
       "viewAll": "Voir toutes les transactions",
       "drawer": {
         "title": "Détail de la transaction",
@@ -1073,7 +1073,7 @@
     "title": "Prévisions",
     "subtitle": {
       "withData": "Perspectives financières basées sur vos données réelles",
-      "noData": "Importez un CSV pour générer votre prévision",
+      "noData": "Ajoutez vos revenus et dépenses pour générer votre prévision",
       "answerLow": "Non — vos flux de trésorerie sont régulièrement positifs. Vous êtes sur la bonne voie.",
       "answerMedium": "Restez vigilant — certains mois montrent une pression sur la trésorerie.",
       "answerHigh": "Oui, soyez prudent — il y a plus de mois négatifs que positifs.",
@@ -1081,7 +1081,7 @@
     },
     "expectedFromProjects": {
       "label": "Attendu des projets",
-      "subtitle": "Argent que vous avez demandé via des étapes de projet mais pas encore reçu — séparé de la prévision basée sur le CSV ci-dessus, qui ne compte que les transactions confirmées.",
+      "subtitle": "Argent que vous avez demandé via des étapes de projet mais pas encore reçu — séparé de la prévision ci-dessus, qui ne compte que les transactions confirmées.",
       "overdue": "En retard",
       "notSentYet": "Pas encore envoyé",
       "total": "Total attendu",
@@ -1089,7 +1089,7 @@
     },
     "emptyState": {
       "heading": "Aucune donnée à prévoir pour le moment",
-      "body": "Importez votre relevé bancaire CSV pour générer des prévisions et analyses personnalisées.",
+      "body": "Ajoutez vos revenus et dépenses pour générer des prévisions et analyses personnalisées.",
       "cta": "Importer un CSV"
     },
     "confidenceLabel": "{level, select, low {Confiance faible} medium {Confiance moyenne} high {Confiance élevée} other {}}",
@@ -1301,7 +1301,7 @@
     },
     "emptyState": {
       "heading": "Aucune donnée pour l'instant",
-      "body": "Importez votre relevé bancaire pour débloquer toutes les analyses.",
+      "body": "Ajoutez vos revenus et dépenses pour débloquer toutes les analyses.",
       "cta": "Importer un CSV"
     },
     "ytdSection": {
@@ -1508,7 +1508,7 @@
     "intentDataWarning": "La classification des intentions est incomplète. Affichage de toutes les transactions de revenus. Pour de meilleurs résultats, examinez et classifiez vos transactions dans l'Historique.",
     "emptyState": {
       "heading": "Aucune donnée client",
-      "body": "Importez un relevé bancaire pour commencer à suivre vos paiements clients.",
+      "body": "Ajoutez des revenus de vos clients pour commencer à suivre vos paiements clients.",
       "cta": "Importer un CSV"
     },
     "summary": {
@@ -2306,7 +2306,7 @@
       "partialMonth": "<b>{period}</b> est encore en cours. Les comparaisons mois par mois ne sont pas encore affichées — les chiffres seront mis à jour en fin de mois."
     },
     "snapshot": {
-      "uploadPrompt": "Importez votre relevé bancaire pour obtenir des analyses personnalisées de vos finances.",
+      "uploadPrompt": "Ajoutez vos revenus et dépenses pour obtenir des analyses personnalisées de vos finances.",
       "firstUpload": "{cashflowOk, select, positive {Excellent début — votre trésorerie en <b>{period}</b> est positive.} other {Votre trésorerie en <b>{period}</b> est négative — voyons ce qui en est la cause.}}",
       "excellentMonth": "Excellent mois — les revenus sont en hausse et les dépenses en baisse.",
       "incomeUpExpensesUp": "{hasCategory, select, yes {Les revenus sont en hausse en <b>{period}</b>, mais les dépenses aussi — principalement à cause de <b>{category}</b> (<b>{amount}</b> de plus que le mois dernier).} other {Les revenus sont en hausse en <b>{period}</b>, mais les dépenses aussi.}}",
